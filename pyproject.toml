@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurotwin"
+version = "0.1.0"
+description = "Leakage-proof Neural Translation benchmark harness for multimodal neural-state modeling."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "PyYAML>=6.0",
+  "torch>=2.2",
+]
+
+[project.optional-dependencies]
+moabb = [
+  "moabb>=1.1",
+  "mne>=1.6",
+]
+bids = [
+  "mne-bids>=0.14",
+  "pybids>=0.16",
+]
+h100 = [
+  "tensorboard>=2.16",
+  "wandb>=0.16",
+]
+dev = [
+  "pytest>=8",
+]
+
+[project.scripts]
+nt = "neurotwin.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,3 @@
+# Abstract Draft
+
+Brain foundation models increasingly cover stimulus-to-fMRI prediction and unimodal or paired-modality pretraining, but progress is difficult to compare under strict leakage controls. NeuroTwin introduces a neural translation benchmark and subject-adaptive architecture for evaluating missing-modality reconstruction, future-state forecasting, and few-shot adaptation across heterogeneous neural signals. The benchmark emphasizes held-out subject, site, and dataset splits and treats clinical prediction as secondary. Synthetic and debug results are plumbing checks; scientific claims require real-data evaluation against strong baselines.

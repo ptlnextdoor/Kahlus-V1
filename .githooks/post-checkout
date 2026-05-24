@@ -1,0 +1,20 @@
+#!/bin/sh
+# graphify-checkout-hook-start
+# Rebuilds the repository knowledge graph after branch switches.
+# Args: previous HEAD, new HEAD, branch-switch flag.
+
+BRANCH_SWITCH=$3
+if [ "$BRANCH_SWITCH" != "1" ]; then
+  exit 0
+fi
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$ROOT" || exit 0
+
+if [ ! -d "graphify-out" ] || ! command -v graphify >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo "[graphify hook] post-checkout: updating repo graph..."
+graphify update . >/dev/null 2>&1 || echo "[graphify hook] update failed; run: graphify update ."
+# graphify-checkout-hook-end

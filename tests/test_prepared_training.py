@@ -1,0 +1,139 @@
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+import yaml
+
+from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
+from neurotwin.data.event_io import save_event_batches
+from neurotwin.data.manifest_io import save_split_manifest
+from neurotwin.data.split_manifest import build_split_manifest
+from neurotwin.training.prepared import run_prepared_training
+
+
+class PreparedTrainingTests(unittest.TestCase):
+    def _prepared_dir(self, root: Path) -> Path:
+        prepared = root / "prepared"
+        records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+        batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+        split = build_split_manifest(records, policy="subject", seed=0)
+        save_split_manifest(split, prepared / "split_manifest.json")
+        save_event_batches(batches, prepared)
+        return prepared
+
+    def test_prepared_training_writes_checkpoint_and_metrics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            checkpoint = root / "checkpoint.pt"
+            metrics_csv = root / "metrics.csv"
+
+            result = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "future_state_forecasting",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 2,
+                    "batch_size": 4,
+                    "gradient_accumulation_steps": 2,
+                    "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                },
+                checkpoint_path=checkpoint,
+                metrics_csv_path=metrics_csv,
+            )
+
+            self.assertEqual(result.status, "completed_prepared_training")
+            self.assertEqual(result.task_id, "future_state_forecasting")
+            self.assertTrue(result.synthetic_only)
+            self.assertEqual(result.gradient_accumulation_steps, 2)
+            self.assertEqual(result.completed_steps, 2)
+            self.assertFalse(result.distributed_initialized)
+            self.assertEqual(result.world_size, 1)
+            self.assertTrue(checkpoint.exists())
+            self.assertTrue(metrics_csv.exists())
+
+            resumed = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "future_state_forecasting",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 1,
+                    "batch_size": 4,
+                    "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                },
+                checkpoint_path=root / "checkpoint_resumed.pt",
+                resume_path=checkpoint,
+            )
+
+            self.assertEqual(resumed.start_step, 2)
+            self.assertEqual(resumed.completed_steps, 3)
+            self.assertEqual(resumed.resumed_from, str(checkpoint))
+
+    def test_train_cli_uses_prepared_path_when_manifests_are_configured(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            config_path = root / "prepared_train.yaml"
+            run_root = root / "runs"
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "experiment": "prepared_train",
+                        "data": {
+                            "event_manifest": str(prepared / "event_manifest.json"),
+                            "split_manifest": str(prepared / "split_manifest.json"),
+                        },
+                        "task": "masked_neural_reconstruction",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 2,
+                        "batch_size": 4,
+                        "seed": 0,
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "train",
+                    "--config",
+                    str(config_path),
+                    "--run-root",
+                    str(run_root),
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+
+            run_dir = run_root / "prepared_train"
+            summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
+            metrics = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
+            self.assertIn("completed_prepared_training", result.stdout)
+            self.assertEqual(summary["status"], "completed_prepared_training")
+            self.assertEqual(summary["event_manifest"], str(prepared / "event_manifest.json"))
+            self.assertFalse(summary["distributed_initialized"])
+            self.assertEqual(metrics["task_id"], "masked_neural_reconstruction")
+            self.assertIn("completed_steps", summary)
+            self.assertTrue((run_dir / "metrics.csv").exists())
+            self.assertTrue((run_dir / "checkpoint.pt").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

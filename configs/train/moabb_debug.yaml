@@ -1,0 +1,19 @@
+experiment: moabb_debug
+description: Optional MOABB EEG debug run. Requires prepared/downloaded MOABB data outside training job.
+dataset: moabb
+task: masked_neural_reconstruction
+split: subject
+seed: 0
+batch_size: 8
+window_size: 256
+max_batches: 2
+precision: fp32
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 64
+  n_layers: 2
+  modalities:
+    - eeg
+training:
+  dry_run_ok: true
+  internet_required: false

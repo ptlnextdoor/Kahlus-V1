@@ -1,0 +1,12 @@
+experiment: synthetic_debug
+description: CPU-only NeuroTwin translator smoke loop.
+dataset: synthetic
+task: stimulus_past_fmri_to_future_fmri
+split: subject
+steps: 24
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 32
+  modalities:
+    - fmri
+    - eeg

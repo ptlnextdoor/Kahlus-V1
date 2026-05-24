@@ -1,0 +1,54 @@
+{
+  "verified_at": "2026-05-24",
+  "verification_method": "git ls-remote <repo> HEAD",
+  "upstreams": {
+    "mamba": {
+      "repo": "https://github.com/state-spaces/mamba",
+      "commit": "a14b1dff0454a3bc27d9eb31355dc01e4b2490ec",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit"
+    },
+    "ndt3": {
+      "repo": "https://github.com/joel99/ndt3",
+      "commit": "877f9f5edbcd47f20af6e6c0ba11926da7a22354",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit"
+    },
+    "neurostorm": {
+      "repo": "https://github.com/CUHK-AIM-Group/NeuroSTORM",
+      "commit": "47028cfdc02b9e1a0cac76d3d9e06057e86846ce",
+      "reuse_status": "mixed",
+      "license_status": "verify code, data, and weight terms separately"
+    },
+    "neuroformer": {
+      "repo": "https://github.com/a-antoniades/Neuroformer",
+      "commit": "36ed94084628c253098d448048c980d3dea0050d",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit"
+    },
+    "neuralbench": {
+      "repo": "https://github.com/facebookresearch/neuroai",
+      "commit": "30303b368ef2bd3c4524193f9a654c3d89f9d9a3",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit"
+    },
+    "moabb": {
+      "repo": "https://github.com/NeuroTechX/moabb",
+      "commit": "68022240adc6efe313638b01807401310176790c",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit; datasets vary"
+    },
+    "cebra": {
+      "repo": "https://github.com/AdaptiveMotorControlLab/CEBRA",
+      "commit": "64a06bc7223e688c87549590f63a369a70924ee6",
+      "reuse_status": "mixed",
+      "license_status": "Apache-2.0 for recent versions; track patent notes"
+    },
+    "braindecode": {
+      "repo": "https://github.com/braindecode/braindecode",
+      "commit": "43078cf84482708a3593c3453bef7e1ef9078dfb",
+      "reuse_status": "permissive",
+      "license_status": "verify upstream license file at pinned commit"
+    }
+  }
+}

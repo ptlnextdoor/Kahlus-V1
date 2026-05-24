@@ -1,0 +1,32 @@
+suite: neural_translation_v1
+claim: leakage-proof neural translation
+tasks:
+  - future_state_forecasting
+  - masked_neural_reconstruction
+  - cross_modal_translation
+  - few_shot_subject_adaptation
+  - dataset_site_generalization
+required_splits:
+  - subject
+  - site
+  - dataset
+metrics:
+  - mse
+  - mae
+  - pearsonr
+  - r2
+  - spectral_error
+  - masked_mse
+  - retrieval_accuracy
+primary_competitors:
+  - tribe_v2
+  - brainvista
+  - brain_of
+  - brainomni
+  - brain_harmony
+  - transformer
+  - mamba_ssm
+  - modality_specialist
+notes:
+  - Cross-modal translation must skip with reason if paired modalities are absent.
+  - Synthetic/debug scores are plumbing checks, not scientific evidence.
