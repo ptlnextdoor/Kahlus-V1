@@ -2735,9 +2735,9 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L160",
-      "id": "moabb_rationale_160",
       "community": 2,
-      "norm_label": "normalize moabb/mne trial arrays to neurotwin [time, channel] layout."
+      "norm_label": "normalize moabb/mne trial arrays to neurotwin [time, channel] layout.",
+      "id": "moabb_rationale_160"
     },
     {
       "label": "__init__.py",
@@ -7353,8 +7353,8 @@
       "source_file": "src/neurotwin/cli.py",
       "source_location": "L224",
       "weight": 1.0,
-      "_src": "cli_cmd_data_smoke",
-      "_tgt": "repro_manifest_hash",
+      "_src": "repro_manifest_hash",
+      "_tgt": "cli_cmd_data_smoke",
       "source": "repro_manifest_hash",
       "target": "cli_cmd_data_smoke"
     },
@@ -11470,9 +11470,9 @@
       "weight": 0.8,
       "_src": "moabb_rationale_160",
       "_tgt": "schemas_neuraleventbatch",
+      "confidence_score": 0.5,
       "source": "moabb_rationale_160",
-      "target": "schemas_neuraleventbatch",
-      "confidence_score": 0.5
+      "target": "schemas_neuraleventbatch"
     },
     {
       "relation": "uses",
@@ -11482,9 +11482,9 @@
       "weight": 0.8,
       "_src": "moabb_rationale_160",
       "_tgt": "split_manifest_recordingrecord",
+      "confidence_score": 0.5,
       "source": "moabb_rationale_160",
-      "target": "split_manifest_recordingrecord",
-      "confidence_score": 0.5
+      "target": "split_manifest_recordingrecord"
     },
     {
       "relation": "contains",
@@ -14204,8 +14204,8 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L8",
       "weight": 0.8,
-      "_src": "moabb_rationale_147",
-      "_tgt": "schemas_neuraleventbatch",
+      "_src": "schemas_neuraleventbatch",
+      "_tgt": "moabb_rationale_147",
       "confidence_score": 0.5,
       "source": "schemas_neuraleventbatch",
       "target": "moabb_rationale_147"
@@ -14336,8 +14336,8 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L9",
       "weight": 0.8,
-      "_src": "moabb_rationale_147",
-      "_tgt": "split_manifest_recordingrecord",
+      "_src": "split_manifest_recordingrecord",
+      "_tgt": "moabb_rationale_147",
       "confidence_score": 0.5,
       "source": "split_manifest_recordingrecord",
       "target": "moabb_rationale_147"
