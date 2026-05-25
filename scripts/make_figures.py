@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Create lightweight text figure specs from NeuroTwin run metrics.")
+    parser.add_argument("run_dir")
+    args = parser.parse_args()
+    metrics_path = Path(args.run_dir) / "metrics.json"
+    if not metrics_path.exists():
+        raise SystemExit(f"No metrics.json found in {args.run_dir}")
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    out = Path(args.run_dir) / "figure_summary.txt"
+    lines = []
+    baseline_suite = metrics.get("baseline_suite") if isinstance(metrics, dict) else None
+    if isinstance(baseline_suite, dict):
+        aggregate = baseline_suite.get("aggregate", {})
+        for row in aggregate.get("aggregate_rank", []):
+            lines.append(f"baseline_rank {row['model_id']} mean_rank={row['mean_rank']}")
+    if not lines and isinstance(metrics, dict):
+        lines = [f"{key}: {value}" for key, value in sorted(metrics.items())]
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(out)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

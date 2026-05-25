@@ -1,0 +1,19 @@
+suite: translation_smoke
+claim: leakage-proof neural translation
+required_splits:
+  - subject
+  - site
+  - dataset
+primary_competitors:
+  - tribe_v2
+  - brainvista
+  - brain_of
+  - brainomni
+  - brain_harmony
+  - transformer
+  - mamba_ssm
+  - modality_specialist
+acceptance_bar:
+  aggregate_rank: beat_best_strong_baseline
+  modality_groups: at_least_two
+  uncertainty: bootstrap_confidence_intervals

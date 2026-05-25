@@ -1,0 +1,34 @@
+import unittest
+
+import numpy as np
+
+from neurotwin.eval.metrics import bootstrap_ci, mse, pearsonr, rank_models
+
+
+class MetricTests(unittest.TestCase):
+    def test_mse_and_pearsonr(self):
+        y_true = np.array([1.0, 2.0, 3.0])
+        y_pred = np.array([1.0, 2.5, 2.5])
+
+        self.assertAlmostEqual(mse(y_true, y_pred), 1.0 / 6.0)
+        self.assertGreater(pearsonr(y_true, y_pred), 0.75)
+
+    def test_rank_models_lower_is_better(self):
+        ranked = rank_models(
+            {
+                "transformer": {"mse": 0.31},
+                "mamba_ssm": {"mse": 0.28},
+                "neurotwin": {"mse": 0.24},
+            },
+            metric="mse",
+            higher_is_better=False,
+        )
+
+        self.assertEqual([row.model_id for row in ranked], ["neurotwin", "mamba_ssm", "transformer"])
+
+    def test_bootstrap_ci_is_deterministic(self):
+        low, high = bootstrap_ci(np.array([1.0, 2.0, 3.0, 4.0]), seed=11, n_boot=128)
+
+        self.assertLess(low, high)
+        self.assertGreaterEqual(low, 1.0)
+        self.assertLessEqual(high, 4.0)

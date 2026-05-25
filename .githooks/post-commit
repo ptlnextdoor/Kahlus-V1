@@ -1,0 +1,16 @@
+#!/bin/sh
+# graphify-hook-start
+# Rebuilds the repository knowledge graph after each commit.
+# This hook is tracked because Graphify's default installer does not handle
+# Codex worktrees where .git is a pointer file.
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$ROOT" || exit 0
+
+if ! command -v graphify >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo "[graphify hook] post-commit: updating repo graph..."
+graphify update . >/dev/null 2>&1 || echo "[graphify hook] update failed; run: graphify update ."
+# graphify-hook-end

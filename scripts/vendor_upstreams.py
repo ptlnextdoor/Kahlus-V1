@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+LOCK_PATH = REPO_ROOT / "external" / "upstreams.lock.json"
+VENDOR_DIR = REPO_ROOT / "external" / "vendor"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Vendor pinned upstream research repos.")
+    parser.add_argument("--ids", nargs="*", default=None, help="Specific upstream IDs to vendor.")
+    parser.add_argument("--dry-run", action="store_true", help="Print actions without cloning.")
+    parser.add_argument(
+        "--include-restricted",
+        action="store_true",
+        help="Allow mixed/restricted upstreams. Default vendors permissive entries only.",
+    )
+    args = parser.parse_args()
+
+    lock = json.loads(LOCK_PATH.read_text())
+    selected_ids = args.ids or sorted(lock["upstreams"])
+    for upstream_id in selected_ids:
+        if upstream_id not in lock["upstreams"]:
+            raise SystemExit(f"Unknown upstream id: {upstream_id}")
+        spec = lock["upstreams"][upstream_id]
+        if spec["reuse_status"] != "permissive" and not args.include_restricted:
+            print(f"skip {upstream_id}: reuse_status={spec['reuse_status']}")
+            continue
+        target = VENDOR_DIR / upstream_id
+        if args.dry_run:
+            print(f"would clone {upstream_id} from {spec['repo']} at {spec['commit']} -> {target}")
+            continue
+        _clone_or_checkout(spec["repo"], spec["commit"], target)
+    return 0
+
+
+def _clone_or_checkout(repo: str, commit: str, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        subprocess.run(["git", "-C", str(target), "fetch", "--depth", "1", "origin", commit], check=True)
+    else:
+        subprocess.run(["git", "clone", "--filter=blob:none", repo, str(target)], check=True)
+    subprocess.run(["git", "-C", str(target), "checkout", commit], check=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
