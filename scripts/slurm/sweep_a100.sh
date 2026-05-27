@@ -10,12 +10,21 @@
 
 set -euo pipefail
 
-if (($#)); then
-  CONFIGS=("$@")
-else
-  CONFIGS=(configs/train/moabb_a100.yaml)
+if (($# == 0)); then
+  echo "usage: sbatch scripts/slurm/sweep_a100.sh <config> [<config> ...]" >&2
+  echo "Refusing to sweep placeholder/default A100 configs." >&2
+  exit 2
 fi
-RUN_ROOT=${RUN_ROOT:-runs}
+if [[ -z "${RUN_ROOT:-}" ]]; then
+  echo "RUN_ROOT must be set to a persistent absolute path before A100 sweep." >&2
+  exit 2
+fi
+if [[ "$RUN_ROOT" != /* ]]; then
+  echo "RUN_ROOT must be absolute and persistent, got: $RUN_ROOT" >&2
+  exit 2
+fi
+
+CONFIGS=("$@")
 
 for CONFIG in "${CONFIGS[@]}"; do
   sbatch --export=ALL,RUN_ROOT="$RUN_ROOT" scripts/slurm/train_a100.sh "$CONFIG"

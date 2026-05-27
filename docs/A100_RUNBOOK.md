@@ -5,6 +5,14 @@ A100 is the canonical cluster target for NeuroTwin v1. H100 configs remain compa
 Prepare data before training. Cluster jobs must read local prepared manifests and must not download MOABB, OpenNeuro, or other public data during training.
 Set `NEUROTWIN_DATA` to a persistent shared filesystem location; prepared benchmark artifacts belong under `$NEUROTWIN_DATA/prepared/`, not node-local `/tmp`.
 
+For the first Chapman run, prefer the guarded one-command path:
+
+```bash
+scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+```
+
+That launcher prepares MOABB, verifies `window_count=18144`, materializes absolute manifest paths, dry-runs, and submits exactly one A100 smoke job.
+
 Local readiness checks:
 
 ```bash
@@ -27,9 +35,15 @@ For BNCI2014_001, the locked MOABB benchmark defaults to `window_length=128` and
 Submit training:
 
 ```bash
-sbatch scripts/slurm/train_a100.sh configs/train/moabb_a100.yaml
-sbatch scripts/slurm/eval_a100.sh neural_translation_v1 runs/<run_id>
-sbatch scripts/slurm/sweep_a100.sh configs/train/moabb_a100.yaml
+export RUN_ROOT=/path/to/shared/persistent/neurotwin/runs
+PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
+  --config configs/train/moabb_a100_chapman.yaml \
+  --run-root "$RUN_ROOT" \
+  --require-cuda \
+  --require-prepared-windows
+sbatch scripts/slurm/train_a100.sh configs/train/moabb_a100_chapman.yaml
+sbatch scripts/slurm/eval_a100.sh "$RUN_ROOT/<run_id>"
+sbatch scripts/slurm/sweep_a100.sh configs/train/moabb_a100_chapman_seed*.yaml
 ```
 
 Every real run should write config, split manifest, metrics, best checkpoint, environment, git commit, split hash, report tables, and figure specs. Scientific claims require repeated real-data runs, strict held-out splits, and no synthetic-only or smoke-only labeling.

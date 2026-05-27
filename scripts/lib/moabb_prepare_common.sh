@@ -14,7 +14,7 @@ resolve_moabb_out_dir() {
 }
 
 print_moabb_prepare_summary() {
-  python - "$1" <<'PY'
+  "${PYTHON_BIN:-python3}" - "$1" <<'PY'
 import json
 import sys
 from pathlib import Path

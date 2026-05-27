@@ -20,6 +20,7 @@ from neurotwin.reports import generate_compare_report, generate_run_report, gene
 from neurotwin.repro import append_jsonl, capture_environment, create_run_dir, manifest_hash, snapshot_config, stable_hash, write_json
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
+from neurotwin.runtime.preflight import format_cluster_preflight, run_cluster_preflight
 from neurotwin.training.prepared import run_prepared_training
 from neurotwin.training.smoke import run_synthetic_training
 
@@ -102,6 +103,15 @@ def main(argv: list[str] | None = None) -> int:
     report.add_argument("--compare", nargs="*", default=None)
     report.add_argument("--out-dir", default=None)
     report.set_defaults(func=_cmd_report)
+
+    cluster = subparsers.add_parser("cluster", help="Cluster launch safety checks")
+    cluster_subparsers = cluster.add_subparsers(dest="cluster_command", required=True)
+    preflight = cluster_subparsers.add_parser("preflight", help="Validate cluster launch inputs")
+    preflight.add_argument("--config", required=True)
+    preflight.add_argument("--run-root", required=True)
+    preflight.add_argument("--require-cuda", action="store_true")
+    preflight.add_argument("--require-prepared-windows", action="store_true")
+    preflight.set_defaults(func=_cmd_cluster_preflight)
 
     args = parser.parse_args(argv)
     args.func(args)
@@ -592,6 +602,21 @@ def _cmd_report(args: argparse.Namespace) -> None:
 
 def _cmd_doctor(args: argparse.Namespace) -> None:
     print(format_doctor_report(run_doctor()))
+
+
+def _cmd_cluster_preflight(args: argparse.Namespace) -> None:
+    try:
+        report = run_cluster_preflight(
+            args.config,
+            args.run_root,
+            require_cuda=args.require_cuda,
+            require_prepared_windows=args.require_prepared_windows,
+        )
+    except ConfigError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(format_cluster_preflight(report))
+    if not report.passed:
+        raise SystemExit(1)
 
 
 def _has_prepared_training_inputs(config: dict[str, object]) -> bool:

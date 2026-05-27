@@ -22,6 +22,7 @@ Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Br
 - Prepared training uses train for optimization, val for periodic evaluation and best-checkpoint selection, and test for final held-out reporting.
 - Prepared-manifest benchmark suite covers the five v1 task families: forecasting, masked reconstruction, cross-modal translation, subject adaptation, and dataset/site generalization. Baseline failures are explicit and excluded from rankings.
 - A100 is the canonical cluster target through `configs/train/*_a100.yaml`, `scripts/slurm/*_a100.sh`, and `docs/A100_RUNBOOK.md`; H100 remains a compatible high-memory variant.
+- Chapman A100 first launch has a guarded one-command path in `scripts/cluster/chapman_a100_first_run.sh`, with explicit preflight against placeholder paths, zero-window data, missing CUDA, and non-persistent run roots.
 - Modular NeuroTwin model internals now expose modality encoders, `transformer`/`ssm_fallback`/optional `mamba` backbone selection, geometry/metadata encoders, projection heads, and leakage-safe subject-adapter controls.
 - Reproducibility helpers for deterministic seeds, config snapshots, environment capture, git commit capture, and stable manifest hashes.
 - CLI surface:
@@ -59,6 +60,12 @@ python -m pip install -e '.[bids]'
 ```
 
 A100/H100 jobs should use prepared local manifests and data roots. Do not depend on internet downloads inside training jobs.
+
+For the first Chapman A100 run:
+
+```bash
+scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+```
 
 ## Local Verification
 

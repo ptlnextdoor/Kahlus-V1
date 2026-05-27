@@ -18,6 +18,14 @@ The current local workspace is a Mac environment, not Chapman:
 
 The A100 launch must be run from a Chapman shell with SLURM and A100 access.
 
+For the lowest-resistance path, use the guarded launcher:
+
+```bash
+scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+```
+
+It performs the setup, data preparation, window gate, absolute-path config generation, dry-run, and one-job submit steps below.
+
 ## Cluster Setup
 
 On Chapman:
@@ -113,6 +121,11 @@ Run these in the cluster environment:
 
 ```bash
 PYTHONPATH=src python3 -m neurotwin.cli doctor
+PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
+  --config configs/train/moabb_a100_chapman.yaml \
+  --run-root "$RUN_ROOT" \
+  --require-cuda \
+  --require-prepared-windows
 PYTHONPATH=src python3 -m neurotwin.cli train --dry-run --config configs/train/moabb_a100_chapman.yaml
 ```
 
@@ -160,4 +173,3 @@ Do not claim:
 - This is a scientific result.
 
 After one launch succeeds, run 3 seeds, produce baseline reports, and use `nt report --compare` before interpreting results.
-

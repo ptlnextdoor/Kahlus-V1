@@ -1,0 +1,13 @@
+# Install CUDA-enabled PyTorch first using the wheel index for the Chapman CUDA version.
+# Example for CUDA 12.1:
+#   python -m pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
+#
+# Then install the project and cluster extras:
+#   python -m pip install -e '.[moabb,cluster]'
+
+moabb>=1.1
+mne>=1.6
+PyYAML>=6.0
+numpy>=1.24
+tensorboard>=2.16
+wandb>=0.16

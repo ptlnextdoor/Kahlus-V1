@@ -12,12 +12,13 @@ WINDOW_LENGTH="${WINDOW_LENGTH:-128}"
 STRIDE="${STRIDE:-128}"
 TRAIN_STEPS="${TRAIN_STEPS:-1}"
 SUBJECTS="${SUBJECTS:-1 2 3}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 export PYTHONPATH="${PYTHONPATH:-}:src"
 
 read -r -a SUBJECT_ARGS <<< "$SUBJECTS"
 
-python -m neurotwin.cli data smoke \
+"$PYTHON_BIN" -m neurotwin.cli data smoke \
   --dataset moabb \
   --split subject \
   --out-dir "$OUT_DIR" \
@@ -30,7 +31,7 @@ python -m neurotwin.cli data smoke \
   --train-steps "$TRAIN_STEPS" \
   --require-windows
 
-python -m neurotwin.cli eval audit \
+"$PYTHON_BIN" -m neurotwin.cli eval audit \
   --suite neural_translation_v1 \
   --event-manifest "$OUT_DIR/event_manifest.json" \
   --split-manifest "$OUT_DIR/split_manifest.json" \
