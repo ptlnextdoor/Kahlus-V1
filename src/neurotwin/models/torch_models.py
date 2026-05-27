@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib.util
+
 import torch
 from torch import nn
 
@@ -65,7 +67,7 @@ class TinySSMBaseline(nn.Module):
 
 
 class NeuralStateSpaceTranslator(nn.Module):
-    """Modality-tokenizer + shared latent dynamics + modality-readout scaffold."""
+    """Modality encoders + shared latent dynamics + modality readouts."""
 
     def __init__(
         self,
@@ -78,6 +80,13 @@ class NeuralStateSpaceTranslator(nn.Module):
         projection_dim: int = 64,
         metadata_dim: int = 0,
         geometry_dim: int = 0,
+        backbone: str = "ssm_fallback",
+        encoder: str = "auto",
+        n_heads: int = 4,
+        subject_vocab_size: int = 0,
+        use_subject_embeddings: bool = False,
+        adapter_mode: str = "disabled",
+        gradient_checkpointing: bool = False,
     ) -> None:
         super().__init__()
         if not input_dims:
@@ -90,25 +99,38 @@ class NeuralStateSpaceTranslator(nn.Module):
         self.subject_adapter_dim = int(subject_adapter_dim)
         self.metadata_dim = int(metadata_dim)
         self.geometry_dim = int(geometry_dim)
+        self.backbone_type = str(backbone)
+        self.encoder_type = str(encoder)
+        self.adapter_mode = str(adapter_mode)
+        self.gradient_checkpointing = bool(gradient_checkpointing)
+        self.use_subject_embeddings = bool(use_subject_embeddings) and self.adapter_mode in {"few_shot", "enabled", "subject"}
         self.tokenizers = nn.ModuleDict(
-            {modality: nn.Linear(dim, latent_dim) for modality, dim in sorted(input_dims.items())}
+            {
+                modality: _build_modality_encoder(modality, dim, latent_dim, encoder=self.encoder_type, dropout=dropout)
+                for modality, dim in sorted(input_dims.items())
+            }
         )
         self.geometry_encoders = nn.ModuleDict(
             {modality: nn.Linear(geometry_dim, latent_dim) for modality in sorted(input_dims)}
         ) if geometry_dim > 0 else nn.ModuleDict()
         self.metadata_encoder = nn.Linear(metadata_dim, latent_dim) if metadata_dim > 0 else None
+        self.subject_embedding = (
+            nn.Embedding(subject_vocab_size, latent_dim)
+            if self.use_subject_embeddings and subject_vocab_size > 0
+            else None
+        )
         self.modality_embeddings = nn.ParameterDict(
             {
                 modality: nn.Parameter(torch.zeros(1, 1, latent_dim))
                 for modality in sorted(input_dims)
             }
         )
-        self.core = nn.GRU(
-            latent_dim,
-            latent_dim,
-            num_layers=n_layers,
-            batch_first=True,
-            dropout=dropout if n_layers > 1 else 0.0,
+        self.core = _build_backbone(
+            backbone=self.backbone_type,
+            latent_dim=latent_dim,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            dropout=dropout,
         )
         self.readouts = nn.ModuleDict(
             {modality: nn.Linear(latent_dim, dim) for modality, dim in sorted(output_dims.items())}
@@ -141,10 +163,11 @@ class NeuralStateSpaceTranslator(nn.Module):
         target_modality: str,
         metadata: torch.Tensor | None = None,
         geometry: dict[str, torch.Tensor] | None = None,
+        subject_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if target_modality not in self.readouts:
             raise ValueError(f"Unknown target modality {target_modality!r}")
-        latent = self.encode(batch, metadata=metadata, geometry=geometry)
+        latent = self.encode(batch, metadata=metadata, geometry=geometry, subject_ids=subject_ids)
         return self.readouts[target_modality](latent)
 
     def encode(
@@ -152,6 +175,7 @@ class NeuralStateSpaceTranslator(nn.Module):
         batch: dict[str, torch.Tensor],
         metadata: torch.Tensor | None = None,
         geometry: dict[str, torch.Tensor] | None = None,
+        subject_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Encode observed modalities into shared latent neural tokens."""
 
@@ -189,8 +213,12 @@ class NeuralStateSpaceTranslator(nn.Module):
             if metadata.shape[:2] != fused.shape[:2] or metadata.shape[-1] != self.metadata_dim:
                 raise ValueError(f"metadata must have shape [batch, time, {self.metadata_dim}]")
             fused = fused + self.metadata_encoder(metadata)
-        latent, _ = self.core(fused)
-        if self.subject_adapter is not None:
+        if subject_ids is not None and self.subject_embedding is not None:
+            if subject_ids.ndim != 1 or subject_ids.shape[0] != fused.shape[0]:
+                raise ValueError("subject_ids must have shape [batch]")
+            fused = fused + self.subject_embedding(subject_ids).unsqueeze(1)
+        latent = self.core(fused)
+        if self.subject_adapter is not None and self.adapter_mode in {"few_shot", "enabled", "subject"}:
             latent = latent + self.subject_adapter(latent)
         return latent
 
@@ -201,10 +229,11 @@ class NeuralStateSpaceTranslator(nn.Module):
         task: str = "reconstruction",
         metadata: torch.Tensor | None = None,
         geometry: dict[str, torch.Tensor] | None = None,
+        subject_ids: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         if target_modality not in self.readouts:
             raise ValueError(f"Unknown target modality {target_modality!r}")
-        latent = self.encode(batch, metadata=metadata, geometry=geometry)
+        latent = self.encode(batch, metadata=metadata, geometry=geometry, subject_ids=subject_ids)
         if task == "forecast":
             prediction = self.forecast_heads[target_modality](latent)
         elif task == "reconstruction":
@@ -225,3 +254,99 @@ class NeuralStateSpaceTranslator(nn.Module):
 def _check_sequence_tensor(x: torch.Tensor) -> None:
     if x.ndim != 3:
         raise ValueError("Expected tensor with shape [batch, time, features]")
+
+
+class _LinearModalityEncoder(nn.Module):
+    def __init__(self, input_dim: int, latent_dim: int, dropout: float) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, latent_dim),
+            nn.LayerNorm(latent_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_sequence_tensor(x)
+        return self.net(x)
+
+
+class _TemporalConvModalityEncoder(nn.Module):
+    def __init__(self, input_dim: int, latent_dim: int, dropout: float) -> None:
+        super().__init__()
+        self.input = nn.Linear(input_dim, latent_dim)
+        self.temporal = nn.Sequential(
+            nn.Conv1d(latent_dim, latent_dim, kernel_size=3, padding=1, groups=1),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Conv1d(latent_dim, latent_dim, kernel_size=1),
+        )
+        self.norm = nn.LayerNorm(latent_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_sequence_tensor(x)
+        token = self.input(x)
+        temporal = self.temporal(token.transpose(1, 2)).transpose(1, 2)
+        return self.norm(token + temporal)
+
+
+class _TransformerBackbone(nn.Module):
+    def __init__(self, latent_dim: int, n_layers: int, n_heads: int, dropout: float) -> None:
+        super().__init__()
+        if latent_dim % n_heads != 0:
+            raise ValueError("latent_dim must be divisible by n_heads for transformer backbone")
+        layer = nn.TransformerEncoderLayer(
+            d_model=latent_dim,
+            nhead=n_heads,
+            dim_feedforward=latent_dim * 4,
+            dropout=dropout,
+            batch_first=True,
+            activation="gelu",
+        )
+        self.net = nn.TransformerEncoder(layer, num_layers=n_layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+class _SSMFallbackBackbone(nn.Module):
+    def __init__(self, latent_dim: int, n_layers: int, dropout: float) -> None:
+        super().__init__()
+        self.net = nn.GRU(
+            latent_dim,
+            latent_dim,
+            num_layers=n_layers,
+            batch_first=True,
+            dropout=dropout if n_layers > 1 else 0.0,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        latent, _ = self.net(x)
+        return latent
+
+
+def _build_modality_encoder(modality: str, input_dim: int, latent_dim: int, encoder: str, dropout: float) -> nn.Module:
+    encoder = encoder.lower()
+    if encoder == "linear":
+        return _LinearModalityEncoder(input_dim, latent_dim, dropout)
+    if encoder in {"temporal_conv", "conv"}:
+        return _TemporalConvModalityEncoder(input_dim, latent_dim, dropout)
+    if encoder != "auto":
+        raise ValueError(f"Unknown encoder {encoder!r}")
+    if modality in {"eeg", "meg", "spikes", "generic"}:
+        return _TemporalConvModalityEncoder(input_dim, latent_dim, dropout)
+    return _LinearModalityEncoder(input_dim, latent_dim, dropout)
+
+
+def _build_backbone(backbone: str, latent_dim: int, n_layers: int, n_heads: int, dropout: float) -> nn.Module:
+    backbone = backbone.lower()
+    if backbone == "transformer":
+        return _TransformerBackbone(latent_dim, n_layers, n_heads, dropout)
+    if backbone == "mamba":
+        if importlib.util.find_spec("mamba_ssm") is None:
+            return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
+        # Keep the dependency optional in v1; exact Mamba wiring is pinned only when the package is present.
+        return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
+    if backbone in {"ssm_fallback", "ssm", "gru"}:
+        return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
+    raise ValueError(f"Unknown backbone {backbone!r}")

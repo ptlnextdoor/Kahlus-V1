@@ -1,6 +1,6 @@
 # H100 Runbook
 
-Prepare data before training. H100 jobs must not require internet access.
+H100 is a compatible high-memory variant. Use `docs/A100_RUNBOOK.md` as the canonical v1 cluster path unless a specific H100 queue is available. Prepare data before training. H100 jobs must not require internet access.
 
 Local dry run:
 
@@ -24,6 +24,14 @@ PYTHONPATH=src torchrun --standalone --nproc_per_node=2 \
   -m neurotwin.cli train --config configs/train/prepared_synthetic_debug.yaml --run-root /tmp/neurotwin_ddp_runs
 ```
 
+Locked MOABB smoke, when optional MOABB/MNE dependencies and data access are available:
+
+```bash
+scripts/prepare_moabb_smoke.sh /tmp/neurotwin_moabb_smoke
+PYTHONPATH=src python3 -m neurotwin.cli train --config configs/train/moabb_smoke_locked.yaml --run-root /tmp/neurotwin_moabb_runs
+PYTHONPATH=src python3 -m neurotwin.cli report --run-dir /tmp/neurotwin_moabb_runs/moabb_smoke_locked
+```
+
 SLURM:
 
 ```bash
@@ -33,7 +41,7 @@ sbatch scripts/slurm/sweep_h100.sh
 ```
 
 Every real run should write a config copy, split manifest, metrics, checkpoints, environment info, git commit, and result summary.
-Prepared training also writes `metrics.csv`, stores optimizer state in `checkpoint.pt`, honors `gradient_accumulation_steps`, and enables bf16 autocast when `precision: bf16` is configured.
+Prepared training also writes `metrics.csv`, objective-level `metrics.jsonl`, `checkpoint.pt`, `checkpoint_best.pt`, paper-ready `tables/*.csv`, `figures/*.json` through `nt report --run-dir`, honors `gradient_accumulation_steps`, and enables bf16 autocast when `precision: bf16` is configured.
 When launched through `torchrun`, prepared training initializes `torch.distributed`, wraps the model in DDP, writes rank-specific JSONL metrics, and leaves shared checkpoints/reports to rank zero.
 
 For real cluster runs, edit `configs/train/neurotwin_v1_h100.yaml` so `data.event_manifest` and `data.split_manifest` point to prepared local files. Training jobs must not download MOABB/OpenNeuro/other data.

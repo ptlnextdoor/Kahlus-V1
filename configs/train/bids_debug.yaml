@@ -11,8 +11,16 @@ model:
   type: NeuralStateSpaceTranslator
   latent_dim: 64
   n_layers: 2
+  backbone: transformer
+  encoder: linear
+  n_heads: 4
+  adapter_mode: disabled
   modalities:
     - fmri
 training:
   dry_run_ok: true
   internet_required: false
+  eval_every_steps: 10
+  checkpoint_every_steps: 50
+  gradient_checkpointing: false
+  compile: false

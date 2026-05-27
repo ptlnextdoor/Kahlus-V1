@@ -28,6 +28,9 @@ def scan_bids_manifest(root: str | Path, dataset_id: str, site_id: str = "bids")
         events = _events_for(file_path)
         scans = _scans_for(root_path, file_path)
         derivative = _timeseries_derivative_for(root_path, file_path)
+        participant_site = participants.get(subject_id, {}).get("site") or participants.get(subject_id, {}).get("site_id")
+        scan_site = scans.get("site") or scans.get("site_id")
+        resolved_site_id = str(scan_site or participant_site or site_id)
         rel_path = file_path.relative_to(root_path)
         record_id = f"{dataset_id}_{subject_id}_{session_id}_{task or 'task-none'}_{run_id}_{modality}"
         records.append(
@@ -37,7 +40,7 @@ def scan_bids_manifest(root: str | Path, dataset_id: str, site_id: str = "bids")
                 dataset=dataset_id,
                 subject_id=subject_id,
                 session_id=session_id,
-                site_id=site_id,
+                site_id=resolved_site_id,
                 start_time=0.0,
                 end_time=float(len(events) if events else 1.0),
                 stimulus_id=task,
@@ -52,10 +55,23 @@ def scan_bids_manifest(root: str | Path, dataset_id: str, site_id: str = "bids")
                     "events": events,
                     "scans": scans,
                     "timeseries_derivative": str(derivative.relative_to(root_path)) if derivative else None,
+                    "timeseries_derivative_exists": derivative is not None,
                 },
             )
         )
     return records
+
+
+def bids_manifest_summary(records: list[RecordingRecord]) -> dict[str, object]:
+    return {
+        "records": len(records),
+        "subjects": sorted({record.subject_id for record in records}),
+        "sessions": sorted({record.session_id for record in records}),
+        "sites": sorted({record.site_id for record in records}),
+        "modalities": sorted({record.modality for record in records}),
+        "with_timeseries_derivative": sum(bool(record.metadata.get("timeseries_derivative")) for record in records),
+        "derivative_only": True,
+    }
 
 
 def records_to_event_batches(records: list[RecordingRecord]) -> list[NeuralEventBatch]:
@@ -69,8 +85,7 @@ def records_to_event_batches(records: list[RecordingRecord]) -> list[NeuralEvent
         if not derivative_path.exists():
             derivative_path = Path(record.path).with_name(Path(str(derivative)).name) if record.path else derivative_path
         signal, labels = _load_timeseries_derivative(derivative_path)
-        if signal.ndim != 2:
-            raise ValueError(f"BIDS time-series derivative must be 2D [time, space]: {derivative_path}")
+        _validate_timeseries_derivative(signal, labels, derivative_path)
         n_time, n_space = signal.shape
         batches.append(
             NeuralEventBatch(
@@ -154,7 +169,13 @@ def _events_for(signal_path: Path) -> list[dict[str, str]]:
 
 
 def _scans_for(root: Path, signal_path: Path) -> dict[str, str]:
-    scans_path = next((parent / f"{parent.name}_scans.tsv" for parent in [signal_path.parent, *signal_path.parents] if (parent / f"{parent.name}_scans.tsv").exists()), None)
+    scans_path = None
+    for parent in [signal_path.parent, *signal_path.parents]:
+        direct = parent / f"{parent.name}_scans.tsv"
+        candidates = [direct] if direct.exists() else sorted(parent.glob("*_scans.tsv"))
+        if candidates:
+            scans_path = candidates[0]
+            break
     if scans_path is None:
         return {}
     rel = signal_path.relative_to(scans_path.parent)
@@ -191,6 +212,17 @@ def _load_timeseries_derivative(path: Path) -> tuple[np.ndarray, list[str]]:
             rows.append([float(value) for value in values])
         return np.asarray(rows, dtype=np.float32), header
     raise ValueError(f"Unsupported BIDS time-series derivative extension: {path}")
+
+
+def _validate_timeseries_derivative(signal: np.ndarray, labels: list[str], path: Path) -> None:
+    if signal.ndim != 2:
+        raise ValueError(f"BIDS time-series derivative must be 2D [time, space]: {path}")
+    if signal.shape[0] < 2 or signal.shape[1] < 1:
+        raise ValueError(f"BIDS time-series derivative is too small for windowed evaluation: {path}")
+    if not np.isfinite(signal).all():
+        raise ValueError(f"BIDS time-series derivative contains NaN or Inf: {path}")
+    if labels and len(labels) != signal.shape[1]:
+        raise ValueError(f"BIDS derivative labels length does not match space axis: {path}")
 
 
 def _relative_depth(relative_path: str) -> int:

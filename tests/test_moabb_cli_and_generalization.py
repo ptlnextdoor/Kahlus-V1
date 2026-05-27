@@ -11,9 +11,11 @@ from neurotwin.benchmarks.tasks import run_dataset_site_generalization_task
 
 
 class MoabbCliAndGeneralizationTests(unittest.TestCase):
-    def run_cli_no_check(self, *args: str) -> subprocess.CompletedProcess[str]:
+    def run_cli_no_check(self, *args: str, env_overrides: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
         env = dict(os.environ)
         env["PYTHONPATH"] = "src"
+        if env_overrides:
+            env.update(env_overrides)
         return subprocess.run(
             [sys.executable, "-m", "neurotwin.cli", *args],
             text=True,
@@ -33,6 +35,7 @@ class MoabbCliAndGeneralizationTests(unittest.TestCase):
             "BNCI2014_001",
             "--max-trials",
             "2",
+            env_overrides={"NEUROTWIN_FORCE_MISSING_MOABB": "1"},
         )
 
         self.assertNotEqual(result.returncode, 0)
@@ -51,6 +54,7 @@ class MoabbCliAndGeneralizationTests(unittest.TestCase):
                 "subject",
                 "--max-trials",
                 "2",
+                env_overrides={"NEUROTWIN_FORCE_MISSING_MOABB": "1"},
             )
 
         self.assertNotEqual(result.returncode, 0)

@@ -7,7 +7,18 @@ import numpy as np
 import torch
 from torch import nn
 
-from neurotwin.eval.metrics import bootstrap_ci, mae, mse, pearsonr, r2_score, rank_models, spectral_error
+from neurotwin.eval.metrics import (
+    bandpower_error,
+    bootstrap_ci,
+    mae,
+    mse,
+    pearsonr,
+    r2_score,
+    rank_models,
+    regionwise_pearsonr,
+    spectral_error,
+    spearmanr,
+)
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
 from neurotwin.models.torch_models import NeuralStateSpaceTranslator, TinySSMBaseline, TinyTransformerBaseline
 
@@ -22,7 +33,20 @@ class SupervisedWindowTask:
     x_test: np.ndarray
     y_test: np.ndarray
     metric_mask: np.ndarray | None = None
+    x_val: np.ndarray | None = None
+    y_val: np.ndarray | None = None
+    val_metric_mask: np.ndarray | None = None
     notes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class BaselineFailure:
+    model_id: str
+    task_id: str
+    reason: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"model_id": self.model_id, "task_id": self.task_id, "reason": self.reason}
 
 
 def run_synthetic_baseline_suite(seed: int = 0, train_steps: int = 10) -> dict[str, object]:
@@ -60,9 +84,11 @@ def run_supervised_window_tasks(
 ) -> dict[str, object]:
     task_payloads = {}
     rank_accumulator: dict[str, list[int]] = {}
+    all_failures: list[dict[str, str]] = []
     for task in tasks:
         task_result = _run_task_models(task, seed=seed, train_steps=train_steps)
         task_payloads[task.task_id] = task_result
+        all_failures.extend(task_result.get("failures", []))
         for row in task_result["ranking"]:
             rank_accumulator.setdefault(str(row["model_id"]), []).append(int(row["rank"]))
 
@@ -88,6 +114,8 @@ def run_supervised_window_tasks(
             "higher_is_better": False,
             "aggregate_rank": aggregate_rank,
         },
+        "baseline_catalog": _baseline_catalog(tasks),
+        "baseline_failures": all_failures,
     }
 
 
@@ -160,21 +188,21 @@ def _cross_modal_task(data: dict[str, np.ndarray]) -> SupervisedWindowTask:
 
 
 def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) -> dict[str, object]:
-    predictions = {
-        "linear_ridge": _fit_ridge(task.x_train, task.y_train, task.x_test),
-        "mlp": _fit_torch_sequence_model(
+    runners: dict[str, Callable[[], np.ndarray]] = {
+        "linear_ridge": lambda: _fit_ridge(task.x_train, task.y_train, task.x_test),
+        "mlp": lambda: _fit_torch_sequence_model(
             lambda: TorchMLPBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
             task,
             seed=seed + 1,
             steps=train_steps,
         ),
-        "tcn": _fit_torch_sequence_model(
+        "tcn": lambda: _fit_torch_sequence_model(
             lambda: TorchTCNBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
             task,
             seed=seed + 2,
             steps=train_steps,
         ),
-        "transformer": _fit_torch_sequence_model(
+        "transformer": lambda: _fit_torch_sequence_model(
             lambda: TinyTransformerBaseline(
                 task.x_train.shape[-1],
                 task.y_train.shape[-1],
@@ -186,18 +214,39 @@ def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) ->
             seed=seed + 3,
             steps=train_steps,
         ),
-        "ssm_fallback": _fit_torch_sequence_model(
+        "ssm_fallback": lambda: _fit_torch_sequence_model(
             lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
             task,
             seed=seed + 4,
             steps=train_steps,
         ),
-        "neurotwin": _fit_neurotwin(task, seed=seed + 5, steps=train_steps),
+        "neurotwin": lambda: _fit_neurotwin(task, seed=seed + 5, steps=train_steps),
     }
-    metrics_by_model = {
-        model_id: _metrics(task.y_test, prediction, task.metric_mask, spectral=task.source_modality == "eeg", seed=seed)
-        for model_id, prediction in predictions.items()
-    }
+    predictions: dict[str, np.ndarray] = {}
+    failures: list[BaselineFailure] = []
+    for model_id, runner in runners.items():
+        try:
+            prediction = runner()
+            _validate_prediction(task, model_id, prediction)
+            predictions[model_id] = prediction
+        except Exception as exc:  # noqa: BLE001 - benchmark failures are payload data.
+            failures.append(BaselineFailure(model_id=model_id, task_id=task.task_id, reason=str(exc)))
+
+    metrics_by_model: dict[str, dict[str, float]] = {}
+    for model_id, prediction in predictions.items():
+        try:
+            model_metrics = _metrics(
+                task.y_test,
+                prediction,
+                task.metric_mask,
+                source_modality=task.source_modality,
+                target_modality=task.target_modality,
+                seed=seed,
+            )
+            _validate_metrics(model_id, model_metrics)
+            metrics_by_model[model_id] = model_metrics
+        except Exception as exc:  # noqa: BLE001 - benchmark failures are payload data.
+            failures.append(BaselineFailure(model_id=model_id, task_id=task.task_id, reason=f"metric failure: {exc}"))
     ranking = [
         {
             "model_id": row.model_id,
@@ -213,6 +262,7 @@ def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) ->
         "target_modality": task.target_modality,
         "metrics_by_model": metrics_by_model,
         "ranking": ranking,
+        "failures": [failure.to_dict() for failure in failures],
         "notes": list(task.notes),
     }
 
@@ -287,7 +337,8 @@ def _metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     metric_mask: np.ndarray | None,
-    spectral: bool,
+    source_modality: str,
+    target_modality: str,
     seed: int = 0,
 ) -> dict[str, float]:
     if metric_mask is not None:
@@ -300,18 +351,80 @@ def _metrics(
         "mse": mse(y_true_metric, y_pred_metric),
         "mae": mae(y_true_metric, y_pred_metric),
         "pearsonr": pearsonr(y_true_metric, y_pred_metric),
+        "spearmanr": spearmanr(y_true_metric, y_pred_metric),
         "r2": r2_score(y_true_metric, y_pred_metric),
     }
     squared_error = (np.asarray(y_true_metric, dtype=float).ravel() - np.asarray(y_pred_metric, dtype=float).ravel()) ** 2
     absolute_error = np.abs(np.asarray(y_true_metric, dtype=float).ravel() - np.asarray(y_pred_metric, dtype=float).ravel())
     values["mse_ci_low"], values["mse_ci_high"] = bootstrap_ci(squared_error, seed=seed, n_boot=200)
     values["mae_ci_low"], values["mae_ci_high"] = bootstrap_ci(absolute_error, seed=seed + 1, n_boot=200)
-    if spectral:
+    if source_modality in {"eeg", "meg"} or target_modality in {"eeg", "meg"}:
         values["spectral_error"] = spectral_error(y_true, y_pred)
+        values["bandpower_error"] = bandpower_error(y_true, y_pred)
+    if target_modality == "fmri":
+        values["regionwise_pearsonr"] = regionwise_pearsonr(y_true, y_pred)
     if metric_mask is not None:
         values["masked_mse"] = values["mse"]
     return values
 
 
 def _flatten_time(x: np.ndarray) -> np.ndarray:
-    return np.asarray(x, dtype=np.float32).reshape(-1, x.shape[-1])
+    return np.asarray(x, dtype=np.float64).reshape(-1, x.shape[-1])
+
+
+def _validate_prediction(task: SupervisedWindowTask, model_id: str, prediction: np.ndarray) -> None:
+    prediction = np.asarray(prediction)
+    if prediction.shape != task.y_test.shape:
+        raise ValueError(f"{model_id} prediction shape {prediction.shape} does not match target {task.y_test.shape}")
+    if not np.isfinite(prediction).all():
+        raise ValueError(f"{model_id} prediction contains NaN or Inf")
+
+
+def _validate_metrics(model_id: str, metrics: dict[str, float]) -> None:
+    for key, value in metrics.items():
+        if not isinstance(value, (int, float, np.floating)) or not np.isfinite(float(value)):
+            raise ValueError(f"{model_id} metric {key} is not finite: {value}")
+
+
+def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str, object]]:
+    task_ids = {task.task_id for task in tasks}
+    modalities = {task.source_modality for task in tasks} | {task.target_modality for task in tasks}
+    catalog = [
+        {"model_id": "linear_ridge", "status": "local_baseline", "notes": "Closed-form sanity baseline on identical prepared windows."},
+        {"model_id": "mlp", "status": "local_baseline", "notes": "Per-timepoint neural-window baseline."},
+        {"model_id": "tcn", "status": "local_baseline", "notes": "Local temporal convolution baseline."},
+        {"model_id": "transformer", "status": "local_baseline", "notes": "Small local Transformer with shared splits."},
+        {"model_id": "ssm_fallback", "status": "local_baseline", "notes": "GRU-based SSM fallback until Mamba is pinned."},
+        {"model_id": "neurotwin", "status": "local_baseline", "notes": "Current NeuroTwin implementation under the same task API."},
+        {
+            "model_id": "tribe_style",
+            "status": "approximation" if "cross_modal_translation" in task_ids and "fmri" in modalities else "unavailable",
+            "notes": "Approximate stimulus/history-to-fMRI lane only when fMRI-aligned inputs exist; not an exact TRIBE v2 reproduction.",
+        },
+        {
+            "model_id": "brainvista_style",
+            "status": "approximation" if "future_state_forecasting" in task_ids and "fmri" in modalities else "unavailable",
+            "notes": "Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
+        },
+        {
+            "model_id": "brain_of_style",
+            "status": "approximation" if "masked_neural_reconstruction" in task_ids and len(modalities) >= 2 else "unavailable",
+            "notes": "Approximate multimodal masked reconstruction lane; not an exact Brain-OF reproduction.",
+        },
+        {
+            "model_id": "brainomni_style",
+            "status": "approximation" if modalities & {"eeg", "meg"} else "unavailable",
+            "notes": "Approximate EEG/MEG tokenizer lane; not an exact BrainOmni reproduction.",
+        },
+        {
+            "model_id": "braindecode_wrapper",
+            "status": "unavailable",
+            "notes": "Optional EEG wrapper slot; exact use requires installed Braindecode and compatible task protocols.",
+        },
+        {
+            "model_id": "cebra_wrapper",
+            "status": "unavailable",
+            "notes": "Optional neural-behavior embedding wrapper slot; exact use requires installed CEBRA and aligned behavior data.",
+        },
+    ]
+    return catalog

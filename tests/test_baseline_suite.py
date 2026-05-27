@@ -4,9 +4,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
+from unittest import mock
 
-from neurotwin.benchmarks.baseline_suite import run_synthetic_baseline_suite
+import numpy as np
+
+from neurotwin.benchmarks.baseline_suite import SupervisedWindowTask, run_supervised_window_tasks, run_synthetic_baseline_suite
+from neurotwin.models.baselines import NumpyRidgeBaseline
 
 
 class BaselineSuiteTests(unittest.TestCase):
@@ -21,6 +26,44 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("mse_ci_low", future["metrics_by_model"]["linear_ridge"])
         self.assertIn("mse_ci_high", future["metrics_by_model"]["linear_ridge"])
         self.assertTrue(payload["aggregate"]["aggregate_rank"])
+        self.assertIn("baseline_catalog", payload)
+
+    def test_ridge_baseline_is_finite_for_ill_conditioned_windows(self):
+        x = np.ones((12, 3), dtype=np.float64)
+        x[:, 1] = np.linspace(0.0, 1e12, 12)
+        x[:, 2] = x[:, 1] + 1e-6
+        y = np.stack([x[:, 1] * 0.5, x[:, 2] * -0.25], axis=1)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            model = NumpyRidgeBaseline(alpha=1e-2).fit(x, y)
+            pred = model.predict(x)
+
+        self.assertTrue(np.isfinite(pred).all())
+        self.assertEqual(pred.shape, y.shape)
+
+    def test_failed_baseline_is_recorded_and_excluded_from_ranking(self):
+        x = np.random.default_rng(0).normal(size=(6, 4, 2)).astype(np.float32)
+        task = SupervisedWindowTask(
+            task_id="future_state_forecasting",
+            source_modality="eeg",
+            target_modality="eeg",
+            x_train=x[:4],
+            y_train=x[:4],
+            x_test=x[4:],
+            y_test=x[4:],
+        )
+
+        with mock.patch(
+            "neurotwin.benchmarks.baseline_suite._fit_ridge",
+            return_value=np.full_like(task.y_test, np.nan),
+        ):
+            payload = run_supervised_window_tasks((task,), seed=0, train_steps=1)
+
+        failures = payload["baseline_failures"]
+        ranked = {row["model_id"] for row in payload["tasks"]["future_state_forecasting"]["ranking"]}
+        self.assertTrue(any(row["model_id"] == "linear_ridge" for row in failures))
+        self.assertNotIn("linear_ridge", ranked)
 
     def test_eval_suite_writes_baseline_artifact(self):
         env = dict(os.environ)

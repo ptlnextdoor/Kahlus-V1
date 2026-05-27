@@ -1,12 +1,12 @@
-experiment: prepared_synthetic_debug
-description: CPU debug training over prepared NeuralEventBatch artifacts. Synthetic-only plumbing, not science.
+experiment: prepared_synthetic_multitask_debug
+description: CPU debug multi-task training over prepared synthetic NeuralEventBatch artifacts. Plumbing only, not science.
 dataset: prepared_manifest
 event_manifest: /tmp/neurotwin_prepared/event_manifest.json
 split_manifest: /tmp/neurotwin_prepared/split_manifest.json
-task: future_state_forecasting
+task: neural_translation_v1
 split: subject
 seed: 0
-steps: 4
+steps: 2
 batch_size: 8
 gradient_accumulation_steps: 1
 window_size: 8
@@ -27,7 +27,7 @@ model:
 training:
   dry_run_ok: true
   internet_required: false
-  eval_every_steps: 2
-  checkpoint_every_steps: 2
+  eval_every_steps: 1
+  checkpoint_every_steps: 1
   gradient_checkpointing: false
   compile: false

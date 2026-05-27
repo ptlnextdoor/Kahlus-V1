@@ -1,0 +1,42 @@
+experiment: moabb_smoke_locked
+description: Locked MOABB real-data smoke protocol. Requires optional MOABB/MNE deps and data outside the repo.
+dataset: moabb
+task: neural_translation_v1
+split: subject
+seed: 0
+steps: 4
+batch_size: 8
+gradient_accumulation_steps: 1
+window_size: 128
+stride: 128
+precision: fp32
+data:
+  event_manifest: /tmp/neurotwin_moabb_smoke/event_manifest.json
+  split_manifest: /tmp/neurotwin_moabb_smoke/split_manifest.json
+moabb:
+  dataset: BNCI2014_001
+  paradigm: LeftRightImagery
+  subjects:
+    - 1
+    - 2
+    - 3
+  max_trials: 12
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 64
+  n_layers: 2
+  backbone: ssm_fallback
+  encoder: auto
+  subject_adapter_dim: 16
+  adapter_mode: disabled
+  use_subject_embeddings: false
+  projection_dim: 32
+  modalities:
+    - eeg
+training:
+  dry_run_ok: true
+  internet_required: false
+  eval_every_steps: 2
+  checkpoint_every_steps: 2
+  gradient_checkpointing: false
+  compile: false

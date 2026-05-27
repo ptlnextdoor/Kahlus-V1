@@ -1,23 +1,28 @@
-experiment: moabb_h100
-description: H100-scale MOABB/EEG neural translation run from prepared manifests.
+experiment: moabb_a100
+description: Canonical A100 MOABB/EEG neural translation run from prepared manifests.
 dataset: moabb
 task: neural_translation_v1
 split: subject
+data:
+  event_manifest: /path/to/moabb_prepared/event_manifest.json
+  split_manifest: /path/to/moabb_prepared/split_manifest.json
 seed: 0
-batch_size: 256
+steps: 50000
+batch_size: 128
 window_size: 1024
+stride: 512
 precision: bf16
 gradient_accumulation_steps: 4
 checkpoint_every_steps: 1000
 eval_every_steps: 1000
 model:
   type: NeuralStateSpaceTranslator
-  latent_dim: 512
+  latent_dim: 384
   n_layers: 12
   backbone: ssm_fallback
   encoder: auto
   n_heads: 8
-  subject_adapter_dim: 64
+  subject_adapter_dim: 48
   adapter_mode: disabled
   use_subject_embeddings: false
   modalities:

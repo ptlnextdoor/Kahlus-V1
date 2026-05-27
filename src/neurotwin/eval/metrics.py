@@ -52,10 +52,39 @@ def pearsonr(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.corrcoef(y_true, y_pred)[0, 1])
 
 
+def spearmanr(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    y_true = np.asarray(y_true, dtype=float).ravel()
+    y_pred = np.asarray(y_pred, dtype=float).ravel()
+    if y_true.shape != y_pred.shape:
+        raise ValueError("spearmanr requires matching flattened shapes")
+    if y_true.size < 2:
+        raise ValueError("spearmanr requires at least two samples")
+    return pearsonr(_rankdata(y_true), _rankdata(y_pred))
+
+
 def spectral_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     y_true_fft = np.abs(np.fft.rfft(np.asarray(y_true, dtype=float), axis=0))
     y_pred_fft = np.abs(np.fft.rfft(np.asarray(y_pred, dtype=float), axis=0))
     return mse(y_true_fft, y_pred_fft)
+
+
+def bandpower_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    true_power = np.abs(np.fft.rfft(np.asarray(y_true, dtype=float), axis=1)) ** 2
+    pred_power = np.abs(np.fft.rfft(np.asarray(y_pred, dtype=float), axis=1)) ** 2
+    return mse(true_power, pred_power)
+
+
+def regionwise_pearsonr(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    if y_true.shape != y_pred.shape:
+        raise ValueError("regionwise_pearsonr requires matching shapes")
+    if y_true.ndim < 2:
+        return pearsonr(y_true, y_pred)
+    true_flat = y_true.reshape(-1, y_true.shape[-1])
+    pred_flat = y_pred.reshape(-1, y_pred.shape[-1])
+    values = [pearsonr(true_flat[:, idx], pred_flat[:, idx]) for idx in range(true_flat.shape[-1])]
+    return float(np.mean(values))
 
 
 def retrieval_accuracy(query: np.ndarray, candidates: np.ndarray) -> float:
@@ -65,6 +94,21 @@ def retrieval_accuracy(query: np.ndarray, candidates: np.ndarray) -> float:
     pred = np.argmax(sims, axis=1)
     truth = np.arange(query.shape[0])
     return float(np.mean(pred == truth))
+
+
+def _rankdata(values: np.ndarray) -> np.ndarray:
+    order = np.argsort(values, kind="mergesort")
+    ranks = np.empty(values.size, dtype=float)
+    sorted_values = values[order]
+    start = 0
+    while start < values.size:
+        end = start + 1
+        while end < values.size and sorted_values[end] == sorted_values[start]:
+            end += 1
+        rank = 0.5 * (start + end - 1) + 1.0
+        ranks[order[start:end]] = rank
+        start = end
+    return ranks
 
 
 def bootstrap_ci(

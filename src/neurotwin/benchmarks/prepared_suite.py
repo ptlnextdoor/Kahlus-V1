@@ -82,6 +82,7 @@ def run_prepared_baseline_suite(
         out = Path(out_dir)
         out.mkdir(parents=True, exist_ok=True)
         write_json(out / "prepared_baseline_suite.json", payload)
+        write_json(out / "baseline_failures.json", payload.get("baseline_failures", []))
     return payload
 
 
@@ -112,6 +113,13 @@ def format_prepared_baseline_report(payload: dict[str, object]) -> str:
                     f"ranked_model={row.get('model_id')} mean_rank={row.get('mean_rank')} tasks={row.get('tasks_ranked')}"
                 )
         lines.append("")
+    catalog = payload.get("baseline_catalog", [])
+    if isinstance(catalog, list):
+        lines.append("## baseline_catalog")
+        for row in catalog:
+            if isinstance(row, dict):
+                lines.append(f"{row.get('model_id')}: {row.get('status')} - {row.get('notes')}")
+        lines.append("")
     tasks = payload.get("tasks", {})
     if isinstance(tasks, dict):
         for task_id, result in tasks.items():
@@ -134,7 +142,17 @@ def format_prepared_baseline_report(payload: dict[str, object]) -> str:
                         if isinstance(model_metrics, dict):
                             suffix = f" ci95=[{model_metrics.get('mse_ci_low')},{model_metrics.get('mse_ci_high')}]"
                     lines.append(f"{model_id}_rank={row.get('rank')} {metric}={row.get('value')}{suffix}")
+            for row in result.get("failures", []):
+                if isinstance(row, dict):
+                    lines.append(f"failed_model={row.get('model_id')} reason={row.get('reason')}")
             lines.append("")
+    failures = payload.get("baseline_failures", [])
+    if isinstance(failures, list) and failures:
+        lines.append("## baseline_failures")
+        for row in failures:
+            if isinstance(row, dict):
+                lines.append(f"{row.get('task_id')}:{row.get('model_id')}: {row.get('reason')}")
+        lines.append("")
     if isinstance(prepared, dict) and prepared.get("skipped_tasks"):
         lines.append("## skipped_tasks")
         for row in prepared.get("skipped_tasks", []):
@@ -214,17 +232,35 @@ def _subject_adaptation_from_windows(windows_by_split: dict[str, list[NeuralEven
             by_subject.setdefault(window.subject_id, []).append(window.signal)
     for subject_id, signals in sorted(by_subject.items()):
         if len(signals) >= 2:
-            midpoint = max(1, len(signals) // 2)
-            support = np.asarray(signals[:midpoint], dtype=np.float32)
-            query = np.asarray(signals[midpoint:], dtype=np.float32)
-            if query.size == 0:
+            metrics: dict[str, float] = {}
+            notes = [f"prepared held-out subject={subject_id} modality={modality}"]
+            result: TaskResult | None = None
+            for support_size in (1, 5, 20):
+                if len(signals) <= support_size:
+                    continue
+                support = np.asarray(signals[:support_size], dtype=np.float32)
+                query = np.asarray(signals[support_size:], dtype=np.float32)
+                if query.size == 0:
+                    continue
+                current = run_subject_adaptation_task(support, query)
+                result = current
+                for key, value in current.metrics.items():
+                    metrics[f"k{support_size}_{key}"] = float(value)
+                first = windows_by_split["test"][0]
+                sampling_rate = first.metadata.get("sampling_rate") or first.metadata.get("tr")
+                if sampling_rate:
+                    try:
+                        minutes = (support_size * support.shape[1]) / float(sampling_rate) / 60.0
+                        metrics[f"k{support_size}_support_minutes"] = float(minutes)
+                    except (TypeError, ValueError, ZeroDivisionError):
+                        pass
+            if result is None:
                 continue
-            result = run_subject_adaptation_task(support, query)
             return TaskResult(
                 result.task_id,
                 result.status,
-                result.metrics,
-                (*result.notes, f"prepared held-out subject={subject_id} modality={modality}"),
+                metrics,
+                tuple(notes),
             )
     return None
 
@@ -260,8 +296,10 @@ def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]
     if modality is None:
         return None
     train = [window.signal for window in windows_by_split["train"] if window.modality == modality]
+    val = [window.signal for window in windows_by_split["val"] if window.modality == modality]
     test = [window.signal for window in windows_by_split["test"] if window.modality == modality]
     x_train, y_train = _future_xy(train)
+    x_val, y_val = _future_xy(val)
     x_test, y_test = _future_xy(test)
     if x_train is None or x_test is None or y_train is None or y_test is None:
         return None
@@ -273,6 +311,8 @@ def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]
         y_train=y_train,
         x_test=x_test,
         y_test=y_test,
+        x_val=x_val,
+        y_val=y_val,
         notes=(f"prepared {modality} next-state windows",),
     )
 
@@ -285,15 +325,20 @@ def _masked_task_from_windows(
     if modality is None:
         return None
     train = np.asarray([window.signal for window in windows_by_split["train"] if window.modality == modality], dtype=np.float32)
+    val = np.asarray([window.signal for window in windows_by_split["val"] if window.modality == modality], dtype=np.float32)
     test = np.asarray([window.signal for window in windows_by_split["test"] if window.modality == modality], dtype=np.float32)
     if train.size == 0 or test.size == 0:
         return None
     rng = np.random.default_rng(seed + 31)
     train_mask = rng.random(train.shape) < 0.2
+    val_mask = rng.random(val.shape) < 0.2 if val.size else None
     test_mask = rng.random(test.shape) < 0.2
     x_train = train.copy()
+    x_val = val.copy() if val.size else None
     x_test = test.copy()
     x_train[train_mask] = 0.0
+    if x_val is not None and val_mask is not None:
+        x_val[val_mask] = 0.0
     x_test[test_mask] = 0.0
     return SupervisedWindowTask(
         task_id="masked_neural_reconstruction",
@@ -304,6 +349,9 @@ def _masked_task_from_windows(
         x_test=x_test,
         y_test=test,
         metric_mask=test_mask,
+        x_val=x_val,
+        y_val=val if val.size else None,
+        val_metric_mask=val_mask,
         notes=(f"prepared {modality} masked reconstruction",),
     )
 
@@ -316,10 +364,12 @@ def _cross_modal_task_from_windows(windows_by_split: dict[str, list[NeuralEventB
     target_candidates = [modality for modality in modalities if modality != source]
     target = "fmri" if "fmri" in target_candidates else target_candidates[0]
     train_pairs = _paired_windows(windows_by_split["train"], source, target)
+    val_pairs = _paired_windows(windows_by_split["val"], source, target)
     test_pairs = _paired_windows(windows_by_split["test"], source, target)
     if not train_pairs or not test_pairs:
         return None
     x_train, y_train = _stack_pairs(train_pairs)
+    x_val, y_val = _stack_pairs(val_pairs) if val_pairs else (None, None)
     x_test, y_test = _stack_pairs(test_pairs)
     return SupervisedWindowTask(
         task_id="cross_modal_translation",
@@ -329,6 +379,8 @@ def _cross_modal_task_from_windows(windows_by_split: dict[str, list[NeuralEventB
         y_train=y_train,
         x_test=x_test,
         y_test=y_test,
+        x_val=x_val,
+        y_val=y_val,
         notes=(f"prepared paired {source}->{target} windows",),
     )
 

@@ -2,7 +2,7 @@
 
 Local implemented baselines:
 
-- Linear/ridge sanity baseline.
+- Linear/ridge sanity baseline with finite-output checks and stable least-squares fallback.
 - MLP baseline.
 - TCN/Conv1D baseline.
 - Transformer baseline.
@@ -16,14 +16,19 @@ Prepared benchmark coverage:
 - Cross-modal translation: local baselines and NeuroTwin are ranked where paired modalities exist.
 - Supervised prepared-task artifacts include bootstrap confidence intervals for MSE and MAE.
 - Few-shot subject adaptation: reported as an auxiliary support/query sanity metric, not a full adaptation claim.
+- Adaptation reports fixed support sizes when enough held-out query windows exist; query/test labels are never used for adapter fitting.
 - Dataset/site generalization: reported as an auxiliary source-to-target sanity metric, not a full external validation claim.
+- Failed baselines are recorded in `baseline_failures.json` and excluded from rankings instead of contaminating metrics with NaN/Inf values.
 
 Competitor references:
 
-- TRIBE v2: stimulus-to-fMRI competitor.
-- BrainVista: fMRI forecasting/stimulus-to-brain competitor.
-- Brain-OF: fMRI/EEG/MEG shared foundation competitor.
-- BrainOmni: EEG/MEG tokenizer/model competitor.
-- Brain Harmony: structure + function token competitor.
+- TRIBE v2: stimulus-to-fMRI competitor. Exact reproduction status: unavailable until upstream code/data/protocol are integrated.
+- BrainVista: fMRI forecasting/stimulus-to-brain competitor. Exact reproduction status: unavailable until upstream code/data/protocol are integrated.
+- Brain-OF: fMRI/EEG/MEG shared foundation competitor. Exact reproduction status: unavailable until upstream code/data/protocol are integrated.
+- BrainOmni: EEG/MEG tokenizer/model competitor. Exact reproduction status: unavailable until upstream code/data/protocol are integrated.
+- Brain Harmony: structure + function token competitor. Exact reproduction status: unavailable until upstream code/data/protocol are integrated.
+- Braindecode and CEBRA: optional wrapper slots. Status remains unavailable unless dependencies and compatible protocols are installed.
+
+Prepared reports distinguish `exact`, `local_baseline`, `approximation`, and `unavailable`. Approximation rows are lanes for fair comparison, not claims of exact reproduction.
 
 Do not claim full competitor reproduction unless exact code, data, and protocol are actually used.
