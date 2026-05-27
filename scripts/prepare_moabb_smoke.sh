@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if (($#)); then
-  OUT_DIR="$1"
-elif [[ -n "${NEUROTWIN_DATA:-}" ]]; then
-  OUT_DIR="$NEUROTWIN_DATA/prepared/moabb_smoke"
-elif [[ -n "${SLURM_JOB_ID:-}" ]]; then
-  echo "NEUROTWIN_DATA must be set or an output directory must be provided when running under SLURM." >&2
-  exit 2
-else
-  OUT_DIR="/tmp/neurotwin_moabb_smoke"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/moabb_prepare_common.sh"
+
+OUT_DIR="$(resolve_moabb_out_dir moabb_smoke "$@")"
 MOABB_DATASET="${MOABB_DATASET:-BNCI2014_001}"
 MOABB_PARADIGM="${MOABB_PARADIGM:-LeftRightImagery}"
 MAX_TRIALS="${MAX_TRIALS:-12}"
@@ -45,22 +39,4 @@ python -m neurotwin.cli eval audit \
   --out-dir "$OUT_DIR" \
   --require-windows
 
-python - "$OUT_DIR" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-root = Path(sys.argv[1])
-audit = json.loads((root / "eval_audit.json").read_text(encoding="utf-8"))
-print(f"summary_event_count={audit.get('event_count')}")
-print(f"summary_window_count={audit.get('window_count')}")
-print(f"summary_window_counts_by_split={audit.get('window_counts_by_split')}")
-suite_path = root / "prepared_baseline_suite.json"
-if suite_path.exists():
-    suite = json.loads(suite_path.read_text(encoding="utf-8"))
-    tasks = suite.get("tasks", {})
-    for task_id in sorted(tasks):
-        payload = tasks.get(task_id, {})
-        if isinstance(payload, dict):
-            print(f"summary_task_status_{task_id}={payload.get('status')}")
-PY
+print_moabb_prepare_summary "$OUT_DIR"

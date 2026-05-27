@@ -4076,9 +4076,9 @@
       "file_type": "rationale",
       "source_file": "/Users/aayu/conductor/workspaces/kahlus-v1/abuja/src/neurotwin/eval/audit.py",
       "source_location": "L38",
-      "id": "audit_rationale_38",
       "community": 1,
-      "norm_label": "audit prepared eval inputs before any benchmark score is trusted."
+      "norm_label": "audit prepared eval inputs before any benchmark score is trusted.",
+      "id": "audit_rationale_38"
     },
     {
       "label": "__init__.py",
@@ -16639,9 +16639,9 @@
       "weight": 0.8,
       "_src": "audit_rationale_38",
       "_tgt": "schemas_neuraleventbatch",
+      "confidence_score": 0.5,
       "source": "audit_rationale_38",
-      "target": "schemas_neuraleventbatch",
-      "confidence_score": 0.5
+      "target": "schemas_neuraleventbatch"
     },
     {
       "relation": "uses",
@@ -16651,9 +16651,9 @@
       "weight": 0.8,
       "_src": "audit_rationale_38",
       "_tgt": "windows_windowspec",
+      "confidence_score": 0.5,
       "source": "audit_rationale_38",
-      "target": "windows_windowspec",
-      "confidence_score": 0.5
+      "target": "windows_windowspec"
     },
     {
       "relation": "contains",
@@ -17165,8 +17165,8 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L10",
       "weight": 0.8,
-      "_src": "audit_rationale_36",
-      "_tgt": "schemas_neuraleventbatch",
+      "_src": "schemas_neuraleventbatch",
+      "_tgt": "audit_rationale_36",
       "confidence_score": 0.5,
       "source": "schemas_neuraleventbatch",
       "target": "audit_rationale_36"
@@ -17513,8 +17513,8 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L11",
       "weight": 0.8,
-      "_src": "audit_rationale_36",
-      "_tgt": "windows_windowspec",
+      "_src": "windows_windowspec",
+      "_tgt": "audit_rationale_36",
       "confidence_score": 0.5,
       "source": "windows_windowspec",
       "target": "audit_rationale_36"

@@ -1,7 +1,7 @@
 # Graph Report - /Users/aayu/conductor/workspaces/kahlus-v1/abuja  (2026-05-26)
 
 ## Corpus Check
-- 70 files · ~70,267 words
+- 70 files · ~70,846 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
