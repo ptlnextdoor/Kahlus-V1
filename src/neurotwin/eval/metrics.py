@@ -116,11 +116,16 @@ def bootstrap_ci(
     seed: int = 0,
     n_boot: int = 1000,
     alpha: float = 0.05,
+    max_values: int = 10_000,
 ) -> tuple[float, float]:
     values = np.asarray(values, dtype=float).ravel()
     if values.size == 0:
         raise ValueError("bootstrap_ci requires at least one value")
     rng = np.random.default_rng(seed)
+    if max_values <= 0:
+        raise ValueError("max_values must be positive")
+    if values.size > max_values:
+        values = values[rng.choice(values.size, size=max_values, replace=False)]
     samples = rng.choice(values, size=(n_boot, values.size), replace=True)
     means = np.mean(samples, axis=1)
     low = float(np.quantile(means, alpha / 2.0))

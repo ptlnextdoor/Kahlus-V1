@@ -5,7 +5,8 @@ task: neural_translation_v1
 split: subject
 seed: 0
 batch_size: 256
-window_size: 1024
+window_size: 128
+stride: 128
 precision: bf16
 gradient_accumulation_steps: 4
 checkpoint_every_steps: 1000

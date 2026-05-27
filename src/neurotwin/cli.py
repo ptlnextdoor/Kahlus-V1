@@ -57,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     smoke.add_argument("--stride", type=int, default=8)
     smoke.add_argument("--train-steps", type=int, default=1)
     smoke.add_argument("--seed", type=int, default=0)
+    smoke.add_argument("--require-windows", action="store_true")
     smoke.set_defaults(func=_cmd_data_smoke)
     data_audit = data_subparsers.add_parser("audit", help="Audit dataset availability and manifestability")
     data_audit.add_argument("--dataset", required=True)
@@ -92,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--window-length", type=int, default=8)
     eval_parser.add_argument("--stride", type=int, default=8)
     eval_parser.add_argument("--train-steps", type=int, default=5)
+    eval_parser.add_argument("--require-windows", action="store_true")
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
@@ -279,6 +281,7 @@ def _cmd_data_smoke(args: argparse.Namespace) -> None:
         window_length=args.window_length,
         stride=args.stride,
         out_dir=out_dir,
+        require_windows=args.require_windows,
     )
     print(format_prepared_eval_audit(audit))
 
@@ -535,6 +538,7 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                 window_length=args.window_length,
                 stride=args.stride,
                 out_dir=args.out_dir,
+                require_windows=args.require_windows,
             )
             print(format_prepared_eval_audit(report))
             if not report.passed:

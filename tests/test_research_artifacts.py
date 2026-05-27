@@ -1,3 +1,5 @@
+import os
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -39,3 +41,32 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("Do not claim", claims)
         self.assertIn("clinical digital twin", claims)
         self.assertIn("Synthetic smoke tests validate plumbing only", claims)
+
+    def test_moabb_scripts_and_cluster_configs_use_benchmark_windows(self):
+        smoke = Path("scripts/prepare_moabb_smoke.sh").read_text(encoding="utf-8")
+        benchmark = Path("scripts/prepare_moabb_benchmark.sh").read_text(encoding="utf-8")
+        a100 = Path("configs/train/moabb_a100.yaml").read_text(encoding="utf-8")
+        h100 = Path("configs/train/moabb_h100.yaml").read_text(encoding="utf-8")
+
+        for script in (smoke, benchmark):
+            self.assertIn('WINDOW_LENGTH="${WINDOW_LENGTH:-128}"', script)
+            self.assertIn('STRIDE="${STRIDE:-128}"', script)
+            self.assertIn("--require-windows", script)
+        for config in (a100, h100):
+            self.assertIn("window_size: 128", config)
+            self.assertIn("stride: 128", config)
+
+    def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
+        env = dict(os.environ)
+        env.pop("NEUROTWIN_DATA", None)
+        env["SLURM_JOB_ID"] = "unit-test"
+
+        result = subprocess.run(
+            ["bash", "scripts/prepare_moabb_benchmark.sh"],
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("NEUROTWIN_DATA must be set", result.stderr + result.stdout)

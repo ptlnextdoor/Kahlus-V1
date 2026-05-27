@@ -1,6 +1,7 @@
 # H100 Runbook
 
 H100 is a compatible high-memory variant. Use `docs/A100_RUNBOOK.md` as the canonical v1 cluster path unless a specific H100 queue is available. Prepare data before training. H100 jobs must not require internet access.
+Prepared artifacts should live under persistent `$NEUROTWIN_DATA/prepared/`; do not rely on node-local `/tmp` for cluster launches.
 
 Local dry run:
 
@@ -31,6 +32,9 @@ scripts/prepare_moabb_smoke.sh /tmp/neurotwin_moabb_smoke
 PYTHONPATH=src python3 -m neurotwin.cli train --config configs/train/moabb_smoke_locked.yaml --run-root /tmp/neurotwin_moabb_runs
 PYTHONPATH=src python3 -m neurotwin.cli report --run-dir /tmp/neurotwin_moabb_runs/moabb_smoke_locked
 ```
+
+Before any H100/A100 launch, run the locked MOABB benchmark preparation and confirm `eval_audit_passed=True`, `window_count > 0`, and nonzero train/val/test `window_counts_by_split`.
+The MOABB benchmark and MOABB cluster configs use `window_length=128` and `stride=128` for BNCI2014_001 compatibility.
 
 SLURM:
 

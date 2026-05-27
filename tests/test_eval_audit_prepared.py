@@ -14,9 +14,20 @@ from neurotwin.eval.audit import audit_prepared_eval_inputs
 
 
 class PreparedEvalAuditTests(unittest.TestCase):
-    def _write_prepared(self, root: Path, n_subjects: int = 6) -> tuple[Path, Path]:
-        records = make_synthetic_recordings(n_subjects=n_subjects, sessions_per_subject=1, modalities=("eeg", "fmri"))
-        batches = make_synthetic_event_batches(n_subjects=n_subjects, sessions_per_subject=1, modalities=("eeg", "fmri"))
+    def _write_prepared(
+        self,
+        root: Path,
+        n_subjects: int = 6,
+        modalities: tuple[str, ...] = ("eeg", "fmri"),
+        n_time: int = 64,
+    ) -> tuple[Path, Path]:
+        records = make_synthetic_recordings(n_subjects=n_subjects, sessions_per_subject=1, modalities=modalities)
+        batches = make_synthetic_event_batches(
+            n_subjects=n_subjects,
+            sessions_per_subject=1,
+            modalities=modalities,
+            n_time=n_time,
+        )
         split = build_split_manifest(records, policy="subject", seed=0)
         split_path = save_split_manifest(split, root / "split_manifest.json")
         event_path = save_event_batches(batches, root)
@@ -58,6 +69,73 @@ class PreparedEvalAuditTests(unittest.TestCase):
 
             self.assertIn("eval_audit_prepared=True", result.stdout)
             self.assertIn("eval_audit_passed=True", result.stdout)
+            audit_payload = json.loads((out_dir / "eval_audit.json").read_text(encoding="utf-8"))
+            self.assertIn("window_counts_by_split", audit_payload)
+
+    def test_moabb_sized_windows_pass_required_window_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            event_path, split_path = self._write_prepared(root, modalities=("eeg",), n_time=256)
+
+            report = audit_prepared_eval_inputs(
+                event_path,
+                split_path,
+                window_length=128,
+                stride=128,
+                require_windows=True,
+            )
+
+            self.assertTrue(report.passed)
+            self.assertGreater(report.window_count, 0)
+            for split_name in ("train", "val", "test"):
+                self.assertGreater(report.window_counts_by_split[split_name], 0)
+
+    def test_zero_window_benchmark_fails_required_window_gate(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            event_path, split_path = self._write_prepared(root, modalities=("eeg",), n_time=256)
+
+            report = audit_prepared_eval_inputs(
+                event_path,
+                split_path,
+                window_length=1024,
+                stride=512,
+                require_windows=True,
+                out_dir=root / "audit",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "eval",
+                    "audit",
+                    "--suite",
+                    "neural_translation_v1",
+                    "--event-manifest",
+                    str(event_path),
+                    "--split-manifest",
+                    str(split_path),
+                    "--window-length",
+                    "1024",
+                    "--stride",
+                    "512",
+                    "--require-windows",
+                ],
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+
+            self.assertFalse(report.passed)
+            self.assertEqual(report.window_count, 0)
+            self.assertTrue(any("zero windows" in violation for violation in report.violations))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("prepared benchmark produced zero windows", result.stdout)
+            audit_payload = json.loads((root / "audit" / "eval_audit.json").read_text(encoding="utf-8"))
+            self.assertEqual(audit_payload["window_counts_by_split"], {"train": 0, "val": 0, "test": 0})
 
     def test_prepared_eval_audit_fails_on_corrupted_event_hash(self):
         with tempfile.TemporaryDirectory() as tmp:

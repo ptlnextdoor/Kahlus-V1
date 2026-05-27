@@ -40,3 +40,12 @@ class MetricTests(unittest.TestCase):
         self.assertLess(low, high)
         self.assertGreaterEqual(low, 1.0)
         self.assertLessEqual(high, 4.0)
+
+    def test_bootstrap_ci_caps_large_inputs_deterministically(self):
+        values = np.arange(50_000, dtype=float)
+
+        first = bootstrap_ci(values, seed=7, n_boot=25, max_values=1_000)
+        second = bootstrap_ci(values, seed=7, n_boot=25, max_values=1_000)
+
+        self.assertEqual(first, second)
+        self.assertLess(first[0], first[1])

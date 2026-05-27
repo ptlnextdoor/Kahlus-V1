@@ -3,6 +3,7 @@
 A100 is the canonical cluster target for NeuroTwin v1. H100 configs remain compatible high-memory variants, but public docs and acceptance gates should point here first.
 
 Prepare data before training. Cluster jobs must read local prepared manifests and must not download MOABB, OpenNeuro, or other public data during training.
+Set `NEUROTWIN_DATA` to a persistent shared filesystem location; prepared benchmark artifacts belong under `$NEUROTWIN_DATA/prepared/`, not node-local `/tmp`.
 
 Local readiness checks:
 
@@ -16,8 +17,12 @@ bash -n scripts/slurm/*.sh
 Prepare the first real-data benchmark outside the repo:
 
 ```bash
-scripts/prepare_moabb_benchmark.sh /tmp/neurotwin_moabb_benchmark
+export NEUROTWIN_DATA=/path/to/persistent/neurotwin
+scripts/prepare_moabb_benchmark.sh
 ```
+
+Do not submit A100 jobs unless the benchmark preparation prints `eval_audit_passed=True`, `window_count > 0`, and nonzero train/val/test entries in `window_counts_by_split`.
+For BNCI2014_001, the locked MOABB benchmark defaults to `window_length=128` and `stride=128`; larger windows can produce zero runnable windows.
 
 Submit training:
 

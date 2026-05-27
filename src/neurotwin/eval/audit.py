@@ -20,6 +20,7 @@ class PreparedEvalAuditReport:
     checked: tuple[str, ...]
     event_count: int
     window_count: int
+    window_counts_by_split: dict[str, int]
     event_summary: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
@@ -32,6 +33,7 @@ def audit_prepared_eval_inputs(
     window_length: int = 8,
     stride: int = 8,
     out_dir: str | Path | None = None,
+    require_windows: bool = False,
 ) -> PreparedEvalAuditReport:
     """Audit prepared eval inputs before any benchmark score is trusted."""
 
@@ -55,6 +57,7 @@ def audit_prepared_eval_inputs(
             checked=tuple(checked),
             event_count=0,
             window_count=0,
+            window_counts_by_split={"train": 0, "val": 0, "test": 0},
             event_summary={},
         )
         if out_dir is not None:
@@ -88,14 +91,27 @@ def audit_prepared_eval_inputs(
         violations.append("prepared events absent for split(s): " + ", ".join(empty_splits))
 
     windows = _prepared_windows_by_split(batches, split_by_record, WindowSpec(length=window_length, stride=stride))
+    window_counts_by_split = {split_name: len(split_windows) for split_name, split_windows in windows.items()}
+    window_count = sum(window_counts_by_split.values())
     violations.extend(_window_overlap_violations(windows))
+    if require_windows:
+        if window_count == 0:
+            violations.append(
+                f"prepared benchmark produced zero windows for window_length={window_length} stride={stride}"
+            )
+        empty_window_splits = [
+            split_name for split_name in ("train", "val", "test") if window_counts_by_split.get(split_name, 0) == 0
+        ]
+        if empty_window_splits:
+            violations.append("prepared windows absent for split(s): " + ", ".join(empty_window_splits))
     report = PreparedEvalAuditReport(
         passed=not violations,
         violations=tuple(violations),
         warnings=tuple(warnings),
         checked=tuple(checked),
         event_count=len(batches),
-        window_count=sum(len(split_windows) for split_windows in windows.values()),
+        window_count=window_count,
+        window_counts_by_split=window_counts_by_split,
         event_summary=summary,
     )
     if out_dir is not None:
@@ -109,6 +125,8 @@ def format_prepared_eval_audit(report: PreparedEvalAuditReport) -> str:
         f"eval_audit_passed={report.passed}",
         f"event_count={report.event_count}",
         f"window_count={report.window_count}",
+        "window_counts_by_split="
+        + ",".join(f"{split_name}:{report.window_counts_by_split.get(split_name, 0)}" for split_name in ("train", "val", "test")),
         "checked=" + ",".join(report.checked),
     ]
     for violation in report.violations:
