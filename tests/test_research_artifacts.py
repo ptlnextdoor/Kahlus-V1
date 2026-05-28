@@ -18,6 +18,7 @@ class ResearchArtifactTests(unittest.TestCase):
             "configs/train/neurotwin_v1_h100.yaml",
             "configs/eval/neural_translation_v1.yaml",
             "scripts/slurm/train_a100.sh",
+            "scripts/slurm/_train_a100_inner.sh",
             "scripts/slurm/eval_a100.sh",
             "scripts/slurm/sweep_a100.sh",
             "scripts/slurm/train_h100.sh",
@@ -26,6 +27,13 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/prepare_moabb_smoke.sh",
             "scripts/prepare_moabb_benchmark.sh",
             "scripts/cluster/chapman_a100_first_run.sh",
+            "scripts/run_smoke.sh",
+            "scripts/run_full.sh",
+            "scripts/run_full.sbatch",
+            "scripts/package_run_bundle.sh",
+            "README_RUN.md",
+            "environment-a100.yml",
+            "requirements/cluster-a100.txt",
             "docs/CLAIMS.md",
             "docs/A100_RUNBOOK.md",
             "docs/CHAPMAN_A100_QUICKSTART.md",
@@ -62,15 +70,45 @@ class ResearchArtifactTests(unittest.TestCase):
 
     def test_a100_slurm_scripts_require_safe_inputs(self):
         train = Path("scripts/slurm/train_a100.sh").read_text(encoding="utf-8")
+        inner = Path("scripts/slurm/_train_a100_inner.sh").read_text(encoding="utf-8")
         eval_script = Path("scripts/slurm/eval_a100.sh").read_text(encoding="utf-8")
 
         self.assertIn("Refusing to run the generic placeholder config", train)
-        self.assertIn("cluster preflight", train)
-        self.assertLess(train.index("cluster preflight"), train.index("torchrun"))
-        self.assertIn("--require-cuda", train)
-        self.assertIn("--require-prepared-windows", train)
+        self.assertIn("_train_a100_inner.sh", train)
+        self.assertIn("cluster preflight", inner)
+        self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
+        self.assertIn("--require-cuda", inner)
+        self.assertIn("--require-prepared-windows", inner)
         self.assertIn("Refusing to run default/synthetic eval", eval_script)
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
+
+    def test_operator_run_bundle_files_are_self_contained(self):
+        readme = Path("README_RUN.md").read_text(encoding="utf-8")
+        run_full = Path("scripts/run_full.sh").read_text(encoding="utf-8")
+        run_full_sbatch = Path("scripts/run_full.sbatch").read_text(encoding="utf-8")
+        environment = Path("environment-a100.yml").read_text(encoding="utf-8")
+
+        for required in (
+            "What",
+            "git clone https://github.com/ptlnextdoor/Kahlus-V1.git",
+            "bash scripts/run_smoke.sh",
+            "bash scripts/run_full.sh",
+            "1x A100 80GB",
+            "128G",
+            "MOABB `BNCI2014_001`",
+            "Expected Full Outputs",
+            "Success Condition",
+            "Resume And Safe Rerun",
+        ):
+            self.assertIn(required, readme)
+        self.assertIn("outputs/configs/moabb_a100.materialized.yaml", run_full)
+        self.assertIn("EXPECTED_WINDOW_COUNT", run_full)
+        self.assertIn("EXPECTED_TRAIN_WINDOWS", run_full)
+        self.assertIn("/tmp|/tmp/*|/private/tmp", run_full)
+        self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
+        self.assertNotIn("\nsbatch ", run_full_sbatch)
+        for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne-bids", "scikit-learn"):
+            self.assertIn(dependency, environment)
 
     def test_chapman_first_run_launcher_contains_required_sequence(self):
         launcher = Path("scripts/cluster/chapman_a100_first_run.sh").read_text(encoding="utf-8")

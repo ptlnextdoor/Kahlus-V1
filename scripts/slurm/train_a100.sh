@@ -28,17 +28,6 @@ if [[ "$RUN_ROOT" != /* ]]; then
 fi
 
 NPROC=${SLURM_NTASKS_PER_NODE:-4}
+export PYTHON_BIN
 
-export PYTHONPATH="${PYTHONPATH:-}:src"
-export TOKENIZERS_PARALLELISM=false
-
-"$PYTHON_BIN" -m neurotwin.cli doctor
-"$PYTHON_BIN" -m neurotwin.cli cluster preflight \
-  --config "$CONFIG" \
-  --run-root "$RUN_ROOT" \
-  --require-cuda \
-  --require-prepared-windows
-"$PYTHON_BIN" -m neurotwin.cli train --dry-run --config "$CONFIG"
-
-torchrun --standalone --nproc_per_node="$NPROC" \
-  -m neurotwin.cli train --config "$CONFIG" --run-root "$RUN_ROOT"
+bash scripts/slurm/_train_a100_inner.sh "$CONFIG" "$RUN_ROOT" "$NPROC"
