@@ -8,10 +8,10 @@ Set `NEUROTWIN_DATA` to a persistent shared filesystem location; prepared benchm
 For the first Chapman run, prefer the guarded one-command path:
 
 ```bash
-scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```
 
-That launcher prepares MOABB, verifies `window_count=18144`, materializes absolute manifest paths, dry-runs, and submits exactly one A100 smoke job.
+That launcher prepares MOABB, verifies `window_count=18144`, materializes absolute manifest paths under `outputs/configs/`, dry-runs, and submits exactly one A100 smoke job. `scripts/cluster/chapman_a100_first_run.sh` is a compatibility wrapper around the same path.
 
 Local readiness checks:
 
@@ -37,13 +37,15 @@ Submit training:
 ```bash
 export RUN_ROOT=/path/to/shared/persistent/neurotwin/runs
 PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
-  --config configs/train/moabb_a100_chapman.yaml \
+  --config outputs/configs/moabb_a100.materialized.yaml \
   --run-root "$RUN_ROOT" \
   --require-cuda \
-  --require-prepared-windows
-sbatch scripts/slurm/train_a100.sh configs/train/moabb_a100_chapman.yaml
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+sbatch scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 sbatch scripts/slurm/eval_a100.sh "$RUN_ROOT/<run_id>"
-sbatch scripts/slurm/sweep_a100.sh configs/train/moabb_a100_chapman_seed*.yaml
+sbatch scripts/slurm/sweep_a100.sh outputs/configs/moabb_a100_seed*.yaml
 ```
 
 Every real run should write config, split manifest, metrics, best checkpoint, environment, git commit, split hash, report tables, and figure specs. Scientific claims require repeated real-data runs, strict held-out splits, and no synthetic-only or smoke-only labeling.

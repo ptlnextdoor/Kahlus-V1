@@ -42,12 +42,21 @@ print(Path(sys.argv[2]) / str(config.get("experiment", "synthetic_debug")))
 PY
 )"
 
-"$PYTHON_BIN" -m neurotwin.cli doctor
-"$PYTHON_BIN" -m neurotwin.cli cluster preflight \
-  --config "$CONFIG" \
-  --run-root "$RUN_ROOT" \
-  --require-cuda \
+PREFLIGHT_ARGS=(
+  --config "$CONFIG"
+  --run-root "$RUN_ROOT"
+  --require-cuda
   --require-prepared-windows
+)
+if [[ -n "${EXPECTED_WINDOW_COUNT:-}" ]]; then
+  PREFLIGHT_ARGS+=(--expect-window-count "$EXPECTED_WINDOW_COUNT")
+fi
+if [[ -n "${EXPECTED_SPLIT_WINDOWS:-}" ]]; then
+  PREFLIGHT_ARGS+=(--expect-split-windows "$EXPECTED_SPLIT_WINDOWS")
+fi
+
+"$PYTHON_BIN" -m neurotwin.cli doctor
+"$PYTHON_BIN" -m neurotwin.cli cluster preflight "${PREFLIGHT_ARGS[@]}"
 "$PYTHON_BIN" -m neurotwin.cli train --dry-run --config "$CONFIG"
 
 torchrun --standalone --nproc_per_node="$NPROC" \

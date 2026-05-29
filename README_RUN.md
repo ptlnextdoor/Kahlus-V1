@@ -6,16 +6,59 @@ This bundle runs one controlled NeuroTwin MOABB infrastructure validation on an 
 
 The smoke command validates local package, CLI, synthetic data, prepared training, and reporting. The full command validates the real MOABB preparation path and launches one A100 infrastructure job after exact window-count and cluster preflight gates pass.
 
-## Repo And Commit
+## Bundle And Commit
+
+Primary handoff is a tarball. The friend running Chapman does not need GitHub access.
+
+Build the bundle from a clean committed checkout on the packaging machine:
 
 ```bash
-git clone https://github.com/ptlnextdoor/Kahlus-V1.git
+bash scripts/package_run_bundle.sh
+ls outputs/neurotwin-a100-run-bundle-*.tar.gz
+```
+
+The archive includes `COMMIT_HASH.txt` and `BUNDLE_METADATA.txt` so it maps back to the private repo commit. It excludes `.git/`, git history, raw data, prepared arrays, checkpoints, caches, local outputs, `.context/`, and local machine paths.
+
+If repo access is available, the equivalent source checkout is:
+
+```bash
+git clone <PRIVATE_REPO_URL>
 cd Kahlus-V1
 git checkout <COMMIT_HASH_FROM_HANDOFF>
 git rev-parse HEAD
 ```
 
 Use the exact commit hash supplied in the handoff message. Do not run from an edited worktree for the first A100 validation.
+
+## Raspberry Pi Handoff Path
+
+Use the Raspberry Pi only as a Chapman-network bridge and file shuttle. Do not build the bundle on the Pi, do not run Python training commands on the Pi, and do not submit Slurm from the Pi except through an SSH session on the Chapman login node.
+
+From the packaging machine, copy the bundle to the Pi:
+
+```bash
+scp outputs/neurotwin-a100-run-bundle-<short_sha>.tar.gz \
+  <pi_user>@<raspberry_pi_host>:/tmp/
+```
+
+From the Pi, copy the bundle to the Chapman login node:
+
+```bash
+scp /tmp/neurotwin-a100-run-bundle-<short_sha>.tar.gz \
+  <chapman_user>@<chapman_login_host>:~/
+```
+
+SSH from the Pi into the Chapman login node and unpack there:
+
+```bash
+ssh <chapman_user>@<chapman_login_host>
+mkdir -p ~/neurotwin-a100
+tar -xzf ~/neurotwin-a100-run-bundle-<short_sha>.tar.gz -C ~/neurotwin-a100
+cd ~/neurotwin-a100/neurotwin-a100-run-bundle-<short_sha>
+cat COMMIT_HASH.txt
+```
+
+All remaining commands in this file run on the Chapman login node, not on the Pi.
 
 ## Environment
 
@@ -65,6 +108,17 @@ outputs/smoke/runs/prepared_synthetic_debug/figures/metric_summary.json
 
 Smoke succeeds when the script prints `smoke_status=completed`.
 
+## Optional RunPod A100 Rehearsal
+
+Before Chapman, a short RunPod rehearsal can validate CUDA and the Slurm wrapper path. Keep it under the explicit budget cap:
+
+```bash
+export RUNPOD_MAX_BUDGET_USD=5
+bash scripts/cluster/runpod_a100_rehearsal.sh /workspace/neurotwin_data
+```
+
+This must run inside a RunPod A100 pod from a clean checkout. See `docs/RUNPOD_A100_REHEARSAL.md`. A non-A100 GPU does not count as a passed A100 rehearsal.
+
 ## Full A100 Infrastructure Validation
 
 Required resources:
@@ -83,7 +137,32 @@ mkdir -p /path/to/shared/persistent/neurotwin
 bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```
 
-`scripts/run_full.sh` refuses `/tmp`, `/private/tmp`, `/var/tmp`, missing roots, unwritable `logs/`, missing manifests after preparation, bad window counts, and failed preflight. It materializes:
+Good root examples:
+
+```bash
+bash scripts/run_full.sh /shared/scratch/$USER/neurotwin
+bash scripts/run_full.sh /data/$USER/neurotwin
+```
+
+Bad root examples:
+
+```bash
+bash scripts/run_full.sh /tmp/neurotwin
+bash scripts/run_full.sh ./outputs/full
+bash scripts/run_full.sh /Users/<local_user>/neurotwin
+```
+
+`scripts/run_full.sh` refuses `/tmp`, `/private/tmp`, `/var/tmp`, relative paths, repo-local paths, local laptop paths, missing roots, unwritable persistent logs, missing manifests after preparation, bad window counts, and failed preflight. It creates:
+
+```text
+/path/to/shared/persistent/neurotwin/moabb
+/path/to/shared/persistent/neurotwin/bids
+/path/to/shared/persistent/neurotwin/prepared
+/path/to/shared/persistent/neurotwin/runs
+/path/to/shared/persistent/neurotwin/logs
+```
+
+It materializes:
 
 ```text
 outputs/configs/moabb_a100.materialized.yaml
@@ -94,6 +173,29 @@ with absolute manifest paths under:
 ```text
 /path/to/shared/persistent/neurotwin/prepared/moabb_benchmark/
 ```
+
+Generated cluster configs are intentionally written under `outputs/configs/`, not tracked `configs/train/`.
+The exact MOABB gate is enforced by:
+
+```bash
+PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
+  --config outputs/configs/moabb_a100.materialized.yaml \
+  --run-root /path/to/shared/persistent/neurotwin/runs \
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+```
+
+If Chapman requires a Slurm account, partition, or QoS, set them as environment variables before `run_full.sh`. Leave them unset if Chapman defaults are sufficient.
+
+```bash
+export SBATCH_PARTITION=gpu
+export SBATCH_ACCOUNT=<your_chapman_account>
+export SBATCH_QOS=<optional_qos>
+bash scripts/run_full.sh /absolute/shared/persistent/neurotwin
+```
+
+The scripts pass these values to `sbatch` as command-line flags. They are not embedded in `#SBATCH` lines.
 
 ## Data And Internet
 
@@ -136,8 +238,8 @@ $NEUROTWIN_DATA/runs/moabb_a100_smoke/metrics.jsonl
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/summary.json
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/tables/metrics_flat.csv
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/figures/metric_summary.json
-logs/neurotwin-a100-full-<jobid>.out
-logs/neurotwin-a100-full-<jobid>.err
+$NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.out
+$NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.err
 ```
 
 If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` directory first.

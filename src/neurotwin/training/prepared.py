@@ -248,6 +248,10 @@ def _predict(model: nn.Module, task: Any, x: torch.Tensor, precision: str = "fp3
     return output["prediction"]
 
 
+def _mse_loss(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    return nn.functional.mse_loss(prediction.float(), target.float())
+
+
 def _select_tasks(tasks: tuple[Any, ...], requested: str) -> tuple[Any, ...]:
     if requested in {"neural_translation_v1", "translation_smoke", "prepared"}:
         return tasks
@@ -336,13 +340,13 @@ def _train_single_task(
     x_test = torch.as_tensor(task.x_test, dtype=torch.float32, device=device)
     y_test = torch.as_tensor(task.y_test, dtype=torch.float32, device=device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(config.get("lr", config.get("learning_rate", 2e-3))))
-    loss_fn = nn.MSELoss()
     _load_task_resume(model, optimizer, task.task_id, resume_checkpoint)
     model = wrap_ddp_if_initialized(model, local_rank=dist_local_rank)
     batch_size = max(1, int(config.get("batch_size", x_train.shape[0])))
+    eval_batch_size = max(1, int(config.get("eval_batch_size", training_cfg.get("eval_batch_size", batch_size))))
 
     with torch.no_grad():
-        initial_loss = float(loss_fn(_predict(model, task, x_train, precision=precision), y_train))
+        initial_loss = _batched_loss(model, task, x_train, y_train, precision=precision, batch_size=eval_batch_size)
     _append_task_metric(
         metrics_jsonl_path,
         {
@@ -368,14 +372,22 @@ def _train_single_task(
                 start, end = 0, min(batch_size, x_train.shape[0])
             xb = x_train[start:end]
             yb = y_train[start:end]
-            loss = (loss_fn(_predict(model, task, xb, precision=precision), yb) * objective_weight) / gradient_accumulation_steps
+            loss = (_mse_loss(_predict(model, task, xb, precision=precision), yb) * objective_weight) / gradient_accumulation_steps
             loss.backward()
             accumulated_loss += float(loss.detach())
         optimizer.step()
         final_loss = accumulated_loss
         completed_step = start_step + step + 1
         if eval_every_steps and completed_step % eval_every_steps == 0:
-            val_snapshot = _evaluate_task(model, task, x_val, y_val, precision=precision, prefix="val")
+            val_snapshot = _evaluate_task(
+                model,
+                task,
+                x_val,
+                y_val,
+                precision=precision,
+                prefix="val",
+                batch_size=eval_batch_size,
+            )
             _append_task_metric(metrics_jsonl_path, {"task_id": task.task_id, "step": completed_step, "phase": "eval", "selection_split": selection_split, **val_snapshot})
         if checkpoint_every_steps and checkpoint_dir is not None and completed_step % checkpoint_every_steps == 0:
             _save_task_checkpoint(
@@ -386,8 +398,8 @@ def _train_single_task(
                 optimizer_state=optimizer.state_dict(),
             )
 
-    val_metrics = _evaluate_task(model, task, x_val, y_val, precision=precision, prefix="val")
-    test_metrics = _evaluate_task(model, task, x_test, y_test, precision=precision, prefix="test")
+    val_metrics = _evaluate_task(model, task, x_val, y_val, precision=precision, prefix="val", batch_size=eval_batch_size)
+    test_metrics = _evaluate_task(model, task, x_test, y_test, precision=precision, prefix="test", batch_size=eval_batch_size)
     model_state = unwrap_model(model).state_dict()
     optimizer_state = optimizer.state_dict()
     result = {
@@ -422,15 +434,58 @@ def _train_single_task(
     return result, model_state, optimizer_state
 
 
-def _evaluate_task(model: nn.Module, task: Any, x_test: torch.Tensor, y_test: torch.Tensor, precision: str, prefix: str) -> dict[str, float]:
-    loss_fn = nn.MSELoss()
+def _batched_loss(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    precision: str,
+    batch_size: int,
+) -> float:
+    model.eval()
+    total_loss = 0.0
+    total_samples = 0
+    with torch.no_grad():
+        for start in range(0, x.shape[0], batch_size):
+            end = min(start + batch_size, x.shape[0])
+            pred = _predict(model, task, x[start:end], precision=precision)
+            batch_samples = end - start
+            total_loss += float(_mse_loss(pred, y[start:end])) * batch_samples
+            total_samples += batch_samples
+    model.train()
+    return total_loss / max(1, total_samples)
+
+
+def _predict_numpy_batches(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    precision: str,
+    batch_size: int,
+) -> np.ndarray:
+    predictions: list[np.ndarray] = []
     model.eval()
     with torch.no_grad():
-        pred = _predict(model, task, x_test, precision=precision)
-        eval_loss = float(loss_fn(pred, y_test))
+        for start in range(0, x.shape[0], batch_size):
+            end = min(start + batch_size, x.shape[0])
+            pred = _predict(model, task, x[start:end], precision=precision)
+            predictions.append(pred.detach().float().cpu().numpy())
     model.train()
+    return np.concatenate(predictions, axis=0) if predictions else np.empty((0,), dtype=np.float32)
+
+
+def _evaluate_task(
+    model: nn.Module,
+    task: Any,
+    x_test: torch.Tensor,
+    y_test: torch.Tensor,
+    precision: str,
+    prefix: str,
+    batch_size: int,
+) -> dict[str, float]:
     y_true_np = y_test.detach().cpu().numpy()
-    y_pred_np = pred.detach().cpu().numpy()
+    y_pred_np = _predict_numpy_batches(model, task, x_test, precision=precision, batch_size=batch_size)
+    eval_loss = mse(y_true_np, y_pred_np)
     metrics = {
         f"{prefix}_mse": eval_loss,
         f"{prefix}_mae": mae(y_true_np, y_pred_np),

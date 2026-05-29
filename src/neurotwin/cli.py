@@ -20,7 +20,12 @@ from neurotwin.reports import generate_compare_report, generate_run_report, gene
 from neurotwin.repro import append_jsonl, capture_environment, create_run_dir, manifest_hash, snapshot_config, stable_hash, write_json
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
-from neurotwin.runtime.preflight import format_cluster_preflight, run_cluster_preflight
+from neurotwin.runtime.preflight import (
+    format_cluster_materialize_config,
+    format_cluster_preflight,
+    materialize_cluster_config,
+    run_cluster_preflight,
+)
 from neurotwin.training.prepared import run_prepared_training
 from neurotwin.training.smoke import run_synthetic_training
 
@@ -111,7 +116,18 @@ def main(argv: list[str] | None = None) -> int:
     preflight.add_argument("--run-root", required=True)
     preflight.add_argument("--require-cuda", action="store_true")
     preflight.add_argument("--require-prepared-windows", action="store_true")
+    preflight.add_argument("--expect-window-count", type=int, default=None)
+    preflight.add_argument("--expect-split-windows", default=None)
     preflight.set_defaults(func=_cmd_cluster_preflight)
+    materialize_config = cluster_subparsers.add_parser(
+        "materialize-config",
+        help="Write a cluster config with absolute prepared-manifest paths",
+    )
+    materialize_config.add_argument("--template", required=True)
+    materialize_config.add_argument("--prepared-root", required=True)
+    materialize_config.add_argument("--out", required=True)
+    materialize_config.add_argument("--allow-tracked-output", action="store_true")
+    materialize_config.set_defaults(func=_cmd_cluster_materialize_config)
 
     args = parser.parse_args(argv)
     args.func(args)
@@ -611,12 +627,52 @@ def _cmd_cluster_preflight(args: argparse.Namespace) -> None:
             args.run_root,
             require_cuda=args.require_cuda,
             require_prepared_windows=args.require_prepared_windows,
+            expect_window_count=args.expect_window_count,
+            expect_split_windows=_parse_split_windows(args.expect_split_windows),
         )
     except ConfigError as exc:
         raise SystemExit(str(exc)) from exc
     print(format_cluster_preflight(report))
     if not report.passed:
         raise SystemExit(1)
+
+
+def _cmd_cluster_materialize_config(args: argparse.Namespace) -> None:
+    try:
+        report = materialize_cluster_config(
+            args.template,
+            args.prepared_root,
+            args.out,
+            allow_tracked_output=args.allow_tracked_output,
+        )
+    except ConfigError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(format_cluster_materialize_config(report))
+    if not report.passed:
+        raise SystemExit(1)
+
+
+def _parse_split_windows(value: str | None) -> dict[str, int] | None:
+    if value is None:
+        return None
+    parsed: dict[str, int] = {}
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise SystemExit("--expect-split-windows must use split:count entries")
+        split_name, raw_count = item.split(":", 1)
+        split_name = split_name.strip()
+        if split_name not in {"train", "val", "test"}:
+            raise SystemExit("--expect-split-windows only supports train, val, and test")
+        try:
+            parsed[split_name] = int(raw_count)
+        except ValueError as exc:
+            raise SystemExit(f"invalid window count for split {split_name}: {raw_count}") from exc
+    if not parsed:
+        raise SystemExit("--expect-split-windows must include at least one split:count entry")
+    return parsed
 
 
 def _has_prepared_training_inputs(config: dict[str, object]) -> bool:

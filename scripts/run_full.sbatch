@@ -18,9 +18,20 @@ fi
 
 CONFIG=$1
 RUN_ROOT=$2
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-${SLURM_SUBMIT_DIR:-}}"
+if [[ -z "$REPO_ROOT" ]]; then
+  echo "REPO_ROOT or SLURM_SUBMIT_DIR must be set so the Slurm job can find the checkout." >&2
+  exit 2
+fi
+if [[ "$REPO_ROOT" != /* ]]; then
+  echo "REPO_ROOT must be absolute, got: $REPO_ROOT" >&2
+  exit 2
+fi
 cd "$REPO_ROOT"
+if [[ ! -f src/neurotwin/cli.py || ! -f scripts/slurm/_train_a100_inner.sh ]]; then
+  echo "REPO_ROOT does not look like a NeuroTwin checkout: $REPO_ROOT" >&2
+  exit 2
+fi
 
 export RUN_ROOT
 export PYTHON_BIN="${PYTHON_BIN:-python3}"

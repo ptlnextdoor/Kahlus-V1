@@ -7,10 +7,11 @@ This is the shortest safe path for the first NeuroTwin MOABB A100 launch. It pro
 From a Chapman shell on the PR branch:
 
 ```bash
-scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```
 
 The path must be an absolute shared filesystem path, not node-local `/tmp`.
+`scripts/cluster/chapman_a100_first_run.sh` remains as a compatibility wrapper around this command.
 
 The launcher will:
 
@@ -19,7 +20,7 @@ The launcher will:
 - require `eval_audit_passed=True`;
 - require `window_count=18144`;
 - require `window_counts_by_split=train:12096,val:2016,test:4032`;
-- materialize `configs/train/moabb_a100_chapman.yaml` with absolute manifest paths;
+- materialize `outputs/configs/moabb_a100.materialized.yaml` with absolute manifest paths;
 - run doctor, preflight, and training dry-run;
 - submit exactly one A100 job.
 
@@ -29,10 +30,12 @@ If submitting manually, do not use placeholder configs. Generate or edit a confi
 
 ```bash
 PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
-  --config configs/train/moabb_a100_chapman.yaml \
+  --config outputs/configs/moabb_a100.materialized.yaml \
   --run-root /path/to/shared/persistent/neurotwin/runs \
   --require-cuda \
-  --require-prepared-windows
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
 ```
 
 Required output includes:
@@ -48,7 +51,7 @@ window_counts_by_split=train:12096,val:2016,test:4032
 
 ```bash
 export RUN_ROOT=/path/to/shared/persistent/neurotwin/runs
-sbatch scripts/slurm/train_a100.sh configs/train/moabb_a100_chapman.yaml
+sbatch scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
 
 `train_a100.sh` requires an explicit config and persistent absolute `RUN_ROOT`. It refuses placeholder/default launches.

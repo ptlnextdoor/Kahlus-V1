@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+import yaml
 
 from neurotwin.config import load_config
 from neurotwin.eval.audit import audit_prepared_eval_inputs
@@ -29,11 +30,28 @@ class ClusterPreflightReport:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class ClusterMaterializeConfigReport:
+    passed: bool
+    violations: tuple[str, ...]
+    warnings: tuple[str, ...]
+    template: str
+    prepared_root: str
+    out: str
+    event_manifest: str
+    split_manifest: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 def run_cluster_preflight(
     config_path: str | Path,
     run_root: str | Path,
     require_cuda: bool = False,
     require_prepared_windows: bool = False,
+    expect_window_count: int | None = None,
+    expect_split_windows: dict[str, int] | None = None,
 ) -> ClusterPreflightReport:
     """Validate cluster launch inputs before an expensive SLURM allocation runs."""
 
@@ -75,7 +93,8 @@ def run_cluster_preflight(
     if require_cuda and (not cuda_available or cuda_device_count <= 0):
         violations.append("CUDA is required but no CUDA device is available")
 
-    if require_prepared_windows:
+    needs_window_audit = require_prepared_windows or expect_window_count is not None or bool(expect_split_windows)
+    if needs_window_audit:
         if event_path is not None and split_path is not None and event_path.exists() and split_path.exists():
             audit = audit_prepared_eval_inputs(
                 event_path,
@@ -88,6 +107,23 @@ def run_cluster_preflight(
             window_counts_by_split = audit.window_counts_by_split
             violations.extend(audit.violations)
             warnings.extend(audit.warnings)
+            if expect_window_count is not None and window_count != expect_window_count:
+                violations.append(f"expected window_count={expect_window_count}, got {window_count}")
+            if expect_split_windows:
+                expected = {split_name: int(count) for split_name, count in expect_split_windows.items()}
+                actual = {
+                    split_name: int(window_counts_by_split.get(split_name, 0))
+                    for split_name in ("train", "val", "test")
+                    if split_name in expected
+                }
+                if actual != expected:
+                    expected_text = ",".join(
+                        f"{split_name}:{expected[split_name]}" for split_name in ("train", "val", "test") if split_name in expected
+                    )
+                    actual_text = ",".join(
+                        f"{split_name}:{actual.get(split_name, 0)}" for split_name in ("train", "val", "test") if split_name in expected
+                    )
+                    violations.append(f"expected split windows={expected_text}, got {actual_text}")
         else:
             violations.append("prepared window audit requires existing event and split manifests")
 
@@ -104,6 +140,107 @@ def run_cluster_preflight(
         window_count=window_count,
         window_counts_by_split=window_counts_by_split,
     )
+
+
+def materialize_cluster_config(
+    template_path: str | Path,
+    prepared_root: str | Path,
+    out_path: str | Path,
+    allow_tracked_output: bool = False,
+) -> ClusterMaterializeConfigReport:
+    """Write a cluster config with absolute prepared-manifest paths."""
+
+    template = Path(template_path)
+    prepared = Path(prepared_root).expanduser()
+    out = Path(out_path).expanduser()
+    violations: list[str] = []
+    warnings: list[str] = []
+
+    if not template.exists():
+        violations.append(f"template config does not exist: {template}")
+    if not prepared.is_absolute():
+        violations.append(f"prepared_root must be absolute: {prepared_root}")
+    event_manifest = prepared / "event_manifest.json"
+    split_manifest = prepared / "split_manifest.json"
+    if prepared.is_absolute() and not event_manifest.exists():
+        violations.append(f"event_manifest does not exist: {event_manifest}")
+    if prepared.is_absolute() and not split_manifest.exists():
+        violations.append(f"split_manifest does not exist: {split_manifest}")
+
+    resolved_out = (Path.cwd() / out).resolve(strict=False) if not out.is_absolute() else out.resolve(strict=False)
+    tracked_configs = (Path.cwd() / "configs").resolve(strict=False)
+    if not allow_tracked_output and (resolved_out == tracked_configs or tracked_configs in resolved_out.parents):
+        violations.append("refusing to write generated cluster config under tracked configs/; use outputs/configs/")
+
+    payload: dict[str, Any] = {}
+    if template.exists():
+        payload = load_config(template)
+    if violations:
+        return ClusterMaterializeConfigReport(
+            passed=False,
+            violations=tuple(violations),
+            warnings=tuple(warnings),
+            template=str(template),
+            prepared_root=str(prepared),
+            out=str(out),
+            event_manifest=str(event_manifest),
+            split_manifest=str(split_manifest),
+        )
+
+    data_config = payload.get("data")
+    if not isinstance(data_config, dict):
+        data_config = {}
+        payload["data"] = data_config
+    data_config["event_manifest"] = str(event_manifest)
+    data_config["split_manifest"] = str(split_manifest)
+    if "event_manifest" in payload:
+        payload["event_manifest"] = str(event_manifest)
+    if "split_manifest" in payload:
+        payload["split_manifest"] = str(split_manifest)
+
+    rendered = yaml.safe_dump(payload, sort_keys=False)
+    if "/path/to/" in rendered:
+        violations.append("materialized config still contains placeholder path '/path/to/'")
+    if violations:
+        return ClusterMaterializeConfigReport(
+            passed=False,
+            violations=tuple(violations),
+            warnings=tuple(warnings),
+            template=str(template),
+            prepared_root=str(prepared),
+            out=str(out),
+            event_manifest=str(event_manifest),
+            split_manifest=str(split_manifest),
+        )
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(rendered, encoding="utf-8")
+    return ClusterMaterializeConfigReport(
+        passed=True,
+        violations=(),
+        warnings=tuple(warnings),
+        template=str(template),
+        prepared_root=str(prepared),
+        out=str(out),
+        event_manifest=str(event_manifest),
+        split_manifest=str(split_manifest),
+    )
+
+
+def format_cluster_materialize_config(report: ClusterMaterializeConfigReport) -> str:
+    lines = [
+        f"materialize_config_passed={report.passed}",
+        f"template={report.template}",
+        f"prepared_root={report.prepared_root}",
+        f"out={report.out}",
+        f"event_manifest={report.event_manifest}",
+        f"split_manifest={report.split_manifest}",
+    ]
+    for violation in report.violations:
+        lines.append(f"violation={violation}")
+    for warning in report.warnings:
+        lines.append(f"warning={warning}")
+    return "\n".join(lines)
 
 
 def format_cluster_preflight(report: ClusterPreflightReport) -> str:

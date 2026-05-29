@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -144,6 +145,40 @@ class PreparedTrainingTests(unittest.TestCase):
             weights = {row["task_id"]: row["objective_weight"] for row in result.task_results}
             self.assertEqual(weights["masked_neural_reconstruction"], 0.25)
             self.assertEqual(weights["future_state_forecasting"], 1.0)
+
+    def test_prepared_training_uses_batched_eval_predictions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            import neurotwin.training.prepared as prepared_training
+
+            observed_batch_sizes = []
+            original_predict = prepared_training._predict
+
+            def recording_predict(model, task, x, precision="fp32"):
+                observed_batch_sizes.append(int(x.shape[0]))
+                return original_predict(model, task, x, precision=precision)
+
+            with mock.patch.object(prepared_training, "_predict", side_effect=recording_predict):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "eval_batch_size": 2,
+                        "precision": "bf16",
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    }
+                )
+
+            self.assertEqual(result.status, "completed_prepared_training")
+            self.assertTrue(observed_batch_sizes)
+            self.assertLessEqual(max(observed_batch_sizes), 4)
+            self.assertIn(2, observed_batch_sizes)
 
     def test_train_cli_uses_prepared_path_when_manifests_are_configured(self):
         env = dict(os.environ)

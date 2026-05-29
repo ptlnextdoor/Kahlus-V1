@@ -21,10 +21,10 @@ The A100 launch must be run from a Chapman shell with SLURM and A100 access.
 For the lowest-resistance path, use the guarded launcher:
 
 ```bash
-scripts/cluster/chapman_a100_first_run.sh /path/to/shared/persistent/neurotwin
+bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```
 
-It performs the setup, data preparation, window gate, absolute-path config generation, dry-run, and one-job submit steps below.
+It performs the setup, data preparation, exact window gate, absolute-path config generation under `outputs/configs/`, dry-run, and one-job submit steps below. `scripts/cluster/chapman_a100_first_run.sh` remains a compatibility wrapper around the same command.
 
 ## Cluster Setup
 
@@ -73,38 +73,23 @@ cross_modal_translation: need paired train/test windows for two modalities
 dataset_site_generalization: need train/test windows from different datasets or sites
 ```
 
-## Create Chapman Config
+## Create Materialized Config
 
 The config loader does not expand environment variables inside YAML. Do not write literal `$NEUROTWIN_DATA` into the config.
 
-Create a Chapman-specific config with absolute manifest paths:
+Create a generated config with absolute manifest paths:
 
 ```bash
-cp configs/train/moabb_a100.yaml configs/train/moabb_a100_chapman.yaml
-
-python3 - <<'PY'
-import os
-from pathlib import Path
-
-cfg = Path("configs/train/moabb_a100_chapman.yaml")
-root = Path(os.environ["NEUROTWIN_DATA"]).resolve()
-text = cfg.read_text(encoding="utf-8")
-text = text.replace(
-    "event_manifest: /path/to/moabb_prepared/event_manifest.json",
-    f"event_manifest: {root}/prepared/moabb_benchmark/event_manifest.json",
-)
-text = text.replace(
-    "split_manifest: /path/to/moabb_prepared/split_manifest.json",
-    f"split_manifest: {root}/prepared/moabb_benchmark/split_manifest.json",
-)
-cfg.write_text(text, encoding="utf-8")
-PY
+PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
+  --template configs/train/moabb_a100_smoke.yaml \
+  --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
+  --out outputs/configs/moabb_a100.materialized.yaml
 ```
 
 Confirm the config contains absolute paths:
 
 ```bash
-grep -A3 '^data:' configs/train/moabb_a100_chapman.yaml
+grep -A3 '^data:' outputs/configs/moabb_a100.materialized.yaml
 ```
 
 Expected shape:
@@ -122,11 +107,13 @@ Run these in the cluster environment:
 ```bash
 PYTHONPATH=src python3 -m neurotwin.cli doctor
 PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
-  --config configs/train/moabb_a100_chapman.yaml \
+  --config outputs/configs/moabb_a100.materialized.yaml \
   --run-root "$RUN_ROOT" \
   --require-cuda \
-  --require-prepared-windows
-PYTHONPATH=src python3 -m neurotwin.cli train --dry-run --config configs/train/moabb_a100_chapman.yaml
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+PYTHONPATH=src python3 -m neurotwin.cli train --dry-run --config outputs/configs/moabb_a100.materialized.yaml
 ```
 
 Required checks:
@@ -142,7 +129,7 @@ Required checks:
 Submit exactly one controlled run first:
 
 ```bash
-RUN_ROOT=$NEUROTWIN_DATA/runs sbatch scripts/slurm/train_a100.sh configs/train/moabb_a100_chapman.yaml
+RUN_ROOT=$NEUROTWIN_DATA/runs sbatch scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
 
 Watch:

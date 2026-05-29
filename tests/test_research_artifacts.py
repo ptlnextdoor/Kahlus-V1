@@ -27,6 +27,7 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/prepare_moabb_smoke.sh",
             "scripts/prepare_moabb_benchmark.sh",
             "scripts/cluster/chapman_a100_first_run.sh",
+            "scripts/cluster/runpod_a100_rehearsal.sh",
             "scripts/run_smoke.sh",
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
@@ -37,6 +38,7 @@ class ResearchArtifactTests(unittest.TestCase):
             "docs/CLAIMS.md",
             "docs/A100_RUNBOOK.md",
             "docs/CHAPMAN_A100_QUICKSTART.md",
+            "docs/RUNPOD_A100_REHEARSAL.md",
             "docs/H100_RUNBOOK.md",
             "docs/paper/outline.md",
             "docs/paper/limitations.md",
@@ -90,7 +92,12 @@ class ResearchArtifactTests(unittest.TestCase):
 
         for required in (
             "What",
-            "git clone https://github.com/ptlnextdoor/Kahlus-V1.git",
+            "The friend running Chapman does not need GitHub access",
+            "Raspberry Pi Handoff Path",
+            "Use the Raspberry Pi only as a Chapman-network bridge",
+            "scp outputs/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
+            "scp /tmp/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
+            "tar -xzf ~/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
             "1x A100 80GB",
@@ -104,6 +111,19 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("outputs/configs/moabb_a100.materialized.yaml", run_full)
         self.assertIn("EXPECTED_WINDOW_COUNT", run_full)
         self.assertIn("EXPECTED_TRAIN_WINDOWS", run_full)
+        self.assertIn("cluster materialize-config", run_full)
+        self.assertIn("--expect-window-count", run_full)
+        self.assertIn("--expect-split-windows", run_full)
+        self.assertIn("SBATCH_PARTITION", run_full)
+        self.assertIn("SBATCH_ACCOUNT", run_full)
+        self.assertIn("SBATCH_QOS", run_full)
+        self.assertIn("RUN_LOG_DIR", run_full)
+        self.assertIn("--output \"$RUN_LOG_DIR/neurotwin-a100-full-%j.out\"", run_full)
+        self.assertIn("--error \"$RUN_LOG_DIR/neurotwin-a100-full-%j.err\"", run_full)
+        self.assertIn("/Users|/Users/*", run_full)
+        self.assertIn("Persistent root must not be inside the checkout", run_full)
+        self.assertIn("REPO_ROOT", run_full_sbatch)
+        self.assertNotIn('dirname "${BASH_SOURCE[0]}"', run_full_sbatch)
         self.assertIn("/tmp|/tmp/*|/private/tmp", run_full)
         self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
         self.assertNotIn("\nsbatch ", run_full_sbatch)
@@ -113,13 +133,32 @@ class ResearchArtifactTests(unittest.TestCase):
     def test_chapman_first_run_launcher_contains_required_sequence(self):
         launcher = Path("scripts/cluster/chapman_a100_first_run.sh").read_text(encoding="utf-8")
 
-        self.assertIn("prepare_moabb_benchmark.sh", launcher)
-        self.assertIn("EXPECTED_WINDOW_COUNT", launcher)
-        self.assertIn("window_count != expected", launcher)
-        self.assertIn("moabb_a100_chapman.yaml", launcher)
-        self.assertIn("cluster preflight", launcher)
-        self.assertIn("train --dry-run", launcher)
-        self.assertIn("sbatch scripts/slurm/train_a100.sh", launcher)
+        self.assertIn("scripts/run_full.sh", launcher)
+        self.assertIn("exec", launcher)
+        self.assertNotIn("moabb_a100_chapman.yaml", launcher)
+        self.assertNotIn("sbatch scripts/slurm/train_a100.sh", launcher)
+
+    def test_runpod_rehearsal_is_budget_gated(self):
+        script = Path("scripts/cluster/runpod_a100_rehearsal.sh").read_text(encoding="utf-8")
+        doc = Path("docs/RUNPOD_A100_REHEARSAL.md").read_text(encoding="utf-8")
+
+        self.assertIn("RUNPOD_MAX_BUDGET_USD", script)
+        self.assertIn("must be <= 5", script)
+        self.assertIn("A100", script)
+        self.assertIn("run_full.sbatch", script)
+        self.assertIn("runpod_rehearsal_passed=True", script)
+        self.assertIn("$5", doc)
+        self.assertIn("not a scientific result", doc)
+
+    def test_package_bundle_uses_head_archive_and_dirty_guard(self):
+        script = Path("scripts/package_run_bundle.sh").read_text(encoding="utf-8")
+
+        self.assertIn("git archive", script)
+        self.assertIn("Refusing to package a dirty worktree", script)
+        self.assertIn("ALLOW_DIRTY_BUNDLE", script)
+        self.assertIn("BUNDLE_METADATA.txt", script)
+        for excluded in (".git", ".context", "outputs", "runs", "*.pt", "*.npy", "*.npz"):
+            self.assertIn(f"--exclude='{excluded}'", script)
 
     def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
         env = dict(os.environ)
