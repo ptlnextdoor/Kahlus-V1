@@ -92,8 +92,6 @@ tar \
   --exclude='outputs/*' \
   --exclude='runs' \
   --exclude='runs/*' \
-  --exclude='data' \
-  --exclude='data/*' \
   --exclude='*/__pycache__' \
   --exclude='*.pyc' \
   --exclude='.pytest_cache' \
