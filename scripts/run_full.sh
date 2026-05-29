@@ -19,6 +19,10 @@ if [[ "$INPUT_ROOT" != /* ]]; then
   exit 2
 fi
 case "$INPUT_ROOT" in
+  /path/to|/path/to/*|/absolute|/absolute/*)
+    echo "Persistent root must be a real Chapman shared path, not placeholder text: $INPUT_ROOT" >&2
+    exit 2
+    ;;
   /tmp|/tmp/*|/private/tmp|/private/tmp/*|/var/tmp|/var/tmp/*)
     echo "Persistent root must not be local tmp: $INPUT_ROOT" >&2
     exit 2

@@ -28,7 +28,7 @@ if [[ "$REPO_ROOT" != /* ]]; then
   exit 2
 fi
 cd "$REPO_ROOT"
-if [[ ! -f src/neurotwin/cli.py || ! -f scripts/slurm/_train_a100_inner.sh ]]; then
+if [[ ! -f src/neurotwin/cli.py || ! -f scripts/train_a100_inner.sh ]]; then
   echo "REPO_ROOT does not look like a NeuroTwin checkout: $REPO_ROOT" >&2
   exit 2
 fi
@@ -36,4 +36,4 @@ fi
 export RUN_ROOT
 export PYTHON_BIN="${PYTHON_BIN:-python3}"
 
-bash scripts/slurm/_train_a100_inner.sh "$CONFIG" "$RUN_ROOT" 1
+bash scripts/train_a100_inner.sh "$CONFIG" "$RUN_ROOT" 1

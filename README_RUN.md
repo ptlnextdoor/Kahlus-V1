@@ -8,16 +8,26 @@ The smoke command validates local package, CLI, synthetic data, prepared trainin
 
 ## Bundle And Commit
 
-Primary handoff is a tarball. The friend running Chapman does not need GitHub access.
+Primary handoff is a runner tarball. The friend running Chapman does not need GitHub access.
 
 Build the bundle from a clean committed checkout on the packaging machine:
 
 ```bash
-bash scripts/package_run_bundle.sh
-ls outputs/neurotwin-a100-run-bundle-*.tar.gz
+bash scripts/package_runner_bundle.sh
+ls outputs/neurotwin-a100-runner-*.tar.gz
 ```
 
-The archive includes `COMMIT_HASH.txt` and `BUNDLE_METADATA.txt` so it maps back to the private repo commit. It excludes `.git/`, git history, raw data, prepared arrays, checkpoints, caches, local outputs, `.context/`, and local machine paths.
+The archive includes `COMMIT_HASH.txt`, `BUNDLE_MANIFEST.txt`, and `SHA256SUMS` so it maps back to the private repo commit and can be checked after transfer. It excludes `.git/`, git history, tests, research notes, paper drafts, graph output, raw data, prepared arrays, checkpoints, caches, local outputs, `.context/`, and local machine paths.
+
+This is minimal practical code visibility, not cryptographic source secrecy. The runner contains Python runtime source because Chapman has to execute it. A determined operator with filesystem access can still inspect shipped Python files.
+
+An internal full-source bundle is also available:
+
+```bash
+bash scripts/package_run_bundle.sh
+```
+
+Use the runner bundle for the friend-facing preliminary Chapman run.
 
 If repo access is available, the equivalent source checkout is:
 
@@ -37,14 +47,14 @@ Use the Raspberry Pi only as a Chapman-network bridge and file shuttle. Do not b
 From the packaging machine, copy the bundle to the Pi:
 
 ```bash
-scp outputs/neurotwin-a100-run-bundle-<short_sha>.tar.gz \
+scp outputs/neurotwin-a100-runner-<short_sha>.tar.gz \
   <pi_user>@<raspberry_pi_host>:/tmp/
 ```
 
 From the Pi, copy the bundle to the Chapman login node:
 
 ```bash
-scp /tmp/neurotwin-a100-run-bundle-<short_sha>.tar.gz \
+scp /tmp/neurotwin-a100-runner-<short_sha>.tar.gz \
   <chapman_user>@<chapman_login_host>:~/
 ```
 
@@ -53,9 +63,10 @@ SSH from the Pi into the Chapman login node and unpack there:
 ```bash
 ssh <chapman_user>@<chapman_login_host>
 mkdir -p ~/neurotwin-a100
-tar -xzf ~/neurotwin-a100-run-bundle-<short_sha>.tar.gz -C ~/neurotwin-a100
-cd ~/neurotwin-a100/neurotwin-a100-run-bundle-<short_sha>
+tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz -C ~/neurotwin-a100
+cd ~/neurotwin-a100/neurotwin-a100-runner-<short_sha>
 cat COMMIT_HASH.txt
+sha256sum -c SHA256SUMS
 ```
 
 All remaining commands in this file run on the Chapman login node, not on the Pi.
@@ -117,7 +128,7 @@ export RUNPOD_MAX_BUDGET_USD=5
 bash scripts/cluster/runpod_a100_rehearsal.sh /workspace/neurotwin_data
 ```
 
-This must run inside a RunPod A100 pod from a clean checkout. See `docs/RUNPOD_A100_REHEARSAL.md`. A non-A100 GPU does not count as a passed A100 rehearsal.
+This must run inside a RunPod A100 pod from a clean checkout. A non-A100 GPU does not count as a passed A100 rehearsal.
 
 ## Full A100 Infrastructure Validation
 

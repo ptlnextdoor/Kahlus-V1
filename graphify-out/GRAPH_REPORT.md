@@ -1,11 +1,11 @@
 # Graph Report - abuja  (2026-05-28)
 
 ## Corpus Check
-- 72 files · ~34,776 words
+- 72 files · ~34,919 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 558 nodes · 1173 edges · 30 communities detected
+- 559 nodes · 1174 edges · 30 communities detected
 - Extraction: 63% EXTRACTED · 37% INFERRED · 0% AMBIGUOUS · INFERRED: 436 edges (avg confidence: 0.74)
 - Token cost: 0 input · 0 output
 
@@ -54,90 +54,90 @@
 10. `make_synthetic_recordings()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `BaselinesAndArchitectureTests` --uses--> `NeuralStateSpaceTranslator`  [INFERRED]
-  tests/test_baselines_and_architecture.py → src/neurotwin/models/torch_models.py
-- `ModelShapeTests` --uses--> `TinySSMBaseline`  [INFERRED]
-  tests/test_model_shapes.py → src/neurotwin/models/torch_models.py
-- `ModelShapeTests` --uses--> `TinyTransformerBaseline`  [INFERRED]
-  tests/test_model_shapes.py → src/neurotwin/models/torch_models.py
 - `AdapterTests` --uses--> `MissingOptionalDependency`  [INFERRED]
   tests/test_adapters_moabb_bids.py → src/neurotwin/adapters/moabb.py
 - `ModelMetadataGeometryTests` --uses--> `NeuralStateSpaceTranslator`  [INFERRED]
   tests/test_model_metadata_geometry.py → src/neurotwin/models/torch_models.py
+- `WindowsAndMoabbLoaderTests` --uses--> `WindowSpec`  [INFERRED]
+  tests/test_windows_and_moabb_loader.py → src/neurotwin/data/windows.py
+- `BaselinesAndArchitectureTests` --uses--> `NumpyRidgeBaseline`  [INFERRED]
+  tests/test_baselines_and_architecture.py → src/neurotwin/models/baselines.py
+- `BaselinesAndArchitectureTests` --uses--> `TorchMLPBaseline`  [INFERRED]
+  tests/test_baselines_and_architecture.py → src/neurotwin/models/baselines.py
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.06
-Nodes (38): audit_prepared_eval_inputs(), _prepared_windows_by_split(), PreparedEvalAuditReport, Audit prepared eval inputs before any benchmark score is trusted., Audit prepared eval inputs before any benchmark score is trusted., _record_id(), _window_overlap_violations(), event_manifest_summary() (+30 more)
+Nodes (40): _baseline_catalog(), BaselineFailure, _cross_modal_task(), _fit_neurotwin(), _fit_ridge(), _fit_torch_sequence_model(), _flatten_time(), _future_task() (+32 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.08
-Nodes (34): _baseline_catalog(), BaselineFailure, _cross_modal_task(), _fit_ridge(), _fit_torch_sequence_model(), _flatten_time(), _future_task(), _make_paired_windows() (+26 more)
+Cohesion: 0.07
+Nodes (39): _cmd_data_prepare(), _cmd_data_smoke(), Persist prepared event batches for offline training/eval jobs., load_split_manifest(), record_from_dict(), record_to_dict(), save_data_manifest(), save_leakage_report() (+31 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.07
-Nodes (31): _cmd_estimate(), _cmd_split_audit(), _cmd_train(), _config_value(), _has_prepared_training_inputs(), ConfigError, load_config(), Raised when an experiment config cannot be loaded or validated. (+23 more)
+Cohesion: 0.08
+Nodes (33): format_prepared_eval_audit(), _metrics(), _cmd_eval(), bandpower_error(), bootstrap_ci(), mae(), mse(), pearsonr() (+25 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.09
-Nodes (30): _metrics(), bandpower_error(), bootstrap_ci(), mae(), mse(), pearsonr(), r2_score(), rank_models() (+22 more)
+Cohesion: 0.07
+Nodes (26): cleanup_process_group(), DistributedInfo, get_distributed_info(), get_rank_metrics_path(), maybe_init_process_group(), unwrap_model(), wrap_ddp_if_initialized(), _aggregate_task_results() (+18 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.07
-Nodes (17): _fit_neurotwin(), Run a tiny deterministic CPU training loop for CLI and CI smoke tests., run_synthetic_training(), TrainingSmokeResult, ModelMetadataGeometryTests, ModelShapeTests, TrainingSmokeTests, _build_backbone() (+9 more)
+Cohesion: 0.08
+Nodes (27): _cmd_doctor(), _cmd_estimate(), _cmd_train(), _config_value(), _has_prepared_training_inputs(), ConfigError, load_config(), Raised when an experiment config cannot be loaded or validated. (+19 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.1
-Nodes (34): bids_manifest_summary(), _events_for(), _infer_modality(), _is_bids_signal(), _listlike(), _load_timeseries_derivative(), _parse_entities(), _read_tsv() (+26 more)
+Nodes (24): audit_split_manifest(), AuditReport, _forbidden_metadata(), _metadata_group_overlap(), _window_overlap(), _cmd_split_audit(), check_manifest_leakage(), LeakageReport (+16 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.09
-Nodes (25): cleanup_process_group(), DistributedInfo, get_distributed_info(), get_rank_metrics_path(), maybe_init_process_group(), unwrap_model(), wrap_ddp_if_initialized(), _aggregate_task_results() (+17 more)
+Cohesion: 0.12
+Nodes (26): Audit prepared eval inputs before any benchmark score is trusted., build_prepared_window_tasks(), _cross_modal_task_from_windows(), _dataset_site_generalization_from_windows(), _first_modality_with_splits(), _future_task_from_windows(), _future_xy(), _group_windows() (+18 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.14
 Nodes (14): _cmd_cluster_materialize_config(), _cmd_cluster_preflight(), _parse_split_windows(), ClusterMaterializeConfigReport, ClusterPreflightReport, _config_value(), format_cluster_materialize_config(), format_cluster_preflight() (+6 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.15
-Nodes (25): format_prepared_eval_audit(), _cmd_data_smoke(), _cmd_eval(), save_leakage_report(), build_prepared_window_tasks(), _cross_modal_task_from_windows(), _dataset_site_generalization_from_windows(), _first_modality_with_splits() (+17 more)
-
-### Community 9 - "Community 9"
-Cohesion: 0.13
-Nodes (18): audit_split_manifest(), AuditReport, _forbidden_metadata(), _metadata_group_overlap(), _window_overlap(), check_manifest_leakage(), LeakageReport, Check record reuse and held-out group overlap across train/val/test. (+10 more)
-
-### Community 10 - "Community 10"
 Cohesion: 0.13
 Nodes (21): _cmd_report(), competitor_registry(), CompetitorSpec, _adaptation_rows(), _csv_cell(), _csv_rows(), _flatten_metrics(), generate_compare_report() (+13 more)
 
+### Community 9 - "Community 9"
+Cohesion: 0.15
+Nodes (15): audit_prepared_eval_inputs(), _prepared_windows_by_split(), PreparedEvalAuditReport, Audit prepared eval inputs before any benchmark score is trusted., _record_id(), _window_overlap_violations(), event_manifest_summary(), _jsonable() (+7 more)
+
+### Community 10 - "Community 10"
+Cohesion: 0.17
+Nodes (18): bids_manifest_summary(), _events_for(), _infer_modality(), _is_bids_signal(), _listlike(), _load_timeseries_derivative(), _parse_entities(), _read_tsv() (+10 more)
+
 ### Community 11 - "Community 11"
+Cohesion: 0.14
+Nodes (7): _build_backbone(), _build_modality_encoder(), _check_sequence_tensor(), _LinearModalityEncoder, _SSMFallbackBackbone, _TemporalConvModalityEncoder, _TransformerBackbone
+
+### Community 12 - "Community 12"
 Cohesion: 0.2
 Nodes (7): dataset_registry(), DatasetAdapterSpec, RegistryTests, permissive_upstreams(), quarantined_upstreams(), upstream_registry(), UpstreamSpec
 
-### Community 12 - "Community 12"
-Cohesion: 0.18
+### Community 13 - "Community 13"
+Cohesion: 0.17
 Nodes (1): ResearchArtifactTests
 
-### Community 13 - "Community 13"
-Cohesion: 0.22
-Nodes (1): Data schemas, split manifests, and leakage guards.
-
 ### Community 14 - "Community 14"
-Cohesion: 0.33
-Nodes (6): _cmd_doctor(), _check_runs_writable(), DoctorCheck, DoctorReport, format_doctor_report(), run_doctor()
-
-### Community 15 - "Community 15"
 Cohesion: 0.28
 Nodes (1): MoabbCliAndGeneralizationTests
+
+### Community 15 - "Community 15"
+Cohesion: 0.22
+Nodes (1): Data schemas, split manifests, and leakage guards.
 
 ### Community 16 - "Community 16"
 Cohesion: 0.43
 Nodes (1): ExpandedCliTests
 
 ### Community 17 - "Community 17"
-Cohesion: 0.53
-Nodes (1): ManifestAuditAndTorchrunTests
+Cohesion: 0.29
+Nodes (4): Run a tiny deterministic CPU training loop for CLI and CI smoke tests., run_synthetic_training(), TrainingSmokeResult, TrainingSmokeTests
 
 ### Community 18 - "Community 18"
 Cohesion: 0.83
@@ -190,15 +190,13 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
 ## Knowledge Gaps
 - **23 isolated node(s):** `Raised when an experiment config cannot be loaded or validated.`, `Validate cluster launch inputs before an expensive SLURM allocation runs.`, `Write a cluster config with absolute prepared-manifest paths.`, `Closed-form ridge baseline for sanity checks and tiny CPU benchmarks.`, `Per-timepoint MLP baseline for neural windows.` (+18 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 12`** (11 nodes): `ResearchArtifactTests`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_package_bundle_uses_head_archive_and_dirty_guard()`, `.test_runpod_rehearsal_is_budget_gated()`, `test_research_artifacts.py`
+- **Thin community `Community 13`** (12 nodes): `ResearchArtifactTests`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_package_bundle_uses_head_archive_and_dirty_guard()`, `.test_package_runner_bundle_is_minimal_and_manifested()`, `.test_runpod_rehearsal_is_budget_gated()`, `test_research_artifacts.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 13`** (9 nodes): `Data schemas, split manifests, and leakage guards.`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`
+- **Thin community `Community 14`** (9 nodes): `MoabbCliAndGeneralizationTests`, `.run_cli_no_check()`, `.test_dataset_site_generalization_task()`, `.test_moabb_prepare_missing_deps_fails_cleanly()`, `.test_moabb_smoke_missing_deps_fails_cleanly()`, `.test_neural_translation_suite_includes_generalization()`, `test_real_moabb_benchmark_script_creates_windows_and_tasks()`, `test_real_moabb_smoke_script_creates_windows()`, `test_moabb_cli_and_generalization.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 15`** (9 nodes): `MoabbCliAndGeneralizationTests`, `.run_cli_no_check()`, `.test_dataset_site_generalization_task()`, `.test_moabb_prepare_missing_deps_fails_cleanly()`, `.test_moabb_smoke_missing_deps_fails_cleanly()`, `.test_neural_translation_suite_includes_generalization()`, `test_real_moabb_benchmark_script_creates_windows_and_tasks()`, `test_real_moabb_smoke_script_creates_windows()`, `test_moabb_cli_and_generalization.py`
+- **Thin community `Community 15`** (9 nodes): `Data schemas, split manifests, and leakage guards.`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`, `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 16`** (8 nodes): `ExpandedCliTests`, `.run_cli()`, `.test_bids_prepare_writes_event_manifest_when_derivative_exists()`, `.test_data_and_split_audits()`, `.test_estimate_and_train_dry_run()`, `.test_report_compare_writes_aggregate_artifacts()`, `.test_report_run_dir()`, `test_cli_expanded.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 17`** (6 nodes): `ManifestAuditAndTorchrunTests`, `.run_cli()`, `.test_rank_zero_writes_shared_artifacts_and_rank_metrics()`, `.test_split_audit_from_saved_manifest()`, `.test_train_rank_one_does_not_write_shared_checkpoint()`, `test_manifest_audit_and_torchrun.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 19`** (4 nodes): `translator.py`, `NeuralStateSpaceTranslatorConfig`, `.describe()`, `Configuration shell for the future NeuroTwin model implementation.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -226,11 +224,11 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `run_prepared_training()` connect `Community 6` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 8`?**
-  _High betweenness centrality (0.149) - this node is a cross-community bridge._
-- **Why does `_cmd_train()` connect `Community 2` to `Community 0`, `Community 9`, `Community 4`, `Community 6`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
-- **Why does `PreparedSuiteConfig` connect `Community 8` to `Community 0`, `Community 1`, `Community 3`, `Community 6`, `Community 9`?**
+- **Why does `run_prepared_training()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 6`, `Community 9`?**
+  _High betweenness centrality (0.148) - this node is a cross-community bridge._
+- **Why does `_cmd_train()` connect `Community 4` to `Community 1`, `Community 3`, `Community 5`, `Community 9`, `Community 17`?**
+  _High betweenness centrality (0.136) - this node is a cross-community bridge._
+- **Why does `PreparedSuiteConfig` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 5`?**
   _High betweenness centrality (0.118) - this node is a cross-community bridge._
 - **Are the 19 inferred relationships involving `run_prepared_training()` (e.g. with `.test_prepared_training_writes_checkpoint_and_metrics()` and `.test_prepared_training_runs_all_neural_translation_tasks()`) actually correct?**
   _`run_prepared_training()` has 19 INFERRED edges - model-reasoned connections that need verification._

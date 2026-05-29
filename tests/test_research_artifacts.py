@@ -32,6 +32,8 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
             "scripts/package_run_bundle.sh",
+            "scripts/package_runner_bundle.sh",
+            "scripts/train_a100_inner.sh",
             "README_RUN.md",
             "environment-a100.yml",
             "requirements/cluster-a100.txt",
@@ -95,9 +97,12 @@ class ResearchArtifactTests(unittest.TestCase):
             "The friend running Chapman does not need GitHub access",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
-            "scp outputs/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
-            "scp /tmp/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
-            "tar -xzf ~/neurotwin-a100-run-bundle-<short_sha>.tar.gz",
+            "bash scripts/package_runner_bundle.sh",
+            "neurotwin-a100-runner-<short_sha>.tar.gz",
+            "scp outputs/neurotwin-a100-runner-<short_sha>.tar.gz",
+            "scp /tmp/neurotwin-a100-runner-<short_sha>.tar.gz",
+            "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
+            "minimal practical code visibility",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
             "1x A100 80GB",
@@ -121,12 +126,14 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("--output \"$RUN_LOG_DIR/neurotwin-a100-full-%j.out\"", run_full)
         self.assertIn("--error \"$RUN_LOG_DIR/neurotwin-a100-full-%j.err\"", run_full)
         self.assertIn("/Users|/Users/*", run_full)
+        self.assertIn("/path/to|/path/to/*|/absolute|/absolute/*", run_full)
         self.assertIn("Persistent root must not be inside the checkout", run_full)
         self.assertIn("REPO_ROOT", run_full_sbatch)
         self.assertNotIn('dirname "${BASH_SOURCE[0]}"', run_full_sbatch)
         self.assertIn("/tmp|/tmp/*|/private/tmp", run_full)
         self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
         self.assertNotIn("\nsbatch ", run_full_sbatch)
+        self.assertIn("scripts/train_a100_inner.sh", run_full_sbatch)
         for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne-bids", "scikit-learn"):
             self.assertIn(dependency, environment)
 
@@ -158,6 +165,39 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("ALLOW_DIRTY_BUNDLE", script)
         self.assertIn("BUNDLE_METADATA.txt", script)
         for excluded in (".git", ".context", "outputs", "runs", "*.pt", "*.npy", "*.npz"):
+            self.assertIn(f"--exclude='{excluded}'", script)
+
+    def test_package_runner_bundle_is_minimal_and_manifested(self):
+        script = Path("scripts/package_runner_bundle.sh").read_text(encoding="utf-8")
+
+        self.assertIn("neurotwin-a100-runner-$SHORT_SHA", script)
+        self.assertIn("git archive", script)
+        self.assertIn("Refusing to package a dirty worktree", script)
+        self.assertIn("ALLOW_DIRTY_RUNNER_BUNDLE", script)
+        self.assertIn("COMMIT_HASH.txt", script)
+        self.assertIn("BUNDLE_MANIFEST.txt", script)
+        self.assertIn("SHA256SUMS", script)
+        self.assertIn("configs/train/moabb_a100_smoke.yaml", script)
+        self.assertIn("configs/train/prepared_synthetic_debug.yaml", script)
+        self.assertIn("scripts/run_smoke.sh", script)
+        self.assertIn("scripts/run_full.sh", script)
+        self.assertIn("scripts/run_full.sbatch", script)
+        self.assertIn("scripts/train_a100_inner.sh", script)
+        self.assertIn("scripts/prepare_moabb_benchmark.sh", script)
+        self.assertIn("src", script)
+        for excluded in (
+            ".git",
+            ".context",
+            "tests",
+            "docs/research",
+            "docs/paper",
+            "graphify-out",
+            "outputs",
+            "runs",
+            "*.pt",
+            "*.npy",
+            "*.npz",
+        ):
             self.assertIn(f"--exclude='{excluded}'", script)
 
     def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
