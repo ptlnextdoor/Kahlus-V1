@@ -1,0 +1,45 @@
+experiment: neurotwin_v1_a100
+description: Canonical A100 NeuroTwin v1 config for prepared manifests only.
+dataset: prepared_manifest
+task: neural_translation_v1
+split: subject_site_dataset
+data:
+  event_manifest: /path/to/prepared/event_manifest.json
+  split_manifest: /path/to/prepared/split_manifest.json
+seed: 0
+steps: 100000
+batch_size: 256
+window_size: 1024
+stride: 512
+precision: bf16
+gradient_accumulation_steps: 8
+gradient_checkpointing: true
+checkpoint_every_steps: 1000
+eval_every_steps: 1000
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 512
+  n_layers: 16
+  backbone: ssm_fallback
+  encoder: auto
+  n_heads: 8
+  subject_adapter_dim: 64
+  adapter_mode: disabled
+  use_subject_embeddings: false
+  projection_dim: 192
+  modalities:
+    - eeg
+    - meg
+    - fmri
+    - spikes
+training:
+  ddp: true
+  torchrun: true
+  fsdp: future
+  compile: false
+  objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    cross_modal_translation: 1.0
+  adapter_mode: disabled
+  internet_required: false

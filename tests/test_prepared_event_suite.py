@@ -74,6 +74,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
             )
             self.assertEqual(payload["scope"]["status"], "prepared-synthetic")
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
+            self.assertTrue((eval_dir / "baseline_failures.json").exists())
             self.assertIn("few_shot_subject_adaptation", payload["tasks"])
             self.assertIn("dataset_site_generalization", payload["tasks"])
 
@@ -103,6 +104,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
             artifact = json.loads((eval_dir / "prepared_baseline_suite.json").read_text(encoding="utf-8"))
             self.assertIn("Prepared Baseline Suite", result.stdout)
             self.assertIn("ci95=", result.stdout)
+            self.assertIn("baseline_catalog", result.stdout)
             self.assertIn("few_shot_subject_adaptation", result.stdout)
             self.assertIn("dataset_site_generalization", result.stdout)
             future = artifact["tasks"]["future_state_forecasting"]["metrics_by_model"]["linear_ridge"]

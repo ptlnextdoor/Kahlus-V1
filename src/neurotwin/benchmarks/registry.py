@@ -12,6 +12,7 @@ class CompetitorSpec:
     upstream_url: str
     license_status: str
     notes: str
+    implementation_status: str = "unavailable"
 
 
 def competitor_registry() -> tuple[CompetitorSpec, ...]:
@@ -24,6 +25,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/2605.04326",
             license_status="paper-first; verify code/weights before reuse",
             notes="Makes stimulus-to-brain prediction a crowded baseline, not NeuroTwin novelty.",
+            implementation_status="unavailable",
         ),
         CompetitorSpec(
             competitor_id="brainvista",
@@ -33,6 +35,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/2602.04512",
             license_status="paper-first; verify code/weights before reuse",
             notes="Crowds future fMRI from stimulus and long-horizon rollout claims.",
+            implementation_status="unavailable",
         ),
         CompetitorSpec(
             competitor_id="brain_of",
@@ -42,6 +45,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/2602.23410",
             license_status="paper-first; verify code/weights before reuse",
             notes="Overlaps with universal tokenizer/translator; NeuroTwin must be stricter on translation benchmarks and held-out splits.",
+            implementation_status="unavailable",
         ),
         CompetitorSpec(
             competitor_id="brainomni",
@@ -51,6 +55,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/2505.18185",
             license_status="paper-first; verify code/weights before reuse",
             notes="Covers unified EEG/MEG tokenizer and unseen-device generalization.",
+            implementation_status="unavailable",
         ),
         CompetitorSpec(
             competitor_id="brain_harmony",
@@ -60,6 +65,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/2509.24693",
             license_status="paper-first; verify code/weights before reuse",
             notes="Crowds structure + function tokenization.",
+            implementation_status="unavailable",
         ),
         CompetitorSpec(
             competitor_id="transformer",
@@ -69,6 +75,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://arxiv.org/abs/1706.03762",
             license_status="implementation local/permissive",
             notes="Must use the exact same splits and inputs as NeuroTwin.",
+            implementation_status="local_baseline",
         ),
         CompetitorSpec(
             competitor_id="mamba_ssm",
@@ -78,6 +85,7 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://github.com/state-spaces/mamba",
             license_status="permissive upstream; pin commit before vendoring",
             notes="Baseline and possible NeuroTwin core, but not by itself a novelty claim.",
+            implementation_status="approximation",
         ),
         CompetitorSpec(
             competitor_id="modality_specialist",
@@ -87,5 +95,6 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             upstream_url="https://github.com/joel99/ndt3",
             license_status="mixed; quarantine restricted adapters",
             notes="Prevents weak generalist comparisons.",
+            implementation_status="unavailable",
         ),
     )

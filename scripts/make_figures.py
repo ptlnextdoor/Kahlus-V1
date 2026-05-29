@@ -9,10 +9,15 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create lightweight text figure specs from NeuroTwin run metrics.")
     parser.add_argument("run_dir")
+    parser.add_argument("--allow-synthetic", action="store_true", help="Allow synthetic-only plumbing runs in generated figure specs.")
     args = parser.parse_args()
     metrics_path = Path(args.run_dir) / "metrics.json"
     if not metrics_path.exists():
         raise SystemExit(f"No metrics.json found in {args.run_dir}")
+    summary_path = Path(args.run_dir) / "summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+    if isinstance(summary, dict) and summary.get("synthetic_only") and not args.allow_synthetic:
+        raise SystemExit(f"{args.run_dir} is synthetic-only; rerun with --allow-synthetic for plumbing figures")
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     out = Path(args.run_dir) / "figure_summary.txt"
     lines = []
@@ -23,6 +28,10 @@ def main() -> int:
             lines.append(f"baseline_rank {row['model_id']} mean_rank={row['mean_rank']}")
     if not lines and isinstance(metrics, dict):
         lines = [f"{key}: {value}" for key, value in sorted(metrics.items())]
+    if isinstance(summary, dict) and summary.get("real_data_smoke"):
+        lines.insert(0, "claim_status: real_data_smoke")
+    elif isinstance(summary, dict):
+        lines.insert(0, f"scientific_claim_allowed: {bool(summary.get('scientific_claim_allowed'))}")
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(out)
     return 0

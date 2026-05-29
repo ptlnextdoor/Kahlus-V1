@@ -15,4 +15,6 @@ Do not claim:
 - human brain clone
 - proven neurology breakthrough
 
-Synthetic smoke tests validate plumbing only. MOABB smoke tests, once available, validate the first real-data path only; they are not full NeuroTwin validation.
+Synthetic smoke tests validate plumbing only. MOABB smoke tests validate the first real-data path only; they are not full NeuroTwin validation.
+
+Scientific claims require real prepared data, leakage audit pass, validation-selected checkpoints, final held-out test metrics, and non-smoke run labeling through `scientific_claim_allowed=true`.

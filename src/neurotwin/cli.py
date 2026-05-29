@@ -16,10 +16,16 @@ from neurotwin.data.manifest_io import save_data_manifest, save_leakage_report, 
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
-from neurotwin.reports import generate_run_report, generate_suite_report
+from neurotwin.reports import generate_compare_report, generate_run_report, generate_suite_report
 from neurotwin.repro import append_jsonl, capture_environment, create_run_dir, manifest_hash, snapshot_config, stable_hash, write_json
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
+from neurotwin.runtime.preflight import (
+    format_cluster_materialize_config,
+    format_cluster_preflight,
+    materialize_cluster_config,
+    run_cluster_preflight,
+)
 from neurotwin.training.prepared import run_prepared_training
 from neurotwin.training.smoke import run_synthetic_training
 
@@ -57,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     smoke.add_argument("--stride", type=int, default=8)
     smoke.add_argument("--train-steps", type=int, default=1)
     smoke.add_argument("--seed", type=int, default=0)
+    smoke.add_argument("--require-windows", action="store_true")
     smoke.set_defaults(func=_cmd_data_smoke)
     data_audit = data_subparsers.add_parser("audit", help="Audit dataset availability and manifestability")
     data_audit.add_argument("--dataset", required=True)
@@ -92,12 +99,35 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--window-length", type=int, default=8)
     eval_parser.add_argument("--stride", type=int, default=8)
     eval_parser.add_argument("--train-steps", type=int, default=5)
+    eval_parser.add_argument("--require-windows", action="store_true")
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
     report.add_argument("--suite", default=None)
     report.add_argument("--run-dir", default=None)
+    report.add_argument("--compare", nargs="*", default=None)
+    report.add_argument("--out-dir", default=None)
     report.set_defaults(func=_cmd_report)
+
+    cluster = subparsers.add_parser("cluster", help="Cluster launch safety checks")
+    cluster_subparsers = cluster.add_subparsers(dest="cluster_command", required=True)
+    preflight = cluster_subparsers.add_parser("preflight", help="Validate cluster launch inputs")
+    preflight.add_argument("--config", required=True)
+    preflight.add_argument("--run-root", required=True)
+    preflight.add_argument("--require-cuda", action="store_true")
+    preflight.add_argument("--require-prepared-windows", action="store_true")
+    preflight.add_argument("--expect-window-count", type=int, default=None)
+    preflight.add_argument("--expect-split-windows", default=None)
+    preflight.set_defaults(func=_cmd_cluster_preflight)
+    materialize_config = cluster_subparsers.add_parser(
+        "materialize-config",
+        help="Write a cluster config with absolute prepared-manifest paths",
+    )
+    materialize_config.add_argument("--template", required=True)
+    materialize_config.add_argument("--prepared-root", required=True)
+    materialize_config.add_argument("--out", required=True)
+    materialize_config.add_argument("--allow-tracked-output", action="store_true")
+    materialize_config.set_defaults(func=_cmd_cluster_materialize_config)
 
     args = parser.parse_args(argv)
     args.func(args)
@@ -117,17 +147,27 @@ def _cmd_data_prepare(args: argparse.Namespace) -> None:
             if not event_batches:
                 event_batches = None
         elif args.dataset == "moabb":
-            from neurotwin.adapters.moabb import MissingOptionalDependency, load_moabb_trials, trials_to_event_batches, trials_to_recordings
+            from neurotwin.adapters.moabb import (
+                MissingOptionalDependency,
+                balanced_trial_subset,
+                load_moabb_trials,
+                trials_to_event_batches,
+                trials_to_recordings,
+            )
 
             try:
                 trials = load_moabb_trials(
                     args.moabb_dataset,
                     subjects=tuple(args.subjects) if args.subjects else None,
                     paradigm=args.moabb_paradigm,
-                    max_trials=args.max_trials,
+                    max_trials=None,
                     sampling_rate=args.sampling_rate,
                 )
             except MissingOptionalDependency as exc:
+                raise SystemExit(str(exc)) from exc
+            try:
+                trials = balanced_trial_subset(trials, split_policy=args.split, max_trials=args.max_trials)
+            except ValueError as exc:
                 raise SystemExit(str(exc)) from exc
             records = trials_to_recordings(trials, dataset_id=args.moabb_dataset)
             event_batches = trials_to_event_batches(trials, dataset_id=args.moabb_dataset)
@@ -165,7 +205,20 @@ def _cmd_data_prepare(args: argparse.Namespace) -> None:
         if event_batches is not None:
             from neurotwin.data.event_io import save_event_batches
 
-            event_path = save_event_batches(event_batches, out_dir)
+            event_path = save_event_batches(
+                event_batches,
+                out_dir,
+                manifest_metadata={
+                    "dataset": args.dataset,
+                    "moabb_dataset": args.moabb_dataset if args.dataset == "moabb" else None,
+                    "moabb_paradigm": args.moabb_paradigm if args.dataset == "moabb" else None,
+                    "subjects": args.subjects,
+                    "split_policy": args.split,
+                    "max_trials": args.max_trials,
+                    "manifest_hash": manifest_hash([record.__dict__ for record in manifest.all_records]),
+                    "leakage_report": str(audit_path),
+                },
+            )
             print(f"event_manifest={event_path}")
 
 
@@ -174,6 +227,7 @@ def _cmd_data_smoke(args: argparse.Namespace) -> None:
         raise SystemExit("MOABB smoke currently supports --dataset moabb only")
     from neurotwin.adapters.moabb import (
         MissingOptionalDependency,
+        balanced_trial_subset,
         load_moabb_trials,
         trials_to_event_batches,
         trials_to_recordings,
@@ -188,10 +242,14 @@ def _cmd_data_smoke(args: argparse.Namespace) -> None:
             args.moabb_dataset,
             subjects=tuple(args.subjects) if args.subjects else None,
             paradigm=args.moabb_paradigm,
-            max_trials=args.max_trials,
+            max_trials=None,
             sampling_rate=args.sampling_rate,
         ))
     except MissingOptionalDependency as exc:
+        raise SystemExit(str(exc)) from exc
+    try:
+        trials = balanced_trial_subset(trials, split_policy=args.split, max_trials=args.max_trials)
+    except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     if not trials:
         raise SystemExit("MOABB smoke produced no trials; adjust subject/paradigm filters.")
@@ -211,7 +269,23 @@ def _cmd_data_smoke(args: argparse.Namespace) -> None:
     split_path = save_split_manifest(split, out_dir / "split_manifest.json")
     data_path = save_data_manifest(records, out_dir / "data_manifest.json")
     leakage_path = save_leakage_report(report, out_dir / "leakage_report.json")
-    event_path = save_event_batches(event_batches, out_dir)
+    event_path = save_event_batches(
+        event_batches,
+        out_dir,
+        manifest_metadata={
+            "dataset": args.dataset,
+            "moabb_dataset": args.moabb_dataset,
+            "moabb_paradigm": args.moabb_paradigm,
+            "subjects": args.subjects,
+            "split_policy": args.split,
+            "max_trials": args.max_trials,
+            "window_length": args.window_length,
+            "stride": args.stride,
+            "manifest_hash": manifest_hash([record.__dict__ for record in split.all_records]),
+            "leakage_report": str(leakage_path),
+            "real_data_smoke": True,
+        },
+    )
 
     print(f"dataset={args.dataset}")
     print(f"moabb_dataset={args.moabb_dataset}")
@@ -233,6 +307,7 @@ def _cmd_data_smoke(args: argparse.Namespace) -> None:
         window_length=args.window_length,
         stride=args.stride,
         out_dir=out_dir,
+        require_windows=args.require_windows,
     )
     print(format_prepared_eval_audit(audit))
 
@@ -263,11 +338,16 @@ def _cmd_data_audit(args: argparse.Namespace) -> None:
     elif args.dataset == "bids":
         if not args.root:
             raise SystemExit("--root is required for BIDS audit")
-        from neurotwin.adapters.bids import scan_bids_manifest
+        from neurotwin.adapters.bids import bids_manifest_summary, scan_bids_manifest
 
         records = scan_bids_manifest(args.root, dataset_id="bids")
+        summary = bids_manifest_summary(records)
         print("dataset=bids")
         print(f"records={len(records)}")
+        print(f"subjects={len(summary['subjects'])}")
+        print(f"sites={len(summary['sites'])}")
+        print(f"with_timeseries_derivative={summary['with_timeseries_derivative']}")
+        print("derivative_only=True")
         print(f"audit_passed={len(records) > 0}")
     elif args.dataset == "moabb":
         from neurotwin.adapters.moabb import moabb_optional_status
@@ -343,33 +423,14 @@ def _cmd_train(args: argparse.Namespace) -> None:
             raise SystemExit(f"Resume checkpoint does not exist: {resume_path}")
     if _has_prepared_training_inputs(config):
         checkpoint_path = run_dir / "checkpoint.pt" if dist.is_rank_zero else None
+        metrics_path = get_rank_metrics_path(run_dir, dist)
         result = run_prepared_training(
             config,
             checkpoint_path=checkpoint_path,
             resume_path=args.resume,
             metrics_csv_path=(run_dir / "metrics.csv") if dist.is_rank_zero else None,
-        )
-        metrics_path = get_rank_metrics_path(run_dir, dist)
-        append_jsonl(
-            metrics_path,
-            {
-                "step": 0,
-                "loss": result.initial_loss,
-                "rank": dist.rank,
-                "world_size": dist.world_size,
-                "task_id": result.task_id,
-            },
-        )
-        append_jsonl(
-            metrics_path,
-            {
-                "step": result.steps,
-                "loss": result.final_loss,
-                "eval_mse": result.eval_mse,
-                "rank": dist.rank,
-                "world_size": dist.world_size,
-                "task_id": result.task_id,
-            },
+            metrics_jsonl_path=metrics_path,
+            best_checkpoint_path=(run_dir / "checkpoint_best.pt") if dist.is_rank_zero else None,
         )
         if not dist.is_rank_zero:
             print(f"config={args.config}")
@@ -394,6 +455,23 @@ def _cmd_train(args: argparse.Namespace) -> None:
                 "precision": result.precision,
                 "gradient_accumulation_steps": result.gradient_accumulation_steps,
                 "completed_steps": result.completed_steps,
+                "eval_every_steps": result.eval_every_steps,
+                "checkpoint_every_steps": result.checkpoint_every_steps,
+                "best_task_id": result.best_task_id,
+                "best_eval_mse": result.best_eval_mse,
+                "best_val_mse": result.best_val_mse,
+                "test_mse": result.test_mse,
+                "test_mae": result.test_mae,
+                "test_pearsonr": result.test_pearsonr,
+                "test_r2": result.test_r2,
+                "test_spearmanr": result.test_spearmanr,
+                "selection_split": result.selection_split,
+                "report_split": result.report_split,
+                "real_data_smoke": bool(config.get("dataset") == "moabb" and "smoke" in str(config.get("experiment", ""))),
+                "scientific_claim_allowed": bool((not result.synthetic_only) and "smoke" not in str(config.get("experiment", ""))),
+                "unavailable_tasks": result.skipped_tasks,
+                "baseline_failures": [],
+                "task_results": result.task_results,
                 "distributed_initialized": result.distributed_initialized,
                 "distributed_backend": result.distributed_backend,
                 "distributed": {
@@ -412,6 +490,9 @@ def _cmd_train(args: argparse.Namespace) -> None:
         print(f"initial_loss={result.initial_loss:.6f}")
         print(f"final_loss={result.final_loss:.6f}")
         print(f"eval_mse={result.eval_mse:.6f}")
+        if result.best_task_id:
+            print(f"best_task_id={result.best_task_id}")
+            print(f"best_eval_mse={result.best_eval_mse:.6f}")
         print(f"steps={result.steps}")
         print(f"completed_steps={result.completed_steps}")
         return
@@ -437,6 +518,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
         run_dir / "summary.json",
         {
             "synthetic_only": True,
+            "real_data_smoke": False,
+            "scientific_claim_allowed": False,
+            "unavailable_tasks": [],
+            "baseline_failures": [],
             "status": "completed_synthetic_smoke",
             "split_manifest": str(split_manifest_path),
             "split_manifest_hash": split_manifest_hash,
@@ -479,6 +564,7 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                 window_length=args.window_length,
                 stride=args.stride,
                 out_dir=args.out_dir,
+                require_windows=args.require_windows,
             )
             print(format_prepared_eval_audit(report))
             if not report.passed:
@@ -520,6 +606,9 @@ def _cmd_eval(args: argparse.Namespace) -> None:
 
 
 def _cmd_report(args: argparse.Namespace) -> None:
+    if args.compare is not None:
+        print(generate_compare_report(args.compare, args.out_dir))
+        return
     if args.run_dir:
         print(generate_run_report(args.run_dir))
         return
@@ -529,6 +618,61 @@ def _cmd_report(args: argparse.Namespace) -> None:
 
 def _cmd_doctor(args: argparse.Namespace) -> None:
     print(format_doctor_report(run_doctor()))
+
+
+def _cmd_cluster_preflight(args: argparse.Namespace) -> None:
+    try:
+        report = run_cluster_preflight(
+            args.config,
+            args.run_root,
+            require_cuda=args.require_cuda,
+            require_prepared_windows=args.require_prepared_windows,
+            expect_window_count=args.expect_window_count,
+            expect_split_windows=_parse_split_windows(args.expect_split_windows),
+        )
+    except ConfigError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(format_cluster_preflight(report))
+    if not report.passed:
+        raise SystemExit(1)
+
+
+def _cmd_cluster_materialize_config(args: argparse.Namespace) -> None:
+    try:
+        report = materialize_cluster_config(
+            args.template,
+            args.prepared_root,
+            args.out,
+            allow_tracked_output=args.allow_tracked_output,
+        )
+    except ConfigError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(format_cluster_materialize_config(report))
+    if not report.passed:
+        raise SystemExit(1)
+
+
+def _parse_split_windows(value: str | None) -> dict[str, int] | None:
+    if value is None:
+        return None
+    parsed: dict[str, int] = {}
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise SystemExit("--expect-split-windows must use split:count entries")
+        split_name, raw_count = item.split(":", 1)
+        split_name = split_name.strip()
+        if split_name not in {"train", "val", "test"}:
+            raise SystemExit("--expect-split-windows only supports train, val, and test")
+        try:
+            parsed[split_name] = int(raw_count)
+        except ValueError as exc:
+            raise SystemExit(f"invalid window count for split {split_name}: {raw_count}") from exc
+    if not parsed:
+        raise SystemExit("--expect-split-windows must include at least one split:count entry")
+    return parsed
 
 
 def _has_prepared_training_inputs(config: dict[str, object]) -> bool:

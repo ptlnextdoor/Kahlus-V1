@@ -96,9 +96,12 @@ def create_run_dir(root: str | Path = "runs", run_id: str | None = None) -> Path
 
 def _ensure_run_dir_writable(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    probe = path / ".write_probe"
+    probe = path / f".write_probe_{os.getpid()}"
     probe.write_text("ok", encoding="utf-8")
-    probe.unlink()
+    try:
+        probe.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def snapshot_config(config: dict[str, Any], run_dir: str | Path) -> Path:

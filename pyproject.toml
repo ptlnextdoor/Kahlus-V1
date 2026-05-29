@@ -27,6 +27,10 @@ h100 = [
   "tensorboard>=2.16",
   "wandb>=0.16",
 ]
+cluster = [
+  "tensorboard>=2.16",
+  "wandb>=0.16",
+]
 dev = [
   "pytest>=8",
 ]

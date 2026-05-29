@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -53,6 +54,10 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue(result.synthetic_only)
             self.assertEqual(result.gradient_accumulation_steps, 2)
             self.assertEqual(result.completed_steps, 2)
+            self.assertEqual(result.selection_split, "val")
+            self.assertEqual(result.report_split, "test")
+            self.assertTrue(result.best_val_mse >= 0.0)
+            self.assertTrue(result.test_mse >= 0.0)
             self.assertFalse(result.distributed_initialized)
             self.assertEqual(result.world_size, 1)
             self.assertTrue(checkpoint.exists())
@@ -76,6 +81,104 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(resumed.start_step, 2)
             self.assertEqual(resumed.completed_steps, 3)
             self.assertEqual(resumed.resumed_from, str(checkpoint))
+
+    def test_prepared_training_runs_all_neural_translation_tasks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            checkpoint = root / "checkpoint.pt"
+            best_checkpoint = root / "checkpoint_best.pt"
+            metrics_jsonl = root / "metrics.jsonl"
+
+            result = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "neural_translation_v1",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 1,
+                    "batch_size": 4,
+                    "training": {"eval_every_steps": 1, "checkpoint_every_steps": 1},
+                    "model": {
+                        "latent_dim": 16,
+                        "n_layers": 1,
+                        "backbone": "ssm_fallback",
+                        "encoder": "auto",
+                        "subject_adapter_dim": 4,
+                        "adapter_mode": "disabled",
+                    },
+                },
+                checkpoint_path=checkpoint,
+                best_checkpoint_path=best_checkpoint,
+                metrics_jsonl_path=metrics_jsonl,
+            )
+
+            task_ids = {row["task_id"] for row in result.task_results}
+            self.assertEqual(result.task_id, "neural_translation_v1")
+            self.assertIn("future_state_forecasting", task_ids)
+            self.assertIn("masked_neural_reconstruction", task_ids)
+            self.assertIn("cross_modal_translation", task_ids)
+            self.assertTrue(checkpoint.exists())
+            self.assertTrue(best_checkpoint.exists())
+            self.assertTrue(metrics_jsonl.exists())
+
+    def test_objective_weights_are_recorded_for_multitask_training(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+
+            result = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "neural_translation_v1",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 1,
+                    "batch_size": 4,
+                    "training": {"objective_weights": {"masked_neural_reconstruction": 0.25}},
+                    "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                }
+            )
+
+            weights = {row["task_id"]: row["objective_weight"] for row in result.task_results}
+            self.assertEqual(weights["masked_neural_reconstruction"], 0.25)
+            self.assertEqual(weights["future_state_forecasting"], 1.0)
+
+    def test_prepared_training_uses_batched_eval_predictions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            import neurotwin.training.prepared as prepared_training
+
+            observed_batch_sizes = []
+            original_predict = prepared_training._predict
+
+            def recording_predict(model, task, x, precision="fp32"):
+                observed_batch_sizes.append(int(x.shape[0]))
+                return original_predict(model, task, x, precision=precision)
+
+            with mock.patch.object(prepared_training, "_predict", side_effect=recording_predict):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "eval_batch_size": 2,
+                        "precision": "bf16",
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    }
+                )
+
+            self.assertEqual(result.status, "completed_prepared_training")
+            self.assertTrue(observed_batch_sizes)
+            self.assertLessEqual(max(observed_batch_sizes), 4)
+            self.assertIn(2, observed_batch_sizes)
 
     def test_train_cli_uses_prepared_path_when_manifests_are_configured(self):
         env = dict(os.environ)
@@ -131,6 +234,9 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertFalse(summary["distributed_initialized"])
             self.assertEqual(metrics["task_id"], "masked_neural_reconstruction")
             self.assertIn("completed_steps", summary)
+            self.assertEqual(summary["selection_split"], "val")
+            self.assertEqual(summary["report_split"], "test")
+            self.assertIn("scientific_claim_allowed", summary)
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())
 

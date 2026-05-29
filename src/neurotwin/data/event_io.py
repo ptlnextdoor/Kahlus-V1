@@ -14,6 +14,7 @@ def save_event_batches(
     batches: list[NeuralEventBatch],
     out_dir: str | Path,
     manifest_name: str = "event_manifest.json",
+    manifest_metadata: dict[str, Any] | None = None,
 ) -> Path:
     """Persist prepared event batches for offline training/eval jobs."""
 
@@ -56,6 +57,7 @@ def save_event_batches(
             "schema": "neurotwin.event_manifest.v1",
             "event_count": len(rows),
             "manifest_hash": stable_hash(rows),
+            "metadata": _jsonable(manifest_metadata or {}),
             "events": rows,
         },
     )
@@ -105,6 +107,7 @@ def event_manifest_summary(manifest_path: str | Path) -> dict[str, Any]:
         "schema": payload.get("schema"),
         "event_count": int(payload.get("event_count", 0)),
         "manifest_hash": payload.get("manifest_hash"),
+        "metadata": payload.get("metadata", {}),
         "modalities": modalities,
         "datasets": datasets,
         "subjects": subjects,

@@ -5,8 +5,9 @@ Raw public neural data is never committed.
 Supported paths in this pass:
 
 - `synthetic`: deterministic CPU plumbing tests.
-- `moabb`: optional EEG adapter. Requires `pip install -e '.[moabb]'` and dataset preparation before training.
-- `bids`: manifest scanner for BIDS/OpenNeuro-style datasets. It parses filenames plus `participants.tsv`, `events.tsv`, and `scans.tsv`; it does not perform heavy neuroimaging preprocessing.
+- `moabb`: optional EEG adapter. Requires `pip install -e '.[moabb]'` and dataset preparation before training. The locked real-data smoke uses `BNCI2014_001`, `LeftRightImagery`, a small subject/trial subset, and a subject-held-out split.
+- `moabb benchmark`: `scripts/prepare_moabb_benchmark.sh` prepares the first locked real benchmark protocol with subject-held-out splits and local manifests for A100/H100 jobs. It should run before cluster training; cluster jobs must not download data.
+- `bids`: derivative-only manifest scanner for BIDS/OpenNeuro-style datasets. It parses filenames plus `participants.tsv`, `events.tsv`, and `scans.tsv`; it does not perform heavy neuroimaging preprocessing.
 
 Prepared output contract:
 
@@ -22,6 +23,7 @@ BIDS derivative support:
 - Or under `derivatives/neurotwin/<same_relative_parent>/<bids_stem>_timeseries.*`.
 - Arrays must already be preprocessed and shaped `[time, region_or_channel]`.
 - `.npz` files may use a `signal` array and optional `labels` array.
+- Derivatives must be finite 2D arrays with at least two timepoints; optional labels must match the space axis.
 - This repo intentionally does not implement heavy fMRI preprocessing from raw NIfTI.
 
 Example:
@@ -35,6 +37,8 @@ PYTHONPATH=src python3 -m neurotwin.cli eval --suite neural_translation_v1 \
   --event-manifest /tmp/neurotwin_prepared/event_manifest.json \
   --split-manifest /tmp/neurotwin_prepared/split_manifest.json \
   --train-steps 1
+scripts/prepare_moabb_smoke.sh /tmp/neurotwin_moabb_smoke
+scripts/prepare_moabb_benchmark.sh /tmp/neurotwin_moabb_benchmark
 ```
 
 Training jobs should read prepared manifests and local data roots. Internet downloads do not happen inside H100 jobs.

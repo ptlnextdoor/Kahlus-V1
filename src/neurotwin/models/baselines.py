@@ -48,21 +48,51 @@ class NumpyRidgeBaseline:
     def __init__(self, alpha: float = 1.0) -> None:
         self.alpha = float(alpha)
         self.coef_: np.ndarray | None = None
+        self.x_mean_: np.ndarray | None = None
+        self.x_scale_: np.ndarray | None = None
+        self.y_mean_: np.ndarray | None = None
+        self.y_scale_: np.ndarray | None = None
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> "NumpyRidgeBaseline":
-        x = np.asarray(x, dtype=float)
-        y = np.asarray(y, dtype=float)
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
         if x.ndim != 2 or y.ndim != 2:
             raise ValueError("x and y must be 2D arrays")
-        xtx = x.T @ x
-        reg = self.alpha * np.eye(xtx.shape[0])
-        self.coef_ = np.linalg.solve(xtx + reg, x.T @ y)
+        if x.shape[0] != y.shape[0]:
+            raise ValueError("x and y must have the same number of rows")
+        if not np.isfinite(x).all() or not np.isfinite(y).all():
+            raise ValueError("x and y must contain only finite values")
+
+        self.x_mean_ = x.mean(axis=0, keepdims=True)
+        self.y_mean_ = y.mean(axis=0, keepdims=True)
+        self.x_scale_ = _safe_scale(np.max(np.abs(x - self.x_mean_), axis=0, keepdims=True))
+        self.y_scale_ = _safe_scale(np.max(np.abs(y - self.y_mean_), axis=0, keepdims=True))
+        x_scaled = (x - self.x_mean_) / self.x_scale_
+        y_scaled = (y - self.y_mean_) / self.y_scale_
+        xtx = np.einsum("ni,nj->ij", x_scaled, x_scaled, optimize=True)
+        reg = self.alpha * np.eye(xtx.shape[0], dtype=np.float64)
+        rhs = np.einsum("ni,nj->ij", x_scaled, y_scaled, optimize=True)
+        try:
+            self.coef_ = np.linalg.solve(xtx + reg, rhs)
+        except np.linalg.LinAlgError:
+            self.coef_ = np.linalg.lstsq(xtx + reg, rhs, rcond=None)[0]
+        if not np.isfinite(self.coef_).all():
+            raise ValueError("ridge fit produced non-finite coefficients")
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
-        if self.coef_ is None:
+        if self.coef_ is None or self.x_mean_ is None or self.x_scale_ is None or self.y_mean_ is None or self.y_scale_ is None:
             raise RuntimeError("NumpyRidgeBaseline must be fit before predict")
-        return np.asarray(x, dtype=float) @ self.coef_
+        x = np.asarray(x, dtype=np.float64)
+        if x.ndim != 2:
+            raise ValueError("x must be a 2D array")
+        if not np.isfinite(x).all():
+            raise ValueError("x must contain only finite values")
+        pred = np.einsum("ni,ij->nj", (x - self.x_mean_) / self.x_scale_, self.coef_, optimize=True)
+        pred = pred * self.y_scale_ + self.y_mean_
+        if not np.isfinite(pred).all():
+            raise ValueError("ridge prediction produced non-finite values")
+        return pred
 
 
 class TorchMLPBaseline(nn.Module):
@@ -98,3 +128,10 @@ class TorchTCNBaseline(nn.Module):
         if x.ndim != 3:
             raise ValueError("Expected [batch, time, features]")
         return self.net(x.transpose(1, 2)).transpose(1, 2)
+
+
+def _safe_scale(scale: np.ndarray) -> np.ndarray:
+    safe = np.asarray(scale, dtype=np.float64).copy()
+    safe[~np.isfinite(safe)] = 1.0
+    safe[safe < 1e-12] = 1.0
+    return safe

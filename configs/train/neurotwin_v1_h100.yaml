@@ -21,7 +21,11 @@ model:
   latent_dim: 768
   n_layers: 24
   backbone: ssm_fallback
+  encoder: auto
+  n_heads: 12
   subject_adapter_dim: 96
+  adapter_mode: disabled
+  use_subject_embeddings: false
   projection_dim: 256
   modalities:
     - eeg
@@ -33,4 +37,9 @@ training:
   torchrun: true
   fsdp: optional
   compile: false
+  objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    cross_modal_translation: 1.0
+  adapter_mode: disabled
   internet_required: false

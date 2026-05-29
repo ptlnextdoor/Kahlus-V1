@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from typing import Any, Iterable
 
 import numpy as np
@@ -14,6 +15,8 @@ class MissingOptionalDependency(RuntimeError):
 
 
 def moabb_optional_status() -> dict[str, bool]:
+    if os.environ.get("NEUROTWIN_FORCE_MISSING_MOABB") == "1":
+        return {"moabb": False, "mne": False}
     return {
         "moabb": importlib.util.find_spec("moabb") is not None,
         "mne": importlib.util.find_spec("mne") is not None,
@@ -62,6 +65,63 @@ def load_moabb_trials(
             }
         )
     return trials
+
+
+def balanced_trial_subset(
+    trials: Iterable[dict[str, Any]],
+    split_policy: str,
+    max_trials: int | None,
+) -> list[dict[str, Any]]:
+    """Cap MOABB smoke trials without collapsing a group-held-out split."""
+
+    trials = list(trials)
+    if max_trials is None:
+        return trials
+    if max_trials <= 0:
+        raise ValueError("max_trials must be positive when provided")
+    if split_policy == "time":
+        return trials[:max_trials]
+    key = {
+        "subject": "subject",
+        "session": "session",
+        "site": "site",
+        "dataset": "dataset",
+    }.get(split_policy)
+    if key is None:
+        return trials[:max_trials]
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for trial in trials:
+        grouped.setdefault(str(trial.get(key, "unknown")), []).append(trial)
+    if len(grouped) < 3:
+        raise ValueError(
+            f"MOABB smoke split {split_policy!r} requires at least 3 {key} groups "
+            "so train/val/test are all represented."
+        )
+    if max_trials < len(grouped):
+        raise ValueError(
+            f"max_trials={max_trials} is too small for {len(grouped)} {key} groups; "
+            f"use at least {len(grouped)}."
+        )
+
+    selected: list[dict[str, Any]] = []
+    offsets = {group: 0 for group in grouped}
+    group_order = sorted(grouped)
+    while len(selected) < max_trials:
+        progressed = False
+        for group in group_order:
+            offset = offsets[group]
+            group_trials = grouped[group]
+            if offset >= len(group_trials):
+                continue
+            selected.append(group_trials[offset])
+            offsets[group] = offset + 1
+            progressed = True
+            if len(selected) >= max_trials:
+                break
+        if not progressed:
+            break
+    return selected
 
 
 def trials_to_recordings(trials: Iterable[dict[str, Any]] | None, dataset_id: str, site_id: str = "moabb") -> list[RecordingRecord]:
