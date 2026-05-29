@@ -1,10 +1,119 @@
 import os
+import shutil
 import subprocess
+import tarfile
+import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
 class ResearchArtifactTests(unittest.TestCase):
+    def _copy_repo_to_temp_git(self, tmp: str) -> Path:
+        repo_root = Path.cwd()
+        files = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+            text=True,
+            capture_output=True,
+            check=True,
+        ).stdout.splitlines()
+
+        tmp_repo = Path(tmp) / "repo"
+        tmp_repo.mkdir()
+        for rel in files:
+            source = repo_root / rel
+            if not source.is_file():
+                continue
+            target = tmp_repo / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+        subprocess.run(["git", "init", "-q"], cwd=tmp_repo, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=tmp_repo, check=True)
+        subprocess.run(["git", "config", "user.name", "Bundle Test"], cwd=tmp_repo, check=True)
+        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=tmp_repo, check=True)
+        subprocess.run(["git", "add", "."], cwd=tmp_repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "bundle test"], cwd=tmp_repo, check=True)
+        return tmp_repo
+
+    def _assert_runner_archive(self, archive: Path, extract_root: Path) -> Path:
+        with tarfile.open(archive, "r:gz") as tar:
+            names = set(tar.getnames())
+            try:
+                tar.extractall(path=extract_root, filter="data")
+            except TypeError:
+                tar.extractall(path=extract_root)
+
+        roots = {name.split("/", 1)[0] for name in names if name}
+        self.assertEqual(len(roots), 1)
+        root = roots.pop()
+
+        required = {
+            "BUNDLE_MANIFEST.txt",
+            "BUNDLE_METADATA.txt",
+            "COMMIT_HASH.txt",
+            "README.md",
+            "README_RUN.md",
+            "SHA256SUMS",
+            "configs/train/moabb_a100_smoke.yaml",
+            "configs/train/prepared_synthetic_debug.yaml",
+            "environment-a100.yml",
+            "pyproject.toml",
+            "requirements/cluster-a100.txt",
+            "scripts/lib/moabb_prepare_common.sh",
+            "scripts/package_runner_bundle.sh",
+            "scripts/prepare_moabb_benchmark.sh",
+            "scripts/run_full.sbatch",
+            "scripts/run_full.sh",
+            "scripts/run_smoke.sh",
+            "scripts/slurm/_train_a100_inner.sh",
+            "scripts/train_a100_inner.sh",
+            "src/neurotwin/data/__init__.py",
+            "src/neurotwin/data/windows.py",
+        }
+        for rel in required:
+            self.assertIn(f"{root}/{rel}", names)
+
+        forbidden_parts = {
+            ".context",
+            ".git",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            "__pycache__",
+            "graphify-out",
+            "outputs",
+            "runs",
+            "tests",
+        }
+        forbidden_suffixes = (".ckpt", ".npy", ".npz", ".pt", ".pth", ".pyc")
+        for name in names:
+            rel = name.split("/", 1)[1] if "/" in name else ""
+            parts = Path(rel).parts
+            self.assertFalse(any(part.startswith("._") for part in parts), name)
+            self.assertFalse(forbidden_parts.intersection(parts), name)
+            self.assertFalse(rel.startswith("docs/paper/"), name)
+            self.assertFalse(rel.startswith("docs/research/"), name)
+            self.assertFalse(rel.endswith(forbidden_suffixes), name)
+
+        bundle_root = extract_root / root
+        manifest = (bundle_root / "BUNDLE_MANIFEST.txt").read_text(encoding="utf-8").splitlines()
+        payload = sorted(
+            path.relative_to(bundle_root).as_posix()
+            for path in bundle_root.rglob("*")
+            if path.is_file() and path.name not in {"BUNDLE_MANIFEST.txt", "SHA256SUMS"}
+        )
+        self.assertEqual(manifest, payload)
+
+        checksum = subprocess.run(
+            ["shasum", "-a", "256", "-c", "SHA256SUMS"],
+            cwd=bundle_root,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
+        return bundle_root
+
     def test_a100_h100_configs_scripts_and_paper_docs_exist(self):
         required = [
             "configs/train/moabb_debug.yaml",
@@ -32,6 +141,7 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
             "scripts/package_run_bundle.sh",
+            "scripts/package_a100_handoff_zip.sh",
             "scripts/package_runner_bundle.sh",
             "scripts/train_a100_inner.sh",
             "README_RUN.md",
@@ -93,16 +203,16 @@ class ResearchArtifactTests(unittest.TestCase):
         environment = Path("environment-a100.yml").read_text(encoding="utf-8")
 
         for required in (
-            "What",
-            "The friend running Chapman does not need GitHub access",
+            "Operator Workflow",
+            "sha256sum -c SHA256SUMS",
+            "conda env create -f environment-a100.yml",
+            "python -m pip install -e '.[moabb,cluster]'",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
-            "bash scripts/package_runner_bundle.sh",
             "neurotwin-a100-runner-<short_sha>.tar.gz",
-            "scp outputs/neurotwin-a100-runner-<short_sha>.tar.gz",
+            "scp neurotwin-a100-runner-<short_sha>.tar.gz",
             "scp /tmp/neurotwin-a100-runner-<short_sha>.tar.gz",
             "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
-            "minimal practical code visibility",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
             "1x A100 80GB",
@@ -113,6 +223,16 @@ class ResearchArtifactTests(unittest.TestCase):
             "Resume And Safe Rerun",
         ):
             self.assertIn(required, readme)
+        for developer_only in (
+            "bash scripts/package_runner_bundle.sh",
+            "bash scripts/package_run_bundle.sh",
+            "git clone",
+            "<PRIVATE_REPO_URL>",
+            "clean committed checkout",
+            "packaging machine",
+            "full-source bundle",
+        ):
+            self.assertNotIn(developer_only, readme)
         self.assertIn("outputs/configs/moabb_a100.materialized.yaml", run_full)
         self.assertIn("EXPECTED_WINDOW_COUNT", run_full)
         self.assertIn("EXPECTED_TRAIN_WINDOWS", run_full)
@@ -167,38 +287,90 @@ class ResearchArtifactTests(unittest.TestCase):
         for excluded in (".git", ".context", "outputs", "runs", "*.pt", "*.npy", "*.npz"):
             self.assertIn(f"--exclude='{excluded}'", script)
 
-    def test_package_runner_bundle_is_minimal_and_manifested(self):
-        script = Path("scripts/package_runner_bundle.sh").read_text(encoding="utf-8")
+    def test_package_runner_bundle_smokes_real_archive(self):
+        if shutil.which("shasum") is None:
+            self.skipTest("shasum is required for runner bundle verification")
 
-        self.assertIn("neurotwin-a100-runner-$SHORT_SHA", script)
-        self.assertIn("git archive", script)
-        self.assertIn("Refusing to package a dirty worktree", script)
-        self.assertIn("ALLOW_DIRTY_RUNNER_BUNDLE", script)
-        self.assertIn("COMMIT_HASH.txt", script)
-        self.assertIn("BUNDLE_MANIFEST.txt", script)
-        self.assertIn("SHA256SUMS", script)
-        self.assertIn("configs/train/moabb_a100_smoke.yaml", script)
-        self.assertIn("configs/train/prepared_synthetic_debug.yaml", script)
-        self.assertIn("scripts/run_smoke.sh", script)
-        self.assertIn("scripts/run_full.sh", script)
-        self.assertIn("scripts/run_full.sbatch", script)
-        self.assertIn("scripts/train_a100_inner.sh", script)
-        self.assertIn("scripts/prepare_moabb_benchmark.sh", script)
-        self.assertIn("src", script)
-        for excluded in (
-            ".git",
-            ".context",
-            "tests",
-            "docs/research",
-            "docs/paper",
-            "graphify-out",
-            "outputs",
-            "runs",
-            "*.pt",
-            "*.npy",
-            "*.npz",
-        ):
-            self.assertIn(f"--exclude='{excluded}'", script)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_repo = self._copy_repo_to_temp_git(tmp)
+            result = subprocess.run(
+                ["bash", "scripts/package_runner_bundle.sh"],
+                cwd=tmp_repo,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            archives = sorted((tmp_repo / "outputs").glob("neurotwin-a100-runner-*.tar.gz"))
+            self.assertEqual(len(archives), 1)
+            self._assert_runner_archive(archives[0], Path(tmp) / "extract")
+
+    def test_package_a100_handoff_zip_smokes_real_archive(self):
+        if shutil.which("shasum") is None:
+            self.skipTest("shasum is required for handoff bundle verification")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_repo = self._copy_repo_to_temp_git(tmp)
+            result = subprocess.run(
+                ["bash", "scripts/package_a100_handoff_zip.sh"],
+                cwd=tmp_repo,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            zips = sorted((tmp_repo / "outputs").glob("neurotwin-a100-handoff-*.zip"))
+            runners = sorted((tmp_repo / "outputs").glob("neurotwin-a100-runner-*.tar.gz"))
+            self.assertEqual(len(zips), 1)
+            self.assertEqual(len(runners), 1)
+
+            zip_path = zips[0]
+            extract_root = Path(tmp) / "handoff"
+            with zipfile.ZipFile(zip_path, "r") as archive:
+                names = set(archive.namelist())
+                archive.extractall(extract_root)
+
+            roots = {name.split("/", 1)[0] for name in names if name}
+            self.assertEqual(len(roots), 1)
+            root = roots.pop()
+            runner_name = root.replace("handoff", "runner")
+            expected = {
+                f"{root}/COMMIT_HASH.txt",
+                f"{root}/README_HANDOFF.md",
+                f"{root}/SHA256SUMS",
+                f"{root}/{runner_name}.tar.gz",
+            }
+            self.assertEqual(names, expected)
+
+            handoff_root = extract_root / root
+            readme = (handoff_root / "README_HANDOFF.md").read_text(encoding="utf-8")
+            for required in (
+                "minimal practical code visibility",
+                "not cryptographic source secrecy",
+                "scp",
+                "Raspberry Pi",
+                "sha256sum -c SHA256SUMS",
+                "conda env create -f environment-a100.yml",
+                "bash scripts/run_smoke.sh outputs/smoke",
+                "bash scripts/run_full.sh /path/to/shared/persistent/neurotwin",
+            ):
+                self.assertIn(required, readme)
+            for forbidden in (
+                "git clone",
+                "<PRIVATE_REPO_URL>",
+                "bash scripts/package_runner_bundle.sh",
+                "bash scripts/package_run_bundle.sh",
+            ):
+                self.assertNotIn(forbidden, readme)
+
+            checksum = subprocess.run(
+                ["shasum", "-a", "256", "-c", "SHA256SUMS"],
+                cwd=handoff_root,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
+            self._assert_runner_archive(handoff_root / f"{runner_name}.tar.gz", Path(tmp) / "nested")
 
     def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
         env = dict(os.environ)

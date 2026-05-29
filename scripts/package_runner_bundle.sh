@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export COPYFILE_DISABLE=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -24,6 +25,7 @@ fi
 
 mkdir -p "$OUT_DIR"
 BUNDLE_ROOT="$STAGING/$BUNDLE_NAME"
+VERIFY_ROOT="$STAGING/verify"
 ARCHIVE_PATHS=(
   README_RUN.md
   README.md
@@ -54,6 +56,58 @@ printf '%s\n' "$FULL_SHA" > "$BUNDLE_ROOT/COMMIT_HASH.txt"
   echo "bundle_type=runner"
 } > "$BUNDLE_ROOT/BUNDLE_METADATA.txt"
 
+python3 - "$BUNDLE_ROOT" <<'PY'
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+forbidden_parts = {
+    ".context",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "graphify-out",
+    "outputs",
+    "runs",
+    "tests",
+}
+forbidden_prefixes = (
+    ("docs", "paper"),
+    ("docs", "research"),
+)
+forbidden_suffixes = {
+    ".ckpt",
+    ".npy",
+    ".npz",
+    ".pt",
+    ".pth",
+    ".pyc",
+}
+violations = []
+for path in sorted(root.rglob("*")):
+    rel = path.relative_to(root)
+    parts = rel.parts
+    if any(part.startswith("._") for part in parts):
+        violations.append(rel.as_posix())
+        continue
+    if any(part in forbidden_parts for part in parts):
+        violations.append(rel.as_posix())
+        continue
+    if any(parts[: len(prefix)] == prefix for prefix in forbidden_prefixes):
+        violations.append(rel.as_posix())
+        continue
+    if path.is_file() and path.suffix in forbidden_suffixes:
+        violations.append(rel.as_posix())
+
+if violations:
+    print("Refusing to package forbidden runner bundle paths:", file=sys.stderr)
+    for violation in violations:
+        print(f"  {violation}", file=sys.stderr)
+    sys.exit(3)
+PY
+
 (
   cd "$BUNDLE_ROOT"
   find . -type f \
@@ -75,35 +129,79 @@ for path in paths:
 PY
 )
 
-tar \
-  --exclude='.git' \
-  --exclude='.git/*' \
-  --exclude='.context' \
-  --exclude='.context/*' \
-  --exclude='tests' \
-  --exclude='tests/*' \
-  --exclude='docs/research' \
-  --exclude='docs/research/*' \
-  --exclude='docs/paper' \
-  --exclude='docs/paper/*' \
-  --exclude='graphify-out' \
-  --exclude='graphify-out/*' \
-  --exclude='outputs' \
-  --exclude='outputs/*' \
-  --exclude='runs' \
-  --exclude='runs/*' \
-  --exclude='*/__pycache__' \
-  --exclude='*.pyc' \
-  --exclude='.pytest_cache' \
-  --exclude='.mypy_cache' \
-  --exclude='.ruff_cache' \
-  --exclude='*.pt' \
-  --exclude='*.pth' \
-  --exclude='*.ckpt' \
-  --exclude='*.npy' \
-  --exclude='*.npz' \
-  -czf "$OUT_DIR/$BUNDLE_NAME.tar.gz" \
-  -C "$STAGING" "$BUNDLE_NAME"
+tar -czf "$OUT_DIR/$BUNDLE_NAME.tar.gz" -C "$STAGING" "$BUNDLE_NAME"
+
+python3 - "$OUT_DIR/$BUNDLE_NAME.tar.gz" "$BUNDLE_NAME" "$BUNDLE_ROOT" <<'PY'
+from pathlib import Path
+import sys
+import tarfile
+
+archive = Path(sys.argv[1])
+bundle_name = sys.argv[2]
+bundle_root = Path(sys.argv[3])
+
+expected_files = sorted(
+    f"{bundle_name}/{path.relative_to(bundle_root).as_posix()}"
+    for path in bundle_root.rglob("*")
+    if path.is_file()
+)
+with tarfile.open(archive, "r:gz") as tar:
+    actual_files = sorted(member.name for member in tar.getmembers() if member.isfile())
+
+if actual_files != expected_files:
+    missing = sorted(set(expected_files) - set(actual_files))
+    extra = sorted(set(actual_files) - set(expected_files))
+    if missing:
+        print("archive is missing staged paths:", file=sys.stderr)
+        for path in missing:
+            print(f"  {path}", file=sys.stderr)
+    if extra:
+        print("archive contains unstaged paths:", file=sys.stderr)
+        for path in extra:
+            print(f"  {path}", file=sys.stderr)
+    sys.exit(4)
+PY
+
+mkdir -p "$VERIFY_ROOT"
+tar -xzf "$OUT_DIR/$BUNDLE_NAME.tar.gz" -C "$VERIFY_ROOT"
+(
+  cd "$VERIFY_ROOT/$BUNDLE_NAME"
+  python3 - <<'PY'
+from hashlib import sha256
+from pathlib import Path
+import sys
+
+expected = {}
+for line in Path("SHA256SUMS").read_text(encoding="utf-8").splitlines():
+    digest, rel = line.split("  ", 1)
+    expected[rel] = digest
+
+actual_paths = sorted(
+    path.as_posix()
+    for path in Path(".").rglob("*")
+    if path.is_file() and path.name != "SHA256SUMS"
+)
+expected_paths = sorted(expected)
+if actual_paths != expected_paths:
+    missing = sorted(set(expected_paths) - set(actual_paths))
+    extra = sorted(set(actual_paths) - set(expected_paths))
+    if missing:
+        print("checksum manifest lists missing paths:", file=sys.stderr)
+        for path in missing:
+            print(f"  {path}", file=sys.stderr)
+    if extra:
+        print("checksum manifest omits archive paths:", file=sys.stderr)
+        for path in extra:
+            print(f"  {path}", file=sys.stderr)
+    sys.exit(4)
+
+for rel in expected_paths:
+    digest = sha256(Path(rel).read_bytes()).hexdigest()
+    if digest != expected[rel]:
+        print(f"checksum mismatch: {rel}", file=sys.stderr)
+        sys.exit(5)
+PY
+)
 
 python3 - "$OUT_DIR/$BUNDLE_NAME.tar.gz" <<'PY'
 from hashlib import sha256
