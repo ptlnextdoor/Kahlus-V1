@@ -11,6 +11,7 @@ from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, build_prepa
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
+from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS
 
 
 class PreparedEventSuiteTests(unittest.TestCase):
@@ -77,6 +78,13 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertTrue((eval_dir / "baseline_failures.json").exists())
             self.assertIn("few_shot_subject_adaptation", payload["tasks"])
             self.assertIn("dataset_site_generalization", payload["tasks"])
+            self.assertEqual(payload["paper_mode_contract"]["required_seeds"], list(CANONICAL_REQUIRED_SEEDS))
+            with self.assertRaises(TypeError):
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    required_seeds=(0,),  # type: ignore[call-arg]
+                )
 
             result = subprocess.run(
                 [

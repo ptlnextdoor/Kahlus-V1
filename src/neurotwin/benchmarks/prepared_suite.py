@@ -16,7 +16,7 @@ from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
-from neurotwin.eval.paper_gate import PaperModeGateReport, format_paper_mode_gate
+from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS, PaperModeGateReport, format_paper_mode_gate
 from neurotwin.repro import write_json
 
 
@@ -28,7 +28,6 @@ class PreparedSuiteConfig:
     stride: int = 8
     seed: int = 0
     train_steps: int = 5
-    required_seeds: tuple[int, ...] = (0, 1, 2)
     require_ci: bool = True
 
 
@@ -82,7 +81,7 @@ def run_prepared_baseline_suite(
         "skipped_tasks": skipped,
     }
     payload["paper_mode_contract"] = {
-        "required_seeds": list(config.required_seeds),
+        "required_seeds": list(CANONICAL_REQUIRED_SEEDS),
         "observed_seeds": payload.get("seeds", [config.seed]),
         "require_ci": bool(config.require_ci),
         "gate_status": "not_run",
