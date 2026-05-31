@@ -5,7 +5,12 @@ from pathlib import Path
 import sys
 
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
-from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, format_prepared_baseline_report, run_prepared_baseline_suite
+from neurotwin.benchmarks.prepared_suite import (
+    PreparedSuiteConfig,
+    format_prepared_baseline_report,
+    run_prepared_baseline_suite,
+    run_prepared_baseline_suite_multi_seed,
+)
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.smoke import format_smoke_results, run_translation_smoke
@@ -111,6 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--stride", type=int, default=8)
     eval_parser.add_argument("--train-steps", type=int, default=5)
     eval_parser.add_argument("--seed", type=int, default=0)
+    eval_parser.add_argument("--seeds", nargs="*", type=int, default=None)
     eval_parser.add_argument("--require-windows", action="store_true")
     eval_parser.add_argument("--paper-mode", action="store_true")
     eval_parser.set_defaults(func=_cmd_eval)
@@ -642,6 +648,29 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                     print(format_prepared_eval_audit(audit))
                     print(format_paper_mode_gate(gate))
                     raise SystemExit(1)
+                if args.seeds:
+                    payload = run_prepared_baseline_suite_multi_seed(
+                        PreparedSuiteConfig(
+                            event_manifest=args.event_manifest,
+                            split_manifest=args.split_manifest,
+                            window_length=args.window_length,
+                            stride=args.stride,
+                            seed=args.seeds[0],
+                            train_steps=args.train_steps,
+                        ),
+                        seeds=tuple(args.seeds),
+                        out_dir=args.out_dir,
+                    )
+                    gate_payload = payload.get("paper_mode_gate", {})
+                    if isinstance(gate_payload, dict):
+                        gate = gate_payload
+                    else:
+                        gate = validate_paper_mode_payload(payload, audit_report=audit, require_ci=True).to_dict()
+                    print(format_prepared_eval_audit(audit))
+                    print(format_prepared_baseline_report(payload))
+                    if not bool(gate.get("passed")):
+                        raise SystemExit(1)
+                    return
             payload = run_prepared_baseline_suite(
                 PreparedSuiteConfig(
                     event_manifest=args.event_manifest,

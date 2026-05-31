@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -16,7 +17,14 @@ from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
-from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS, PaperModeGateReport, format_paper_mode_gate
+from neurotwin.eval.audit import audit_prepared_eval_inputs
+from neurotwin.eval.metrics import bootstrap_ci
+from neurotwin.eval.paper_gate import (
+    CANONICAL_REQUIRED_SEEDS,
+    PaperModeGateReport,
+    format_paper_mode_gate,
+    validate_paper_mode_payload,
+)
 from neurotwin.repro import write_json
 
 
@@ -94,6 +102,66 @@ def run_prepared_baseline_suite(
     return payload
 
 
+def run_prepared_baseline_suite_multi_seed(
+    config: PreparedSuiteConfig,
+    seeds: tuple[int, ...] | list[int] = CANONICAL_REQUIRED_SEEDS,
+    out_dir: str | Path | None = None,
+) -> dict[str, object]:
+    """Run prepared baselines for multiple seeds and write paper-mode artifacts."""
+
+    seed_values = tuple(int(seed) for seed in seeds)
+    seed_results = []
+    for seed in seed_values:
+        seed_payload = run_prepared_baseline_suite(
+            PreparedSuiteConfig(
+                event_manifest=config.event_manifest,
+                split_manifest=config.split_manifest,
+                window_length=config.window_length,
+                stride=config.stride,
+                seed=seed,
+                train_steps=config.train_steps,
+                require_ci=config.require_ci,
+            ),
+            out_dir=None,
+        )
+        _add_degenerate_task_metric_ci(seed_payload)
+        seed_payload["seed"] = seed
+        seed_payload["seeds"] = [seed]
+        seed_results.append(seed_payload)
+
+    payload = _merge_seed_payloads(config, seed_values, seed_results)
+    audit = audit_prepared_eval_inputs(
+        config.event_manifest,
+        config.split_manifest,
+        window_length=config.window_length,
+        stride=config.stride,
+        out_dir=out_dir,
+        require_windows=True,
+    )
+    payload["eval_audit"] = audit.to_dict()
+    gate = validate_paper_mode_payload(payload, audit_report=audit, require_ci=config.require_ci)
+    payload["paper_mode_gate"] = gate.to_dict()
+    payload["paper_mode_contract"] = {
+        "required_seeds": list(gate.required_seeds),
+        "observed_seeds": list(gate.observed_seeds),
+        "require_ci": gate.require_ci,
+        "gate_status": "passed" if gate.passed else "failed",
+    }
+
+    if out_dir is not None:
+        out = Path(out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        write_json(out / "prepared_baseline_suite.json", payload)
+        write_json(out / "seed_aggregate.json", payload.get("seed_aggregate", []))
+        (out / "seed_aggregate.csv").write_text(
+            _seed_aggregate_csv(payload.get("seed_aggregate", [])),
+            encoding="utf-8",
+        )
+        write_json(out / "baseline_failures.json", payload.get("baseline_failures", []))
+        write_json(out / "paper_mode_gate.json", gate.to_dict())
+    return payload
+
+
 def format_prepared_baseline_report(payload: dict[str, object]) -> str:
     prepared = payload.get("prepared_data", {})
     scope = payload.get("scope", {})
@@ -120,6 +188,20 @@ def format_prepared_baseline_report(payload: dict[str, object]) -> str:
                 lines.append(
                     f"ranked_model={row.get('model_id')} mean_rank={row.get('mean_rank')} tasks={row.get('tasks_ranked')}"
                 )
+        lines.append("")
+    seed_aggregate = payload.get("seed_aggregate", [])
+    if isinstance(seed_aggregate, list) and seed_aggregate:
+        lines.append("## seed_aggregate")
+        for row in seed_aggregate[:20]:
+            if isinstance(row, dict):
+                lines.append(
+                    "seed_metric="
+                    f"{row.get('task_id')}:{row.get('model_id')}:{row.get('metric')} "
+                    f"mean={row.get('mean')} std={row.get('std')} "
+                    f"ci95=[{row.get('ci_low')},{row.get('ci_high')}] n={row.get('n_seeds')}"
+                )
+        if len(seed_aggregate) > 20:
+            lines.append(f"seed_metric_rows_omitted={len(seed_aggregate) - 20}")
         lines.append("")
     catalog = payload.get("baseline_catalog", [])
     if isinstance(catalog, list):
@@ -493,3 +575,178 @@ def _task_result_to_dict(result: TaskResult) -> dict[str, object]:
         "metrics": result.metrics,
         "notes": result.notes,
     }
+
+
+def _merge_seed_payloads(
+    config: PreparedSuiteConfig,
+    seeds: tuple[int, ...],
+    seed_results: list[dict[str, object]],
+) -> dict[str, object]:
+    first = seed_results[0] if seed_results else {}
+    aggregate_rank = _aggregate_seed_ranks(seed_results)
+    seed_aggregate = _aggregate_seed_metrics(seed_results)
+    failures: list[dict[str, str]] = []
+    for result in seed_results:
+        raw_failures = result.get("baseline_failures", [])
+        if isinstance(raw_failures, list):
+            for failure in raw_failures:
+                if isinstance(failure, dict):
+                    failures.append({str(key): str(value) for key, value in failure.items()})
+    return {
+        "scope": first.get("scope", {"status": "prepared-data", "notes": []}),
+        "tasks": first.get("tasks", {}),
+        "aggregate": {
+            "selection_metric": "mse",
+            "higher_is_better": False,
+            "aggregate_rank": aggregate_rank,
+        },
+        "seed": int(seeds[0]) if seeds else int(config.seed),
+        "seeds": [int(seed) for seed in seeds],
+        "seed_results": seed_results,
+        "seed_aggregate": seed_aggregate,
+        "prepared_data": first.get(
+            "prepared_data",
+            {
+                "event_manifest": str(config.event_manifest),
+                "split_manifest": str(config.split_manifest),
+                "event_summary": event_manifest_summary(config.event_manifest),
+                "window_length": config.window_length,
+                "stride": config.stride,
+                "skipped_tasks": [],
+            },
+        ),
+        "paper_mode_contract": {
+            "required_seeds": list(CANONICAL_REQUIRED_SEEDS),
+            "observed_seeds": [int(seed) for seed in seeds],
+            "require_ci": bool(config.require_ci),
+            "gate_status": "not_run",
+        },
+        "baseline_catalog": first.get("baseline_catalog", []),
+        "baseline_failures": failures,
+    }
+
+
+def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
+    ranks_by_model: dict[str, list[int]] = {}
+    for result in seed_results:
+        aggregate = result.get("aggregate", {})
+        if not isinstance(aggregate, dict):
+            continue
+        for row in aggregate.get("aggregate_rank", []):
+            if not isinstance(row, dict):
+                continue
+            model_id = str(row.get("model_id"))
+            try:
+                rank = int(row.get("mean_rank", row.get("rank")))
+            except (TypeError, ValueError):
+                continue
+            ranks_by_model.setdefault(model_id, []).append(rank)
+    return sorted(
+        (
+            {
+                "model_id": model_id,
+                "mean_rank": float(np.mean(ranks)),
+                "std_rank": float(np.std(ranks)),
+                "tasks_ranked": len(ranks),
+                "n_seeds": len(ranks),
+            }
+            for model_id, ranks in ranks_by_model.items()
+        ),
+        key=lambda row: (float(row["mean_rank"]), str(row["model_id"])),
+    )
+
+
+def _aggregate_seed_metrics(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
+    values: dict[tuple[str, str, str], list[float]] = {}
+    for result in seed_results:
+        tasks = result.get("tasks", {})
+        if not isinstance(tasks, dict):
+            continue
+        for task_id, task_payload in tasks.items():
+            if not isinstance(task_payload, dict):
+                continue
+            metrics_by_model = task_payload.get("metrics_by_model", {})
+            if isinstance(metrics_by_model, dict):
+                for model_id, metrics in metrics_by_model.items():
+                    if isinstance(metrics, dict):
+                        _collect_metric_values(values, str(task_id), str(model_id), metrics)
+            task_metrics = task_payload.get("metrics", {})
+            if isinstance(task_metrics, dict):
+                _collect_metric_values(values, str(task_id), "task_metric", task_metrics)
+    rows = []
+    for (task_id, model_id, metric), metric_values in sorted(values.items()):
+        arr = np.asarray(metric_values, dtype=float)
+        if arr.size == 0 or not np.isfinite(arr).all():
+            continue
+        if arr.size == 1:
+            ci_low = ci_high = float(arr[0])
+        else:
+            ci_low, ci_high = bootstrap_ci(arr, seed=_stable_metric_seed(task_id, model_id, metric), n_boot=200)
+        rows.append(
+            {
+                "task_id": task_id,
+                "model_id": model_id,
+                "metric": metric,
+                "mean": float(np.mean(arr)),
+                "std": float(np.std(arr)),
+                "ci_low": float(ci_low),
+                "ci_high": float(ci_high),
+                "n_seeds": int(arr.size),
+            }
+        )
+    return rows
+
+
+def _collect_metric_values(
+    values: dict[tuple[str, str, str], list[float]],
+    task_id: str,
+    model_id: str,
+    metrics: dict[str, Any],
+) -> None:
+    for metric, value in metrics.items():
+        if metric.endswith(("_ci_low", "_ci_high")):
+            continue
+        if isinstance(value, (int, float, np.floating)) and not isinstance(value, bool) and np.isfinite(float(value)):
+            values.setdefault((task_id, model_id, metric), []).append(float(value))
+
+
+def _add_degenerate_task_metric_ci(payload: dict[str, object]) -> None:
+    tasks = payload.get("tasks", {})
+    if not isinstance(tasks, dict):
+        return
+    for task_payload in tasks.values():
+        if not isinstance(task_payload, dict):
+            continue
+        metrics = task_payload.get("metrics")
+        if isinstance(metrics, dict):
+            _add_degenerate_ci(metrics)
+
+
+def _add_degenerate_ci(metrics: dict[str, Any]) -> None:
+    for metric, value in list(metrics.items()):
+        if metric.endswith(("_ci_low", "_ci_high")):
+            continue
+        if isinstance(value, (int, float, np.floating)) and not isinstance(value, bool) and np.isfinite(float(value)):
+            metrics.setdefault(f"{metric}_ci_low", float(value))
+            metrics.setdefault(f"{metric}_ci_high", float(value))
+
+
+def _seed_aggregate_csv(rows: object) -> str:
+    header = ("task_id", "model_id", "metric", "mean", "std", "ci_low", "ci_high", "n_seeds")
+    lines = [",".join(header)]
+    if isinstance(rows, list):
+        for row in rows:
+            if isinstance(row, dict):
+                lines.append(",".join(_csv_cell(row.get(key, "")) for key in header))
+    return "\n".join(lines) + "\n"
+
+
+def _csv_cell(value: object) -> str:
+    text = str(value)
+    if any(char in text for char in (",", "\"", "\n")):
+        return "\"" + text.replace("\"", "\"\"") + "\""
+    return text
+
+
+def _stable_metric_seed(task_id: str, model_id: str, metric: str) -> int:
+    return sum(ord(char) for char in f"{task_id}:{model_id}:{metric}") % 1_000_003

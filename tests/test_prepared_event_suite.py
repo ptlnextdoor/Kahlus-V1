@@ -7,7 +7,12 @@ import unittest
 from pathlib import Path
 
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
-from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, build_prepared_window_tasks, run_prepared_baseline_suite
+from neurotwin.benchmarks.prepared_suite import (
+    PreparedSuiteConfig,
+    build_prepared_window_tasks,
+    run_prepared_baseline_suite,
+    run_prepared_baseline_suite_multi_seed,
+)
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
@@ -147,6 +152,81 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertIn("paper_mode_passed=False", paper_result.stdout)
             self.assertIn("missing 1,2", paper_result.stdout)
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
+
+            paper_pass = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "eval",
+                    "--suite",
+                    "neural_translation_v1",
+                    "--event-manifest",
+                    str(prep_dir / "event_manifest.json"),
+                    "--split-manifest",
+                    str(prep_dir / "split_manifest.json"),
+                    "--out-dir",
+                    str(eval_dir),
+                    "--train-steps",
+                    "1",
+                    "--paper-mode",
+                    "--seeds",
+                    "0",
+                    "1",
+                    "2",
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            paper_artifact = json.loads((eval_dir / "prepared_baseline_suite.json").read_text(encoding="utf-8"))
+            self.assertIn("paper_mode_passed=True", paper_pass.stdout)
+            self.assertEqual(paper_artifact["seeds"], [0, 1, 2])
+            self.assertEqual([row["seed"] for row in paper_artifact["seed_results"]], [0, 1, 2])
+            self.assertTrue(paper_artifact["seed_aggregate"])
+            self.assertTrue((eval_dir / "seed_aggregate.json").exists())
+            self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
+
+    def test_prepared_baseline_multi_seed_satisfies_paper_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            eval_dir = Path(tmp) / "eval"
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            single = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+            self.assertEqual(single["seeds"], [0])
+
+            payload = run_prepared_baseline_suite_multi_seed(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+                out_dir=eval_dir,
+            )
+
+            self.assertTrue(payload["paper_mode_gate"]["passed"], payload["paper_mode_gate"]["violations"])
+            self.assertEqual(tuple(payload["paper_mode_gate"]["observed_seeds"]), (0, 1, 2))
+            self.assertEqual([row["seed"] for row in payload["seed_results"]], [0, 1, 2])
+            self.assertTrue(payload["aggregate"]["aggregate_rank"])
+            self.assertTrue(payload["seed_aggregate"])
+            example = payload["seed_aggregate"][0]
+            for key in ("task_id", "model_id", "metric", "mean", "std", "ci_low", "ci_high", "n_seeds"):
+                self.assertIn(key, example)
+            self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
+            self.assertTrue((eval_dir / "seed_aggregate.json").exists())
+            self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
 
 
 if __name__ == "__main__":
