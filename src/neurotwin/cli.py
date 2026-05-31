@@ -113,7 +113,6 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--seed", type=int, default=0)
     eval_parser.add_argument("--require-windows", action="store_true")
     eval_parser.add_argument("--paper-mode", action="store_true")
-    eval_parser.add_argument("--paper-required-seeds", nargs="+", type=int, default=[0, 1, 2])
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
@@ -627,7 +626,6 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                     gate = validate_paper_mode_payload(
                         payload,
                         audit_report=audit,
-                        required_seeds=tuple(args.paper_required_seeds),
                         require_ci=True,
                     )
                     payload["paper_mode_gate"] = gate.to_dict()
@@ -652,7 +650,6 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                     stride=args.stride,
                     seed=args.seed,
                     train_steps=args.train_steps,
-                    required_seeds=tuple(args.paper_required_seeds),
                 ),
                 out_dir=args.out_dir,
             )
@@ -662,7 +659,6 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                 gate = validate_paper_mode_payload(
                     payload,
                     audit_report=audit,
-                    required_seeds=tuple(args.paper_required_seeds),
                     require_ci=True,
                 )
                 payload["paper_mode_gate"] = gate.to_dict()

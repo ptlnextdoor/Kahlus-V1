@@ -127,7 +127,7 @@ def _observed_seeds(payload: dict[str, Any]) -> tuple[int, ...]:
     seeds: set[int] = set()
     _add_seed_values(seeds, payload.get("seeds"))
     _add_seed_values(seeds, payload.get("seed"))
-    for key in ("benchmark_contract", "paper_mode", "seed_summary"):
+    for key in ("benchmark_contract", "paper_mode_contract", "paper_mode", "seed_summary"):
         section = payload.get(key)
         if isinstance(section, dict):
             _add_seed_values(seeds, section.get("seeds"))
@@ -158,6 +158,7 @@ def _add_seed_values(seeds: set[int], value: Any) -> None:
 
 def _ci_violations(payload: dict[str, Any]) -> list[str]:
     violations: list[str] = []
+    violations.extend(_test_ci_violations(payload, "top-level test reporting"))
     tasks = payload.get("tasks")
     if isinstance(tasks, dict):
         for task_id, result in sorted(tasks.items()):
@@ -180,8 +181,8 @@ def _ci_violations(payload: dict[str, Any]) -> list[str]:
     task_results = payload.get("task_results")
     if isinstance(task_results, list):
         for row in task_results:
-            if isinstance(row, dict) and _has_test_metric(row) and not _has_any_test_ci(row):
-                violations.append(f"{row.get('task_id', 'task_result')} lacks test CI summary")
+            if isinstance(row, dict):
+                violations.extend(_test_ci_violations(row, str(row.get("task_id", "task_result"))))
     return violations
 
 
@@ -191,13 +192,23 @@ def _has_finite_ci(metrics: dict[str, Any], metric: str) -> bool:
     return _finite_number(low) and _finite_number(high)
 
 
-def _has_test_metric(row: dict[str, Any]) -> bool:
-    return any(key.startswith("test_") and not key.endswith(("_ci_low", "_ci_high")) for key in row)
+def _test_ci_violations(row: dict[str, Any], label: str) -> list[str]:
+    violations: list[str] = []
+    for key, value in sorted(row.items()):
+        if not _is_test_metric_key(key, value):
+            continue
+        if not _has_finite_ci(row, key):
+            violations.append(f"{label}:{key} lacks finite CI summary")
+    return violations
 
 
-def _has_any_test_ci(row: dict[str, Any]) -> bool:
-    ci_keys = [key for key in row if key.startswith("test_") and key.endswith(("_ci_low", "_ci_high"))]
-    return bool(ci_keys) and all(_finite_number(row[key]) for key in ci_keys)
+def _is_test_metric_key(key: str, value: Any) -> bool:
+    return (
+        key.startswith("test_")
+        and not key.endswith(("_ci_low", "_ci_high"))
+        and isinstance(value, (int, float, np.floating))
+        and not isinstance(value, bool)
+    )
 
 
 def _finite_number(value: Any) -> bool:

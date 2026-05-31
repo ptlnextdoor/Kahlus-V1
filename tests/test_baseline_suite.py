@@ -84,7 +84,7 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertFalse(missing_seed_report.passed)
         self.assertTrue(any("missing 1,2" in violation for violation in missing_seed_report.violations))
 
-        payload["seeds"] = [0, 1, 2]
+        payload["paper_mode_contract"] = {"observed_seeds": [0, 1, 2]}
         passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
         self.assertTrue(passed_report.passed)
 
@@ -105,6 +105,19 @@ class BaselineSuiteTests(unittest.TestCase):
         no_ci_report = validate_paper_mode_payload(no_ci, audit_report={"passed": True})
         self.assertFalse(no_ci_report.passed)
         self.assertTrue(any("lacks finite mse CI" in violation for violation in no_ci_report.violations))
+
+        top_level_no_ci = json.loads(json.dumps(payload))
+        top_level_no_ci["test_mse"] = 0.12
+        top_level_no_ci_report = validate_paper_mode_payload(top_level_no_ci, audit_report={"passed": True})
+        self.assertFalse(top_level_no_ci_report.passed)
+        self.assertTrue(
+            any("top-level test reporting:test_mse lacks finite CI" in violation for violation in top_level_no_ci_report.violations)
+        )
+
+        top_level_no_ci["test_mse_ci_low"] = 0.10
+        top_level_no_ci["test_mse_ci_high"] = 0.14
+        top_level_ci_report = validate_paper_mode_payload(top_level_no_ci, audit_report={"passed": True})
+        self.assertTrue(top_level_ci_report.passed)
 
     def test_eval_suite_writes_baseline_artifact(self):
         env = dict(os.environ)

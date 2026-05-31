@@ -129,16 +129,15 @@ class PreparedEventSuiteTests(unittest.TestCase):
                     "--train-steps",
                     "1",
                     "--paper-mode",
-                    "--paper-required-seeds",
-                    "0",
                 ],
-                check=True,
                 text=True,
                 capture_output=True,
                 env=env,
             )
+            self.assertNotEqual(paper_result.returncode, 0)
             self.assertIn("paper_mode_gate=True", paper_result.stdout)
-            self.assertIn("paper_mode_passed=True", paper_result.stdout)
+            self.assertIn("paper_mode_passed=False", paper_result.stdout)
+            self.assertIn("missing 1,2", paper_result.stdout)
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
 
 
