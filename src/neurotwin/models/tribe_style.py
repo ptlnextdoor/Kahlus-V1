@@ -19,7 +19,7 @@ VALID_EVENT_SUFFIXES = {
 
 
 class TribeStyleStimulusEncoder(nn.Module):
-    """NeuroTwin-native stimulus-to-fMRI encoder for the TRIBE-style lane."""
+    """Toy NeuroTwin-native stimulus-to-fMRI encoder for task plumbing."""
 
     def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 32) -> None:
         super().__init__()
@@ -58,8 +58,9 @@ class TribeStyleSegment:
 class TribeStyleModel:
     """Small TRIBE-compatible facade implemented entirely with NeuroTwin code.
 
-    This is a clean-room approximation for stimulus-to-fMRI benchmark plumbing.
-    It does not load TRIBE v2 code, configs, or pretrained weights.
+    This is a local toy clean-room approximation for stimulus-to-fMRI
+    benchmark plumbing. It does not load TRIBE v2 code, configs, pretrained
+    weights, or real video/audio/text encoders.
     """
 
     model_id = "tribe_style"
@@ -87,7 +88,7 @@ class TribeStyleModel:
         self._model.eval()
 
     @classmethod
-    def from_pretrained(
+    def from_checkpoint(
         cls,
         checkpoint_dir: str | Path | None = None,
         checkpoint_name: str = "tribe_style_config.json",
@@ -95,6 +96,13 @@ class TribeStyleModel:
         device: str = "auto",
         config_update: dict[str, Any] | None = None,
     ) -> "TribeStyleModel":
+        """Load a local NeuroTwin TRIBE-style config or seeded defaults.
+
+        No pretrained TRIBE v2 weights are loaded and no external downloads are
+        attempted. The model is a small local baseline for task plumbing until
+        real prepared stimulus feature arrays are supplied by the data pipeline.
+        """
+
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         config = {
@@ -116,61 +124,69 @@ class TribeStyleModel:
             cache_folder=cache_folder,
         )
 
+    @classmethod
+    def from_pretrained(
+        cls,
+        checkpoint_dir: str | Path | None = None,
+        checkpoint_name: str = "tribe_style_config.json",
+        cache_folder: str | Path | None = None,
+        device: str = "auto",
+        config_update: dict[str, Any] | None = None,
+    ) -> "TribeStyleModel":
+        """Compatibility shim for TRIBE-style callers.
+
+        Prefer :meth:`from_checkpoint`. This method never loads TRIBE v2
+        pretrained weights and never downloads from HuggingFace or other
+        external services.
+        """
+
+        return cls.from_checkpoint(
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_name=checkpoint_name,
+            cache_folder=cache_folder,
+            device=device,
+            config_update=config_update,
+        )
+
+    def build_events(
+        self,
+        text_path: str | None = None,
+        audio_path: str | None = None,
+        video_path: str | None = None,
+    ) -> list[dict[str, object]]:
+        """Build minimal local event rows for smoke/pipeline tests.
+
+        Text events are tokenized by whitespace. Audio/video events only record
+        file metadata. Downstream predictions from these rows use deterministic
+        hash-derived embeddings; they are not real video/audio/text features.
+        Real stimulus-fMRI evaluation should use prepared ``stimulus_embedding``
+        arrays instead.
+        """
+
+        return _build_events(text_path=text_path, audio_path=audio_path, video_path=video_path)
+
     def get_events_dataframe(
         self,
         text_path: str | None = None,
         audio_path: str | None = None,
         video_path: str | None = None,
     ) -> list[dict[str, object]]:
-        provided = {
-            name: value
-            for name, value in (
-                ("text_path", text_path),
-                ("audio_path", audio_path),
-                ("video_path", video_path),
-            )
-            if value is not None
-        }
-        if len(provided) != 1:
-            raise ValueError("Exactly one of text_path, audio_path, video_path must be provided")
+        """Compatibility shim returning local event rows, not a pandas DataFrame.
 
-        name, value = next(iter(provided.items()))
-        path = Path(value)
-        if path.suffix.lower() not in VALID_EVENT_SUFFIXES[name]:
-            raise ValueError(f"{name} must end with one of {sorted(VALID_EVENT_SUFFIXES[name])}")
-        if not path.is_file():
-            raise FileNotFoundError(f"{name} does not exist: {path}")
+        Prefer :meth:`build_events`. This method preserves the broad TRIBE-style
+        API shape for smoke tests while staying dependency-light.
+        """
 
-        if name == "text_path":
-            text = path.read_text(encoding="utf-8")
-            tokens = [token for token in text.replace("\n", " ").split(" ") if token]
-            if not tokens:
-                raise ValueError(f"Text file is empty: {path}")
-            return [
-                {
-                    "type": "Word",
-                    "text": token,
-                    "start": float(idx),
-                    "duration": 1.0,
-                    "timeline": "default",
-                    "subject": "average",
-                }
-                for idx, token in enumerate(tokens)
-            ]
-
-        event_type = "Audio" if name == "audio_path" else "Video"
-        return [
-            {
-                "type": event_type,
-                "filepath": str(path),
-                "start": 0.0,
-                "duration": 1.0,
-                "timeline": "default",
-                "subject": "average",
-            }
-        ]
+        return self.build_events(text_path=text_path, audio_path=audio_path, video_path=video_path)
 
     def predict(self, events: Iterable[dict[str, Any]], verbose: bool = True) -> tuple[np.ndarray, list[dict[str, object]]]:
+        """Predict toy fMRI responses from event rows.
+
+        Event rows are converted to deterministic hash-derived embeddings unless
+        real features were already prepared elsewhere. These predictions are for
+        local plumbing tests only.
+        """
+
         del verbose
         event_rows = [dict(event) for event in events]
         if not event_rows:
@@ -192,6 +208,60 @@ class TribeStyleModel:
         return prediction.astype(np.float32), segments
 
 
+def _build_events(
+    text_path: str | None = None,
+    audio_path: str | None = None,
+    video_path: str | None = None,
+) -> list[dict[str, object]]:
+    provided = {
+        name: value
+        for name, value in (
+            ("text_path", text_path),
+            ("audio_path", audio_path),
+            ("video_path", video_path),
+        )
+        if value is not None
+    }
+    if len(provided) != 1:
+        raise ValueError("Exactly one of text_path, audio_path, video_path must be provided")
+
+    name, value = next(iter(provided.items()))
+    path = Path(value)
+    if path.suffix.lower() not in VALID_EVENT_SUFFIXES[name]:
+        raise ValueError(f"{name} must end with one of {sorted(VALID_EVENT_SUFFIXES[name])}")
+    if not path.is_file():
+        raise FileNotFoundError(f"{name} does not exist: {path}")
+
+    if name == "text_path":
+        text = path.read_text(encoding="utf-8")
+        tokens = [token for token in text.replace("\n", " ").split(" ") if token]
+        if not tokens:
+            raise ValueError(f"Text file is empty: {path}")
+        return [
+            {
+                "type": "Word",
+                "text": token,
+                "start": float(idx),
+                "duration": 1.0,
+                "timeline": "default",
+                "subject": "average",
+            }
+            for idx, token in enumerate(tokens)
+        ]
+
+    event_type = "Audio" if name == "audio_path" else "Video"
+    return [
+        {
+            "type": event_type,
+            "filepath": str(path),
+            "start": 0.0,
+            "duration": 1.0,
+            "timeline": "default",
+            "subject": "average",
+        }
+    ]
+
+
 def _load_local_config(checkpoint_dir: str | Path, checkpoint_name: str) -> dict[str, Any]:
     root = Path(checkpoint_dir)
     if root.is_file():
@@ -203,7 +273,7 @@ def _load_local_config(checkpoint_dir: str | Path, checkpoint_name: str) -> dict
             return {}
     else:
         raise FileNotFoundError(
-            "TribeStyleModel.from_pretrained only loads local NeuroTwin configs; "
+            "TribeStyleModel only loads local NeuroTwin configs; "
             f"no external download is attempted for {checkpoint_dir!r}"
         )
     return dict(json.loads(config_path.read_text(encoding="utf-8")))

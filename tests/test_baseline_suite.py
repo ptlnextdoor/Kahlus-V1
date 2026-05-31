@@ -111,18 +111,39 @@ class BaselineSuiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             text_path = Path(tmp) / "stimulus.txt"
             text_path.write_text("visual auditory language stimulus", encoding="utf-8")
-            model = TribeStyleModel.from_pretrained(
+            model = TribeStyleModel.from_checkpoint(
                 "local",
                 config_update={"stimulus_dim": 6, "output_dim": 4, "hidden_dim": 8},
             )
 
-            events = model.get_events_dataframe(text_path=str(text_path))
+            events = model.build_events(text_path=str(text_path))
             preds, segments = model.predict(events, verbose=False)
 
         self.assertEqual(model.model_id, "tribe_style")
         self.assertEqual(model.implementation_status, "clean_room_approximation")
         self.assertEqual(preds.shape, (4, 4))
         self.assertEqual(len(segments), 4)
+        self.assertTrue(np.isfinite(preds).all())
+
+    def test_tribe_style_compatibility_shims_delegate_to_preferred_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "tribe_style_config.json"
+            text_path = Path(tmp) / "stimulus.txt"
+            config_path.write_text(
+                json.dumps({"stimulus_dim": 5, "output_dim": 3, "hidden_dim": 7, "seed": 11}),
+                encoding="utf-8",
+            )
+            text_path.write_text("compatibility shim", encoding="utf-8")
+
+            model = TribeStyleModel.from_pretrained(tmp)
+            preferred_events = model.build_events(text_path=str(text_path))
+            shim_events = model.get_events_dataframe(text_path=str(text_path))
+            preds, _ = model.predict(shim_events, verbose=False)
+
+        self.assertEqual(model.stimulus_dim, 5)
+        self.assertEqual(model.output_dim, 3)
+        self.assertEqual(preferred_events, shim_events)
+        self.assertEqual(preds.shape, (2, 3))
         self.assertTrue(np.isfinite(preds).all())
 
     def test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract(self):

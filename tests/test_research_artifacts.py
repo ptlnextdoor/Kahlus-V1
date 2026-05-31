@@ -169,6 +169,41 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("tribe_style", claims)
         self.assertIn("clean-room approximation", claims)
         self.assertIn("Do not describe it as exact TRIBE v2", claims)
+        self.assertIn("real video/audio/text encoders", claims)
+
+    def test_tribe_style_does_not_become_required_dependency(self):
+        forbidden = (
+            "tribev2",
+            "neuralset",
+            "neuraltrain",
+            "huggingface_hub",
+            "moviepy",
+            "x_transformers",
+            "gtts",
+            "langdetect",
+            "spacy",
+            "julius",
+            "levenshtein",
+        )
+        checked = {
+            "pyproject.toml": Path("pyproject.toml").read_text(encoding="utf-8").lower(),
+            "environment-a100.yml": Path("environment-a100.yml").read_text(encoding="utf-8").lower(),
+            "requirements/cluster-a100.txt": Path("requirements/cluster-a100.txt").read_text(encoding="utf-8").lower(),
+        }
+
+        for path, text in checked.items():
+            for package in forbidden:
+                with self.subTest(path=path, package=package):
+                    self.assertNotIn(package, text)
+
+    def test_a100_runbook_separates_fast_and_heavy_lanes(self):
+        runbook = Path("docs/A100_RUNBOOK.md").read_text(encoding="utf-8")
+
+        self.assertIn("Fast Iteration Lane", runbook)
+        self.assertIn("Heavy 6-GPU Lane", runbook)
+        self.assertIn("--ntasks-per-node=6 --gres=gpu:a100:6", runbook)
+        self.assertIn("MOABB EEG is expected to skip `tribe_style`", runbook)
+        self.assertIn("Do not retry failed multi-GPU runs blindly", runbook)
 
     def test_moabb_scripts_and_cluster_configs_use_benchmark_windows(self):
         smoke = Path("scripts/prepare_moabb_smoke.sh").read_text(encoding="utf-8")
