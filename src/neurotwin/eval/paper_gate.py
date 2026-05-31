@@ -6,6 +6,9 @@ from typing import Any
 import numpy as np
 
 
+CANONICAL_REQUIRED_SEEDS = (0, 1, 2)
+
+
 @dataclass(frozen=True)
 class PaperModeGateReport:
     passed: bool
@@ -29,7 +32,6 @@ class PaperModeGateError(ValueError):
 def validate_paper_mode_payload(
     payload: dict[str, Any],
     audit_report: Any | None = None,
-    required_seeds: tuple[int, ...] = (0, 1, 2),
     require_ci: bool = True,
     raise_on_fail: bool = False,
 ) -> PaperModeGateReport:
@@ -56,11 +58,11 @@ def validate_paper_mode_payload(
         violations.append("baseline aggregate_rank is empty")
 
     observed_seeds = _observed_seeds(payload)
-    missing = tuple(seed for seed in required_seeds if seed not in observed_seeds)
+    missing = tuple(seed for seed in CANONICAL_REQUIRED_SEEDS if seed not in observed_seeds)
     if missing:
         violations.append(
             "paper mode requires seeds "
-            + ",".join(str(seed) for seed in required_seeds)
+            + ",".join(str(seed) for seed in CANONICAL_REQUIRED_SEEDS)
             + "; missing "
             + ",".join(str(seed) for seed in missing)
         )
@@ -73,7 +75,7 @@ def validate_paper_mode_payload(
         violations=tuple(violations),
         warnings=tuple(warnings),
         checked=checked,
-        required_seeds=tuple(int(seed) for seed in required_seeds),
+        required_seeds=CANONICAL_REQUIRED_SEEDS,
         observed_seeds=observed_seeds,
         require_ci=bool(require_ci),
     )

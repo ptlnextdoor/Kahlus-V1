@@ -1,11 +1,11 @@
 # Graph Report - hyderabad  (2026-05-30)
 
 ## Corpus Check
-- 74 files · ~38,526 words
+- 74 files · ~38,533 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 600 nodes · 1304 edges · 32 communities detected
+- 601 nodes · 1304 edges · 33 communities detected
 - Extraction: 62% EXTRACTED · 38% INFERRED · 0% AMBIGUOUS · INFERRED: 494 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
@@ -42,6 +42,7 @@
 - [[_COMMUNITY_Community 31|Community 31]]
 - [[_COMMUNITY_Community 32|Community 32]]
 - [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `run_prepared_training()` - 30 edges
@@ -167,38 +168,42 @@ Nodes (2): _clone_or_checkout(), main()
 
 ### Community 26 - "Community 26"
 Cohesion: 1.0
-Nodes (1): Validate cluster launch inputs before an expensive SLURM allocation runs.
+Nodes (1): Validate the artifact contract required before paper-mode claims.      This is i
 
 ### Community 27 - "Community 27"
 Cohesion: 1.0
-Nodes (1): Per-timepoint MLP baseline for neural windows.
+Nodes (1): Validate cluster launch inputs before an expensive SLURM allocation runs.
 
 ### Community 28 - "Community 28"
 Cohesion: 1.0
-Nodes (1): Small Conv1D/TCN-style baseline with stable [batch, time, feature] IO.
+Nodes (1): Per-timepoint MLP baseline for neural windows.
 
 ### Community 29 - "Community 29"
 Cohesion: 1.0
-Nodes (1): Small Transformer baseline for CPU shape and smoke tests.
+Nodes (1): Small Conv1D/TCN-style baseline with stable [batch, time, feature] IO.
 
 ### Community 30 - "Community 30"
 Cohesion: 1.0
-Nodes (1): CPU debug stand-in for long-sequence SSM baselines until Mamba is pinned.
+Nodes (1): Small Transformer baseline for CPU shape and smoke tests.
 
 ### Community 31 - "Community 31"
 Cohesion: 1.0
-Nodes (1): Modality-tokenizer + shared latent dynamics + modality-readout scaffold.
+Nodes (1): CPU debug stand-in for long-sequence SSM baselines until Mamba is pinned.
 
 ### Community 32 - "Community 32"
 Cohesion: 1.0
-Nodes (1): Encode observed modalities into shared latent neural tokens.
+Nodes (1): Modality-tokenizer + shared latent dynamics + modality-readout scaffold.
 
 ### Community 33 - "Community 33"
 Cohesion: 1.0
 Nodes (1): Encode observed modalities into shared latent neural tokens.
 
+### Community 34 - "Community 34"
+Cohesion: 1.0
+Nodes (1): Encode observed modalities into shared latent neural tokens.
+
 ## Knowledge Gaps
-- **25 isolated node(s):** `Raised when an experiment config cannot be loaded or validated.`, `Resolve a source commit from git, falling back to COMMIT_HASH.txt.`, `Validate cluster launch inputs before an expensive SLURM allocation runs.`, `Write a cluster config with absolute prepared-manifest paths.`, `Closed-form ridge baseline for sanity checks and tiny CPU benchmarks.` (+20 more)
+- **26 isolated node(s):** `Raised when an experiment config cannot be loaded or validated.`, `Resolve a source commit from git, falling back to COMMIT_HASH.txt.`, `Validate cluster launch inputs before an expensive SLURM allocation runs.`, `Write a cluster config with absolute prepared-manifest paths.`, `Closed-form ridge baseline for sanity checks and tiny CPU benchmarks.` (+21 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 12`** (15 nodes): `ResearchArtifactTests`, `._assert_runner_archive()`, `._copy_repo_to_temp_git()`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_package_a100_handoff_zip_smokes_real_archive()`, `.test_package_bundle_uses_head_archive_and_dirty_guard()`, `.test_package_runner_bundle_smokes_real_archive()`, `.test_runpod_rehearsal_is_budget_gated()`, `test_research_artifacts.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -216,28 +221,30 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 23`** (3 nodes): `vendor_upstreams.py`, `_clone_or_checkout()`, `main()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 26`** (1 nodes): `Validate cluster launch inputs before an expensive SLURM allocation runs.`
+- **Thin community `Community 26`** (1 nodes): `Validate the artifact contract required before paper-mode claims.      This is i`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 27`** (1 nodes): `Per-timepoint MLP baseline for neural windows.`
+- **Thin community `Community 27`** (1 nodes): `Validate cluster launch inputs before an expensive SLURM allocation runs.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (1 nodes): `Small Conv1D/TCN-style baseline with stable [batch, time, feature] IO.`
+- **Thin community `Community 28`** (1 nodes): `Per-timepoint MLP baseline for neural windows.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (1 nodes): `Small Transformer baseline for CPU shape and smoke tests.`
+- **Thin community `Community 29`** (1 nodes): `Small Conv1D/TCN-style baseline with stable [batch, time, feature] IO.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (1 nodes): `CPU debug stand-in for long-sequence SSM baselines until Mamba is pinned.`
+- **Thin community `Community 30`** (1 nodes): `Small Transformer baseline for CPU shape and smoke tests.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 31`** (1 nodes): `Modality-tokenizer + shared latent dynamics + modality-readout scaffold.`
+- **Thin community `Community 31`** (1 nodes): `CPU debug stand-in for long-sequence SSM baselines until Mamba is pinned.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 32`** (1 nodes): `Encode observed modalities into shared latent neural tokens.`
+- **Thin community `Community 32`** (1 nodes): `Modality-tokenizer + shared latent dynamics + modality-readout scaffold.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 33`** (1 nodes): `Encode observed modalities into shared latent neural tokens.`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 34`** (1 nodes): `Encode observed modalities into shared latent neural tokens.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `_cmd_train()` connect `Community 2` to `Community 1`, `Community 4`, `Community 5`, `Community 6`, `Community 11`, `Community 18`?**
-  _High betweenness centrality (0.126) - this node is a cross-community bridge._
+  _High betweenness centrality (0.125) - this node is a cross-community bridge._
 - **Why does `run_prepared_training()` connect `Community 4` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 5`, `Community 9`?**
   _High betweenness centrality (0.125) - this node is a cross-community bridge._
 - **Why does `build_split_manifest()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 6`, `Community 7`, `Community 9`?**
