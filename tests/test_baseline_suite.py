@@ -93,9 +93,35 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertEqual(metadata_only_report.observed_seeds, (0,))
         self.assertTrue(any("missing 1,2" in violation for violation in metadata_only_report.violations))
 
+        invalid_seed_payload = json.loads(json.dumps(payload))
+        invalid_seed_payload["seed_results"] = [
+            {"seed": 1, "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]}},
+            {
+                "seed": 2,
+                "tasks": {
+                    "future_state_forecasting": {
+                        "status": "completed",
+                        "metrics": {"mse": 0.42},
+                    }
+                },
+            },
+        ]
+        invalid_seed_report = validate_paper_mode_payload(invalid_seed_payload, audit_report={"passed": True})
+        self.assertFalse(invalid_seed_report.passed)
+        self.assertNotIn(2, invalid_seed_report.observed_seeds)
+        self.assertTrue(any("seed 2:future_state_forecasting:metrics:mse lacks finite CI" in violation for violation in invalid_seed_report.violations))
+
         payload["seed_results"] = [
             {"seed": 1, "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]}},
-            {"seed": 2, "tasks": {"future_state_forecasting": {"status": "completed"}}},
+            {
+                "seed": 2,
+                "tasks": {
+                    "future_state_forecasting": {
+                        "status": "completed",
+                        "metrics": {"mse": 0.42, "mse_ci_low": 0.35, "mse_ci_high": 0.50},
+                    }
+                },
+            },
         ]
         passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
         self.assertTrue(passed_report.passed)

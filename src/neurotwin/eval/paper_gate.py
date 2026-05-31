@@ -8,7 +8,6 @@ import numpy as np
 
 CANONICAL_REQUIRED_SEEDS = (0, 1, 2)
 CONCRETE_SEED_CONTAINER_KEYS = ("runs", "seed_results", "per_seed_results", "baseline_runs", "per_seed_baselines")
-RESULT_EVIDENCE_KEYS = ("aggregate", "tasks", "task_results", "metrics_by_model", "metrics", "ranking", "baseline_suite")
 REPORT_METRIC_TOKENS = ("mse", "mae", "pearsonr", "spearmanr", "r2", "error", "gain", "accuracy", "recall")
 
 
@@ -185,23 +184,50 @@ def _coerce_seed(value: Any) -> int | None:
 
 
 def _has_result_evidence(record: dict[str, Any]) -> bool:
-    for key in RESULT_EVIDENCE_KEYS:
-        value = record.get(key)
-        if isinstance(value, dict) and value:
-            if key == "aggregate":
-                ranking = value.get("aggregate_rank")
-                if isinstance(ranking, list) and ranking:
-                    return True
-                continue
-            return True
-        if isinstance(value, list) and value:
-            return True
+    if _has_test_ci_evidence(record):
+        return True
+    aggregate = record.get("aggregate")
+    if isinstance(aggregate, dict) and isinstance(aggregate.get("aggregate_rank"), list) and aggregate["aggregate_rank"]:
+        return True
+    ranking = record.get("ranking")
+    if isinstance(ranking, list) and ranking:
+        return True
+    metrics = record.get("metrics")
+    if isinstance(metrics, dict) and _has_report_metric_ci_evidence(metrics):
+        return True
+    metrics_by_model = record.get("metrics_by_model")
+    if isinstance(metrics_by_model, dict):
+        for metrics in metrics_by_model.values():
+            if isinstance(metrics, dict) and _has_report_metric_ci_evidence(metrics):
+                return True
+    tasks = record.get("tasks")
+    if isinstance(tasks, dict):
+        for task_result in tasks.values():
+            if isinstance(task_result, dict) and _has_result_evidence(task_result):
+                return True
+    task_results = record.get("task_results")
+    if isinstance(task_results, list):
+        for task_result in task_results:
+            if isinstance(task_result, dict) and _has_result_evidence(task_result):
+                return True
+    baseline_suite = record.get("baseline_suite")
+    if isinstance(baseline_suite, dict) and _has_result_evidence(baseline_suite):
+        return True
     return False
 
 
 def _ci_violations(payload: dict[str, Any]) -> list[str]:
     violations: list[str] = []
-    violations.extend(_test_ci_violations(payload, "top-level test reporting"))
+    violations.extend(_ci_violations_for_payload(payload, "payload"))
+    for record in _iter_concrete_seed_records(payload):
+        seed = record.get("seed", "unknown")
+        violations.extend(_ci_violations_for_payload(record, f"seed {seed}"))
+    return violations
+
+
+def _ci_violations_for_payload(payload: dict[str, Any], label: str) -> list[str]:
+    violations: list[str] = []
+    violations.extend(_test_ci_violations(payload, f"{label}:top-level test reporting"))
     tasks = payload.get("tasks")
     if isinstance(tasks, dict):
         for task_id, result in sorted(tasks.items()):
@@ -209,13 +235,13 @@ def _ci_violations(payload: dict[str, Any]) -> list[str]:
                 continue
             metrics = result.get("metrics")
             if isinstance(metrics, dict):
-                violations.extend(_report_metric_ci_violations(metrics, f"{task_id}:metrics"))
+                violations.extend(_report_metric_ci_violations(metrics, f"{label}:{task_id}:metrics"))
             ranking = result.get("ranking")
             if not isinstance(ranking, list) or not ranking:
                 continue
             metrics_by_model = result.get("metrics_by_model")
             if not isinstance(metrics_by_model, dict):
-                violations.append(f"{task_id} lacks metrics_by_model for ranked baselines")
+                violations.append(f"{label}:{task_id} lacks metrics_by_model for ranked baselines")
                 continue
             for row in ranking:
                 if not isinstance(row, dict):
@@ -223,12 +249,12 @@ def _ci_violations(payload: dict[str, Any]) -> list[str]:
                 model_id = str(row.get("model_id"))
                 metrics = metrics_by_model.get(model_id)
                 if not isinstance(metrics, dict) or not _has_finite_ci(metrics, "mse"):
-                    violations.append(f"{task_id}:{model_id} lacks finite mse CI summary")
+                    violations.append(f"{label}:{task_id}:{model_id} lacks finite mse CI summary")
     task_results = payload.get("task_results")
     if isinstance(task_results, list):
         for row in task_results:
             if isinstance(row, dict):
-                violations.extend(_test_ci_violations(row, str(row.get("task_id", "task_result"))))
+                violations.extend(_test_ci_violations(row, f"{label}:{row.get('task_id', 'task_result')}"))
     return violations
 
 
@@ -274,6 +300,28 @@ def _is_report_metric_key(key: str, value: Any) -> bool:
         and not isinstance(value, bool)
         and any(token in key for token in REPORT_METRIC_TOKENS)
     )
+
+
+def _has_test_ci_evidence(row: dict[str, Any]) -> bool:
+    saw_metric = False
+    for key, value in row.items():
+        if not _is_test_metric_key(key, value):
+            continue
+        saw_metric = True
+        if not _has_finite_ci(row, key):
+            return False
+    return saw_metric
+
+
+def _has_report_metric_ci_evidence(metrics: dict[str, Any]) -> bool:
+    saw_metric = False
+    for key, value in metrics.items():
+        if not _is_report_metric_key(key, value):
+            continue
+        saw_metric = True
+        if not _has_finite_ci(metrics, key):
+            return False
+    return saw_metric
 
 
 def _finite_number(value: Any) -> bool:
