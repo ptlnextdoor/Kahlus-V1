@@ -171,6 +171,45 @@ class PreparedEvalAuditTests(unittest.TestCase):
             self.assertFalse(report.passed)
             self.assertTrue(any("prepared window leakage" in violation for violation in report.violations))
 
+    def test_prepared_eval_audit_catches_metadata_leakage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+            split = build_split_manifest(records, policy="subject", seed=0)
+            split_by_record = {}
+            for split_name in ("train", "val", "test"):
+                for record in getattr(split, split_name):
+                    split_by_record[record.record_id] = split_name
+            touched = set()
+            for batch in batches:
+                split_name = split_by_record.get(batch.metadata["record_id"])
+                if split_name == "train" and "train" not in touched:
+                    batch.metadata["source_hash"] = "same-raw-hash"
+                    batch.metadata["preprocessing_hash"] = "same-prep-hash"
+                    batch.metadata["stimulus_segment_id"] = "clip-001:0:10"
+                    touched.add("train")
+                elif split_name == "val" and "val" not in touched:
+                    batch.metadata["target_label"] = "left"
+                    touched.add("val")
+                elif split_name == "test" and "test" not in touched:
+                    batch.metadata["source_hash"] = "same-raw-hash"
+                    batch.metadata["preprocessing_hash"] = "same-prep-hash"
+                    batch.metadata["stimulus_segment_id"] = "clip-001:0:10"
+                    batch.metadata["hidden_subject_id"] = batch.subject_id
+                    touched.add("test")
+            split_path = save_split_manifest(split, root / "split_manifest.json")
+            event_path = save_event_batches(batches, root)
+
+            report = audit_prepared_eval_inputs(event_path, split_path, window_length=8, stride=8)
+
+            self.assertFalse(report.passed)
+            self.assertTrue(any("duplicate source_hash across splits" in violation for violation in report.violations))
+            self.assertTrue(any("duplicate preprocessing_hash across splits" in violation for violation in report.violations))
+            self.assertTrue(any("stimulus segment leakage across splits" in violation for violation in report.violations))
+            self.assertTrue(any("forbidden event metadata field 'target_label'" in violation for violation in report.violations))
+            self.assertTrue(any("hidden subject metadata field 'hidden_subject_id'" in violation for violation in report.violations))
+
 
 if __name__ == "__main__":
     unittest.main()
