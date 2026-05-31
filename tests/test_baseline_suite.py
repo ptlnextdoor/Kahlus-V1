@@ -11,6 +11,7 @@ from unittest import mock
 import numpy as np
 
 from neurotwin.benchmarks.baseline_suite import SupervisedWindowTask, run_supervised_window_tasks, run_synthetic_baseline_suite
+from neurotwin.eval.paper_gate import validate_paper_mode_payload
 from neurotwin.models.baselines import NumpyRidgeBaseline
 
 
@@ -21,12 +22,23 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertEqual(payload["scope"]["status"], "synthetic-only")
         future = payload["tasks"]["future_state_forecasting"]
         self.assertEqual(future["status"], "completed")
+        self.assertIn("persistence", future["metrics_by_model"])
+        self.assertIn("train_mean", future["metrics_by_model"])
+        self.assertIn("random_permutation", future["metrics_by_model"])
         self.assertIn("linear_ridge", future["metrics_by_model"])
+        self.assertIn("autoregressive_ridge", future["metrics_by_model"])
         self.assertIn("neurotwin", future["metrics_by_model"])
         self.assertIn("mse_ci_low", future["metrics_by_model"]["linear_ridge"])
         self.assertIn("mse_ci_high", future["metrics_by_model"]["linear_ridge"])
         self.assertTrue(payload["aggregate"]["aggregate_rank"])
         self.assertIn("baseline_catalog", payload)
+        catalog_ids = {row["model_id"] for row in payload["baseline_catalog"]}
+        self.assertIn("persistence", catalog_ids)
+        self.assertIn("train_mean", catalog_ids)
+        self.assertIn("random_permutation", catalog_ids)
+        self.assertIn("autoregressive_ridge", catalog_ids)
+        self.assertEqual(payload["seeds"], [4])
+        self.assertEqual(payload["benchmark_contract"]["required_seeds"], [0, 1, 2])
 
     def test_ridge_baseline_is_finite_for_ill_conditioned_windows(self):
         x = np.ones((12, 3), dtype=np.float64)
@@ -64,6 +76,35 @@ class BaselineSuiteTests(unittest.TestCase):
         ranked = {row["model_id"] for row in payload["tasks"]["future_state_forecasting"]["ranking"]}
         self.assertTrue(any(row["model_id"] == "linear_ridge" for row in failures))
         self.assertNotIn("linear_ridge", ranked)
+
+    def test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract(self):
+        payload = run_synthetic_baseline_suite(seed=0, train_steps=1)
+
+        missing_seed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
+        self.assertFalse(missing_seed_report.passed)
+        self.assertTrue(any("missing 1,2" in violation for violation in missing_seed_report.violations))
+
+        payload["seeds"] = [0, 1, 2]
+        passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
+        self.assertTrue(passed_report.passed)
+
+        failed_audit_report = validate_paper_mode_payload(payload, audit_report={"passed": False, "violations": ["leakage"]})
+        self.assertFalse(failed_audit_report.passed)
+        self.assertTrue(any("audit did not pass" in violation for violation in failed_audit_report.violations))
+
+        no_ranking = dict(payload)
+        no_ranking["aggregate"] = {"aggregate_rank": []}
+        no_ranking_report = validate_paper_mode_payload(no_ranking, audit_report={"passed": True})
+        self.assertFalse(no_ranking_report.passed)
+        self.assertTrue(any("aggregate_rank is empty" in violation for violation in no_ranking_report.violations))
+
+        no_ci = json.loads(json.dumps(payload))
+        future_metrics = no_ci["tasks"]["future_state_forecasting"]["metrics_by_model"]
+        first_model = next(iter(future_metrics))
+        future_metrics[first_model].pop("mse_ci_low", None)
+        no_ci_report = validate_paper_mode_payload(no_ci, audit_report={"passed": True})
+        self.assertFalse(no_ci_report.passed)
+        self.assertTrue(any("lacks finite mse CI" in violation for violation in no_ci_report.violations))
 
     def test_eval_suite_writes_baseline_artifact(self):
         env = dict(os.environ)

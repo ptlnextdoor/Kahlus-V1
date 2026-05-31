@@ -16,6 +16,7 @@ from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
+from neurotwin.eval.paper_gate import PaperModeGateReport, format_paper_mode_gate
 from neurotwin.repro import write_json
 
 
@@ -27,6 +28,8 @@ class PreparedSuiteConfig:
     stride: int = 8
     seed: int = 0
     train_steps: int = 5
+    required_seeds: tuple[int, ...] = (0, 1, 2)
+    require_ci: bool = True
 
 
 def run_prepared_baseline_suite(
@@ -77,6 +80,12 @@ def run_prepared_baseline_suite(
         "window_length": config.window_length,
         "stride": config.stride,
         "skipped_tasks": skipped,
+    }
+    payload["paper_mode_contract"] = {
+        "required_seeds": list(config.required_seeds),
+        "observed_seeds": payload.get("seeds", [config.seed]),
+        "require_ci": bool(config.require_ci),
+        "gate_status": "not_run",
     }
     if out_dir is not None:
         out = Path(out_dir)
@@ -158,6 +167,11 @@ def format_prepared_baseline_report(payload: dict[str, object]) -> str:
         for row in prepared.get("skipped_tasks", []):
             if isinstance(row, dict):
                 lines.append(f"{row.get('task_id')}: {row.get('reason')}")
+        lines.append("")
+    gate = payload.get("paper_mode_gate")
+    if isinstance(gate, dict):
+        lines.append("## paper_mode_gate")
+        lines.append(format_paper_mode_gate(PaperModeGateReport(**gate)))
         lines.append("")
     lines.append("Prepared-data rankings are benchmark plumbing unless run on real held-out public data with locked protocols.")
     return "\n".join(lines)

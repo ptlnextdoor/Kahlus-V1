@@ -112,6 +112,35 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertIn("mse_ci_high", future)
             self.assertTrue(artifact["aggregate"]["aggregate_rank"])
 
+            paper_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "eval",
+                    "--suite",
+                    "neural_translation_v1",
+                    "--event-manifest",
+                    str(prep_dir / "event_manifest.json"),
+                    "--split-manifest",
+                    str(prep_dir / "split_manifest.json"),
+                    "--out-dir",
+                    str(eval_dir),
+                    "--train-steps",
+                    "1",
+                    "--paper-mode",
+                    "--paper-required-seeds",
+                    "0",
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            self.assertIn("paper_mode_gate=True", paper_result.stdout)
+            self.assertIn("paper_mode_passed=True", paper_result.stdout)
+            self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

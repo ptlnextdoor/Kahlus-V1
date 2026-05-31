@@ -9,7 +9,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L1",
       "id": "tests_test_distributed_training_runtime_py",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_distributed_training_runtime.py"
     },
     {
@@ -18,7 +18,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L12",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests",
-      "community": 3,
+      "community": 4,
       "norm_label": "distributedtrainingruntimetests"
     },
     {
@@ -27,7 +27,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L13",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests_run_cli",
-      "community": 3,
+      "community": 4,
       "norm_label": ".run_cli()"
     },
     {
@@ -36,7 +36,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L24",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests_test_distributed_info_reads_torchrun_environment",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_distributed_info_reads_torchrun_environment()"
     },
     {
@@ -45,7 +45,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L37",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests_test_process_group_init_skips_without_rendezvous_env",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_process_group_init_skips_without_rendezvous_env()"
     },
     {
@@ -54,7 +54,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L44",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests_test_train_resume_and_metrics_jsonl",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_train_resume_and_metrics_jsonl()"
     },
     {
@@ -63,7 +63,7 @@
       "source_file": "tests/test_distributed_training_runtime.py",
       "source_location": "L63",
       "id": "test_distributed_training_runtime_distributedtrainingruntimetests_test_train_from_prepared_split_manifest",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_train_from_prepared_split_manifest()"
     },
     {
@@ -72,7 +72,7 @@
       "source_file": "tests/test_training_smoke.py",
       "source_location": "L1",
       "id": "tests_test_training_smoke_py",
-      "community": 0,
+      "community": 18,
       "norm_label": "test_training_smoke.py"
     },
     {
@@ -81,7 +81,7 @@
       "source_file": "tests/test_training_smoke.py",
       "source_location": "L9",
       "id": "test_training_smoke_trainingsmoketests",
-      "community": 0,
+      "community": 18,
       "norm_label": "trainingsmoketests"
     },
     {
@@ -90,7 +90,7 @@
       "source_file": "tests/test_training_smoke.py",
       "source_location": "L10",
       "id": "test_training_smoke_trainingsmoketests_test_synthetic_training_reduces_loss",
-      "community": 0,
+      "community": 18,
       "norm_label": ".test_synthetic_training_reduces_loss()"
     },
     {
@@ -99,7 +99,7 @@
       "source_file": "tests/test_training_smoke.py",
       "source_location": "L16",
       "id": "test_training_smoke_trainingsmoketests_test_train_cli_runs_debug_config",
-      "community": 0,
+      "community": 18,
       "norm_label": ".test_train_cli_runs_debug_config()"
     },
     {
@@ -108,7 +108,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L1",
       "id": "tests_test_moabb_cli_and_generalization_py",
-      "community": 1,
+      "community": 14,
       "norm_label": "test_moabb_cli_and_generalization.py"
     },
     {
@@ -117,7 +117,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L15",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests",
-      "community": 1,
+      "community": 14,
       "norm_label": "moabbcliandgeneralizationtests"
     },
     {
@@ -126,7 +126,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L16",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests_run_cli_no_check",
-      "community": 1,
+      "community": 14,
       "norm_label": ".run_cli_no_check()"
     },
     {
@@ -135,7 +135,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L28",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests_test_moabb_prepare_missing_deps_fails_cleanly",
-      "community": 1,
+      "community": 14,
       "norm_label": ".test_moabb_prepare_missing_deps_fails_cleanly()"
     },
     {
@@ -144,7 +144,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L46",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests_test_moabb_smoke_missing_deps_fails_cleanly",
-      "community": 1,
+      "community": 14,
       "norm_label": ".test_moabb_smoke_missing_deps_fails_cleanly()"
     },
     {
@@ -153,7 +153,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L65",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests_test_dataset_site_generalization_task",
-      "community": 1,
+      "community": 14,
       "norm_label": ".test_dataset_site_generalization_task()"
     },
     {
@@ -162,7 +162,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L75",
       "id": "test_moabb_cli_and_generalization_moabbcliandgeneralizationtests_test_neural_translation_suite_includes_generalization",
-      "community": 1,
+      "community": 14,
       "norm_label": ".test_neural_translation_suite_includes_generalization()"
     },
     {
@@ -171,7 +171,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L81",
       "id": "test_moabb_cli_and_generalization_test_real_moabb_smoke_script_creates_windows",
-      "community": 1,
+      "community": 14,
       "norm_label": "test_real_moabb_smoke_script_creates_windows()"
     },
     {
@@ -180,7 +180,7 @@
       "source_file": "tests/test_moabb_cli_and_generalization.py",
       "source_location": "L102",
       "id": "test_moabb_cli_and_generalization_test_real_moabb_benchmark_script_creates_windows_and_tasks",
-      "community": 1,
+      "community": 14,
       "norm_label": "test_real_moabb_benchmark_script_creates_windows_and_tasks()"
     },
     {
@@ -243,7 +243,7 @@
       "source_file": "tests/test_smoke_runner.py",
       "source_location": "L1",
       "id": "tests_test_smoke_runner_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "test_smoke_runner.py"
     },
     {
@@ -252,7 +252,7 @@
       "source_file": "tests/test_smoke_runner.py",
       "source_location": "L6",
       "id": "test_smoke_runner_smokerunnertests",
-      "community": 1,
+      "community": 3,
       "norm_label": "smokerunnertests"
     },
     {
@@ -261,7 +261,7 @@
       "source_file": "tests/test_smoke_runner.py",
       "source_location": "L7",
       "id": "test_smoke_runner_smokerunnertests_test_smoke_runner_returns_ranked_synthetic_results",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_smoke_runner_returns_ranked_synthetic_results()"
     },
     {
@@ -270,7 +270,7 @@
       "source_file": "tests/test_smoke_runner.py",
       "source_location": "L16",
       "id": "test_smoke_runner_smokerunnertests_test_smoke_report_mentions_synthetic_only",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_smoke_report_mentions_synthetic_only()"
     },
     {
@@ -279,7 +279,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L1",
       "id": "tests_test_adapters_moabb_bids_py",
-      "community": 4,
+      "community": 6,
       "norm_label": "test_adapters_moabb_bids.py"
     },
     {
@@ -288,7 +288,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L17",
       "id": "test_adapters_moabb_bids_adaptertests",
-      "community": 4,
+      "community": 6,
       "norm_label": "adaptertests"
     },
     {
@@ -297,7 +297,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L18",
       "id": "test_adapters_moabb_bids_adaptertests_test_moabb_missing_dependency_is_clean",
-      "community": 4,
+      "community": 6,
       "norm_label": ".test_moabb_missing_dependency_is_clean()"
     },
     {
@@ -306,7 +306,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L26",
       "id": "test_adapters_moabb_bids_adaptertests_test_mock_moabb_trials_convert_to_records_and_batches",
-      "community": 4,
+      "community": 6,
       "norm_label": ".test_mock_moabb_trials_convert_to_records_and_batches()"
     },
     {
@@ -315,7 +315,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L61",
       "id": "test_adapters_moabb_bids_adaptertests_test_moabb_channels_first_trials_are_transposed_to_event_schema",
-      "community": 4,
+      "community": 6,
       "norm_label": ".test_moabb_channels_first_trials_are_transposed_to_event_schema()"
     },
     {
@@ -324,7 +324,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L81",
       "id": "test_adapters_moabb_bids_adaptertests_test_moabb_balanced_trial_subset_preserves_subject_groups",
-      "community": 4,
+      "community": 6,
       "norm_label": ".test_moabb_balanced_trial_subset_preserves_subject_groups()"
     },
     {
@@ -333,7 +333,7 @@
       "source_file": "tests/test_adapters_moabb_bids.py",
       "source_location": "L99",
       "id": "test_adapters_moabb_bids_adaptertests_test_moabb_balanced_trial_subset_rejects_two_subject_smoke",
-      "community": 4,
+      "community": 6,
       "norm_label": ".test_moabb_balanced_trial_subset_rejects_two_subject_smoke()"
     },
     {
@@ -378,7 +378,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L1",
       "id": "tests_test_metrics_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "test_metrics.py"
     },
     {
@@ -387,7 +387,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L8",
       "id": "test_metrics_metrictests",
-      "community": 1,
+      "community": 3,
       "norm_label": "metrictests"
     },
     {
@@ -396,7 +396,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L9",
       "id": "test_metrics_metrictests_test_mse_and_pearsonr",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_mse_and_pearsonr()"
     },
     {
@@ -405,7 +405,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L17",
       "id": "test_metrics_metrictests_test_neural_signal_metrics_are_finite",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_neural_signal_metrics_are_finite()"
     },
     {
@@ -414,7 +414,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L24",
       "id": "test_metrics_metrictests_test_rank_models_lower_is_better",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_rank_models_lower_is_better()"
     },
     {
@@ -423,7 +423,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L37",
       "id": "test_metrics_metrictests_test_bootstrap_ci_is_deterministic",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_bootstrap_ci_is_deterministic()"
     },
     {
@@ -432,7 +432,7 @@
       "source_file": "tests/test_metrics.py",
       "source_location": "L44",
       "id": "test_metrics_metrictests_test_bootstrap_ci_caps_large_inputs_deterministically",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_bootstrap_ci_caps_large_inputs_deterministically()"
     },
     {
@@ -468,7 +468,7 @@
       "source_file": "tests/test_cli_report.py",
       "source_location": "L1",
       "id": "tests_test_cli_report_py",
-      "community": 19,
+      "community": 22,
       "norm_label": "test_cli_report.py"
     },
     {
@@ -477,7 +477,7 @@
       "source_file": "tests/test_cli_report.py",
       "source_location": "L7",
       "id": "test_cli_report_clireporttests",
-      "community": 19,
+      "community": 22,
       "norm_label": "clireporttests"
     },
     {
@@ -486,7 +486,7 @@
       "source_file": "tests/test_cli_report.py",
       "source_location": "L8",
       "id": "test_cli_report_clireporttests_test_report_mentions_corrected_boss_fight_and_split_rules",
-      "community": 19,
+      "community": 22,
       "norm_label": ".test_report_mentions_corrected_boss_fight_and_split_rules()"
     },
     {
@@ -495,7 +495,7 @@
       "source_file": "tests/test_windows_and_moabb_loader.py",
       "source_location": "L1",
       "id": "tests_test_windows_and_moabb_loader_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "test_windows_and_moabb_loader.py"
     },
     {
@@ -504,7 +504,7 @@
       "source_file": "tests/test_windows_and_moabb_loader.py",
       "source_location": "L11",
       "id": "test_windows_and_moabb_loader_windowsandmoabbloadertests",
-      "community": 5,
+      "community": 1,
       "norm_label": "windowsandmoabbloadertests"
     },
     {
@@ -513,7 +513,7 @@
       "source_file": "tests/test_windows_and_moabb_loader.py",
       "source_location": "L12",
       "id": "test_windows_and_moabb_loader_windowsandmoabbloadertests_test_batch_to_windows_preserves_source_metadata",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_batch_to_windows_preserves_source_metadata()"
     },
     {
@@ -522,7 +522,7 @@
       "source_file": "tests/test_windows_and_moabb_loader.py",
       "source_location": "L23",
       "id": "test_windows_and_moabb_loader_windowsandmoabbloadertests_test_load_moabb_trials_uses_paradigm_interface_when_available",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_load_moabb_trials_uses_paradigm_interface_when_available()"
     },
     {
@@ -702,7 +702,7 @@
       "source_file": "tests/__init__.py",
       "source_location": "L1",
       "id": "tests_init_py",
-      "community": 22,
+      "community": 25,
       "norm_label": "__init__.py"
     },
     {
@@ -718,7 +718,7 @@
       "label": "BaselineSuiteTests",
       "file_type": "code",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "id": "test_baseline_suite_baselinesuitetests",
       "community": 0,
       "norm_label": "baselinesuitetests"
@@ -727,7 +727,7 @@
       "label": ".test_synthetic_baseline_suite_runs_all_required_models()",
       "file_type": "code",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L18",
+      "source_location": "L19",
       "id": "test_baseline_suite_baselinesuitetests_test_synthetic_baseline_suite_runs_all_required_models",
       "community": 0,
       "norm_label": ".test_synthetic_baseline_suite_runs_all_required_models()"
@@ -736,7 +736,7 @@
       "label": ".test_ridge_baseline_is_finite_for_ill_conditioned_windows()",
       "file_type": "code",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L31",
+      "source_location": "L43",
       "id": "test_baseline_suite_baselinesuitetests_test_ridge_baseline_is_finite_for_ill_conditioned_windows",
       "community": 0,
       "norm_label": ".test_ridge_baseline_is_finite_for_ill_conditioned_windows()"
@@ -745,16 +745,25 @@
       "label": ".test_failed_baseline_is_recorded_and_excluded_from_ranking()",
       "file_type": "code",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L45",
+      "source_location": "L57",
       "id": "test_baseline_suite_baselinesuitetests_test_failed_baseline_is_recorded_and_excluded_from_ranking",
       "community": 0,
       "norm_label": ".test_failed_baseline_is_recorded_and_excluded_from_ranking()"
     },
     {
+      "label": ".test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract()",
+      "file_type": "code",
+      "source_file": "tests/test_baseline_suite.py",
+      "source_location": "L80",
+      "id": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "community": 0,
+      "norm_label": ".test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract()"
+    },
+    {
       "label": ".test_eval_suite_writes_baseline_artifact()",
       "file_type": "code",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L68",
+      "source_location": "L109",
       "id": "test_baseline_suite_baselinesuitetests_test_eval_suite_writes_baseline_artifact",
       "community": 0,
       "norm_label": ".test_eval_suite_writes_baseline_artifact()"
@@ -918,7 +927,7 @@
       "source_file": "tests/test_prepared_event_suite.py",
       "source_location": "L17",
       "id": "test_prepared_event_suite_preparedeventsuitetests_test_event_batches_roundtrip_through_manifest",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_event_batches_roundtrip_through_manifest()"
     },
     {
@@ -945,7 +954,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L1",
       "id": "tests_test_manifest_audit_and_torchrun_py",
-      "community": 3,
+      "community": 19,
       "norm_label": "test_manifest_audit_and_torchrun.py"
     },
     {
@@ -954,7 +963,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L13",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests",
-      "community": 3,
+      "community": 19,
       "norm_label": "manifestauditandtorchruntests"
     },
     {
@@ -963,7 +972,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L14",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests_run_cli",
-      "community": 3,
+      "community": 19,
       "norm_label": ".run_cli()"
     },
     {
@@ -972,7 +981,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L27",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests_test_split_audit_from_saved_manifest",
-      "community": 3,
+      "community": 19,
       "norm_label": ".test_split_audit_from_saved_manifest()"
     },
     {
@@ -981,7 +990,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L52",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests_test_rank_metrics_path_is_rank_specific_when_distributed",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_rank_metrics_path_is_rank_specific_when_distributed()"
     },
     {
@@ -990,7 +999,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L59",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests_test_train_rank_one_does_not_write_shared_checkpoint",
-      "community": 3,
+      "community": 19,
       "norm_label": ".test_train_rank_one_does_not_write_shared_checkpoint()"
     },
     {
@@ -999,7 +1008,7 @@
       "source_file": "tests/test_manifest_audit_and_torchrun.py",
       "source_location": "L77",
       "id": "test_manifest_audit_and_torchrun_manifestauditandtorchruntests_test_rank_zero_writes_shared_artifacts_and_rank_metrics",
-      "community": 3,
+      "community": 19,
       "norm_label": ".test_rank_zero_writes_shared_artifacts_and_rank_metrics()"
     },
     {
@@ -1008,7 +1017,7 @@
       "source_file": "tests/test_leakage_audits.py",
       "source_location": "L1",
       "id": "tests_test_leakage_audits_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "test_leakage_audits.py"
     },
     {
@@ -1017,7 +1026,7 @@
       "source_file": "tests/test_leakage_audits.py",
       "source_location": "L8",
       "id": "test_leakage_audits_leakageaudittests",
-      "community": 6,
+      "community": 5,
       "norm_label": "leakageaudittests"
     },
     {
@@ -1026,7 +1035,7 @@
       "source_file": "tests/test_leakage_audits.py",
       "source_location": "L9",
       "id": "test_leakage_audits_leakageaudittests_test_audit_catches_metadata_label_leak",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_audit_catches_metadata_label_leak()"
     },
     {
@@ -1035,7 +1044,7 @@
       "source_file": "tests/test_leakage_audits.py",
       "source_location": "L19",
       "id": "test_leakage_audits_leakageaudittests_test_audit_catches_overlapping_time_windows",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_audit_catches_overlapping_time_windows()"
     },
     {
@@ -1044,7 +1053,7 @@
       "source_file": "tests/test_splits_no_leakage.py",
       "source_location": "L1",
       "id": "tests_test_splits_no_leakage_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "test_splits_no_leakage.py"
     },
     {
@@ -1053,7 +1062,7 @@
       "source_file": "tests/test_splits_no_leakage.py",
       "source_location": "L8",
       "id": "test_splits_no_leakage_splitleakagetests",
-      "community": 6,
+      "community": 5,
       "norm_label": "splitleakagetests"
     },
     {
@@ -1062,7 +1071,7 @@
       "source_file": "tests/test_splits_no_leakage.py",
       "source_location": "L9",
       "id": "test_splits_no_leakage_splitleakagetests_test_subject_split_has_no_subject_overlap",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_subject_split_has_no_subject_overlap()"
     },
     {
@@ -1071,7 +1080,7 @@
       "source_file": "tests/test_splits_no_leakage.py",
       "source_location": "L25",
       "id": "test_splits_no_leakage_splitleakagetests_test_site_and_dataset_splits_block_group_leakage",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_site_and_dataset_splits_block_group_leakage()"
     },
     {
@@ -1080,7 +1089,7 @@
       "source_file": "tests/test_splits_no_leakage.py",
       "source_location": "L40",
       "id": "test_splits_no_leakage_splitleakagetests_test_leakage_checker_catches_record_reuse",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_leakage_checker_catches_record_reuse()"
     },
     {
@@ -1089,7 +1098,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L1",
       "id": "tests_test_eval_audit_prepared_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "test_eval_audit_prepared.py"
     },
     {
@@ -1098,7 +1107,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L16",
       "id": "test_eval_audit_prepared_preparedevalaudittests",
-      "community": 5,
+      "community": 1,
       "norm_label": "preparedevalaudittests"
     },
     {
@@ -1107,7 +1116,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L17",
       "id": "test_eval_audit_prepared_preparedevalaudittests_write_prepared",
-      "community": 5,
+      "community": 1,
       "norm_label": "._write_prepared()"
     },
     {
@@ -1116,7 +1125,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L36",
       "id": "test_eval_audit_prepared_preparedevalaudittests_test_prepared_eval_audit_passes_clean_manifest_and_cli_writes_artifact",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_prepared_eval_audit_passes_clean_manifest_and_cli_writes_artifact()"
     },
     {
@@ -1125,7 +1134,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L75",
       "id": "test_eval_audit_prepared_preparedevalaudittests_test_moabb_sized_windows_pass_required_window_gate",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_moabb_sized_windows_pass_required_window_gate()"
     },
     {
@@ -1134,7 +1143,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L93",
       "id": "test_eval_audit_prepared_preparedevalaudittests_test_zero_window_benchmark_fails_required_window_gate",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_zero_window_benchmark_fails_required_window_gate()"
     },
     {
@@ -1143,7 +1152,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L140",
       "id": "test_eval_audit_prepared_preparedevalaudittests_test_prepared_eval_audit_fails_on_corrupted_event_hash",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_prepared_eval_audit_fails_on_corrupted_event_hash()"
     },
     {
@@ -1152,7 +1161,7 @@
       "source_file": "tests/test_eval_audit_prepared.py",
       "source_location": "L154",
       "id": "test_eval_audit_prepared_preparedevalaudittests_test_prepared_eval_audit_catches_window_overlap_across_splits",
-      "community": 5,
+      "community": 1,
       "norm_label": ".test_prepared_eval_audit_catches_window_overlap_across_splits()"
     },
     {
@@ -1287,7 +1296,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L1",
       "id": "tests_test_manifest_persistence_and_eval_suite_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "test_manifest_persistence_and_eval_suite.py"
     },
     {
@@ -1296,7 +1305,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L12",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests",
-      "community": 6,
+      "community": 5,
       "norm_label": "manifestpersistenceandevalsuitetests"
     },
     {
@@ -1305,7 +1314,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L13",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests_run_cli",
-      "community": 6,
+      "community": 5,
       "norm_label": ".run_cli()"
     },
     {
@@ -1314,7 +1323,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L24",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests_test_data_prepare_writes_manifests",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_data_prepare_writes_manifests()"
     },
     {
@@ -1323,7 +1332,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L48",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests_test_train_writes_split_manifest_and_checkpoint",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_train_writes_split_manifest_and_checkpoint()"
     },
     {
@@ -1332,7 +1341,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L65",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests_test_neural_translation_eval_suite_outputs_task_metrics",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_neural_translation_eval_suite_outputs_task_metrics()"
     },
     {
@@ -1341,7 +1350,7 @@
       "source_file": "tests/test_manifest_persistence_and_eval_suite.py",
       "source_location": "L84",
       "id": "test_manifest_persistence_and_eval_suite_manifestpersistenceandevalsuitetests_test_split_manifest_roundtrip_dict",
-      "community": 6,
+      "community": 5,
       "norm_label": ".test_split_manifest_roundtrip_dict()"
     },
     {
@@ -1350,7 +1359,7 @@
       "source_file": "tests/test_schemas.py",
       "source_location": "L1",
       "id": "tests_test_schemas_py",
-      "community": 4,
+      "community": 1,
       "norm_label": "test_schemas.py"
     },
     {
@@ -1359,7 +1368,7 @@
       "source_file": "tests/test_schemas.py",
       "source_location": "L8",
       "id": "test_schemas_neuraleventbatchtests",
-      "community": 4,
+      "community": 1,
       "norm_label": "neuraleventbatchtests"
     },
     {
@@ -1368,7 +1377,7 @@
       "source_file": "tests/test_schemas.py",
       "source_location": "L9",
       "id": "test_schemas_neuraleventbatchtests_test_valid_batch_preserves_core_metadata",
-      "community": 4,
+      "community": 1,
       "norm_label": ".test_valid_batch_preserves_core_metadata()"
     },
     {
@@ -1377,7 +1386,7 @@
       "source_file": "tests/test_schemas.py",
       "source_location": "L31",
       "id": "test_schemas_neuraleventbatchtests_test_rejects_mismatched_time_axis",
-      "community": 4,
+      "community": 1,
       "norm_label": ".test_rejects_mismatched_time_axis()"
     },
     {
@@ -1386,7 +1395,7 @@
       "source_file": "tests/test_schemas.py",
       "source_location": "L47",
       "id": "test_schemas_neuraleventbatchtests_test_rejects_unknown_modality",
-      "community": 4,
+      "community": 1,
       "norm_label": ".test_rejects_unknown_modality()"
     },
     {
@@ -1395,7 +1404,7 @@
       "source_file": "tests/test_benchmark_tasks.py",
       "source_location": "L1",
       "id": "tests_test_benchmark_tasks_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "test_benchmark_tasks.py"
     },
     {
@@ -1404,7 +1413,7 @@
       "source_file": "tests/test_benchmark_tasks.py",
       "source_location": "L13",
       "id": "test_benchmark_tasks_benchmarktasktests",
-      "community": 1,
+      "community": 3,
       "norm_label": "benchmarktasktests"
     },
     {
@@ -1413,7 +1422,7 @@
       "source_file": "tests/test_benchmark_tasks.py",
       "source_location": "L14",
       "id": "test_benchmark_tasks_benchmarktasktests_test_future_and_masked_tasks_return_metrics",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_future_and_masked_tasks_return_metrics()"
     },
     {
@@ -1422,7 +1431,7 @@
       "source_file": "tests/test_benchmark_tasks.py",
       "source_location": "L25",
       "id": "test_benchmark_tasks_benchmarktasktests_test_cross_modal_translation_skips_without_pairing",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_cross_modal_translation_skips_without_pairing()"
     },
     {
@@ -1431,7 +1440,7 @@
       "source_file": "tests/test_benchmark_tasks.py",
       "source_location": "L31",
       "id": "test_benchmark_tasks_benchmarktasktests_test_subject_adaptation_reports_gain",
-      "community": 1,
+      "community": 3,
       "norm_label": ".test_subject_adaptation_reports_gain()"
     },
     {
@@ -1440,7 +1449,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L1",
       "id": "tests_test_cli_expanded_py",
-      "community": 16,
+      "community": 17,
       "norm_label": "test_cli_expanded.py"
     },
     {
@@ -1449,7 +1458,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L11",
       "id": "test_cli_expanded_expandedclitests",
-      "community": 16,
+      "community": 17,
       "norm_label": "expandedclitests"
     },
     {
@@ -1458,7 +1467,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L12",
       "id": "test_cli_expanded_expandedclitests_run_cli",
-      "community": 16,
+      "community": 17,
       "norm_label": ".run_cli()"
     },
     {
@@ -1467,7 +1476,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L23",
       "id": "test_cli_expanded_expandedclitests_test_estimate_and_train_dry_run",
-      "community": 16,
+      "community": 17,
       "norm_label": ".test_estimate_and_train_dry_run()"
     },
     {
@@ -1476,7 +1485,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L32",
       "id": "test_cli_expanded_expandedclitests_test_data_and_split_audits",
-      "community": 16,
+      "community": 17,
       "norm_label": ".test_data_and_split_audits()"
     },
     {
@@ -1485,7 +1494,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L39",
       "id": "test_cli_expanded_expandedclitests_test_report_run_dir",
-      "community": 16,
+      "community": 17,
       "norm_label": ".test_report_run_dir()"
     },
     {
@@ -1494,7 +1503,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L53",
       "id": "test_cli_expanded_expandedclitests_test_report_compare_writes_aggregate_artifacts",
-      "community": 16,
+      "community": 17,
       "norm_label": ".test_report_compare_writes_aggregate_artifacts()"
     },
     {
@@ -1503,7 +1512,7 @@
       "source_file": "tests/test_cli_expanded.py",
       "source_location": "L78",
       "id": "test_cli_expanded_expandedclitests_test_bids_prepare_writes_event_manifest_when_derivative_exists",
-      "community": 16,
+      "community": 17,
       "norm_label": ".test_bids_prepare_writes_event_manifest_when_derivative_exists()"
     },
     {
@@ -1575,7 +1584,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L1",
       "id": "tests_test_prepared_training_py",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_prepared_training.py"
     },
     {
@@ -1584,7 +1593,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L19",
       "id": "test_prepared_training_preparedtrainingtests",
-      "community": 3,
+      "community": 4,
       "norm_label": "preparedtrainingtests"
     },
     {
@@ -1593,7 +1602,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L20",
       "id": "test_prepared_training_preparedtrainingtests_prepared_dir",
-      "community": 3,
+      "community": 4,
       "norm_label": "._prepared_dir()"
     },
     {
@@ -1602,7 +1611,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L29",
       "id": "test_prepared_training_preparedtrainingtests_test_prepared_training_writes_checkpoint_and_metrics",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_prepared_training_writes_checkpoint_and_metrics()"
     },
     {
@@ -1611,7 +1620,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L85",
       "id": "test_prepared_training_preparedtrainingtests_test_prepared_training_runs_all_neural_translation_tasks",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_prepared_training_runs_all_neural_translation_tasks()"
     },
     {
@@ -1620,7 +1629,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L126",
       "id": "test_prepared_training_preparedtrainingtests_test_objective_weights_are_recorded_for_multitask_training",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_objective_weights_are_recorded_for_multitask_training()"
     },
     {
@@ -1629,7 +1638,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L149",
       "id": "test_prepared_training_preparedtrainingtests_test_prepared_training_uses_batched_eval_predictions",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_prepared_training_uses_batched_eval_predictions()"
     },
     {
@@ -1638,7 +1647,7 @@
       "source_file": "tests/test_prepared_training.py",
       "source_location": "L183",
       "id": "test_prepared_training_preparedtrainingtests_test_train_cli_uses_prepared_path_when_manifests_are_configured",
-      "community": 3,
+      "community": 4,
       "norm_label": ".test_train_cli_uses_prepared_path_when_manifests_are_configured()"
     },
     {
@@ -1683,7 +1692,7 @@
       "source_file": "scripts/vendor_upstreams.py",
       "source_location": "L1",
       "id": "scripts_vendor_upstreams_py",
-      "community": 20,
+      "community": 23,
       "norm_label": "vendor_upstreams.py"
     },
     {
@@ -1692,7 +1701,7 @@
       "source_file": "scripts/vendor_upstreams.py",
       "source_location": "L15",
       "id": "vendor_upstreams_main",
-      "community": 20,
+      "community": 23,
       "norm_label": "main()"
     },
     {
@@ -1701,7 +1710,7 @@
       "source_file": "scripts/vendor_upstreams.py",
       "source_location": "L43",
       "id": "vendor_upstreams_clone_or_checkout",
-      "community": 20,
+      "community": 23,
       "norm_label": "_clone_or_checkout()"
     },
     {
@@ -1710,7 +1719,7 @@
       "source_file": "scripts/make_figures.py",
       "source_location": "L1",
       "id": "scripts_make_figures_py",
-      "community": 21,
+      "community": 24,
       "norm_label": "make_figures.py"
     },
     {
@@ -1719,7 +1728,7 @@
       "source_file": "scripts/make_figures.py",
       "source_location": "L9",
       "id": "make_figures_main",
-      "community": 21,
+      "community": 24,
       "norm_label": "main()"
     },
     {
@@ -1728,7 +1737,7 @@
       "source_file": "scripts/make_tables.py",
       "source_location": "L1",
       "id": "scripts_make_tables_py",
-      "community": 17,
+      "community": 20,
       "norm_label": "make_tables.py"
     },
     {
@@ -1737,7 +1746,7 @@
       "source_file": "scripts/make_tables.py",
       "source_location": "L9",
       "id": "make_tables_main",
-      "community": 17,
+      "community": 20,
       "norm_label": "main()"
     },
     {
@@ -1746,7 +1755,7 @@
       "source_file": "scripts/make_tables.py",
       "source_location": "L31",
       "id": "make_tables_flatten_metrics",
-      "community": 17,
+      "community": 20,
       "norm_label": "_flatten_metrics()"
     },
     {
@@ -1755,7 +1764,7 @@
       "source_file": "scripts/make_tables.py",
       "source_location": "L52",
       "id": "make_tables_read_summary",
-      "community": 17,
+      "community": 20,
       "norm_label": "_read_summary()"
     },
     {
@@ -1854,7 +1863,7 @@
       "source_file": "src/neurotwin/repro.py",
       "source_location": "L38",
       "id": "repro_hash_file",
-      "community": 2,
+      "community": 1,
       "norm_label": "hash_file()"
     },
     {
@@ -1980,7 +1989,7 @@
       "source_file": "src/neurotwin/repro.py",
       "source_location": "L282",
       "id": "repro_write_json",
-      "community": 4,
+      "community": 6,
       "norm_label": "write_json()"
     },
     {
@@ -2016,7 +2025,7 @@
       "source_file": "src/neurotwin/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -2024,7 +2033,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/__init__.py",
       "source_location": "L1",
-      "community": 14,
+      "community": 15,
       "norm_label": "data schemas, split manifests, and leakage guards.",
       "id": "init_rationale_1"
     },
@@ -2086,7 +2095,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L43",
+      "source_location": "L44",
       "id": "cli_main",
       "community": 2,
       "norm_label": "main()"
@@ -2095,25 +2104,25 @@
       "label": "_cmd_data_prepare()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L148",
+      "source_location": "L152",
       "id": "cli_cmd_data_prepare",
-      "community": 4,
+      "community": 6,
       "norm_label": "_cmd_data_prepare()"
     },
     {
       "label": "_cmd_data_smoke()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L236",
+      "source_location": "L240",
       "id": "cli_cmd_data_smoke",
-      "community": 4,
+      "community": 6,
       "norm_label": "_cmd_data_smoke()"
     },
     {
       "label": "_cmd_data_audit()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L343",
+      "source_location": "L347",
       "id": "cli_cmd_data_audit",
       "community": 10,
       "norm_label": "_cmd_data_audit()"
@@ -2122,16 +2131,16 @@
       "label": "_cmd_split_audit()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L374",
+      "source_location": "L378",
       "id": "cli_cmd_split_audit",
-      "community": 6,
+      "community": 5,
       "norm_label": "_cmd_split_audit()"
     },
     {
       "label": "_cmd_train()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L398",
+      "source_location": "L402",
       "id": "cli_cmd_train",
       "community": 2,
       "norm_label": "_cmd_train()"
@@ -2140,7 +2149,7 @@
       "label": "_cmd_estimate()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L571",
+      "source_location": "L575",
       "id": "cli_cmd_estimate",
       "community": 2,
       "norm_label": "_cmd_estimate()"
@@ -2149,16 +2158,16 @@
       "label": "_cmd_eval()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L580",
+      "source_location": "L584",
       "id": "cli_cmd_eval",
-      "community": 9,
+      "community": 11,
       "norm_label": "_cmd_eval()"
     },
     {
       "label": "_cmd_report()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L632",
+      "source_location": "L701",
       "id": "cli_cmd_report",
       "community": 8,
       "norm_label": "_cmd_report()"
@@ -2167,25 +2176,25 @@
       "label": "_cmd_doctor()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L643",
+      "source_location": "L712",
       "id": "cli_cmd_doctor",
-      "community": 15,
+      "community": 16,
       "norm_label": "_cmd_doctor()"
     },
     {
       "label": "_cmd_cluster_preflight()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L647",
+      "source_location": "L716",
       "id": "cli_cmd_cluster_preflight",
-      "community": 2,
+      "community": 7,
       "norm_label": "_cmd_cluster_preflight()"
     },
     {
       "label": "_cmd_cluster_materialize_config()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L664",
+      "source_location": "L733",
       "id": "cli_cmd_cluster_materialize_config",
       "community": 7,
       "norm_label": "_cmd_cluster_materialize_config()"
@@ -2194,16 +2203,16 @@
       "label": "_parse_split_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L679",
+      "source_location": "L748",
       "id": "cli_parse_split_windows",
-      "community": 2,
+      "community": 7,
       "norm_label": "_parse_split_windows()"
     },
     {
       "label": "_has_prepared_training_inputs()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L702",
+      "source_location": "L771",
       "id": "cli_has_prepared_training_inputs",
       "community": 2,
       "norm_label": "_has_prepared_training_inputs()"
@@ -2212,7 +2221,7 @@
       "label": "_config_value()",
       "file_type": "code",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L706",
+      "source_location": "L775",
       "id": "cli_config_value",
       "community": 2,
       "norm_label": "_config_value()"
@@ -2367,7 +2376,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L1",
       "id": "src_neurotwin_doctor_py",
-      "community": 15,
+      "community": 16,
       "norm_label": "doctor.py"
     },
     {
@@ -2376,7 +2385,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L15",
       "id": "doctor_doctorcheck",
-      "community": 15,
+      "community": 16,
       "norm_label": "doctorcheck"
     },
     {
@@ -2385,7 +2394,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L22",
       "id": "doctor_doctorreport",
-      "community": 15,
+      "community": 16,
       "norm_label": "doctorreport"
     },
     {
@@ -2394,7 +2403,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L26",
       "id": "doctor_passed",
-      "community": 15,
+      "community": 16,
       "norm_label": "passed()"
     },
     {
@@ -2403,7 +2412,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L33",
       "id": "doctor_run_doctor",
-      "community": 15,
+      "community": 16,
       "norm_label": "run_doctor()"
     },
     {
@@ -2412,7 +2421,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L56",
       "id": "doctor_format_doctor_report",
-      "community": 15,
+      "community": 16,
       "norm_label": "format_doctor_report()"
     },
     {
@@ -2421,7 +2430,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L63",
       "id": "doctor_is_writable",
-      "community": 15,
+      "community": 16,
       "norm_label": "_is_writable()"
     },
     {
@@ -2430,7 +2439,7 @@
       "source_file": "src/neurotwin/doctor.py",
       "source_location": "L74",
       "id": "doctor_check_runs_writable",
-      "community": 15,
+      "community": 16,
       "norm_label": "_check_runs_writable()"
     },
     {
@@ -2439,7 +2448,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L1",
       "id": "src_neurotwin_training_prepared_py",
-      "community": 3,
+      "community": 4,
       "norm_label": "prepared.py"
     },
     {
@@ -2448,7 +2457,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L28",
       "id": "prepared_preparedtrainingresult",
-      "community": 3,
+      "community": 4,
       "norm_label": "preparedtrainingresult"
     },
     {
@@ -2457,7 +2466,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L70",
       "id": "prepared_preparedtrainingresult_to_dict",
-      "community": 3,
+      "community": 4,
       "norm_label": ".to_dict()"
     },
     {
@@ -2466,7 +2475,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L74",
       "id": "prepared_run_prepared_training",
-      "community": 3,
+      "community": 4,
       "norm_label": "run_prepared_training()"
     },
     {
@@ -2475,7 +2484,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L239",
       "id": "prepared_predict",
-      "community": 3,
+      "community": 4,
       "norm_label": "_predict()"
     },
     {
@@ -2484,7 +2493,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L251",
       "id": "prepared_mse_loss",
-      "community": 3,
+      "community": 4,
       "norm_label": "_mse_loss()"
     },
     {
@@ -2493,7 +2502,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L255",
       "id": "prepared_select_tasks",
-      "community": 3,
+      "community": 4,
       "norm_label": "_select_tasks()"
     },
     {
@@ -2502,7 +2511,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L264",
       "id": "prepared_all_synthetic",
-      "community": 3,
+      "community": 4,
       "norm_label": "_all_synthetic()"
     },
     {
@@ -2511,7 +2520,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L268",
       "id": "prepared_write_metrics_csv",
-      "community": 3,
+      "community": 4,
       "norm_label": "_write_metrics_csv()"
     },
     {
@@ -2520,7 +2529,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L310",
       "id": "prepared_train_single_task",
-      "community": 3,
+      "community": 4,
       "norm_label": "_train_single_task()"
     },
     {
@@ -2529,7 +2538,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L437",
       "id": "prepared_batched_loss",
-      "community": 3,
+      "community": 4,
       "norm_label": "_batched_loss()"
     },
     {
@@ -2538,7 +2547,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L459",
       "id": "prepared_predict_numpy_batches",
-      "community": 3,
+      "community": 4,
       "norm_label": "_predict_numpy_batches()"
     },
     {
@@ -2547,7 +2556,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L477",
       "id": "prepared_evaluate_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "_evaluate_task()"
     },
     {
@@ -2556,7 +2565,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L503",
       "id": "prepared_model_config_for_task",
-      "community": 3,
+      "community": 4,
       "norm_label": "_model_config_for_task()"
     },
     {
@@ -2565,7 +2574,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L528",
       "id": "prepared_load_task_resume",
-      "community": 3,
+      "community": 4,
       "norm_label": "_load_task_resume()"
     },
     {
@@ -2574,7 +2583,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L544",
       "id": "prepared_resume_start_step",
-      "community": 3,
+      "community": 4,
       "norm_label": "_resume_start_step()"
     },
     {
@@ -2583,7 +2592,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L550",
       "id": "prepared_aggregate_task_results",
-      "community": 3,
+      "community": 4,
       "norm_label": "_aggregate_task_results()"
     },
     {
@@ -2592,7 +2601,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L569",
       "id": "prepared_append_task_metric",
-      "community": 3,
+      "community": 4,
       "norm_label": "_append_task_metric()"
     },
     {
@@ -2601,7 +2610,7 @@
       "source_file": "src/neurotwin/training/prepared.py",
       "source_location": "L574",
       "id": "prepared_save_task_checkpoint",
-      "community": 3,
+      "community": 4,
       "norm_label": "_save_task_checkpoint()"
     },
     {
@@ -2610,7 +2619,7 @@
       "source_file": "src/neurotwin/training/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_training_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -2619,7 +2628,7 @@
       "source_file": "src/neurotwin/training/smoke.py",
       "source_location": "L1",
       "id": "src_neurotwin_training_smoke_py",
-      "community": 0,
+      "community": 18,
       "norm_label": "smoke.py"
     },
     {
@@ -2628,7 +2637,7 @@
       "source_file": "src/neurotwin/training/smoke.py",
       "source_location": "L12",
       "id": "smoke_trainingsmokeresult",
-      "community": 0,
+      "community": 18,
       "norm_label": "trainingsmokeresult"
     },
     {
@@ -2637,7 +2646,7 @@
       "source_file": "src/neurotwin/training/smoke.py",
       "source_location": "L18",
       "id": "smoke_run_synthetic_training",
-      "community": 0,
+      "community": 18,
       "norm_label": "run_synthetic_training()"
     },
     {
@@ -2645,7 +2654,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/training/smoke.py",
       "source_location": "L19",
-      "community": 0,
+      "community": 18,
       "norm_label": "run a tiny deterministic cpu training loop for cli and ci smoke tests.",
       "id": "smoke_rationale_19"
     },
@@ -2655,7 +2664,7 @@
       "source_file": "src/neurotwin/runtime/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_runtime_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -2664,7 +2673,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L1",
       "id": "src_neurotwin_runtime_distributed_py",
-      "community": 3,
+      "community": 4,
       "norm_label": "distributed.py"
     },
     {
@@ -2673,7 +2682,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L12",
       "id": "distributed_distributedinfo",
-      "community": 3,
+      "community": 4,
       "norm_label": "distributedinfo"
     },
     {
@@ -2682,7 +2691,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L18",
       "id": "distributed_is_distributed",
-      "community": 3,
+      "community": 4,
       "norm_label": "is_distributed()"
     },
     {
@@ -2691,7 +2700,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L22",
       "id": "distributed_is_rank_zero",
-      "community": 3,
+      "community": 4,
       "norm_label": "is_rank_zero()"
     },
     {
@@ -2700,7 +2709,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L26",
       "id": "distributed_get_distributed_info",
-      "community": 3,
+      "community": 4,
       "norm_label": "get_distributed_info()"
     },
     {
@@ -2709,7 +2718,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L34",
       "id": "distributed_get_rank_metrics_path",
-      "community": 3,
+      "community": 4,
       "norm_label": "get_rank_metrics_path()"
     },
     {
@@ -2718,7 +2727,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L42",
       "id": "distributed_maybe_init_process_group",
-      "community": 3,
+      "community": 4,
       "norm_label": "maybe_init_process_group()"
     },
     {
@@ -2727,7 +2736,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L59",
       "id": "distributed_barrier_if_distributed",
-      "community": 3,
+      "community": 4,
       "norm_label": "barrier_if_distributed()"
     },
     {
@@ -2736,7 +2745,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L64",
       "id": "distributed_cleanup_process_group",
-      "community": 3,
+      "community": 4,
       "norm_label": "cleanup_process_group()"
     },
     {
@@ -2745,7 +2754,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L69",
       "id": "distributed_wrap_ddp_if_initialized",
-      "community": 3,
+      "community": 4,
       "norm_label": "wrap_ddp_if_initialized()"
     },
     {
@@ -2754,7 +2763,7 @@
       "source_file": "src/neurotwin/runtime/distributed.py",
       "source_location": "L82",
       "id": "distributed_unwrap_model",
-      "community": 3,
+      "community": 4,
       "norm_label": "unwrap_model()"
     },
     {
@@ -2853,7 +2862,7 @@
       "source_file": "src/neurotwin/runtime/preflight.py",
       "source_location": "L246",
       "id": "preflight_format_cluster_preflight",
-      "community": 2,
+      "community": 7,
       "norm_label": "format_cluster_preflight()"
     },
     {
@@ -3051,7 +3060,7 @@
       "source_file": "src/neurotwin/models/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_models_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -3060,7 +3069,7 @@
       "source_file": "src/neurotwin/models/translator.py",
       "source_location": "L1",
       "id": "src_neurotwin_models_translator_py",
-      "community": 18,
+      "community": 21,
       "norm_label": "translator.py"
     },
     {
@@ -3069,7 +3078,7 @@
       "source_file": "src/neurotwin/models/translator.py",
       "source_location": "L7",
       "id": "translator_neuralstatespacetranslatorconfig",
-      "community": 18,
+      "community": 21,
       "norm_label": "neuralstatespacetranslatorconfig"
     },
     {
@@ -3078,7 +3087,7 @@
       "source_file": "src/neurotwin/models/translator.py",
       "source_location": "L20",
       "id": "translator_neuralstatespacetranslatorconfig_describe",
-      "community": 18,
+      "community": 21,
       "norm_label": ".describe()"
     },
     {
@@ -3086,7 +3095,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/translator.py",
       "source_location": "L8",
-      "community": 18,
+      "community": 21,
       "norm_label": "configuration shell for the future neurotwin model implementation.",
       "id": "translator_rationale_8"
     },
@@ -3096,7 +3105,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L1",
       "id": "src_neurotwin_models_torch_models_py",
-      "community": 11,
+      "community": 0,
       "norm_label": "torch_models.py"
     },
     {
@@ -3114,7 +3123,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L12",
       "id": "torch_models_tinytransformerbaseline_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3123,7 +3132,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L36",
       "id": "torch_models_tinytransformerbaseline_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3141,7 +3150,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L44",
       "id": "torch_models_tinyssmbaseline_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3150,7 +3159,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L63",
       "id": "torch_models_tinyssmbaseline_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3168,7 +3177,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L72",
       "id": "torch_models_neuralstatespacetranslator_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3177,7 +3186,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L160",
       "id": "torch_models_neuralstatespacetranslator_forward",
-      "community": 5,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3186,7 +3195,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L173",
       "id": "torch_models_neuralstatespacetranslator_encode",
-      "community": 5,
+      "community": 0,
       "norm_label": ".encode()"
     },
     {
@@ -3204,7 +3213,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L249",
       "id": "torch_models_neuralstatespacetranslator_reset_parameters",
-      "community": 11,
+      "community": 0,
       "norm_label": "._reset_parameters()"
     },
     {
@@ -3213,7 +3222,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L254",
       "id": "torch_models_check_sequence_tensor",
-      "community": 11,
+      "community": 0,
       "norm_label": "_check_sequence_tensor()"
     },
     {
@@ -3222,7 +3231,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L259",
       "id": "torch_models_linearmodalityencoder",
-      "community": 11,
+      "community": 0,
       "norm_label": "_linearmodalityencoder"
     },
     {
@@ -3231,7 +3240,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L260",
       "id": "torch_models_linearmodalityencoder_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3240,7 +3249,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L269",
       "id": "torch_models_linearmodalityencoder_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3249,7 +3258,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L274",
       "id": "torch_models_temporalconvmodalityencoder",
-      "community": 11,
+      "community": 0,
       "norm_label": "_temporalconvmodalityencoder"
     },
     {
@@ -3258,7 +3267,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L275",
       "id": "torch_models_temporalconvmodalityencoder_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3267,7 +3276,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L286",
       "id": "torch_models_temporalconvmodalityencoder_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3276,7 +3285,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L293",
       "id": "torch_models_transformerbackbone",
-      "community": 11,
+      "community": 0,
       "norm_label": "_transformerbackbone"
     },
     {
@@ -3285,7 +3294,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L294",
       "id": "torch_models_transformerbackbone_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3294,7 +3303,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L308",
       "id": "torch_models_transformerbackbone_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3303,7 +3312,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L312",
       "id": "torch_models_ssmfallbackbackbone",
-      "community": 11,
+      "community": 0,
       "norm_label": "_ssmfallbackbackbone"
     },
     {
@@ -3312,7 +3321,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L313",
       "id": "torch_models_ssmfallbackbackbone_init",
-      "community": 11,
+      "community": 0,
       "norm_label": ".__init__()"
     },
     {
@@ -3321,7 +3330,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L323",
       "id": "torch_models_ssmfallbackbackbone_forward",
-      "community": 11,
+      "community": 0,
       "norm_label": ".forward()"
     },
     {
@@ -3330,7 +3339,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L328",
       "id": "torch_models_build_modality_encoder",
-      "community": 11,
+      "community": 0,
       "norm_label": "_build_modality_encoder()"
     },
     {
@@ -3339,7 +3348,7 @@
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L341",
       "id": "torch_models_build_backbone",
-      "community": 11,
+      "community": 0,
       "norm_label": "_build_backbone()"
     },
     {
@@ -3374,7 +3383,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L180",
-      "community": 5,
+      "community": 0,
       "norm_label": "encode observed modalities into shared latent neural tokens.",
       "id": "torch_models_rationale_180"
     },
@@ -3384,7 +3393,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L1",
       "id": "src_neurotwin_adapters_synthetic_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "synthetic.py"
     },
     {
@@ -3393,7 +3402,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L12",
       "id": "synthetic_make_synthetic_recordings",
-      "community": 6,
+      "community": 5,
       "norm_label": "make_synthetic_recordings()"
     },
     {
@@ -3402,7 +3411,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L48",
       "id": "synthetic_make_synthetic_event_batch",
-      "community": 5,
+      "community": 1,
       "norm_label": "make_synthetic_event_batch()"
     },
     {
@@ -3411,7 +3420,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L74",
       "id": "synthetic_make_synthetic_event_batches",
-      "community": 5,
+      "community": 1,
       "norm_label": "make_synthetic_event_batches()"
     },
     {
@@ -3420,7 +3429,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L137",
       "id": "synthetic_latent",
-      "community": 5,
+      "community": 1,
       "norm_label": "_latent()"
     },
     {
@@ -3429,7 +3438,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L145",
       "id": "synthetic_projection",
-      "community": 5,
+      "community": 1,
       "norm_label": "_projection()"
     },
     {
@@ -3438,7 +3447,7 @@
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L151",
       "id": "synthetic_noise",
-      "community": 5,
+      "community": 1,
       "norm_label": "_noise()"
     },
     {
@@ -3446,7 +3455,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L82",
-      "community": 5,
+      "community": 1,
       "norm_label": "create paired synthetic recordings that mirror the recording manifest.",
       "id": "synthetic_rationale_82"
     },
@@ -3645,7 +3654,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L1",
       "id": "src_neurotwin_adapters_moabb_py",
-      "community": 4,
+      "community": 6,
       "norm_label": "moabb.py"
     },
     {
@@ -3654,7 +3663,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L13",
       "id": "moabb_missingoptionaldependency",
-      "community": 4,
+      "community": 6,
       "norm_label": "missingoptionaldependency"
     },
     {
@@ -3663,7 +3672,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L17",
       "id": "moabb_moabb_optional_status",
-      "community": 4,
+      "community": 6,
       "norm_label": "moabb_optional_status()"
     },
     {
@@ -3672,7 +3681,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L26",
       "id": "moabb_require_moabb",
-      "community": 4,
+      "community": 6,
       "norm_label": "require_moabb()"
     },
     {
@@ -3681,7 +3690,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L36",
       "id": "moabb_load_moabb_trials",
-      "community": 4,
+      "community": 6,
       "norm_label": "load_moabb_trials()"
     },
     {
@@ -3690,7 +3699,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L70",
       "id": "moabb_balanced_trial_subset",
-      "community": 4,
+      "community": 6,
       "norm_label": "balanced_trial_subset()"
     },
     {
@@ -3699,7 +3708,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L127",
       "id": "moabb_trials_to_recordings",
-      "community": 4,
+      "community": 6,
       "norm_label": "trials_to_recordings()"
     },
     {
@@ -3708,7 +3717,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L169",
       "id": "moabb_trials_to_event_batches",
-      "community": 4,
+      "community": 6,
       "norm_label": "trials_to_event_batches()"
     },
     {
@@ -3717,7 +3726,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L207",
       "id": "moabb_prefixed",
-      "community": 4,
+      "community": 6,
       "norm_label": "_prefixed()"
     },
     {
@@ -3726,7 +3735,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L212",
       "id": "moabb_build_record_id",
-      "community": 4,
+      "community": 6,
       "norm_label": "_build_record_id()"
     },
     {
@@ -3735,7 +3744,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L219",
       "id": "moabb_time_by_channel_signal",
-      "community": 4,
+      "community": 6,
       "norm_label": "_time_by_channel_signal()"
     },
     {
@@ -3744,7 +3753,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L239",
       "id": "moabb_resolve_moabb_dataset",
-      "community": 4,
+      "community": 6,
       "norm_label": "_resolve_moabb_dataset()"
     },
     {
@@ -3753,7 +3762,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L247",
       "id": "moabb_build_moabb_paradigm",
-      "community": 4,
+      "community": 6,
       "norm_label": "_build_moabb_paradigm()"
     },
     {
@@ -3762,7 +3771,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L255",
       "id": "moabb_metadata_row",
-      "community": 4,
+      "community": 6,
       "norm_label": "_metadata_row()"
     },
     {
@@ -3771,7 +3780,7 @@
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L265",
       "id": "moabb_listlike",
-      "community": 4,
+      "community": 6,
       "norm_label": "_listlike()"
     },
     {
@@ -3779,7 +3788,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L43",
-      "community": 4,
+      "community": 6,
       "norm_label": "load a small moabb dataset through its paradigm api when optional deps exist.",
       "id": "moabb_rationale_43"
     },
@@ -3788,7 +3797,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L75",
-      "community": 4,
+      "community": 6,
       "norm_label": "cap moabb smoke trials without collapsing a group-held-out split.",
       "id": "moabb_rationale_75"
     },
@@ -3797,7 +3806,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L220",
-      "community": 4,
+      "community": 6,
       "norm_label": "normalize moabb/mne trial arrays to neurotwin [time, channel] layout.",
       "id": "moabb_rationale_220"
     },
@@ -3807,7 +3816,7 @@
       "source_file": "src/neurotwin/adapters/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_adapters_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -3816,7 +3825,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L1",
       "id": "src_neurotwin_benchmarks_tasks_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "tasks.py"
     },
     {
@@ -3825,7 +3834,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L11",
       "id": "tasks_taskresult",
-      "community": 1,
+      "community": 3,
       "norm_label": "taskresult"
     },
     {
@@ -3834,7 +3843,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L18",
       "id": "tasks_run_future_forecasting_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_future_forecasting_task()"
     },
     {
@@ -3843,7 +3852,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L32",
       "id": "tasks_run_masked_reconstruction_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_masked_reconstruction_task()"
     },
     {
@@ -3852,7 +3861,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L47",
       "id": "tasks_run_cross_modal_translation_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_cross_modal_translation_task()"
     },
     {
@@ -3861,7 +3870,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L61",
       "id": "tasks_run_subject_adaptation_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_subject_adaptation_task()"
     },
     {
@@ -3870,7 +3879,7 @@
       "source_file": "src/neurotwin/benchmarks/tasks.py",
       "source_location": "L80",
       "id": "tasks_run_dataset_site_generalization_task",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_dataset_site_generalization_task()"
     },
     {
@@ -3879,7 +3888,7 @@
       "source_file": "src/neurotwin/benchmarks/suite.py",
       "source_location": "L1",
       "id": "src_neurotwin_benchmarks_suite_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "suite.py"
     },
     {
@@ -3888,7 +3897,7 @@
       "source_file": "src/neurotwin/benchmarks/suite.py",
       "source_location": "L19",
       "id": "suite_run_neural_translation_v1_synthetic",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_neural_translation_v1_synthetic()"
     },
     {
@@ -3897,7 +3906,7 @@
       "source_file": "src/neurotwin/benchmarks/suite.py",
       "source_location": "L45",
       "id": "suite_format_neural_translation_v1_report",
-      "community": 1,
+      "community": 3,
       "norm_label": "format_neural_translation_v1_report()"
     },
     {
@@ -3906,7 +3915,7 @@
       "source_file": "src/neurotwin/benchmarks/suite.py",
       "source_location": "L79",
       "id": "suite_task_result_to_dict",
-      "community": 1,
+      "community": 3,
       "norm_label": "_task_result_to_dict()"
     },
     {
@@ -4021,7 +4030,7 @@
       "label": "_make_paired_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L122",
+      "source_location": "L132",
       "id": "baseline_suite_make_paired_windows",
       "community": 0,
       "norm_label": "_make_paired_windows()"
@@ -4030,7 +4039,7 @@
       "label": "_split()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L136",
+      "source_location": "L146",
       "id": "baseline_suite_split",
       "community": 0,
       "norm_label": "_split()"
@@ -4039,7 +4048,7 @@
       "label": "_future_task()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L141",
+      "source_location": "L151",
       "id": "baseline_suite_future_task",
       "community": 0,
       "norm_label": "_future_task()"
@@ -4048,7 +4057,7 @@
       "label": "_masked_reconstruction_task()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L155",
+      "source_location": "L165",
       "id": "baseline_suite_masked_reconstruction_task",
       "community": 0,
       "norm_label": "_masked_reconstruction_task()"
@@ -4057,7 +4066,7 @@
       "label": "_cross_modal_task()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L176",
+      "source_location": "L186",
       "id": "baseline_suite_cross_modal_task",
       "community": 0,
       "norm_label": "_cross_modal_task()"
@@ -4066,25 +4075,61 @@
       "label": "_run_task_models()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L190",
+      "source_location": "L200",
       "id": "baseline_suite_run_task_models",
       "community": 0,
       "norm_label": "_run_task_models()"
     },
     {
+      "label": "_predict_persistence()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L284",
+      "id": "baseline_suite_predict_persistence",
+      "community": 0,
+      "norm_label": "_predict_persistence()"
+    },
+    {
+      "label": "_predict_train_mean()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L294",
+      "id": "baseline_suite_predict_train_mean",
+      "community": 0,
+      "norm_label": "_predict_train_mean()"
+    },
+    {
+      "label": "_predict_random_permutation()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L304",
+      "id": "baseline_suite_predict_random_permutation",
+      "community": 0,
+      "norm_label": "_predict_random_permutation()"
+    },
+    {
       "label": "_fit_ridge()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L270",
+      "source_location": "L318",
       "id": "baseline_suite_fit_ridge",
       "community": 0,
       "norm_label": "_fit_ridge()"
     },
     {
+      "label": "_fit_autoregressive_ridge()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L325",
+      "id": "baseline_suite_fit_autoregressive_ridge",
+      "community": 0,
+      "norm_label": "_fit_autoregressive_ridge()"
+    },
+    {
       "label": "_fit_torch_sequence_model()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L277",
+      "source_location": "L341",
       "id": "baseline_suite_fit_torch_sequence_model",
       "community": 0,
       "norm_label": "_fit_torch_sequence_model()"
@@ -4093,7 +4138,7 @@
       "label": "_fit_neurotwin()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L301",
+      "source_location": "L365",
       "id": "baseline_suite_fit_neurotwin",
       "community": 0,
       "norm_label": "_fit_neurotwin()"
@@ -4102,16 +4147,16 @@
       "label": "_metrics()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L336",
+      "source_location": "L400",
       "id": "baseline_suite_metrics",
-      "community": 1,
+      "community": 3,
       "norm_label": "_metrics()"
     },
     {
       "label": "_flatten_time()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L371",
+      "source_location": "L435",
       "id": "baseline_suite_flatten_time",
       "community": 0,
       "norm_label": "_flatten_time()"
@@ -4120,7 +4165,7 @@
       "label": "_validate_prediction()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L375",
+      "source_location": "L439",
       "id": "baseline_suite_validate_prediction",
       "community": 0,
       "norm_label": "_validate_prediction()"
@@ -4129,7 +4174,7 @@
       "label": "_validate_metrics()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L383",
+      "source_location": "L447",
       "id": "baseline_suite_validate_metrics",
       "community": 0,
       "norm_label": "_validate_metrics()"
@@ -4138,7 +4183,7 @@
       "label": "_baseline_catalog()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L389",
+      "source_location": "L453",
       "id": "baseline_suite_baseline_catalog",
       "community": 0,
       "norm_label": "_baseline_catalog()"
@@ -4165,7 +4210,7 @@
       "label": "PreparedSuiteConfig",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L23",
+      "source_location": "L24",
       "id": "prepared_suite_preparedsuiteconfig",
       "community": 9,
       "norm_label": "preparedsuiteconfig"
@@ -4174,7 +4219,7 @@
       "label": "run_prepared_baseline_suite()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L32",
+      "source_location": "L35",
       "id": "prepared_suite_run_prepared_baseline_suite",
       "community": 9,
       "norm_label": "run_prepared_baseline_suite()"
@@ -4183,16 +4228,16 @@
       "label": "format_prepared_baseline_report()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L89",
+      "source_location": "L98",
       "id": "prepared_suite_format_prepared_baseline_report",
-      "community": 9,
+      "community": 11,
       "norm_label": "format_prepared_baseline_report()"
     },
     {
       "label": "run_prepared_auxiliary_tasks()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L166",
+      "source_location": "L180",
       "id": "prepared_suite_run_prepared_auxiliary_tasks",
       "community": 9,
       "norm_label": "run_prepared_auxiliary_tasks()"
@@ -4201,7 +4246,7 @@
       "label": "build_prepared_window_tasks()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L189",
+      "source_location": "L203",
       "id": "prepared_suite_build_prepared_window_tasks",
       "community": 9,
       "norm_label": "build_prepared_window_tasks()"
@@ -4210,7 +4255,7 @@
       "label": "_subject_adaptation_from_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L225",
+      "source_location": "L239",
       "id": "prepared_suite_subject_adaptation_from_windows",
       "community": 9,
       "norm_label": "_subject_adaptation_from_windows()"
@@ -4219,7 +4264,7 @@
       "label": "_dataset_site_generalization_from_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L268",
+      "source_location": "L282",
       "id": "prepared_suite_dataset_site_generalization_from_windows",
       "community": 9,
       "norm_label": "_dataset_site_generalization_from_windows()"
@@ -4228,7 +4273,7 @@
       "label": "_future_task_from_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L294",
+      "source_location": "L308",
       "id": "prepared_suite_future_task_from_windows",
       "community": 9,
       "norm_label": "_future_task_from_windows()"
@@ -4237,7 +4282,7 @@
       "label": "_masked_task_from_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L320",
+      "source_location": "L334",
       "id": "prepared_suite_masked_task_from_windows",
       "community": 9,
       "norm_label": "_masked_task_from_windows()"
@@ -4246,7 +4291,7 @@
       "label": "_cross_modal_task_from_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L359",
+      "source_location": "L373",
       "id": "prepared_suite_cross_modal_task_from_windows",
       "community": 9,
       "norm_label": "_cross_modal_task_from_windows()"
@@ -4255,7 +4300,7 @@
       "label": "_first_modality_with_splits()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L388",
+      "source_location": "L402",
       "id": "prepared_suite_first_modality_with_splits",
       "community": 9,
       "norm_label": "_first_modality_with_splits()"
@@ -4264,7 +4309,7 @@
       "label": "_future_xy()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L398",
+      "source_location": "L412",
       "id": "prepared_suite_future_xy",
       "community": 9,
       "norm_label": "_future_xy()"
@@ -4273,7 +4318,7 @@
       "label": "_paired_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L405",
+      "source_location": "L419",
       "id": "prepared_suite_paired_windows",
       "community": 9,
       "norm_label": "_paired_windows()"
@@ -4282,7 +4327,7 @@
       "label": "_windows_by_split()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L430",
+      "source_location": "L444",
       "id": "prepared_suite_windows_by_split",
       "community": 9,
       "norm_label": "_windows_by_split()"
@@ -4291,7 +4336,7 @@
       "label": "_group_windows()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L445",
+      "source_location": "L459",
       "id": "prepared_suite_group_windows",
       "community": 9,
       "norm_label": "_group_windows()"
@@ -4300,7 +4345,7 @@
       "label": "_stack_pairs()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L454",
+      "source_location": "L468",
       "id": "prepared_suite_stack_pairs",
       "community": 9,
       "norm_label": "_stack_pairs()"
@@ -4309,7 +4354,7 @@
       "label": "_record_id()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L461",
+      "source_location": "L475",
       "id": "prepared_suite_record_id",
       "community": 9,
       "norm_label": "_record_id()"
@@ -4318,7 +4363,7 @@
       "label": "_split_record_keys()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L465",
+      "source_location": "L479",
       "id": "prepared_suite_split_record_keys",
       "community": 9,
       "norm_label": "_split_record_keys()"
@@ -4327,7 +4372,7 @@
       "label": "_scope_status()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L473",
+      "source_location": "L487",
       "id": "prepared_suite_scope_status",
       "community": 9,
       "norm_label": "_scope_status()"
@@ -4336,7 +4381,7 @@
       "label": "_task_result_to_dict()",
       "file_type": "code",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L477",
+      "source_location": "L491",
       "id": "prepared_suite_task_result_to_dict",
       "community": 9,
       "norm_label": "_task_result_to_dict()"
@@ -4347,7 +4392,7 @@
       "source_file": "src/neurotwin/benchmarks/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_benchmarks_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -4356,7 +4401,7 @@
       "source_file": "src/neurotwin/benchmarks/smoke.py",
       "source_location": "L1",
       "id": "src_neurotwin_benchmarks_smoke_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "smoke.py"
     },
     {
@@ -4365,7 +4410,7 @@
       "source_file": "src/neurotwin/benchmarks/smoke.py",
       "source_location": "L14",
       "id": "smoke_smokebenchmarkresult",
-      "community": 1,
+      "community": 3,
       "norm_label": "smokebenchmarkresult"
     },
     {
@@ -4374,7 +4419,7 @@
       "source_file": "src/neurotwin/benchmarks/smoke.py",
       "source_location": "L23",
       "id": "smoke_run_translation_smoke",
-      "community": 1,
+      "community": 3,
       "norm_label": "run_translation_smoke()"
     },
     {
@@ -4383,7 +4428,7 @@
       "source_file": "src/neurotwin/benchmarks/smoke.py",
       "source_location": "L66",
       "id": "smoke_format_smoke_results",
-      "community": 1,
+      "community": 3,
       "norm_label": "format_smoke_results()"
     },
     {
@@ -4391,7 +4436,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/benchmarks/smoke.py",
       "source_location": "L24",
-      "community": 1,
+      "community": 3,
       "norm_label": "run deterministic synthetic-only scoring to verify benchmark plumbing.",
       "id": "smoke_rationale_24"
     },
@@ -4401,7 +4446,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L1",
       "id": "src_neurotwin_eval_metrics_py",
-      "community": 1,
+      "community": 3,
       "norm_label": "metrics.py"
     },
     {
@@ -4410,7 +4455,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L9",
       "id": "metrics_rankingrow",
-      "community": 1,
+      "community": 3,
       "norm_label": "rankingrow"
     },
     {
@@ -4419,7 +4464,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L16",
       "id": "metrics_mse",
-      "community": 1,
+      "community": 3,
       "norm_label": "mse()"
     },
     {
@@ -4428,7 +4473,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L24",
       "id": "metrics_mae",
-      "community": 1,
+      "community": 3,
       "norm_label": "mae()"
     },
     {
@@ -4437,7 +4482,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L32",
       "id": "metrics_r2_score",
-      "community": 1,
+      "community": 3,
       "norm_label": "r2_score()"
     },
     {
@@ -4446,7 +4491,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L43",
       "id": "metrics_pearsonr",
-      "community": 1,
+      "community": 3,
       "norm_label": "pearsonr()"
     },
     {
@@ -4455,7 +4500,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L55",
       "id": "metrics_spearmanr",
-      "community": 1,
+      "community": 3,
       "norm_label": "spearmanr()"
     },
     {
@@ -4464,7 +4509,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L65",
       "id": "metrics_spectral_error",
-      "community": 1,
+      "community": 3,
       "norm_label": "spectral_error()"
     },
     {
@@ -4473,7 +4518,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L71",
       "id": "metrics_bandpower_error",
-      "community": 1,
+      "community": 3,
       "norm_label": "bandpower_error()"
     },
     {
@@ -4482,7 +4527,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L77",
       "id": "metrics_regionwise_pearsonr",
-      "community": 1,
+      "community": 3,
       "norm_label": "regionwise_pearsonr()"
     },
     {
@@ -4491,7 +4536,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L90",
       "id": "metrics_retrieval_accuracy",
-      "community": 1,
+      "community": 3,
       "norm_label": "retrieval_accuracy()"
     },
     {
@@ -4500,7 +4545,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L99",
       "id": "metrics_rankdata",
-      "community": 1,
+      "community": 3,
       "norm_label": "_rankdata()"
     },
     {
@@ -4509,7 +4554,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L114",
       "id": "metrics_bootstrap_ci",
-      "community": 1,
+      "community": 3,
       "norm_label": "bootstrap_ci()"
     },
     {
@@ -4518,7 +4563,7 @@
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L136",
       "id": "metrics_rank_models",
-      "community": 1,
+      "community": 3,
       "norm_label": "rank_models()"
     },
     {
@@ -4527,7 +4572,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L1",
       "id": "src_neurotwin_eval_audit_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "audit.py"
     },
     {
@@ -4536,7 +4581,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L16",
       "id": "audit_preparedevalauditreport",
-      "community": 5,
+      "community": 1,
       "norm_label": "preparedevalauditreport"
     },
     {
@@ -4545,7 +4590,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L26",
       "id": "audit_preparedevalauditreport_to_dict",
-      "community": 5,
+      "community": 1,
       "norm_label": ".to_dict()"
     },
     {
@@ -4554,7 +4599,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L30",
       "id": "audit_audit_prepared_eval_inputs",
-      "community": 5,
+      "community": 1,
       "norm_label": "audit_prepared_eval_inputs()"
     },
     {
@@ -4563,7 +4608,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L122",
       "id": "audit_format_prepared_eval_audit",
-      "community": 9,
+      "community": 11,
       "norm_label": "format_prepared_eval_audit()"
     },
     {
@@ -4572,7 +4617,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L139",
       "id": "audit_prepared_windows_by_split",
-      "community": 5,
+      "community": 1,
       "norm_label": "_prepared_windows_by_split()"
     },
     {
@@ -4581,7 +4626,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L153",
       "id": "audit_window_overlap_violations",
-      "community": 5,
+      "community": 1,
       "norm_label": "_window_overlap_violations()"
     },
     {
@@ -4590,7 +4635,7 @@
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L175",
       "id": "audit_record_id",
-      "community": 5,
+      "community": 1,
       "norm_label": "_record_id()"
     },
     {
@@ -4598,7 +4643,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L38",
-      "community": 5,
+      "community": 1,
       "norm_label": "audit prepared eval inputs before any benchmark score is trusted.",
       "id": "audit_rationale_38"
     },
@@ -4608,8 +4653,170 @@
       "source_file": "src/neurotwin/eval/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_eval_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
+    },
+    {
+      "label": "paper_gate.py",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L1",
+      "id": "src_neurotwin_eval_paper_gate_py",
+      "community": 11,
+      "norm_label": "paper_gate.py"
+    },
+    {
+      "label": "PaperModeGateReport",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L10",
+      "id": "paper_gate_papermodegatereport",
+      "community": 11,
+      "norm_label": "papermodegatereport"
+    },
+    {
+      "label": ".to_dict()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L19",
+      "id": "paper_gate_papermodegatereport_to_dict",
+      "community": 11,
+      "norm_label": ".to_dict()"
+    },
+    {
+      "label": "PaperModeGateError",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L23",
+      "id": "paper_gate_papermodegateerror",
+      "community": 11,
+      "norm_label": "papermodegateerror"
+    },
+    {
+      "label": "ValueError",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "id": "valueerror",
+      "community": 0,
+      "norm_label": "valueerror"
+    },
+    {
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L24",
+      "id": "paper_gate_papermodegateerror_init",
+      "community": 11,
+      "norm_label": ".__init__()"
+    },
+    {
+      "label": "validate_paper_mode_payload()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L29",
+      "id": "paper_gate_validate_paper_mode_payload",
+      "community": 11,
+      "norm_label": "validate_paper_mode_payload()"
+    },
+    {
+      "label": "format_paper_mode_gate()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L85",
+      "id": "paper_gate_format_paper_mode_gate",
+      "community": 11,
+      "norm_label": "format_paper_mode_gate()"
+    },
+    {
+      "label": "_audit_payload()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L101",
+      "id": "paper_gate_audit_payload",
+      "community": 11,
+      "norm_label": "_audit_payload()"
+    },
+    {
+      "label": "_aggregate_rank()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L118",
+      "id": "paper_gate_aggregate_rank",
+      "community": 11,
+      "norm_label": "_aggregate_rank()"
+    },
+    {
+      "label": "_observed_seeds()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L126",
+      "id": "paper_gate_observed_seeds",
+      "community": 11,
+      "norm_label": "_observed_seeds()"
+    },
+    {
+      "label": "_add_seed_values()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L143",
+      "id": "paper_gate_add_seed_values",
+      "community": 11,
+      "norm_label": "_add_seed_values()"
+    },
+    {
+      "label": "_ci_violations()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L159",
+      "id": "paper_gate_ci_violations",
+      "community": 11,
+      "norm_label": "_ci_violations()"
+    },
+    {
+      "label": "_has_finite_ci()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L188",
+      "id": "paper_gate_has_finite_ci",
+      "community": 11,
+      "norm_label": "_has_finite_ci()"
+    },
+    {
+      "label": "_has_test_metric()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L194",
+      "id": "paper_gate_has_test_metric",
+      "community": 11,
+      "norm_label": "_has_test_metric()"
+    },
+    {
+      "label": "_has_any_test_ci()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L198",
+      "id": "paper_gate_has_any_test_ci",
+      "community": 11,
+      "norm_label": "_has_any_test_ci()"
+    },
+    {
+      "label": "_finite_number()",
+      "file_type": "code",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L203",
+      "id": "paper_gate_finite_number",
+      "community": 11,
+      "norm_label": "_finite_number()"
+    },
+    {
+      "label": "Validate the artifact contract required before paper-mode claims.      This is i",
+      "file_type": "rationale",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L36",
+      "community": 11,
+      "norm_label": "validate the artifact contract required before paper-mode claims.      this is i",
+      "id": "paper_gate_rationale_36"
     },
     {
       "label": "audit.py",
@@ -4617,7 +4824,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_audit_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "audit.py"
     },
     {
@@ -4626,7 +4833,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L20",
       "id": "audit_auditreport",
-      "community": 6,
+      "community": 5,
       "norm_label": "auditreport"
     },
     {
@@ -4635,7 +4842,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L26",
       "id": "audit_audit_split_manifest",
-      "community": 6,
+      "community": 5,
       "norm_label": "audit_split_manifest()"
     },
     {
@@ -4644,7 +4851,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L44",
       "id": "audit_forbidden_metadata",
-      "community": 6,
+      "community": 5,
       "norm_label": "_forbidden_metadata()"
     },
     {
@@ -4653,7 +4860,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L54",
       "id": "audit_metadata_group_overlap",
-      "community": 6,
+      "community": 5,
       "norm_label": "_metadata_group_overlap()"
     },
     {
@@ -4662,7 +4869,7 @@
       "source_file": "src/neurotwin/data/audit.py",
       "source_location": "L68",
       "id": "audit_window_overlap",
-      "community": 6,
+      "community": 5,
       "norm_label": "_window_overlap()"
     },
     {
@@ -4671,7 +4878,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_event_io_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "event_io.py"
     },
     {
@@ -4680,7 +4887,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L13",
       "id": "event_io_save_event_batches",
-      "community": 5,
+      "community": 1,
       "norm_label": "save_event_batches()"
     },
     {
@@ -4689,7 +4896,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L66",
       "id": "event_io_load_event_batches",
-      "community": 5,
+      "community": 1,
       "norm_label": "load_event_batches()"
     },
     {
@@ -4698,7 +4905,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L101",
       "id": "event_io_event_manifest_summary",
-      "community": 5,
+      "community": 1,
       "norm_label": "event_manifest_summary()"
     },
     {
@@ -4707,7 +4914,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L117",
       "id": "event_io_safe_name",
-      "community": 5,
+      "community": 1,
       "norm_label": "_safe_name()"
     },
     {
@@ -4716,7 +4923,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L121",
       "id": "event_io_loads_json",
-      "community": 5,
+      "community": 1,
       "norm_label": "_loads_json()"
     },
     {
@@ -4725,7 +4932,7 @@
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L127",
       "id": "event_io_jsonable",
-      "community": 5,
+      "community": 1,
       "norm_label": "_jsonable()"
     },
     {
@@ -4733,7 +4940,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L19",
-      "community": 5,
+      "community": 1,
       "norm_label": "persist prepared event batches for offline training/eval jobs.",
       "id": "event_io_rationale_19"
     },
@@ -4743,7 +4950,7 @@
       "source_file": "src/neurotwin/data/__init__.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_init_py",
-      "community": 14,
+      "community": 15,
       "norm_label": "__init__.py"
     },
     {
@@ -4752,7 +4959,7 @@
       "source_file": "src/neurotwin/data/leakage.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_leakage_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "leakage.py"
     },
     {
@@ -4761,7 +4968,7 @@
       "source_file": "src/neurotwin/data/leakage.py",
       "source_location": "L11",
       "id": "leakage_leakagereport",
-      "community": 6,
+      "community": 5,
       "norm_label": "leakagereport"
     },
     {
@@ -4770,7 +4977,7 @@
       "source_file": "src/neurotwin/data/leakage.py",
       "source_location": "L17",
       "id": "leakage_check_manifest_leakage",
-      "community": 6,
+      "community": 5,
       "norm_label": "check_manifest_leakage()"
     },
     {
@@ -4779,7 +4986,7 @@
       "source_file": "src/neurotwin/data/leakage.py",
       "source_location": "L57",
       "id": "leakage_values",
-      "community": 6,
+      "community": 5,
       "norm_label": "_values()"
     },
     {
@@ -4787,7 +4994,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/leakage.py",
       "source_location": "L21",
-      "community": 6,
+      "community": 5,
       "norm_label": "check record reuse and held-out group overlap across train/val/test.",
       "id": "leakage_rationale_21"
     },
@@ -4797,7 +5004,7 @@
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_schemas_py",
-      "community": 4,
+      "community": 1,
       "norm_label": "schemas.py"
     },
     {
@@ -4806,7 +5013,7 @@
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L23",
       "id": "schemas_neuraleventbatch",
-      "community": 4,
+      "community": 1,
       "norm_label": "neuraleventbatch"
     },
     {
@@ -4815,7 +5022,7 @@
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L41",
       "id": "schemas_neuraleventbatch_post_init",
-      "community": 4,
+      "community": 1,
       "norm_label": ".__post_init__()"
     },
     {
@@ -4824,7 +5031,7 @@
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L81",
       "id": "schemas_n_time",
-      "community": 4,
+      "community": 1,
       "norm_label": "n_time()"
     },
     {
@@ -4833,7 +5040,7 @@
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L85",
       "id": "schemas_n_space",
-      "community": 4,
+      "community": 1,
       "norm_label": "n_space()"
     },
     {
@@ -4841,7 +5048,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/schemas.py",
       "source_location": "L24",
-      "community": 4,
+      "community": 1,
       "norm_label": "common event batch contract for heterogeneous neural recordings.",
       "id": "schemas_rationale_24"
     },
@@ -4851,7 +5058,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_split_manifest_py",
-      "community": 6,
+      "community": 5,
       "norm_label": "split_manifest.py"
     },
     {
@@ -4860,7 +5067,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L11",
       "id": "split_manifest_recordingrecord",
-      "community": 4,
+      "community": 5,
       "norm_label": "recordingrecord"
     },
     {
@@ -4878,7 +5085,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L34",
       "id": "split_manifest_splitmanifest",
-      "community": 6,
+      "community": 5,
       "norm_label": "splitmanifest"
     },
     {
@@ -4887,7 +5094,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L47",
       "id": "split_manifest_all_records",
-      "community": 6,
+      "community": 5,
       "norm_label": "all_records()"
     },
     {
@@ -4896,7 +5103,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L59",
       "id": "split_manifest_build_split_manifest",
-      "community": 6,
+      "community": 5,
       "norm_label": "build_split_manifest()"
     },
     {
@@ -4905,7 +5112,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L98",
       "id": "split_manifest_group_split",
-      "community": 6,
+      "community": 5,
       "norm_label": "_group_split()"
     },
     {
@@ -4914,7 +5121,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L131",
       "id": "split_manifest_time_split",
-      "community": 6,
+      "community": 5,
       "norm_label": "_time_split()"
     },
     {
@@ -4923,7 +5130,7 @@
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L143",
       "id": "split_manifest_fraction_count",
-      "community": 6,
+      "community": 5,
       "norm_label": "_fraction_count()"
     },
     {
@@ -4931,7 +5138,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L12",
-      "community": 4,
+      "community": 5,
       "norm_label": "atomic recording-level unit used for splitting before windowing.",
       "id": "split_manifest_rationale_12"
     },
@@ -4940,7 +5147,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/split_manifest.py",
       "source_location": "L35",
-      "community": 6,
+      "community": 5,
       "norm_label": "leakage-aware split manifest built before preprocessing and augmentation.",
       "id": "split_manifest_rationale_35"
     },
@@ -4950,7 +5157,7 @@
       "source_file": "src/neurotwin/data/windows.py",
       "source_location": "L1",
       "id": "src_neurotwin_data_windows_py",
-      "community": 5,
+      "community": 1,
       "norm_label": "windows.py"
     },
     {
@@ -4959,7 +5166,7 @@
       "source_file": "src/neurotwin/data/windows.py",
       "source_location": "L11",
       "id": "windows_windowspec",
-      "community": 5,
+      "community": 1,
       "norm_label": "windowspec"
     },
     {
@@ -4968,7 +5175,7 @@
       "source_file": "src/neurotwin/data/windows.py",
       "source_location": "L17",
       "id": "windows_batch_to_windows",
-      "community": 5,
+      "community": 1,
       "norm_label": "batch_to_windows()"
     },
     {
@@ -4977,7 +5184,7 @@
       "source_file": "src/neurotwin/data/windows.py",
       "source_location": "L70",
       "id": "windows_slice_behavior",
-      "community": 5,
+      "community": 1,
       "norm_label": "_slice_behavior()"
     },
     {
@@ -5004,7 +5211,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L27",
       "id": "manifest_io_record_from_dict",
-      "community": 6,
+      "community": 5,
       "norm_label": "record_from_dict()"
     },
     {
@@ -5022,7 +5229,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L56",
       "id": "manifest_io_split_manifest_from_dict",
-      "community": 6,
+      "community": 5,
       "norm_label": "split_manifest_from_dict()"
     },
     {
@@ -5031,7 +5238,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L69",
       "id": "manifest_io_save_split_manifest",
-      "community": 4,
+      "community": 6,
       "norm_label": "save_split_manifest()"
     },
     {
@@ -5040,7 +5247,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L73",
       "id": "manifest_io_load_split_manifest",
-      "community": 6,
+      "community": 5,
       "norm_label": "load_split_manifest()"
     },
     {
@@ -5049,7 +5256,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L79",
       "id": "manifest_io_save_data_manifest",
-      "community": 4,
+      "community": 6,
       "norm_label": "save_data_manifest()"
     },
     {
@@ -5058,7 +5265,7 @@
       "source_file": "src/neurotwin/data/manifest_io.py",
       "source_location": "L83",
       "id": "manifest_io_save_leakage_report",
-      "community": 4,
+      "community": 6,
       "norm_label": "save_leakage_report()"
     },
     {
@@ -5066,7 +5273,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/runtime/preflight.py",
       "source_location": "L38",
-      "community": 23,
+      "community": 26,
       "norm_label": "validate cluster launch inputs before an expensive slurm allocation runs.",
       "id": "preflight_rationale_38"
     },
@@ -5075,7 +5282,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/eval/audit.py",
       "source_location": "L36",
-      "community": 4,
+      "community": 1,
       "norm_label": "audit prepared eval inputs before any benchmark score is trusted.",
       "id": "audit_rationale_36"
     },
@@ -5093,7 +5300,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/data/event_io.py",
       "source_location": "L18",
-      "community": 4,
+      "community": 1,
       "norm_label": "persist prepared event batches for offline training/eval jobs.",
       "id": "event_io_rationale_18"
     },
@@ -5102,7 +5309,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L40",
-      "community": 4,
+      "community": 5,
       "norm_label": "load a small moabb dataset through its paradigm api when optional deps exist.",
       "id": "moabb_rationale_40"
     },
@@ -5111,7 +5318,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L160",
-      "community": 4,
+      "community": 5,
       "norm_label": "normalize moabb/mne trial arrays to neurotwin [time, channel] layout.",
       "id": "moabb_rationale_160"
     },
@@ -5120,7 +5327,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/baselines.py",
       "source_location": "L69",
-      "community": 24,
+      "community": 27,
       "norm_label": "per-timepoint mlp baseline for neural windows.",
       "id": "baselines_rationale_69"
     },
@@ -5129,7 +5336,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/baselines.py",
       "source_location": "L84",
-      "community": 25,
+      "community": 28,
       "norm_label": "small conv1d/tcn-style baseline with stable [batch, time, feature] io.",
       "id": "baselines_rationale_84"
     },
@@ -5138,7 +5345,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L8",
-      "community": 26,
+      "community": 29,
       "norm_label": "small transformer baseline for cpu shape and smoke tests.",
       "id": "torch_models_rationale_8"
     },
@@ -5147,7 +5354,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L40",
-      "community": 27,
+      "community": 30,
       "norm_label": "cpu debug stand-in for long-sequence ssm baselines until mamba is pinned.",
       "id": "torch_models_rationale_40"
     },
@@ -5156,7 +5363,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L68",
-      "community": 28,
+      "community": 31,
       "norm_label": "modality-tokenizer + shared latent dynamics + modality-readout scaffold.",
       "id": "torch_models_rationale_68"
     },
@@ -5165,7 +5372,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L156",
-      "community": 29,
+      "community": 32,
       "norm_label": "encode observed modalities into shared latent neural tokens.",
       "id": "torch_models_rationale_156"
     },
@@ -5183,7 +5390,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L147",
-      "community": 4,
+      "community": 5,
       "norm_label": "normalize moabb/mne trial arrays to neurotwin [time, channel] layout.",
       "id": "moabb_rationale_147"
     },
@@ -5192,7 +5399,7 @@
       "file_type": "rationale",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L137",
-      "community": 30,
+      "community": 33,
       "norm_label": "encode observed modalities into shared latent neural tokens.",
       "id": "torch_models_rationale_137"
     }
@@ -7062,7 +7269,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "_src": "tests_test_baseline_suite_py",
       "_tgt": "test_baseline_suite_baselinesuitetests",
@@ -7074,7 +7281,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L18",
+      "source_location": "L19",
       "weight": 1.0,
       "_src": "test_baseline_suite_baselinesuitetests",
       "_tgt": "test_baseline_suite_baselinesuitetests_test_synthetic_baseline_suite_runs_all_required_models",
@@ -7086,7 +7293,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L31",
+      "source_location": "L43",
       "weight": 1.0,
       "_src": "test_baseline_suite_baselinesuitetests",
       "_tgt": "test_baseline_suite_baselinesuitetests_test_ridge_baseline_is_finite_for_ill_conditioned_windows",
@@ -7098,7 +7305,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L45",
+      "source_location": "L57",
       "weight": 1.0,
       "_src": "test_baseline_suite_baselinesuitetests",
       "_tgt": "test_baseline_suite_baselinesuitetests_test_failed_baseline_is_recorded_and_excluded_from_ranking",
@@ -7110,7 +7317,19 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_baseline_suite.py",
-      "source_location": "L68",
+      "source_location": "L80",
+      "weight": 1.0,
+      "_src": "test_baseline_suite_baselinesuitetests",
+      "_tgt": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "source": "test_baseline_suite_baselinesuitetests",
+      "target": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_baseline_suite.py",
+      "source_location": "L109",
       "weight": 1.0,
       "_src": "test_baseline_suite_baselinesuitetests",
       "_tgt": "test_baseline_suite_baselinesuitetests_test_eval_suite_writes_baseline_artifact",
@@ -7213,6 +7432,30 @@
       "_tgt": "baseline_suite_run_supervised_window_tasks",
       "source": "test_baseline_suite_baselinesuitetests_test_failed_baseline_is_recorded_and_excluded_from_ranking",
       "target": "baseline_suite_run_supervised_window_tasks"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "tests/test_baseline_suite.py",
+      "source_location": "L81",
+      "weight": 1.0,
+      "_src": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "_tgt": "baseline_suite_run_synthetic_baseline_suite",
+      "source": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "target": "baseline_suite_run_synthetic_baseline_suite"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "tests/test_baseline_suite.py",
+      "source_location": "L83",
+      "weight": 1.0,
+      "_src": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "_tgt": "paper_gate_validate_paper_mode_payload",
+      "source": "test_baseline_suite_baselinesuitetests_test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract",
+      "target": "paper_gate_validate_paper_mode_payload"
     },
     {
       "relation": "contains",
@@ -10470,6 +10713,18 @@
       "relation": "calls",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
+      "source_file": "src/neurotwin/cli.py",
+      "source_location": "L646",
+      "weight": 1.0,
+      "_src": "repro_write_json",
+      "_tgt": "cli_cmd_eval",
+      "source": "repro_write_json",
+      "target": "cli_cmd_eval"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
       "source_file": "src/neurotwin/benchmarks/suite.py",
       "source_location": "L35",
       "weight": 1.0,
@@ -10770,7 +11025,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_main",
@@ -10782,7 +11037,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L148",
+      "source_location": "L152",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_data_prepare",
@@ -10794,7 +11049,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L236",
+      "source_location": "L240",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_data_smoke",
@@ -10806,7 +11061,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L343",
+      "source_location": "L347",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_data_audit",
@@ -10818,7 +11073,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L374",
+      "source_location": "L378",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_split_audit",
@@ -10830,7 +11085,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L398",
+      "source_location": "L402",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_train",
@@ -10842,7 +11097,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L571",
+      "source_location": "L575",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_estimate",
@@ -10854,7 +11109,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L580",
+      "source_location": "L584",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_eval",
@@ -10866,7 +11121,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L632",
+      "source_location": "L701",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_report",
@@ -10878,7 +11133,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L643",
+      "source_location": "L712",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_doctor",
@@ -10890,7 +11145,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L647",
+      "source_location": "L716",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_cluster_preflight",
@@ -10902,7 +11157,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L664",
+      "source_location": "L733",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_cmd_cluster_materialize_config",
@@ -10914,7 +11169,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L679",
+      "source_location": "L748",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_parse_split_windows",
@@ -10926,7 +11181,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L702",
+      "source_location": "L771",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_has_prepared_training_inputs",
@@ -10938,7 +11193,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L706",
+      "source_location": "L775",
       "weight": 1.0,
       "_src": "src_neurotwin_cli_py",
       "_tgt": "cli_config_value",
@@ -11406,7 +11661,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L420",
+      "source_location": "L424",
       "weight": 1.0,
       "_src": "cli_cmd_train",
       "_tgt": "cli_config_value",
@@ -11418,7 +11673,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L436",
+      "source_location": "L440",
       "weight": 1.0,
       "_src": "cli_cmd_train",
       "_tgt": "cli_has_prepared_training_inputs",
@@ -11539,12 +11794,12 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L274",
+      "source_location": "L459",
       "weight": 1.0,
       "_src": "cli_cmd_train",
-      "_tgt": "audit_preparedevalauditreport_to_dict",
+      "_tgt": "paper_gate_papermodegatereport_to_dict",
       "source": "cli_cmd_train",
-      "target": "audit_preparedevalauditreport_to_dict"
+      "target": "paper_gate_papermodegatereport_to_dict"
     },
     {
       "relation": "calls",
@@ -11557,6 +11812,18 @@
       "_tgt": "smoke_run_synthetic_training",
       "source": "cli_cmd_train",
       "target": "smoke_run_synthetic_training"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/cli.py",
+      "source_location": "L274",
+      "weight": 1.0,
+      "_src": "cli_cmd_train",
+      "_tgt": "audit_preparedevalauditreport_to_dict",
+      "source": "cli_cmd_train",
+      "target": "audit_preparedevalauditreport_to_dict"
     },
     {
       "relation": "calls",
@@ -11605,6 +11872,42 @@
       "_tgt": "audit_format_prepared_eval_audit",
       "source": "cli_cmd_eval",
       "target": "audit_format_prepared_eval_audit"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/cli.py",
+      "source_location": "L630",
+      "weight": 1.0,
+      "_src": "cli_cmd_eval",
+      "_tgt": "paper_gate_papermodegatereport_to_dict",
+      "source": "cli_cmd_eval",
+      "target": "paper_gate_papermodegatereport_to_dict"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/cli.py",
+      "source_location": "L631",
+      "weight": 1.0,
+      "_src": "cli_cmd_eval",
+      "_tgt": "paper_gate_validate_paper_mode_payload",
+      "source": "cli_cmd_eval",
+      "target": "paper_gate_validate_paper_mode_payload"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/cli.py",
+      "source_location": "L650",
+      "weight": 1.0,
+      "_src": "cli_cmd_eval",
+      "_tgt": "paper_gate_format_paper_mode_gate",
+      "source": "cli_cmd_eval",
+      "target": "paper_gate_format_paper_mode_gate"
     },
     {
       "relation": "calls",
@@ -11778,7 +12081,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L655",
+      "source_location": "L724",
       "weight": 1.0,
       "_src": "cli_cmd_cluster_preflight",
       "_tgt": "cli_parse_split_windows",
@@ -11838,7 +12141,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/cli.py",
-      "source_location": "L703",
+      "source_location": "L772",
       "weight": 1.0,
       "_src": "cli_has_prepared_training_inputs",
       "_tgt": "cli_config_value",
@@ -12037,6 +12340,18 @@
       "_tgt": "suite_run_neural_translation_v1_synthetic",
       "source": "reports_generate_suite_report",
       "target": "suite_run_neural_translation_v1_synthetic"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/reports.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_src": "reports_generate_suite_report",
+      "_tgt": "valueerror",
+      "source": "reports_generate_suite_report",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -12745,6 +13060,18 @@
       "source": "prepared_run_prepared_training",
       "target": "prepared_write_metrics_csv",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/training/prepared.py",
+      "source_location": "L86",
+      "weight": 1.0,
+      "_src": "prepared_run_prepared_training",
+      "_tgt": "valueerror",
+      "source": "prepared_run_prepared_training",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -13839,6 +14166,18 @@
       "target": "baseline_suite_fit_ridge"
     },
     {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L333",
+      "weight": 1.0,
+      "_src": "baselines_numpyridgebaseline",
+      "_tgt": "baseline_suite_fit_autoregressive_ridge",
+      "source": "baselines_numpyridgebaseline",
+      "target": "baseline_suite_fit_autoregressive_ridge"
+    },
+    {
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
@@ -13878,6 +14217,18 @@
       "relation": "calls",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/baselines.py",
+      "source_location": "L60",
+      "weight": 1.0,
+      "_src": "baselines_numpyridgebaseline_fit",
+      "_tgt": "valueerror",
+      "source": "baselines_numpyridgebaseline_fit",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
       "source_location": "L206",
       "weight": 1.0,
@@ -13891,12 +14242,48 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L334",
+      "weight": 1.0,
+      "_src": "baselines_numpyridgebaseline_fit",
+      "_tgt": "baseline_suite_fit_autoregressive_ridge",
+      "source": "baselines_numpyridgebaseline_fit",
+      "target": "baseline_suite_fit_autoregressive_ridge"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/baselines.py",
+      "source_location": "L88",
+      "weight": 1.0,
+      "_src": "baselines_numpyridgebaseline_predict",
+      "_tgt": "valueerror",
+      "source": "baselines_numpyridgebaseline_predict",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
       "source_location": "L207",
       "weight": 1.0,
       "_src": "baselines_numpyridgebaseline_predict",
       "_tgt": "baseline_suite_fit_ridge",
       "source": "baselines_numpyridgebaseline_predict",
       "target": "baseline_suite_fit_ridge"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L336",
+      "weight": 1.0,
+      "_src": "baselines_numpyridgebaseline_predict",
+      "_tgt": "baseline_suite_fit_autoregressive_ridge",
+      "source": "baselines_numpyridgebaseline_predict",
+      "target": "baseline_suite_fit_autoregressive_ridge"
     },
     {
       "relation": "method",
@@ -14125,6 +14512,18 @@
       "confidence_score": 0.5,
       "source": "baselines_torchtcnbaseline",
       "target": "baseline_suite_rationale_29"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/baselines.py",
+      "source_location": "L129",
+      "weight": 1.0,
+      "_src": "baselines_torchtcnbaseline_forward",
+      "_tgt": "valueerror",
+      "source": "baselines_torchtcnbaseline_forward",
+      "target": "valueerror"
     },
     {
       "relation": "contains",
@@ -14401,6 +14800,18 @@
       "source": "torch_models_tinytransformerbaseline_init",
       "target": "torch_models_ssmfallbackbackbone_init",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "torch_models_tinytransformerbaseline_init",
+      "_tgt": "valueerror",
+      "source": "torch_models_tinytransformerbaseline_init",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -14740,6 +15151,18 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L93",
+      "weight": 1.0,
+      "_src": "torch_models_neuralstatespacetranslator_init",
+      "_tgt": "valueerror",
+      "source": "torch_models_neuralstatespacetranslator_init",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/models/torch_models.py",
       "source_location": "L170",
@@ -14749,6 +15172,18 @@
       "source": "torch_models_neuralstatespacetranslator_forward",
       "target": "torch_models_neuralstatespacetranslator_encode",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L169",
+      "weight": 1.0,
+      "_src": "torch_models_neuralstatespacetranslator_forward",
+      "_tgt": "valueerror",
+      "source": "torch_models_neuralstatespacetranslator_forward",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -14790,6 +15225,18 @@
       "relation": "calls",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L183",
+      "weight": 1.0,
+      "_src": "torch_models_neuralstatespacetranslator_encode",
+      "_tgt": "valueerror",
+      "source": "torch_models_neuralstatespacetranslator_encode",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
       "source_file": "src/neurotwin/adapters/synthetic.py",
       "source_location": "L146",
       "weight": 1.0,
@@ -14826,6 +15273,18 @@
       "relation": "calls",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L235",
+      "weight": 1.0,
+      "_src": "torch_models_neuralstatespacetranslator_forward_task",
+      "_tgt": "valueerror",
+      "source": "torch_models_neuralstatespacetranslator_forward_task",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
       "source_location": "L252",
       "weight": 1.0,
@@ -14857,6 +15316,18 @@
       "source": "torch_models_check_sequence_tensor",
       "target": "torch_models_temporalconvmodalityencoder_forward",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L256",
+      "weight": 1.0,
+      "_src": "torch_models_check_sequence_tensor",
+      "_tgt": "valueerror",
+      "source": "torch_models_check_sequence_tensor",
+      "target": "valueerror"
     },
     {
       "relation": "method",
@@ -15003,6 +15474,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L297",
+      "weight": 1.0,
+      "_src": "torch_models_transformerbackbone_init",
+      "_tgt": "valueerror",
+      "source": "torch_models_transformerbackbone_init",
+      "target": "valueerror"
+    },
+    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/models/torch_models.py",
@@ -15037,6 +15520,30 @@
       "source": "torch_models_ssmfallbackbackbone",
       "target": "torch_models_build_backbone",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L335",
+      "weight": 1.0,
+      "_src": "torch_models_build_modality_encoder",
+      "_tgt": "valueerror",
+      "source": "torch_models_build_modality_encoder",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/models/torch_models.py",
+      "source_location": "L352",
+      "weight": 1.0,
+      "_src": "torch_models_build_backbone",
+      "_tgt": "valueerror",
+      "source": "torch_models_build_backbone",
+      "target": "valueerror"
     },
     {
       "relation": "contains",
@@ -15652,6 +16159,30 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/bids.py",
+      "source_location": "L207",
+      "weight": 1.0,
+      "_src": "bids_load_timeseries_derivative",
+      "_tgt": "valueerror",
+      "source": "bids_load_timeseries_derivative",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/bids.py",
+      "source_location": "L219",
+      "weight": 1.0,
+      "_src": "bids_validate_timeseries_derivative",
+      "_tgt": "valueerror",
+      "source": "bids_validate_timeseries_derivative",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/adapters/bids.py",
       "source_location": "L247",
@@ -16012,6 +16543,18 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L81",
+      "weight": 1.0,
+      "_src": "moabb_balanced_trial_subset",
+      "_tgt": "valueerror",
+      "source": "moabb_balanced_trial_subset",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/adapters/moabb.py",
       "source_location": "L133",
@@ -16045,6 +16588,18 @@
       "source": "moabb_trials_to_recordings",
       "target": "moabb_prefixed",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L130",
+      "weight": 1.0,
+      "_src": "moabb_trials_to_recordings",
+      "_tgt": "valueerror",
+      "source": "moabb_trials_to_recordings",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -16141,6 +16696,54 @@
       "source": "moabb_time_by_channel_signal",
       "target": "moabb_rationale_220",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L229",
+      "weight": 1.0,
+      "_src": "moabb_time_by_channel_signal",
+      "_tgt": "valueerror",
+      "source": "moabb_time_by_channel_signal",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L243",
+      "weight": 1.0,
+      "_src": "moabb_resolve_moabb_dataset",
+      "_tgt": "valueerror",
+      "source": "moabb_resolve_moabb_dataset",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L251",
+      "weight": 1.0,
+      "_src": "moabb_build_moabb_paradigm",
+      "_tgt": "valueerror",
+      "source": "moabb_build_moabb_paradigm",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/adapters/moabb.py",
+      "source_location": "L259",
+      "weight": 1.0,
+      "_src": "moabb_metadata_row",
+      "_tgt": "paper_gate_papermodegatereport_to_dict",
+      "source": "moabb_metadata_row",
+      "target": "paper_gate_papermodegatereport_to_dict"
     },
     {
       "relation": "calls",
@@ -16746,7 +17349,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L122",
+      "source_location": "L132",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_make_paired_windows",
@@ -16758,7 +17361,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L136",
+      "source_location": "L146",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_split",
@@ -16770,7 +17373,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L141",
+      "source_location": "L151",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_future_task",
@@ -16782,7 +17385,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L155",
+      "source_location": "L165",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_masked_reconstruction_task",
@@ -16794,7 +17397,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L176",
+      "source_location": "L186",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_cross_modal_task",
@@ -16806,7 +17409,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L190",
+      "source_location": "L200",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_run_task_models",
@@ -16818,7 +17421,43 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L270",
+      "source_location": "L284",
+      "weight": 1.0,
+      "_src": "src_neurotwin_benchmarks_baseline_suite_py",
+      "_tgt": "baseline_suite_predict_persistence",
+      "source": "src_neurotwin_benchmarks_baseline_suite_py",
+      "target": "baseline_suite_predict_persistence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L294",
+      "weight": 1.0,
+      "_src": "src_neurotwin_benchmarks_baseline_suite_py",
+      "_tgt": "baseline_suite_predict_train_mean",
+      "source": "src_neurotwin_benchmarks_baseline_suite_py",
+      "target": "baseline_suite_predict_train_mean",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L304",
+      "weight": 1.0,
+      "_src": "src_neurotwin_benchmarks_baseline_suite_py",
+      "_tgt": "baseline_suite_predict_random_permutation",
+      "source": "src_neurotwin_benchmarks_baseline_suite_py",
+      "target": "baseline_suite_predict_random_permutation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L318",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_fit_ridge",
@@ -16830,7 +17469,19 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L277",
+      "source_location": "L325",
+      "weight": 1.0,
+      "_src": "src_neurotwin_benchmarks_baseline_suite_py",
+      "_tgt": "baseline_suite_fit_autoregressive_ridge",
+      "source": "src_neurotwin_benchmarks_baseline_suite_py",
+      "target": "baseline_suite_fit_autoregressive_ridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L341",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_fit_torch_sequence_model",
@@ -16842,7 +17493,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L301",
+      "source_location": "L365",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_fit_neurotwin",
@@ -16854,7 +17505,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L336",
+      "source_location": "L400",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_metrics",
@@ -16866,7 +17517,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L371",
+      "source_location": "L435",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_flatten_time",
@@ -16878,7 +17529,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L375",
+      "source_location": "L439",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_validate_prediction",
@@ -16890,7 +17541,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L383",
+      "source_location": "L447",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_validate_metrics",
@@ -16902,7 +17553,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L389",
+      "source_location": "L453",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_baseline_suite_py",
       "_tgt": "baseline_suite_baseline_catalog",
@@ -16914,7 +17565,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L143",
+      "source_location": "L153",
       "weight": 1.0,
       "_src": "baseline_suite_future_task",
       "_tgt": "baseline_suite_supervisedwindowtask",
@@ -16926,7 +17577,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L163",
+      "source_location": "L173",
       "weight": 1.0,
       "_src": "baseline_suite_masked_reconstruction_task",
       "_tgt": "baseline_suite_supervisedwindowtask",
@@ -16938,7 +17589,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L178",
+      "source_location": "L188",
       "weight": 1.0,
       "_src": "baseline_suite_cross_modal_task",
       "_tgt": "baseline_suite_supervisedwindowtask",
@@ -17010,7 +17661,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L233",
+      "source_location": "L247",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_baselinefailure",
@@ -17022,7 +17673,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L265",
+      "source_location": "L279",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_baselinefailure_to_dict",
@@ -17118,7 +17769,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L117",
+      "source_location": "L127",
       "weight": 1.0,
       "_src": "baseline_suite_run_supervised_window_tasks",
       "_tgt": "baseline_suite_baseline_catalog",
@@ -17142,7 +17793,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L142",
+      "source_location": "L152",
       "weight": 1.0,
       "_src": "baseline_suite_future_task",
       "_tgt": "baseline_suite_split",
@@ -17154,7 +17805,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L161",
+      "source_location": "L171",
       "weight": 1.0,
       "_src": "baseline_suite_masked_reconstruction_task",
       "_tgt": "baseline_suite_split",
@@ -17166,7 +17817,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L177",
+      "source_location": "L187",
       "weight": 1.0,
       "_src": "baseline_suite_cross_modal_task",
       "_tgt": "baseline_suite_split",
@@ -17178,7 +17829,43 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L192",
+      "source_location": "L202",
+      "weight": 1.0,
+      "_src": "baseline_suite_run_task_models",
+      "_tgt": "baseline_suite_predict_persistence",
+      "source": "baseline_suite_run_task_models",
+      "target": "baseline_suite_predict_persistence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L203",
+      "weight": 1.0,
+      "_src": "baseline_suite_run_task_models",
+      "_tgt": "baseline_suite_predict_train_mean",
+      "source": "baseline_suite_run_task_models",
+      "target": "baseline_suite_predict_train_mean",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L204",
+      "weight": 1.0,
+      "_src": "baseline_suite_run_task_models",
+      "_tgt": "baseline_suite_predict_random_permutation",
+      "source": "baseline_suite_run_task_models",
+      "target": "baseline_suite_predict_random_permutation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L205",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_fit_ridge",
@@ -17190,7 +17877,19 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L193",
+      "source_location": "L206",
+      "weight": 1.0,
+      "_src": "baseline_suite_run_task_models",
+      "_tgt": "baseline_suite_fit_autoregressive_ridge",
+      "source": "baseline_suite_run_task_models",
+      "target": "baseline_suite_fit_autoregressive_ridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L207",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_fit_torch_sequence_model",
@@ -17202,7 +17901,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L223",
+      "source_location": "L237",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_fit_neurotwin",
@@ -17214,7 +17913,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L230",
+      "source_location": "L244",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_validate_prediction",
@@ -17226,7 +17925,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L238",
+      "source_location": "L252",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_metrics",
@@ -17238,7 +17937,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L246",
+      "source_location": "L260",
       "weight": 1.0,
       "_src": "baseline_suite_run_task_models",
       "_tgt": "baseline_suite_validate_metrics",
@@ -17262,13 +17961,85 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
-      "source_location": "L272",
+      "source_location": "L291",
+      "weight": 1.0,
+      "_src": "baseline_suite_predict_persistence",
+      "_tgt": "baseline_suite_predict_train_mean",
+      "source": "baseline_suite_predict_persistence",
+      "target": "baseline_suite_predict_train_mean",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L335",
+      "weight": 1.0,
+      "_src": "baseline_suite_fit_autoregressive_ridge",
+      "_tgt": "baseline_suite_predict_train_mean",
+      "source": "baseline_suite_predict_train_mean",
+      "target": "baseline_suite_fit_autoregressive_ridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L305",
+      "weight": 1.0,
+      "_src": "baseline_suite_predict_random_permutation",
+      "_tgt": "baseline_suite_flatten_time",
+      "source": "baseline_suite_predict_random_permutation",
+      "target": "baseline_suite_flatten_time",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L307",
+      "weight": 1.0,
+      "_src": "baseline_suite_predict_random_permutation",
+      "_tgt": "valueerror",
+      "source": "baseline_suite_predict_random_permutation",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L320",
       "weight": 1.0,
       "_src": "baseline_suite_fit_ridge",
       "_tgt": "baseline_suite_flatten_time",
       "source": "baseline_suite_fit_ridge",
       "target": "baseline_suite_flatten_time",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L334",
+      "weight": 1.0,
+      "_src": "baseline_suite_fit_autoregressive_ridge",
+      "_tgt": "baseline_suite_flatten_time",
+      "source": "baseline_suite_fit_autoregressive_ridge",
+      "target": "baseline_suite_flatten_time",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L327",
+      "weight": 1.0,
+      "_src": "baseline_suite_fit_autoregressive_ridge",
+      "_tgt": "valueerror",
+      "source": "baseline_suite_fit_autoregressive_ridge",
+      "target": "valueerror"
     },
     {
       "relation": "calls",
@@ -17379,10 +18150,34 @@
       "target": "metrics_regionwise_pearsonr"
     },
     {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L442",
+      "weight": 1.0,
+      "_src": "baseline_suite_validate_prediction",
+      "_tgt": "valueerror",
+      "source": "baseline_suite_validate_prediction",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/baseline_suite.py",
+      "source_location": "L450",
+      "weight": 1.0,
+      "_src": "baseline_suite_validate_metrics",
+      "_tgt": "valueerror",
+      "source": "baseline_suite_validate_metrics",
+      "target": "valueerror"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_preparedsuiteconfig",
@@ -17394,7 +18189,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L32",
+      "source_location": "L35",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_run_prepared_baseline_suite",
@@ -17406,7 +18201,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L89",
+      "source_location": "L98",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_format_prepared_baseline_report",
@@ -17418,7 +18213,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L166",
+      "source_location": "L180",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_run_prepared_auxiliary_tasks",
@@ -17430,7 +18225,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L189",
+      "source_location": "L203",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_build_prepared_window_tasks",
@@ -17442,7 +18237,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L225",
+      "source_location": "L239",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_subject_adaptation_from_windows",
@@ -17454,7 +18249,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L268",
+      "source_location": "L282",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_dataset_site_generalization_from_windows",
@@ -17466,7 +18261,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L294",
+      "source_location": "L308",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_future_task_from_windows",
@@ -17478,7 +18273,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L320",
+      "source_location": "L334",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_masked_task_from_windows",
@@ -17490,7 +18285,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L359",
+      "source_location": "L373",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_cross_modal_task_from_windows",
@@ -17502,7 +18297,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L388",
+      "source_location": "L402",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_first_modality_with_splits",
@@ -17514,7 +18309,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L398",
+      "source_location": "L412",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_future_xy",
@@ -17526,7 +18321,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L405",
+      "source_location": "L419",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_paired_windows",
@@ -17538,7 +18333,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L430",
+      "source_location": "L444",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_windows_by_split",
@@ -17550,7 +18345,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L445",
+      "source_location": "L459",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_group_windows",
@@ -17562,7 +18357,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L454",
+      "source_location": "L468",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_stack_pairs",
@@ -17574,7 +18369,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L461",
+      "source_location": "L475",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_record_id",
@@ -17586,7 +18381,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L465",
+      "source_location": "L479",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_split_record_keys",
@@ -17598,7 +18393,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L473",
+      "source_location": "L487",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_scope_status",
@@ -17610,7 +18405,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L477",
+      "source_location": "L491",
       "weight": 1.0,
       "_src": "src_neurotwin_benchmarks_prepared_suite_py",
       "_tgt": "prepared_suite_task_result_to_dict",
@@ -17655,10 +18450,22 @@
       "target": "windows_windowspec"
     },
     {
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
+      "source_location": "L19",
+      "weight": 0.8,
+      "_src": "prepared_suite_preparedsuiteconfig",
+      "_tgt": "paper_gate_papermodegatereport",
+      "confidence_score": 0.5,
+      "source": "prepared_suite_preparedsuiteconfig",
+      "target": "paper_gate_papermodegatereport"
+    },
+    {
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L38",
+      "source_location": "L41",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_baseline_suite",
       "_tgt": "prepared_suite_build_prepared_window_tasks",
@@ -17670,7 +18477,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L50",
+      "source_location": "L53",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_baseline_suite",
       "_tgt": "prepared_suite_scope_status",
@@ -17682,7 +18489,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L65",
+      "source_location": "L68",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_baseline_suite",
       "_tgt": "prepared_suite_run_prepared_auxiliary_tasks",
@@ -17728,9 +18535,33 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
+      "source_location": "L174",
+      "weight": 1.0,
+      "_src": "prepared_suite_format_prepared_baseline_report",
+      "_tgt": "paper_gate_format_paper_mode_gate",
+      "source": "prepared_suite_format_prepared_baseline_report",
+      "target": "paper_gate_format_paper_mode_gate"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
+      "source_location": "L174",
+      "weight": 1.0,
+      "_src": "prepared_suite_format_prepared_baseline_report",
+      "_tgt": "paper_gate_papermodegatereport",
+      "source": "prepared_suite_format_prepared_baseline_report",
+      "target": "paper_gate_papermodegatereport"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L172",
+      "source_location": "L186",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_auxiliary_tasks",
       "_tgt": "prepared_suite_windows_by_split",
@@ -17742,7 +18573,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L175",
+      "source_location": "L189",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_auxiliary_tasks",
       "_tgt": "prepared_suite_subject_adaptation_from_windows",
@@ -17754,7 +18585,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L179",
+      "source_location": "L193",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_auxiliary_tasks",
       "_tgt": "prepared_suite_task_result_to_dict",
@@ -17766,7 +18597,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L181",
+      "source_location": "L195",
       "weight": 1.0,
       "_src": "prepared_suite_run_prepared_auxiliary_tasks",
       "_tgt": "prepared_suite_dataset_site_generalization_from_windows",
@@ -17790,7 +18621,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L198",
+      "source_location": "L212",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_windows_by_split",
@@ -17802,7 +18633,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L199",
+      "source_location": "L213",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_split_record_keys",
@@ -17814,7 +18645,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L201",
+      "source_location": "L215",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_record_id",
@@ -17826,7 +18657,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L205",
+      "source_location": "L219",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_future_task_from_windows",
@@ -17838,7 +18669,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L211",
+      "source_location": "L225",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_masked_task_from_windows",
@@ -17850,7 +18681,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L217",
+      "source_location": "L231",
       "weight": 1.0,
       "_src": "prepared_suite_build_prepared_window_tasks",
       "_tgt": "prepared_suite_cross_modal_task_from_windows",
@@ -17886,7 +18717,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L226",
+      "source_location": "L240",
       "weight": 1.0,
       "_src": "prepared_suite_subject_adaptation_from_windows",
       "_tgt": "prepared_suite_first_modality_with_splits",
@@ -17898,7 +18729,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L269",
+      "source_location": "L283",
       "weight": 1.0,
       "_src": "prepared_suite_dataset_site_generalization_from_windows",
       "_tgt": "prepared_suite_first_modality_with_splits",
@@ -17910,7 +18741,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L272",
+      "source_location": "L286",
       "weight": 1.0,
       "_src": "prepared_suite_dataset_site_generalization_from_windows",
       "_tgt": "prepared_suite_group_windows",
@@ -17922,7 +18753,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L295",
+      "source_location": "L309",
       "weight": 1.0,
       "_src": "prepared_suite_future_task_from_windows",
       "_tgt": "prepared_suite_first_modality_with_splits",
@@ -17934,7 +18765,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L301",
+      "source_location": "L315",
       "weight": 1.0,
       "_src": "prepared_suite_future_task_from_windows",
       "_tgt": "prepared_suite_future_xy",
@@ -17946,7 +18777,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L324",
+      "source_location": "L338",
       "weight": 1.0,
       "_src": "prepared_suite_masked_task_from_windows",
       "_tgt": "prepared_suite_first_modality_with_splits",
@@ -17958,7 +18789,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L366",
+      "source_location": "L380",
       "weight": 1.0,
       "_src": "prepared_suite_cross_modal_task_from_windows",
       "_tgt": "prepared_suite_paired_windows",
@@ -17970,7 +18801,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L371",
+      "source_location": "L385",
       "weight": 1.0,
       "_src": "prepared_suite_cross_modal_task_from_windows",
       "_tgt": "prepared_suite_stack_pairs",
@@ -17982,7 +18813,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L435",
+      "source_location": "L449",
       "weight": 1.0,
       "_src": "prepared_suite_windows_by_split",
       "_tgt": "prepared_suite_split_record_keys",
@@ -17994,7 +18825,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/benchmarks/prepared_suite.py",
-      "source_location": "L438",
+      "source_location": "L452",
       "weight": 1.0,
       "_src": "prepared_suite_windows_by_split",
       "_tgt": "prepared_suite_record_id",
@@ -18352,6 +19183,42 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_src": "metrics_mse",
+      "_tgt": "valueerror",
+      "source": "metrics_mse",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L28",
+      "weight": 1.0,
+      "_src": "metrics_mae",
+      "_tgt": "valueerror",
+      "source": "metrics_mae",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_src": "metrics_r2_score",
+      "_tgt": "valueerror",
+      "source": "metrics_r2_score",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L62",
@@ -18376,6 +19243,18 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L47",
+      "weight": 1.0,
+      "_src": "metrics_pearsonr",
+      "_tgt": "valueerror",
+      "source": "metrics_pearsonr",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "src/neurotwin/eval/metrics.py",
       "source_location": "L62",
@@ -18385,6 +19264,54 @@
       "source": "metrics_spearmanr",
       "target": "metrics_rankdata",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L59",
+      "weight": 1.0,
+      "_src": "metrics_spearmanr",
+      "_tgt": "valueerror",
+      "source": "metrics_spearmanr",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L81",
+      "weight": 1.0,
+      "_src": "metrics_regionwise_pearsonr",
+      "_tgt": "valueerror",
+      "source": "metrics_regionwise_pearsonr",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L123",
+      "weight": 1.0,
+      "_src": "metrics_bootstrap_ci",
+      "_tgt": "valueerror",
+      "source": "metrics_bootstrap_ci",
+      "target": "valueerror"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/eval/metrics.py",
+      "source_location": "L144",
+      "weight": 1.0,
+      "_src": "metrics_rank_models",
+      "_tgt": "valueerror",
+      "source": "metrics_rank_models",
+      "target": "valueerror"
     },
     {
       "relation": "contains",
@@ -18685,6 +19612,414 @@
       "confidence_score": 0.5,
       "source": "audit_rationale_38",
       "target": "windows_windowspec"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_papermodegatereport",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_papermodegatereport",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_papermodegateerror",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_papermodegateerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_validate_paper_mode_payload",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_validate_paper_mode_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L85",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_format_paper_mode_gate",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_format_paper_mode_gate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L101",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_audit_payload",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_audit_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L118",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_aggregate_rank",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_aggregate_rank",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L126",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_observed_seeds",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_observed_seeds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L143",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_add_seed_values",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_add_seed_values",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L159",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_ci_violations",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_ci_violations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L188",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_has_finite_ci",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_has_finite_ci",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L194",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_has_test_metric",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_has_test_metric",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L198",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_has_any_test_ci",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_has_any_test_ci",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L203",
+      "weight": 1.0,
+      "_src": "src_neurotwin_eval_paper_gate_py",
+      "_tgt": "paper_gate_finite_number",
+      "source": "src_neurotwin_eval_paper_gate_py",
+      "target": "paper_gate_finite_number",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_src": "paper_gate_papermodegatereport",
+      "_tgt": "paper_gate_papermodegatereport_to_dict",
+      "source": "paper_gate_papermodegatereport",
+      "target": "paper_gate_papermodegatereport_to_dict",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_papermodegatereport",
+      "source": "paper_gate_papermodegatereport",
+      "target": "paper_gate_validate_paper_mode_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L104",
+      "weight": 1.0,
+      "_src": "paper_gate_audit_payload",
+      "_tgt": "paper_gate_papermodegatereport_to_dict",
+      "source": "paper_gate_papermodegatereport_to_dict",
+      "target": "paper_gate_audit_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "paper_gate_papermodegateerror",
+      "_tgt": "valueerror",
+      "source": "paper_gate_papermodegateerror",
+      "target": "valueerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_src": "paper_gate_papermodegateerror",
+      "_tgt": "paper_gate_papermodegateerror_init",
+      "source": "paper_gate_papermodegateerror",
+      "target": "paper_gate_papermodegateerror_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L81",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_papermodegateerror",
+      "source": "paper_gate_papermodegateerror",
+      "target": "paper_gate_validate_paper_mode_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/data/event_io.py",
+      "source_location": "L74",
+      "weight": 1.0,
+      "_src": "valueerror",
+      "_tgt": "event_io_load_event_batches",
+      "source": "valueerror",
+      "target": "event_io_load_event_batches"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/data/schemas.py",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_src": "valueerror",
+      "_tgt": "schemas_neuraleventbatch_post_init",
+      "source": "valueerror",
+      "target": "schemas_neuraleventbatch_post_init"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/data/split_manifest.py",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_src": "valueerror",
+      "_tgt": "split_manifest_build_split_manifest",
+      "source": "valueerror",
+      "target": "split_manifest_build_split_manifest"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/neurotwin/data/windows.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_src": "valueerror",
+      "_tgt": "windows_batch_to_windows",
+      "source": "valueerror",
+      "target": "windows_batch_to_windows"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L47",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_audit_payload",
+      "source": "paper_gate_validate_paper_mode_payload",
+      "target": "paper_gate_audit_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_aggregate_rank",
+      "source": "paper_gate_validate_paper_mode_payload",
+      "target": "paper_gate_aggregate_rank",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L58",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_observed_seeds",
+      "source": "paper_gate_validate_paper_mode_payload",
+      "target": "paper_gate_observed_seeds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L69",
+      "weight": 1.0,
+      "_src": "paper_gate_validate_paper_mode_payload",
+      "_tgt": "paper_gate_ci_violations",
+      "source": "paper_gate_validate_paper_mode_payload",
+      "target": "paper_gate_ci_violations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_src": "paper_gate_rationale_36",
+      "_tgt": "paper_gate_validate_paper_mode_payload",
+      "source": "paper_gate_validate_paper_mode_payload",
+      "target": "paper_gate_rationale_36",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L128",
+      "weight": 1.0,
+      "_src": "paper_gate_observed_seeds",
+      "_tgt": "paper_gate_add_seed_values",
+      "source": "paper_gate_observed_seeds",
+      "target": "paper_gate_add_seed_values",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L178",
+      "weight": 1.0,
+      "_src": "paper_gate_ci_violations",
+      "_tgt": "paper_gate_has_finite_ci",
+      "source": "paper_gate_ci_violations",
+      "target": "paper_gate_has_finite_ci",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L183",
+      "weight": 1.0,
+      "_src": "paper_gate_ci_violations",
+      "_tgt": "paper_gate_has_test_metric",
+      "source": "paper_gate_ci_violations",
+      "target": "paper_gate_has_test_metric",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L183",
+      "weight": 1.0,
+      "_src": "paper_gate_ci_violations",
+      "_tgt": "paper_gate_has_any_test_ci",
+      "source": "paper_gate_ci_violations",
+      "target": "paper_gate_has_any_test_ci",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L191",
+      "weight": 1.0,
+      "_src": "paper_gate_has_finite_ci",
+      "_tgt": "paper_gate_finite_number",
+      "source": "paper_gate_has_finite_ci",
+      "target": "paper_gate_finite_number",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "src/neurotwin/eval/paper_gate.py",
+      "source_location": "L200",
+      "weight": 1.0,
+      "_src": "paper_gate_has_any_test_ci",
+      "_tgt": "paper_gate_finite_number",
+      "source": "paper_gate_has_any_test_ci",
+      "target": "paper_gate_finite_number",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",

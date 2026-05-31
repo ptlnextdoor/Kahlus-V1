@@ -17,6 +17,7 @@ from neurotwin.data.manifest_io import save_data_manifest, save_leakage_report, 
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
+from neurotwin.eval.paper_gate import format_paper_mode_gate, validate_paper_mode_payload
 from neurotwin.reports import generate_compare_report, generate_run_report, generate_suite_report
 from neurotwin.repro import (
     append_jsonl,
@@ -109,7 +110,10 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--window-length", type=int, default=8)
     eval_parser.add_argument("--stride", type=int, default=8)
     eval_parser.add_argument("--train-steps", type=int, default=5)
+    eval_parser.add_argument("--seed", type=int, default=0)
     eval_parser.add_argument("--require-windows", action="store_true")
+    eval_parser.add_argument("--paper-mode", action="store_true")
+    eval_parser.add_argument("--paper-required-seeds", nargs="+", type=int, default=[0, 1, 2])
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
@@ -602,17 +606,82 @@ def _cmd_eval(args: argparse.Namespace) -> None:
         if args.event_manifest or args.split_manifest:
             if not args.event_manifest or not args.split_manifest:
                 raise SystemExit("--event-manifest and --split-manifest must be provided together")
+            audit = None
+            if args.paper_mode:
+                audit = audit_prepared_eval_inputs(
+                    args.event_manifest,
+                    args.split_manifest,
+                    window_length=args.window_length,
+                    stride=args.stride,
+                    out_dir=args.out_dir,
+                    require_windows=True,
+                )
+                if not audit.passed:
+                    payload = {
+                        "eval_audit": audit.to_dict(),
+                        "aggregate": {"selection_metric": "mse", "higher_is_better": False, "aggregate_rank": []},
+                        "tasks": {},
+                        "seed": args.seed,
+                        "seeds": [args.seed],
+                    }
+                    gate = validate_paper_mode_payload(
+                        payload,
+                        audit_report=audit,
+                        required_seeds=tuple(args.paper_required_seeds),
+                        require_ci=True,
+                    )
+                    payload["paper_mode_gate"] = gate.to_dict()
+                    payload["paper_mode_contract"] = {
+                        "required_seeds": list(gate.required_seeds),
+                        "observed_seeds": list(gate.observed_seeds),
+                        "require_ci": gate.require_ci,
+                        "gate_status": "failed",
+                    }
+                    if args.out_dir:
+                        out_dir = Path(args.out_dir)
+                        write_json(out_dir / "prepared_baseline_suite.json", payload)
+                        write_json(out_dir / "paper_mode_gate.json", gate.to_dict())
+                    print(format_prepared_eval_audit(audit))
+                    print(format_paper_mode_gate(gate))
+                    raise SystemExit(1)
             payload = run_prepared_baseline_suite(
                 PreparedSuiteConfig(
                     event_manifest=args.event_manifest,
                     split_manifest=args.split_manifest,
                     window_length=args.window_length,
                     stride=args.stride,
-                    seed=0,
+                    seed=args.seed,
                     train_steps=args.train_steps,
+                    required_seeds=tuple(args.paper_required_seeds),
                 ),
                 out_dir=args.out_dir,
             )
+            if args.paper_mode:
+                assert audit is not None
+                payload["eval_audit"] = audit.to_dict()
+                gate = validate_paper_mode_payload(
+                    payload,
+                    audit_report=audit,
+                    required_seeds=tuple(args.paper_required_seeds),
+                    require_ci=True,
+                )
+                payload["paper_mode_gate"] = gate.to_dict()
+                payload["paper_mode_contract"] = {
+                    "required_seeds": list(gate.required_seeds),
+                    "observed_seeds": list(gate.observed_seeds),
+                    "require_ci": gate.require_ci,
+                    "gate_status": "passed" if gate.passed else "failed",
+                }
+                if args.out_dir:
+                    out_dir = Path(args.out_dir)
+                    write_json(out_dir / "prepared_baseline_suite.json", payload)
+                    write_json(out_dir / "paper_mode_gate.json", gate.to_dict())
+                print(format_prepared_eval_audit(audit))
+                print(format_prepared_baseline_report(payload))
+                print(format_paper_mode_gate(gate))
+                if not gate.passed:
+                    raise SystemExit(1)
+                return
             print(format_prepared_baseline_report(payload))
             return
         payload = run_neural_translation_v1_synthetic(seed=0, out_dir=args.out_dir)
