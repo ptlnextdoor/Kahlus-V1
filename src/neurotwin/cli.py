@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
 from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, format_prepared_baseline_report, run_prepared_baseline_suite
@@ -17,7 +18,16 @@ from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
 from neurotwin.reports import generate_compare_report, generate_run_report, generate_suite_report
-from neurotwin.repro import append_jsonl, capture_environment, create_run_dir, manifest_hash, snapshot_config, stable_hash, write_json
+from neurotwin.repro import (
+    append_jsonl,
+    capture_environment,
+    checkpoint_manifest,
+    create_run_dir,
+    manifest_hash,
+    snapshot_config,
+    stable_hash,
+    write_json,
+)
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
 from neurotwin.runtime.preflight import (
@@ -130,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     materialize_config.set_defaults(func=_cmd_cluster_materialize_config)
 
     args = parser.parse_args(argv)
+    args._argv = list(sys.argv if argv is None else ["nt", *argv])
     args.func(args)
     return 0
 
@@ -402,9 +413,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
         return
     run_dir = create_run_dir(args.run_root, run_id=str(config.get("experiment", "synthetic_debug")))
     dist = get_distributed_info()
+    environment = capture_environment(argv=getattr(args, "_argv", None))
     if dist.is_rank_zero:
         snapshot_config(config, run_dir)
-        write_json(run_dir / "environment.json", capture_environment())
+        write_json(run_dir / "environment.json", environment)
     configured_split_manifest = _config_value(config, "split_manifest")
     if configured_split_manifest:
         from neurotwin.data.manifest_io import load_split_manifest
@@ -439,7 +451,9 @@ def _cmd_train(args: argparse.Namespace) -> None:
             print("training_status=completed_prepared_training_rank")
             print(f"metrics_jsonl={metrics_path}")
             return
+        checkpoints = checkpoint_manifest(run_dir)
         write_json(run_dir / "metrics.json", result.to_dict())
+        write_json(run_dir / "checkpoint_manifest.json", checkpoints)
         write_json(
             run_dir / "summary.json",
             {
@@ -479,6 +493,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
                     "local_rank": dist.local_rank,
                     "world_size": dist.world_size,
                 },
+                "git": environment["git"],
+                "source_commit_missing": environment["source_commit_missing"],
+                "run": environment["run"],
+                "checkpoint_manifest": checkpoints,
                 "resume": args.resume,
             },
         )
@@ -514,6 +532,8 @@ def _cmd_train(args: argparse.Namespace) -> None:
     import torch
 
     torch.save({"status": "synthetic_smoke", "steps": result.steps, "world_size": dist.world_size}, run_dir / "checkpoint.pt")
+    checkpoints = checkpoint_manifest(run_dir)
+    write_json(run_dir / "checkpoint_manifest.json", checkpoints)
     write_json(
         run_dir / "summary.json",
         {
@@ -530,6 +550,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
                 "local_rank": dist.local_rank,
                 "world_size": dist.world_size,
             },
+            "git": environment["git"],
+            "source_commit_missing": environment["source_commit_missing"],
+            "run": environment["run"],
+            "checkpoint_manifest": checkpoints,
             "resume": args.resume,
         },
     )

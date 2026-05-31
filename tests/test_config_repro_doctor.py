@@ -12,8 +12,11 @@ import torch
 from neurotwin.config import ConfigError, load_config
 from neurotwin.repro import (
     capture_environment,
+    capture_run_metadata,
+    checkpoint_manifest,
     create_run_dir,
     manifest_hash,
+    resolve_source_commit,
     set_global_seed,
     snapshot_config,
     stable_hash,
@@ -47,11 +50,60 @@ class ConfigReproDoctorTests(unittest.TestCase):
             run_dir = create_run_dir(Path(tmp), run_id="unit-test")
             config_path = snapshot_config({"experiment": "unit"}, run_dir)
             env_path = run_dir / "environment.json"
-            env_path.write_text(json.dumps(capture_environment()), encoding="utf-8")
+            env_path.write_text(json.dumps(capture_environment(argv=["nt", "train"])), encoding="utf-8")
 
             self.assertTrue(config_path.exists())
             self.assertTrue(env_path.exists())
-            self.assertIn("python", json.loads(env_path.read_text())["runtime"])
+            env = json.loads(env_path.read_text())
+            self.assertIn("python", env["runtime"])
+            self.assertIn("source_commit_missing", env)
+            self.assertEqual(env["run"]["argv"], ["nt", "train"])
+            self.assertIn("cuda_device_count", env["torch"])
+
+    def test_non_git_runner_uses_commit_hash_fallback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "COMMIT_HASH.txt").write_text("abc123fallback\n", encoding="utf-8")
+
+            commit = resolve_source_commit(root)
+            env = capture_environment(repo_root=root, argv=["nt", "train", "--config", "unit.yaml"])
+
+            self.assertEqual(commit["commit"], "abc123fallback")
+            self.assertEqual(commit["source"], "COMMIT_HASH.txt")
+            self.assertTrue(commit["source_commit_missing"])
+            self.assertEqual(env["git"]["commit"], "abc123fallback")
+            self.assertTrue(env["source_commit_missing"])
+
+    def test_run_metadata_captures_direct_and_slurm_modes(self):
+        direct = capture_run_metadata(argv=["nt", "doctor"], env={})
+        slurm = capture_run_metadata(
+            argv=["nt", "train", "--api-token", "secret-value"],
+            env={
+                "SLURM_JOB_ID": "12345",
+                "SLURM_NODEID": "2",
+                "SLURM_JOB_NODELIST": "gpu-[01-02]",
+            },
+        )
+
+        self.assertEqual(direct["mode"], "direct")
+        self.assertEqual(slurm["mode"], "slurm")
+        self.assertEqual(slurm["slurm"]["job_id"], "12345")
+        self.assertEqual(slurm["slurm"]["node_id"], "2")
+        self.assertEqual(slurm["argv"][-1], "<redacted>")
+
+    def test_checkpoint_manifest_is_deterministic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "checkpoint_b.pt").write_bytes(b"bbb")
+            (root / "checkpoint.pt").write_bytes(b"aaa")
+            (root / "not_a_checkpoint.pt").write_bytes(b"ignored")
+
+            manifest = checkpoint_manifest(root)
+
+            self.assertEqual([entry["filename"] for entry in manifest], ["checkpoint.pt", "checkpoint_b.pt"])
+            self.assertEqual([entry["path"] for entry in manifest], ["checkpoint.pt", "checkpoint_b.pt"])
+            self.assertEqual([entry["size"] for entry in manifest], [3, 3])
+            self.assertTrue(all(len(entry["sha256"]) == 64 for entry in manifest))
 
     def test_manifest_hash_changes_with_payload(self):
         self.assertNotEqual(manifest_hash([{"a": 1}]), manifest_hash([{"a": 2}]))

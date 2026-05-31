@@ -237,6 +237,10 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(summary["selection_split"], "val")
             self.assertEqual(summary["report_split"], "test")
             self.assertIn("scientific_claim_allowed", summary)
+            self.assertIn("source_commit_missing", summary)
+            self.assertEqual(summary["run"]["mode"], "direct")
+            self.assertIn("checkpoint.pt", [entry["filename"] for entry in summary["checkpoint_manifest"]])
+            self.assertTrue((run_dir / "checkpoint_manifest.json").exists())
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())
 
