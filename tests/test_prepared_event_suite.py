@@ -15,6 +15,7 @@ from neurotwin.adapters.synthetic import (
 from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
     build_prepared_window_tasks,
+    format_prepared_baseline_report,
     run_prepared_baseline_suite,
     run_prepared_baseline_suite_multi_seed,
 )
@@ -103,11 +104,57 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertIn("future_state_forecasting", task_ids)
         self.assertIn("masked_neural_reconstruction", task_ids)
         self.assertIn("cross_modal_translation", task_ids)
+        self.assertIn("stimulus_to_fmri_response", task_ids)
         self.assertTrue(any(batch.modality == "behavior" for batch in batches))
         self.assertTrue(any(batch.modality == "stimulus" for batch in batches))
         self.assertTrue(any(batch.sampling_rate == 0.5 for batch in batches if batch.modality == "fmri"))
         self.assertTrue(any(not batch.mask.all() for batch in batches if batch.modality in {"eeg", "fmri"}))
         self.assertFalse([row for row in skipped if row["task_id"] == "all"])
+
+    def test_eeg_only_prepared_data_skips_stimulus_fmri_task(self):
+        records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+        batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+        split = build_split_manifest(records, policy="subject", seed=0)
+
+        tasks, skipped = build_prepared_window_tasks(batches, split, window_length=8, stride=8)
+
+        self.assertNotIn("stimulus_to_fmri_response", {task.task_id for task in tasks})
+        self.assertIn(
+            {"task_id": "stimulus_to_fmri_response", "reason": "need fMRI train/test windows with aligned stimulus embeddings"},
+            skipped,
+        )
+
+    def test_prepared_baseline_suite_runs_tribe_style_on_stimulus_fmri(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        task = payload["tasks"]["stimulus_to_fmri_response"]
+        metrics = task["metrics_by_model"]["tribe_style"]
+        self.assertIn("mse_ci_low", metrics)
+        self.assertIn("mse_ci_high", metrics)
+        self.assertIn("tribe_style", {row["model_id"] for row in task["ranking"]})
+        self.assertTrue(
+            any(
+                row["model_id"] == "tribe_style" and row["status"] == "clean_room_approximation"
+                for row in payload["baseline_catalog"]
+            )
+        )
+        report = format_prepared_baseline_report(payload)
+        self.assertIn("tribe_style: clean_room_approximation", report)
+        self.assertIn("not an exact TRIBE v2 reproduction", report)
 
     def test_prepared_baseline_suite_and_cli_artifacts(self):
         env = dict(os.environ)

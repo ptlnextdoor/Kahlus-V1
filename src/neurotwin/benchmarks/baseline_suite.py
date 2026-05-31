@@ -21,6 +21,7 @@ from neurotwin.eval.metrics import (
 )
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
 from neurotwin.models.torch_models import NeuralStateSpaceTranslator, TinySSMBaseline, TinyTransformerBaseline
+from neurotwin.models.tribe_style import TribeStyleStimulusEncoder
 
 
 @dataclass(frozen=True)
@@ -236,6 +237,8 @@ def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) ->
         ),
         "neurotwin": lambda: _fit_neurotwin(task, seed=seed + 5, steps=train_steps),
     }
+    if task.task_id == "stimulus_to_fmri_response" and task.source_modality == "stimulus" and task.target_modality == "fmri":
+        runners["tribe_style"] = lambda: _fit_tribe_style(task, seed=seed + 6, steps=train_steps)
     predictions: dict[str, np.ndarray] = {}
     failures: list[BaselineFailure] = []
     for model_id, runner in runners.items():
@@ -397,6 +400,15 @@ def _fit_neurotwin(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndar
     return output["prediction"].detach().cpu().numpy()
 
 
+def _fit_tribe_style(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndarray:
+    return _fit_torch_sequence_model(
+        lambda: TribeStyleStimulusEncoder(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
+        task,
+        seed=seed,
+        steps=steps,
+    )
+
+
 def _metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
@@ -466,8 +478,8 @@ def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str,
         {"model_id": "neurotwin", "status": "local_baseline", "notes": "Current NeuroTwin implementation under the same task API."},
         {
             "model_id": "tribe_style",
-            "status": "approximation" if "cross_modal_translation" in task_ids and "fmri" in modalities else "unavailable",
-            "notes": "Approximate stimulus/history-to-fMRI lane only when fMRI-aligned inputs exist; not an exact TRIBE v2 reproduction.",
+            "status": "clean_room_approximation" if "stimulus_to_fmri_response" in task_ids and "fmri" in modalities else "unavailable",
+            "notes": "NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
         },
         {
             "model_id": "brainvista_style",

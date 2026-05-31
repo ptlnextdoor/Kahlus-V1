@@ -13,6 +13,7 @@ import numpy as np
 from neurotwin.benchmarks.baseline_suite import SupervisedWindowTask, run_supervised_window_tasks, run_synthetic_baseline_suite
 from neurotwin.eval.paper_gate import validate_paper_mode_payload
 from neurotwin.models.baselines import NumpyRidgeBaseline
+from neurotwin.models.tribe_style import TribeStyleModel
 
 
 class BaselineSuiteTests(unittest.TestCase):
@@ -76,6 +77,53 @@ class BaselineSuiteTests(unittest.TestCase):
         ranked = {row["model_id"] for row in payload["tasks"]["future_state_forecasting"]["ranking"]}
         self.assertTrue(any(row["model_id"] == "linear_ridge" for row in failures))
         self.assertNotIn("linear_ridge", ranked)
+
+    def test_tribe_style_runs_on_stimulus_fmri_task(self):
+        rng = np.random.default_rng(7)
+        x_train = rng.normal(size=(10, 4, 3)).astype(np.float32)
+        y_train = rng.normal(size=(10, 4, 5)).astype(np.float32)
+        x_test = rng.normal(size=(4, 4, 3)).astype(np.float32)
+        y_test = rng.normal(size=(4, 4, 5)).astype(np.float32)
+        task = SupervisedWindowTask(
+            task_id="stimulus_to_fmri_response",
+            source_modality="stimulus",
+            target_modality="fmri",
+            x_train=x_train,
+            y_train=y_train,
+            x_test=x_test,
+            y_test=y_test,
+            notes=("tribe_style is a clean_room_approximation",),
+        )
+
+        payload = run_supervised_window_tasks((task,), seed=0, train_steps=1)
+        result = payload["tasks"]["stimulus_to_fmri_response"]
+        metrics = result["metrics_by_model"]["tribe_style"]
+        catalog = {row["model_id"]: row for row in payload["baseline_catalog"]}
+
+        self.assertIn("mse_ci_low", metrics)
+        self.assertIn("mse_ci_high", metrics)
+        self.assertTrue(np.isfinite(metrics["mse"]))
+        self.assertIn("tribe_style", {row["model_id"] for row in result["ranking"]})
+        self.assertEqual(catalog["tribe_style"]["status"], "clean_room_approximation")
+        self.assertIn("not an exact TRIBE v2 reproduction", catalog["tribe_style"]["notes"])
+
+    def test_tribe_style_facade_predicts_without_external_download(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            text_path = Path(tmp) / "stimulus.txt"
+            text_path.write_text("visual auditory language stimulus", encoding="utf-8")
+            model = TribeStyleModel.from_pretrained(
+                "local",
+                config_update={"stimulus_dim": 6, "output_dim": 4, "hidden_dim": 8},
+            )
+
+            events = model.get_events_dataframe(text_path=str(text_path))
+            preds, segments = model.predict(events, verbose=False)
+
+        self.assertEqual(model.model_id, "tribe_style")
+        self.assertEqual(model.implementation_status, "clean_room_approximation")
+        self.assertEqual(preds.shape, (4, 4))
+        self.assertEqual(len(segments), 4)
+        self.assertTrue(np.isfinite(preds).all())
 
     def test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract(self):
         payload = run_synthetic_baseline_suite(seed=0, train_steps=1)

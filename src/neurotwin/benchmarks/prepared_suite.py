@@ -314,6 +314,12 @@ def build_prepared_window_tasks(
         tasks.append(cross_modal)
     else:
         skipped.append({"task_id": "cross_modal_translation", "reason": "need paired train/test windows for two modalities"})
+
+    stimulus_fmri = _stimulus_fmri_task_from_windows(windows_by_split)
+    if stimulus_fmri is not None:
+        tasks.append(stimulus_fmri)
+    else:
+        skipped.append({"task_id": "stimulus_to_fmri_response", "reason": "need fMRI train/test windows with aligned stimulus embeddings"})
     return tuple(tasks), skipped
 
 
@@ -480,6 +486,32 @@ def _cross_modal_task_from_windows(windows_by_split: dict[str, list[NeuralEventB
     )
 
 
+def _stimulus_fmri_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
+    train = _stimulus_fmri_xy(windows_by_split["train"])
+    val = _stimulus_fmri_xy(windows_by_split["val"])
+    test = _stimulus_fmri_xy(windows_by_split["test"])
+    if train is None or test is None:
+        return None
+    x_train, y_train = train
+    x_test, y_test = test
+    x_val, y_val = val if val is not None else (None, None)
+    return SupervisedWindowTask(
+        task_id="stimulus_to_fmri_response",
+        source_modality="stimulus",
+        target_modality="fmri",
+        x_train=x_train,
+        y_train=y_train,
+        x_test=x_test,
+        y_test=y_test,
+        x_val=x_val,
+        y_val=y_val,
+        notes=(
+            "prepared stimulus->fMRI response windows",
+            "tribe_style is a clean_room_approximation, not an exact TRIBE v2 reproduction",
+        ),
+    )
+
+
 def _first_modality_with_splits(windows_by_split: dict[str, list[NeuralEventBatch]]) -> str | None:
     train_modalities = {window.modality for window in windows_by_split["train"]}
     test_modalities = {window.modality for window in windows_by_split["test"]}
@@ -520,6 +552,22 @@ def _paired_windows(
             n_time = min(source_signal.shape[0], target_signal.shape[0])
             pairs.append((source_signal[:n_time], target_signal[:n_time]))
     return pairs
+
+
+def _stimulus_fmri_xy(windows: list[NeuralEventBatch]) -> tuple[np.ndarray, np.ndarray] | None:
+    pairs = [
+        (np.asarray(window.stimulus_embedding, dtype=np.float32), np.asarray(window.signal, dtype=np.float32))
+        for window in windows
+        if window.modality == "fmri"
+        and window.stimulus_embedding is not None
+        and window.stimulus_embedding.shape[0] == window.signal.shape[0]
+    ]
+    if not pairs:
+        return None
+    return (
+        np.asarray([stimulus for stimulus, _ in pairs], dtype=np.float32),
+        np.asarray([signal for _, signal in pairs], dtype=np.float32),
+    )
 
 
 def _windows_by_split(

@@ -166,6 +166,9 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("Do not claim", claims)
         self.assertIn("clinical digital twin", claims)
         self.assertIn("Synthetic smoke tests validate plumbing only", claims)
+        self.assertIn("tribe_style", claims)
+        self.assertIn("clean-room approximation", claims)
+        self.assertIn("Do not describe it as exact TRIBE v2", claims)
 
     def test_moabb_scripts_and_cluster_configs_use_benchmark_windows(self):
         smoke = Path("scripts/prepare_moabb_smoke.sh").read_text(encoding="utf-8")
