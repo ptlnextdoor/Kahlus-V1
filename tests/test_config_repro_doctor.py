@@ -120,6 +120,30 @@ class ConfigReproDoctorTests(unittest.TestCase):
         self.assertEqual(slurm["slurm"]["node_id"], "2")
         self.assertEqual(slurm["argv"][-1], "<redacted>")
 
+    def test_run_metadata_redacts_underscore_secret_flags(self):
+        metadata = capture_run_metadata(
+            argv=[
+                "nt",
+                "train",
+                "--api_key=secret-a",
+                "--access_token",
+                "secret-b",
+                "--private_key=secret-c",
+                "--wandb_api_key",
+                "secret-d",
+            ],
+            env={},
+        )
+
+        self.assertEqual(metadata["argv"][2], "--api_key=<redacted>")
+        self.assertEqual(metadata["argv"][3:5], ["--access_token", "<redacted>"])
+        self.assertEqual(metadata["argv"][5], "--private_key=<redacted>")
+        self.assertEqual(metadata["argv"][6:8], ["--wandb_api_key", "<redacted>"])
+        self.assertNotIn("secret-a", metadata["command"])
+        self.assertNotIn("secret-b", metadata["command"])
+        self.assertNotIn("secret-c", metadata["command"])
+        self.assertNotIn("secret-d", metadata["command"])
+
     def test_checkpoint_manifest_is_deterministic(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

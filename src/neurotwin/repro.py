@@ -136,11 +136,12 @@ def _sanitize_argv(argv: list[str]) -> list[str]:
     secret_markers = ("password", "passwd", "secret", "token", "api-key", "apikey", "access-key", "private-key")
     for arg in argv:
         lowered = arg.lower()
+        normalized = lowered.replace("_", "-")
         if redact_next:
             sanitized.append("<redacted>")
             redact_next = False
             continue
-        if lowered.startswith("--") and any(marker in lowered for marker in secret_markers):
+        if normalized.startswith("--") and any(marker in normalized for marker in secret_markers):
             if "=" in arg:
                 key, _value = arg.split("=", 1)
                 sanitized.append(f"{key}=<redacted>")
