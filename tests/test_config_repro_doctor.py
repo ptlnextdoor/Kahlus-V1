@@ -74,6 +74,35 @@ class ConfigReproDoctorTests(unittest.TestCase):
             self.assertEqual(env["git"]["commit"], "abc123fallback")
             self.assertTrue(env["source_commit_missing"])
 
+    def test_nested_no_git_runner_ignores_parent_git_commit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp) / "parent"
+            parent.mkdir()
+            subprocess.run(["git", "init"], cwd=parent, check=True, text=True, capture_output=True)
+            subprocess.run(["git", "config", "user.email", "unit@example.com"], cwd=parent, check=True)
+            subprocess.run(["git", "config", "user.name", "Unit Test"], cwd=parent, check=True)
+            (parent / "tracked.txt").write_text("parent\n", encoding="utf-8")
+            subprocess.run(["git", "add", "tracked.txt"], cwd=parent, check=True)
+            subprocess.run(["git", "commit", "-m", "parent"], cwd=parent, check=True, text=True, capture_output=True)
+            parent_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=parent,
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout.strip()
+            runner = parent / "runner"
+            runner.mkdir()
+            (runner / "COMMIT_HASH.txt").write_text("runnerfallback123\n", encoding="utf-8")
+
+            env = capture_environment(repo_root=runner)
+
+            self.assertNotEqual(env["git"]["commit"], parent_commit)
+            self.assertEqual(env["git"]["commit"], "runnerfallback123")
+            self.assertEqual(env["git"]["source"], "COMMIT_HASH.txt")
+            self.assertTrue(env["git"]["source_commit_missing"])
+            self.assertTrue(env["source_commit_missing"])
+
     def test_run_metadata_captures_direct_and_slurm_modes(self):
         direct = capture_run_metadata(argv=["nt", "doctor"], env={})
         slurm = capture_run_metadata(

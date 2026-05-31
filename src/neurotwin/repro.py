@@ -51,20 +51,21 @@ def resolve_source_commit(repo_root: str | Path = ".") -> dict[str, Any]:
     """Resolve a source commit from git, falling back to COMMIT_HASH.txt."""
 
     root = Path(repo_root)
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=True,
-            text=True,
-            capture_output=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        result = None
-    if result is not None:
-        commit = result.stdout.strip()
-        if commit:
-            return {"commit": commit, "source": "git", "source_commit_missing": False}
+    if (root / ".git").exists():
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            result = None
+        if result is not None:
+            commit = result.stdout.strip()
+            if commit:
+                return {"commit": commit, "source": "git", "source_commit_missing": False}
 
     fallback = _read_commit_hash_file(root)
     return {
