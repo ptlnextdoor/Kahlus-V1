@@ -22,6 +22,15 @@ from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS
 class PreparedEventSuiteTests(unittest.TestCase):
     def test_event_batches_roundtrip_through_manifest(self):
         batches = make_synthetic_event_batches(n_subjects=2, sessions_per_subject=1, modalities=("eeg", "fmri"))
+        batches[0].metadata.update(
+            {
+                "task_id": "synthetic_task",
+                "sampling_rate": 128.0,
+                "source_hash": "source-hash",
+                "preprocessing_hash": "prep-hash",
+                "split_assignment": "train",
+            }
+        )
         with tempfile.TemporaryDirectory() as tmp:
             manifest_path = save_event_batches(batches, tmp)
             loaded = load_event_batches(manifest_path)
@@ -29,8 +38,43 @@ class PreparedEventSuiteTests(unittest.TestCase):
 
         self.assertEqual(len(loaded), len(batches))
         self.assertEqual(loaded[0].signal.shape, batches[0].signal.shape)
+        self.assertEqual(summary["schema"], "neurotwin.event_manifest.v2")
         self.assertIn("eeg", summary["modalities"])
         self.assertIn("fmri", summary["modalities"])
+        self.assertIn("synthetic_task", summary["task_ids"])
+        self.assertEqual(loaded[0].task_id, "synthetic_task")
+        self.assertEqual(loaded[0].sampling_rate, 128.0)
+        self.assertEqual(loaded[0].source_hash, "source-hash")
+        self.assertEqual(loaded[0].preprocessing_hash, "prep-hash")
+        self.assertEqual(loaded[0].split_assignment, "train")
+
+    def test_v1_event_manifest_still_loads(self):
+        batches = make_synthetic_event_batches(n_subjects=1, sessions_per_subject=1, modalities=("eeg",))
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest_path = save_event_batches(batches, tmp)
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            payload["schema"] = "neurotwin.event_manifest.v1"
+            for row in payload["events"]:
+                for key in (
+                    "recording_id",
+                    "dataset_id",
+                    "task_id",
+                    "sampling_rate",
+                    "time_start",
+                    "time_end",
+                    "source_hash",
+                    "preprocessing_hash",
+                    "split_assignment",
+                ):
+                    row.pop(key, None)
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            loaded = load_event_batches(manifest_path)
+            summary = event_manifest_summary(manifest_path)
+
+        self.assertEqual(summary["schema"], "neurotwin.event_manifest.v1")
+        self.assertEqual(len(loaded), len(batches))
+        self.assertTrue(loaded[0].recording_id)
 
     def test_prepared_window_tasks_use_split_manifest(self):
         records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))

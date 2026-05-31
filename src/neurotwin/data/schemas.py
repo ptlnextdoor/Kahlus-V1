@@ -84,3 +84,75 @@ class NeuralEventBatch:
     @property
     def n_space(self) -> int:
         return int(self.signal.shape[1])
+
+    @property
+    def recording_id(self) -> str:
+        value = self.metadata.get("recording_id") or self.metadata.get("record_id") or self.metadata.get("source_record_id")
+        return str(value) if value is not None else f"{self.dataset}_{self.subject_id}_{self.session_id}_{self.modality}"
+
+    @property
+    def dataset_id(self) -> str:
+        return str(self.metadata.get("dataset_id") or self.dataset)
+
+    @property
+    def task_id(self) -> str | None:
+        value = self.metadata.get("task_id")
+        return str(value) if value is not None else None
+
+    @property
+    def sampling_rate(self) -> float | None:
+        return _optional_float(self.metadata.get("sampling_rate") or self.metadata.get("tr"))
+
+    @property
+    def time_start(self) -> float:
+        value = self.metadata.get("time_start")
+        if value is not None:
+            return float(value)
+        return float(self.time[0]) if self.time.size else 0.0
+
+    @property
+    def time_end(self) -> float:
+        value = self.metadata.get("time_end")
+        if value is not None:
+            return float(value)
+        return float(self.time[-1]) if self.time.size else 0.0
+
+    @property
+    def source_hash(self) -> str | None:
+        return _optional_str(self.metadata.get("source_hash") or self.metadata.get("source_file_hash"))
+
+    @property
+    def preprocessing_hash(self) -> str | None:
+        return _optional_str(self.metadata.get("preprocessing_hash"))
+
+    @property
+    def split_assignment(self) -> str | None:
+        return _optional_str(self.metadata.get("split_assignment") or self.metadata.get("split"))
+
+    @property
+    def geometry_metadata(self) -> dict[str, Any]:
+        value = self.metadata.get("geometry") or self.metadata.get("sensor_geometry") or self.metadata.get("channel_geometry")
+        return dict(value) if isinstance(value, dict) else {}
+
+    @property
+    def stimulus_alignment_metadata(self) -> dict[str, Any]:
+        value = self.metadata.get("stimulus_alignment")
+        return dict(value) if isinstance(value, dict) else {}
+
+    @property
+    def behavior_metadata(self) -> dict[str, Any]:
+        value = self.metadata.get("behavior_metadata")
+        return dict(value) if isinstance(value, dict) else {}
+
+
+def _optional_str(value: Any) -> str | None:
+    return str(value) if value is not None else None
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
