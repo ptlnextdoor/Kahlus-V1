@@ -6,7 +6,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
+from neurotwin.adapters.synthetic import (
+    make_synthetic_event_batches,
+    make_synthetic_multimodal_event_batches,
+    make_synthetic_multimodal_recordings,
+    make_synthetic_recordings,
+)
 from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
     build_prepared_window_tasks,
@@ -86,6 +91,23 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertFalse([row for row in skipped if row["task_id"] == "all"])
         self.assertIn("future_state_forecasting", {task.task_id for task in tasks})
         self.assertIn("cross_modal_translation", {task.task_id for task in tasks})
+
+    def test_synthetic_multimodal_smoke_builds_cross_modal_task(self):
+        records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        split = build_split_manifest(records, policy="subject", seed=0)
+
+        tasks, skipped = build_prepared_window_tasks(batches, split, window_length=8, stride=8)
+
+        task_ids = {task.task_id for task in tasks}
+        self.assertIn("future_state_forecasting", task_ids)
+        self.assertIn("masked_neural_reconstruction", task_ids)
+        self.assertIn("cross_modal_translation", task_ids)
+        self.assertTrue(any(batch.modality == "behavior" for batch in batches))
+        self.assertTrue(any(batch.modality == "stimulus" for batch in batches))
+        self.assertTrue(any(batch.sampling_rate == 0.5 for batch in batches if batch.modality == "fmri"))
+        self.assertTrue(any(not batch.mask.all() for batch in batches if batch.modality in {"eeg", "fmri"}))
+        self.assertFalse([row for row in skipped if row["task_id"] == "all"])
 
     def test_prepared_baseline_suite_and_cli_artifacts(self):
         env = dict(os.environ)
