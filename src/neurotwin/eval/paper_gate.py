@@ -158,7 +158,19 @@ def _records_from_container(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, dict):
         if "seed" in value:
             return [value]
-        return [item for item in value.values() if isinstance(item, dict)]
+        records = []
+        for key, item in value.items():
+            if not isinstance(item, dict):
+                continue
+            if "seed" in item:
+                records.append(item)
+                continue
+            seed = _coerce_seed(key)
+            if seed is None:
+                records.append(item)
+            else:
+                records.append({"seed": seed, **item})
+        return records
     return []
 
 
@@ -186,12 +198,6 @@ def _coerce_seed(value: Any) -> int | None:
 def _has_result_evidence(record: dict[str, Any]) -> bool:
     if _has_test_ci_evidence(record):
         return True
-    aggregate = record.get("aggregate")
-    if isinstance(aggregate, dict) and isinstance(aggregate.get("aggregate_rank"), list) and aggregate["aggregate_rank"]:
-        return True
-    ranking = record.get("ranking")
-    if isinstance(ranking, list) and ranking:
-        return True
     metrics = record.get("metrics")
     if isinstance(metrics, dict) and _has_report_metric_ci_evidence(metrics):
         return True
@@ -200,6 +206,8 @@ def _has_result_evidence(record: dict[str, Any]) -> bool:
         for metrics in metrics_by_model.values():
             if isinstance(metrics, dict) and _has_report_metric_ci_evidence(metrics):
                 return True
+    if _has_ranked_metric_ci_evidence(record):
+        return True
     tasks = record.get("tasks")
     if isinstance(tasks, dict):
         for task_result in tasks.values():
@@ -213,6 +221,21 @@ def _has_result_evidence(record: dict[str, Any]) -> bool:
     baseline_suite = record.get("baseline_suite")
     if isinstance(baseline_suite, dict) and _has_result_evidence(baseline_suite):
         return True
+    return False
+
+
+def _has_ranked_metric_ci_evidence(record: dict[str, Any]) -> bool:
+    ranking = record.get("ranking")
+    metrics_by_model = record.get("metrics_by_model")
+    if not isinstance(ranking, list) or not ranking or not isinstance(metrics_by_model, dict):
+        return False
+    for row in ranking:
+        if not isinstance(row, dict):
+            continue
+        model_id = row.get("model_id")
+        metrics = metrics_by_model.get(model_id)
+        if isinstance(metrics, dict) and _has_finite_ci(metrics, "mse"):
+            return True
     return False
 
 

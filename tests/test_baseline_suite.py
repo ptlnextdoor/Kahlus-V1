@@ -108,21 +108,30 @@ class BaselineSuiteTests(unittest.TestCase):
         ]
         invalid_seed_report = validate_paper_mode_payload(invalid_seed_payload, audit_report={"passed": True})
         self.assertFalse(invalid_seed_report.passed)
+        self.assertNotIn(1, invalid_seed_report.observed_seeds)
         self.assertNotIn(2, invalid_seed_report.observed_seeds)
         self.assertTrue(any("seed 2:future_state_forecasting:metrics:mse lacks finite CI" in violation for violation in invalid_seed_report.violations))
 
-        payload["seed_results"] = [
-            {"seed": 1, "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]}},
-            {
-                "seed": 2,
+        payload["seed_results"] = {
+            "1": {
+                "task_results": [
+                    {
+                        "task_id": "future_state_forecasting",
+                        "test_mse": 0.31,
+                        "test_mse_ci_low": 0.25,
+                        "test_mse_ci_high": 0.37,
+                    }
+                ]
+            },
+            "2": {
                 "tasks": {
                     "future_state_forecasting": {
                         "status": "completed",
                         "metrics": {"mse": 0.42, "mse_ci_low": 0.35, "mse_ci_high": 0.50},
                     }
-                },
+                }
             },
-        ]
+        }
         passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
         self.assertTrue(passed_report.passed)
         self.assertEqual(passed_report.observed_seeds, (0, 1, 2))
