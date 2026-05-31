@@ -88,8 +88,18 @@ class BaselineSuiteTests(unittest.TestCase):
             validate_paper_mode_payload(payload, audit_report={"passed": True}, required_seeds=(0,))  # type: ignore[call-arg]
 
         payload["paper_mode_contract"] = {"observed_seeds": [0, 1, 2]}
+        metadata_only_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
+        self.assertFalse(metadata_only_report.passed)
+        self.assertEqual(metadata_only_report.observed_seeds, (0,))
+        self.assertTrue(any("missing 1,2" in violation for violation in metadata_only_report.violations))
+
+        payload["seed_results"] = [
+            {"seed": 1, "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]}},
+            {"seed": 2, "tasks": {"future_state_forecasting": {"status": "completed"}}},
+        ]
         passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
         self.assertTrue(passed_report.passed)
+        self.assertEqual(passed_report.observed_seeds, (0, 1, 2))
 
         failed_audit_report = validate_paper_mode_payload(payload, audit_report={"passed": False, "violations": ["leakage"]})
         self.assertFalse(failed_audit_report.passed)
@@ -108,6 +118,25 @@ class BaselineSuiteTests(unittest.TestCase):
         no_ci_report = validate_paper_mode_payload(no_ci, audit_report={"passed": True})
         self.assertFalse(no_ci_report.passed)
         self.assertTrue(any("lacks finite mse CI" in violation for violation in no_ci_report.violations))
+
+        auxiliary_no_ci = json.loads(json.dumps(payload))
+        auxiliary_no_ci["tasks"]["few_shot_subject_adaptation"] = {
+            "status": "completed",
+            "metrics": {"adapted_mse": 0.25, "support_minutes": 1.0},
+        }
+        auxiliary_no_ci_report = validate_paper_mode_payload(auxiliary_no_ci, audit_report={"passed": True})
+        self.assertFalse(auxiliary_no_ci_report.passed)
+        self.assertTrue(
+            any(
+                "few_shot_subject_adaptation:metrics:adapted_mse lacks finite CI" in violation
+                for violation in auxiliary_no_ci_report.violations
+            )
+        )
+
+        auxiliary_no_ci["tasks"]["few_shot_subject_adaptation"]["metrics"]["adapted_mse_ci_low"] = 0.20
+        auxiliary_no_ci["tasks"]["few_shot_subject_adaptation"]["metrics"]["adapted_mse_ci_high"] = 0.30
+        auxiliary_ci_report = validate_paper_mode_payload(auxiliary_no_ci, audit_report={"passed": True})
+        self.assertTrue(auxiliary_ci_report.passed)
 
         top_level_no_ci = json.loads(json.dumps(payload))
         top_level_no_ci["test_mse"] = 0.12

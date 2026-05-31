@@ -7,6 +7,9 @@ import numpy as np
 
 
 CANONICAL_REQUIRED_SEEDS = (0, 1, 2)
+CONCRETE_SEED_CONTAINER_KEYS = ("runs", "seed_results", "per_seed_results", "baseline_runs", "per_seed_baselines")
+RESULT_EVIDENCE_KEYS = ("aggregate", "tasks", "task_results", "metrics_by_model", "metrics", "ranking", "baseline_suite")
+REPORT_METRIC_TOKENS = ("mse", "mae", "pearsonr", "spearmanr", "r2", "error", "gain", "accuracy", "recall")
 
 
 @dataclass(frozen=True)
@@ -127,35 +130,73 @@ def _aggregate_rank(payload: dict[str, Any]) -> list[Any]:
 
 def _observed_seeds(payload: dict[str, Any]) -> tuple[int, ...]:
     seeds: set[int] = set()
-    _add_seed_values(seeds, payload.get("seeds"))
-    _add_seed_values(seeds, payload.get("seed"))
-    for key in ("benchmark_contract", "paper_mode_contract", "paper_mode", "seed_summary"):
-        section = payload.get(key)
-        if isinstance(section, dict):
-            _add_seed_values(seeds, section.get("seeds"))
-            _add_seed_values(seeds, section.get("observed_seeds"))
-    runs = payload.get("runs")
-    if isinstance(runs, list):
-        for run in runs:
-            if isinstance(run, dict):
-                _add_seed_values(seeds, run.get("seed"))
+    _add_concrete_seed_record(seeds, payload)
+    for record in _iter_concrete_seed_records(payload):
+        _add_concrete_seed_record(seeds, record)
     return tuple(sorted(seeds))
 
 
-def _add_seed_values(seeds: set[int], value: Any) -> None:
+def _iter_concrete_seed_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for key in CONCRETE_SEED_CONTAINER_KEYS:
+        records.extend(_records_from_container(payload.get(key)))
+    tasks = payload.get("tasks")
+    if isinstance(tasks, dict):
+        for task_result in tasks.values():
+            if isinstance(task_result, dict):
+                for key in CONCRETE_SEED_CONTAINER_KEYS:
+                    records.extend(_records_from_container(task_result.get(key)))
+    aggregate = payload.get("aggregate")
+    if isinstance(aggregate, dict):
+        for key in CONCRETE_SEED_CONTAINER_KEYS:
+            records.extend(_records_from_container(aggregate.get(key)))
+    return records
+
+
+def _records_from_container(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if isinstance(value, dict):
+        if "seed" in value:
+            return [value]
+        return [item for item in value.values() if isinstance(item, dict)]
+    return []
+
+
+def _add_concrete_seed_record(seeds: set[int], record: dict[str, Any]) -> None:
+    if not _has_result_evidence(record):
+        return
+    seed = _coerce_seed(record.get("seed"))
+    if seed is not None:
+        seeds.add(seed)
+
+
+def _coerce_seed(value: Any) -> int | None:
     if isinstance(value, bool):
-        return
+        return None
     if isinstance(value, int):
-        seeds.add(int(value))
-        return
+        return int(value)
     if isinstance(value, str):
         try:
-            seeds.add(int(value))
+            return int(value)
         except ValueError:
-            return
-    if isinstance(value, (list, tuple, set)):
-        for item in value:
-            _add_seed_values(seeds, item)
+            return None
+    return None
+
+
+def _has_result_evidence(record: dict[str, Any]) -> bool:
+    for key in RESULT_EVIDENCE_KEYS:
+        value = record.get(key)
+        if isinstance(value, dict) and value:
+            if key == "aggregate":
+                ranking = value.get("aggregate_rank")
+                if isinstance(ranking, list) and ranking:
+                    return True
+                continue
+            return True
+        if isinstance(value, list) and value:
+            return True
+    return False
 
 
 def _ci_violations(payload: dict[str, Any]) -> list[str]:
@@ -166,6 +207,9 @@ def _ci_violations(payload: dict[str, Any]) -> list[str]:
         for task_id, result in sorted(tasks.items()):
             if not isinstance(result, dict):
                 continue
+            metrics = result.get("metrics")
+            if isinstance(metrics, dict):
+                violations.extend(_report_metric_ci_violations(metrics, f"{task_id}:metrics"))
             ranking = result.get("ranking")
             if not isinstance(ranking, list) or not ranking:
                 continue
@@ -204,12 +248,31 @@ def _test_ci_violations(row: dict[str, Any], label: str) -> list[str]:
     return violations
 
 
+def _report_metric_ci_violations(metrics: dict[str, Any], label: str) -> list[str]:
+    violations: list[str] = []
+    for key, value in sorted(metrics.items()):
+        if not _is_report_metric_key(key, value):
+            continue
+        if not _has_finite_ci(metrics, key):
+            violations.append(f"{label}:{key} lacks finite CI summary")
+    return violations
+
+
 def _is_test_metric_key(key: str, value: Any) -> bool:
     return (
         key.startswith("test_")
         and not key.endswith(("_ci_low", "_ci_high"))
         and isinstance(value, (int, float, np.floating))
         and not isinstance(value, bool)
+    )
+
+
+def _is_report_metric_key(key: str, value: Any) -> bool:
+    return (
+        not key.endswith(("_ci_low", "_ci_high"))
+        and isinstance(value, (int, float, np.floating))
+        and not isinstance(value, bool)
+        and any(token in key for token in REPORT_METRIC_TOKENS)
     )
 
 

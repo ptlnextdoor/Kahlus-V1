@@ -674,7 +674,6 @@ def _cmd_eval(args: argparse.Namespace) -> None:
                     write_json(out_dir / "paper_mode_gate.json", gate.to_dict())
                 print(format_prepared_eval_audit(audit))
                 print(format_prepared_baseline_report(payload))
-                print(format_paper_mode_gate(gate))
                 if not gate.passed:
                     raise SystemExit(1)
                 return
