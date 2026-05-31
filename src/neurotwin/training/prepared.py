@@ -204,7 +204,7 @@ def run_prepared_training(
         world_size=dist_info.world_size,
         train_samples=int(sum(int(task_result["train_samples"]) for task_result in task_results)),
         test_samples=int(sum(int(task_result["test_samples"]) for task_result in task_results)),
-        synthetic_only=summary.get("schema") == "neurotwin.event_manifest.v1" and _all_synthetic(batches),
+        synthetic_only=_is_synthetic_manifest(summary, batches),
         skipped_tasks=tuple(skipped),
         event_summary=summary,
         task_results=tuple(task_results),
@@ -263,6 +263,13 @@ def _select_tasks(tasks: tuple[Any, ...], requested: str) -> tuple[Any, ...]:
 
 def _all_synthetic(batches: list[Any]) -> bool:
     return bool(batches) and all(bool(batch.metadata.get("synthetic")) for batch in batches)
+
+
+def _is_synthetic_manifest(summary: dict[str, Any], batches: list[Any]) -> bool:
+    return str(summary.get("schema")) in {
+        "neurotwin.event_manifest.v1",
+        "neurotwin.event_manifest.v2",
+    } and _all_synthetic(batches)
 
 
 def _write_metrics_csv(path: str | Path, result: PreparedTrainingResult) -> Path:
