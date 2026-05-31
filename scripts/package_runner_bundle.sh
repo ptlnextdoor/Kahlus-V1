@@ -38,7 +38,9 @@ ARCHIVE_PATHS=(
   scripts/run_full.sh
   scripts/run_full.sbatch
   scripts/train_a100_inner.sh
+  scripts/package_a100_evidence_bundle.sh
   scripts/slurm/_train_a100_inner.sh
+  scripts/slurm/train_a100.sh
   scripts/prepare_moabb_benchmark.sh
   scripts/lib/moabb_prepare_common.sh
   scripts/package_runner_bundle.sh

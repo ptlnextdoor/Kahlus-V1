@@ -12,7 +12,7 @@ class ResearchArtifactTests(unittest.TestCase):
     def _copy_repo_to_temp_git(self, tmp: str) -> Path:
         repo_root = Path.cwd()
         files = subprocess.run(
-            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+            ["git", "ls-files", "--cached"],
             text=True,
             capture_output=True,
             check=True,
@@ -61,12 +61,14 @@ class ResearchArtifactTests(unittest.TestCase):
             "pyproject.toml",
             "requirements/cluster-a100.txt",
             "scripts/lib/moabb_prepare_common.sh",
+            "scripts/package_a100_evidence_bundle.sh",
             "scripts/package_runner_bundle.sh",
             "scripts/prepare_moabb_benchmark.sh",
             "scripts/run_full.sbatch",
             "scripts/run_full.sh",
             "scripts/run_smoke.sh",
             "scripts/slurm/_train_a100_inner.sh",
+            "scripts/slurm/train_a100.sh",
             "scripts/train_a100_inner.sh",
             "src/neurotwin/data/__init__.py",
             "src/neurotwin/data/windows.py",
@@ -86,12 +88,15 @@ class ResearchArtifactTests(unittest.TestCase):
             "runs",
             "tests",
         }
-        forbidden_suffixes = (".ckpt", ".npy", ".npz", ".pt", ".pth", ".pyc")
+        forbidden_names = {"pw.txt", ".env"}
+        forbidden_suffixes = (".ckpt", ".npy", ".npz", ".pt", ".pth", ".pyc", ".pem", ".key")
         for name in names:
             rel = name.split("/", 1)[1] if "/" in name else ""
             parts = Path(rel).parts
             self.assertFalse(any(part.startswith("._") for part in parts), name)
             self.assertFalse(forbidden_parts.intersection(parts), name)
+            self.assertFalse(any(part.lower().startswith(".env.") for part in parts), name)
+            self.assertFalse(forbidden_names.intersection(parts), name)
             self.assertFalse(rel.startswith("docs/paper/"), name)
             self.assertFalse(rel.startswith("docs/research/"), name)
             self.assertFalse(rel.endswith(forbidden_suffixes), name)
@@ -140,6 +145,7 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/run_smoke.sh",
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
+            "scripts/package_a100_evidence_bundle.sh",
             "scripts/package_run_bundle.sh",
             "scripts/package_a100_handoff_zip.sh",
             "scripts/package_runner_bundle.sh",
@@ -227,6 +233,8 @@ class ResearchArtifactTests(unittest.TestCase):
 
         self.assertIn("Refusing to run the generic placeholder config", train)
         self.assertIn("_train_a100_inner.sh", train)
+        self.assertIn("#SBATCH --ntasks-per-node=6", train)
+        self.assertIn("#SBATCH --gres=gpu:a100:6", train)
         self.assertIn("cluster preflight", inner)
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
@@ -245,6 +253,11 @@ class ResearchArtifactTests(unittest.TestCase):
             "sha256sum -c SHA256SUMS",
             "conda env create -f environment-a100.yml",
             "python -m pip install -e '.[moabb,cluster]'",
+            "Docker Fallback",
+            "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
+            '--gpus "device=<gpu_id>"',
+            "/workspace/repo",
+            "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
             "neurotwin-a100-runner-<short_sha>.tar.gz",
@@ -253,10 +266,18 @@ class ResearchArtifactTests(unittest.TestCase):
             "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
+            "python -m neurotwin.cli eval audit",
+            "python -m neurotwin.cli cluster materialize-config",
+            "python -m neurotwin.cli cluster preflight",
+            "torchrun --standalone --nproc_per_node=1",
+            "python -m neurotwin.cli report",
+            "bash scripts/package_a100_evidence_bundle.sh",
+            "MOABB task labels are intentionally not persisted",
             "1x A100 80GB",
             "128G",
             "MOABB `BNCI2014_001`",
             "Expected Full Outputs",
+            "Known Limitations",
             "Success Condition",
             "Resume And Safe Rerun",
         ):
@@ -391,6 +412,19 @@ class ResearchArtifactTests(unittest.TestCase):
                 "conda env create -f environment-a100.yml",
                 "bash scripts/run_smoke.sh outputs/smoke",
                 "bash scripts/run_full.sh /path/to/shared/persistent/neurotwin",
+                "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
+                '--gpus "device=<gpu_id>"',
+                "/workspace/repo",
+                "/raid/scratch/$USER/neurotwin-",
+                "python -m neurotwin.cli eval audit",
+                "python -m neurotwin.cli cluster materialize-config",
+                "python -m neurotwin.cli cluster preflight",
+                "torchrun --standalone --nproc_per_node=1",
+                "python -m neurotwin.cli report",
+                "Expected Outputs",
+                "Known Limitations",
+                "bash scripts/package_a100_evidence_bundle.sh",
+                "MOABB task labels are intentionally removed",
             ):
                 self.assertIn(required, readme)
             for forbidden in (
@@ -409,6 +443,100 @@ class ResearchArtifactTests(unittest.TestCase):
             )
             self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
             self._assert_runner_archive(handoff_root / f"{runner_name}.tar.gz", Path(tmp) / "nested")
+
+    def test_package_a100_evidence_bundle_excludes_checkpoints_and_secrets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            persistent = root / "persistent"
+            run = persistent / "runs" / "moabb_a100_smoke"
+            prepared = persistent / "prepared" / "moabb_benchmark"
+            logs = persistent / "logs"
+            (run / "tables").mkdir(parents=True)
+            (run / "figures").mkdir(parents=True)
+            prepared.mkdir(parents=True)
+            logs.mkdir(parents=True)
+            for rel, body in {
+                run / "summary.json": '{"status":"completed_prepared_training","completed_steps":50,"real_data_smoke":true,"scientific_claim_allowed":false}\n',
+                run / "metrics.json": "{}\n",
+                run / "metrics.csv": "metric,value\n",
+                run / "metrics.jsonl": "{}\n",
+                run / "config.yaml": "experiment: moabb_a100_smoke\n",
+                run / "environment.json": "{}\n",
+                run / "split_manifest.json": "{}\n",
+                run / "tables" / "metrics_flat.csv": "metric,value\n",
+                run / "figures" / "metric_summary.json": "{}\n",
+                prepared / "eval_audit.json": '{"passed":true}\n',
+                prepared / "data_manifest.json": "{}\n",
+                prepared / "event_manifest.json": "{}\n",
+                prepared / "split_manifest.json": "{}\n",
+                prepared / "leakage_report.json": "{}\n",
+                logs / "neurotwin-a100-full-1.out": "ok\n",
+                logs / "neurotwin-a100-full-1.err": "\n",
+            }.items():
+                rel.write_text(body, encoding="utf-8")
+            (run / "checkpoint.pt").write_bytes(b"checkpoint")
+            (run / "checkpoint_best.pt").write_bytes(b"checkpoint")
+            (prepared / "events").mkdir()
+            (prepared / "events" / "raw_event.npz").write_bytes(b"raw")
+            (logs / "pw.txt").write_text("secret\n", encoding="utf-8")
+            (logs / ".env").write_text("TOKEN=secret\n", encoding="utf-8")
+            (logs / "ssh.key").write_text("secret\n", encoding="utf-8")
+            (logs / "runner.tar.gz").write_bytes(b"runner")
+
+            result = subprocess.run(
+                ["bash", "scripts/package_a100_evidence_bundle.sh", str(persistent), str(root / "out")],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            zips = sorted((root / "out").glob("neurotwin-a100-results-*-evidence.zip"))
+            self.assertEqual(len(zips), 1)
+            with zipfile.ZipFile(zips[0], "r") as archive:
+                names = set(archive.namelist())
+                extract_root = root / "evidence"
+                archive.extractall(extract_root)
+
+            roots = {name.split("/", 1)[0] for name in names if name}
+            self.assertEqual(len(roots), 1)
+            evidence_root = extract_root / roots.pop()
+            required = {
+                "COMMIT_HASH.txt",
+                "README_HANDOFF.md",
+                "README_SEND_TO_FRIEND.md",
+                "handoff-SHA256SUMS",
+                "run/summary.json",
+                "run/metrics.json",
+                "run/metrics.csv",
+                "run/metrics.jsonl",
+                "run/config.yaml",
+                "run/environment.json",
+                "run/split_manifest.json",
+                "run/tables/metrics_flat.csv",
+                "run/figures/metric_summary.json",
+                "prepared/eval_audit.json",
+                "prepared/data_manifest.json",
+                "prepared/event_manifest.json",
+                "prepared/split_manifest.json",
+                "prepared/leakage_report.json",
+                "logs/neurotwin-a100-full-1.out",
+                "logs/neurotwin-a100-full-1.err",
+            }
+            rel_names = {name.split("/", 1)[1] for name in names}
+            for rel in required:
+                self.assertIn(rel, rel_names)
+            for rel in rel_names:
+                self.assertFalse(rel.endswith((".pt", ".npz", ".tar.gz", ".zip", ".pem", ".key")), rel)
+                self.assertNotIn("pw.txt", rel)
+                self.assertNotIn(".env", rel)
+
+            checksum = subprocess.run(
+                ["shasum", "-a", "256", "-c", "handoff-SHA256SUMS"],
+                cwd=evidence_root,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
 
     def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
         env = dict(os.environ)

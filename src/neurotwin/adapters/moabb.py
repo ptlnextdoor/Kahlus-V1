@@ -156,7 +156,6 @@ def trials_to_recordings(trials: Iterable[dict[str, Any]] | None, dataset_id: st
                     "source_record_id": record_id,
                     "adapter": "moabb",
                     "run_id": run_id,
-                    "task_label": trial.get("label"),
                     "sampling_rate": sampling_rate,
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
@@ -187,7 +186,7 @@ def trials_to_event_batches(trials: Iterable[dict[str, Any]], dataset_id: str, s
                 signal=signal,
                 mask=np.ones_like(signal, dtype=bool),
                 stimulus_embedding=None,
-                behavior={"label": trial.get("label")},
+                behavior={},
                 space_index=np.arange(n_space),
                 provenance={"adapter": "moabb", "record_index": idx},
                 metadata={
@@ -197,7 +196,6 @@ def trials_to_event_batches(trials: Iterable[dict[str, Any]], dataset_id: str, s
                     "sampling_rate": sampling_rate,
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
-                    "task_label": trial.get("label"),
                 },
             )
         )

@@ -6,6 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
+from neurotwin.adapters.moabb import trials_to_event_batches, trials_to_recordings
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
@@ -87,6 +90,47 @@ class PreparedEvalAuditTests(unittest.TestCase):
 
             self.assertTrue(report.passed)
             self.assertGreater(report.window_count, 0)
+            for split_name in ("train", "val", "test"):
+                self.assertGreater(report.window_counts_by_split[split_name], 0)
+
+    def test_moabb_prepared_metadata_passes_audit_without_sanitization(self):
+        forbidden = {"label", "target", "target_label", "task_label", "diagnosis"}
+        trials = [
+            {
+                "signal": np.ones((256, 3), dtype=np.float32) * idx,
+                "subject": str(idx),
+                "session": "0",
+                "run": "0",
+                "label": "left_hand" if idx % 2 else "right_hand",
+                "sampling_rate": 128.0,
+                "channel_names": ["C3", "Cz", "C4"],
+            }
+            for idx in range(6)
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            records = trials_to_recordings(trials, dataset_id="mock_moabb")
+            batches = trials_to_event_batches(trials, dataset_id="mock_moabb")
+            split = build_split_manifest(records, policy="subject", seed=0)
+            split_path = save_split_manifest(split, root / "split_manifest.json")
+            event_path = save_event_batches(batches, root)
+
+            for event_file in (root / "events").glob("*.npz"):
+                with np.load(event_file, allow_pickle=False) as data:
+                    metadata = json.loads(str(data["metadata_json"].item()))
+                    behavior = json.loads(str(data["behavior_json"].item()))
+                self.assertFalse(forbidden.intersection(key.lower() for key in metadata))
+                self.assertFalse(forbidden.intersection(key.lower() for key in behavior))
+
+            report = audit_prepared_eval_inputs(
+                event_path,
+                split_path,
+                window_length=128,
+                stride=128,
+                require_windows=True,
+            )
+
+            self.assertTrue(report.passed, report.violations)
             for split_name in ("train", "val", "test"):
                 self.assertGreater(report.window_counts_by_split[split_name], 0)
 

@@ -36,9 +36,19 @@ printf '%s\n' "$FULL_SHA" > "$HANDOFF_ROOT/COMMIT_HASH.txt"
 cat > "$HANDOFF_ROOT/README_HANDOFF.md" <<EOF
 # NeuroTwin A100 Handoff
 
+Commit: \`$FULL_SHA\`
+
 This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access.
 
 This is minimal practical code visibility, not cryptographic source secrecy. The runner excludes git history, tests, research notes, paper drafts, raw data, prepared arrays, checkpoints, caches, local outputs, and secrets, but the Python runtime source needed to execute the job is present inside the runner tarball.
+
+## Purpose
+
+This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained briefly on one A100, and reported from a persistent Chapman root.
+
+## Not A Claim
+
+This is not a scientific result, not a model-superiority claim, not a 3-seed paper-mode report, and not a clinical claim. The expected \`summary.json\` keeps \`scientific_claim_allowed=false\`.
 
 ## Files
 
@@ -77,6 +87,8 @@ The Pi is a transfer bridge only. Do not run Python training or submit Slurm job
 
 ## Run On Chapman
 
+Preferred \`conda\` + \`sbatch\` path:
+
 \`\`\`bash
 mkdir -p ~/neurotwin-a100
 tar -xzf ~/$RUNNER_NAME.tar.gz -C ~/neurotwin-a100
@@ -93,9 +105,115 @@ mkdir -p /path/to/shared/persistent/neurotwin
 bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 \`\`\`
 
+Cluster verification inside the extracted runner is:
+
+\`\`\`bash
+sha256sum -c SHA256SUMS
+\`\`\`
+
 The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
 
-This first full run is an A100 infrastructure validation only. Do not interpret model quality from it.
+## Docker Fallback
+
+Use this only if Chapman access has Docker with NVIDIA GPU support but no usable \`conda\` or \`sbatch\`. Replace \`<gpu_id>\` with the visible GPU index:
+
+\`\`\`bash
+export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
+mkdir -p "\$PERSISTENT_ROOT"
+docker run --rm -it --gpus "device=<gpu_id>" \\
+  -v "\$PWD":/workspace/repo \\
+  -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
+  -w /workspace/repo \\
+  -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
+  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+\`\`\`
+
+Inside the container:
+
+\`\`\`bash
+python -m pip install -e '.[moabb,cluster]'
+bash scripts/run_smoke.sh outputs/smoke
+bash scripts/prepare_moabb_benchmark.sh "\$PERSISTENT_ROOT/prepared/moabb_benchmark"
+python -m neurotwin.cli eval audit \\
+  --suite neural_translation_v1 \\
+  --event-manifest "\$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \\
+  --split-manifest "\$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \\
+  --window-length 128 \\
+  --stride 128 \\
+  --out-dir "\$PERSISTENT_ROOT/prepared/moabb_benchmark" \\
+  --require-windows
+python -m neurotwin.cli cluster materialize-config \\
+  --template configs/train/moabb_a100_smoke.yaml \\
+  --prepared-root "\$PERSISTENT_ROOT/prepared/moabb_benchmark" \\
+  --out outputs/configs/moabb_a100.materialized.yaml
+python -m neurotwin.cli cluster preflight \\
+  --config outputs/configs/moabb_a100.materialized.yaml \\
+  --run-root "\$PERSISTENT_ROOT/runs" \\
+  --require-cuda \\
+  --require-prepared-windows \\
+  --expect-window-count 18144 \\
+  --expect-split-windows train:12096,val:2016,test:4032
+torchrun --standalone --nproc_per_node=1 \\
+  -m neurotwin.cli train \\
+  --config outputs/configs/moabb_a100.materialized.yaml \\
+  --run-root "\$PERSISTENT_ROOT/runs"
+python -m neurotwin.cli report --run-dir "\$PERSISTENT_ROOT/runs/moabb_a100_smoke"
+\`\`\`
+
+## Expected Outputs
+
+Prepared artifacts:
+
+\`\`\`text
+\$PERSISTENT_ROOT/prepared/moabb_benchmark/eval_audit.json
+\$PERSISTENT_ROOT/prepared/moabb_benchmark/data_manifest.json
+\$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json
+\$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json
+\$PERSISTENT_ROOT/prepared/moabb_benchmark/leakage_report.json
+\`\`\`
+
+Run artifacts:
+
+\`\`\`text
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/config.yaml
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/environment.json
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint.pt
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint_best.pt
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.json
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.csv
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.jsonl
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
+\$PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
+\`\`\`
+
+Expected audit gate:
+
+\`\`\`text
+eval_audit_passed=True
+window_count=18144
+window_counts_by_split=train:12096,val:2016,test:4032
+\`\`\`
+
+## Send Back Evidence
+
+After the run, package only reviewable outputs:
+
+\`\`\`bash
+bash scripts/package_a100_evidence_bundle.sh "\$PERSISTENT_ROOT" outputs
+\`\`\`
+
+This excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, \`.env*\` files, and private keys.
+
+## Known Limitations
+
+- Docker fallback is one-GPU infrastructure validation only.
+- MOABB preparation may need internet unless the cache is already populated.
+- The short full run is expected to report \`completed_steps=50\`, \`real_data_smoke=true\`, and \`scientific_claim_allowed=false\`.
+- MOABB task labels are intentionally removed from prepared event metadata before persistence; forbidden model-visible event metadata fields are \`label\`, \`target\`, \`target_label\`, \`task_label\`, and \`diagnosis\`.
+
+Do not interpret model quality from this first full run.
 EOF
 
 (

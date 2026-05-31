@@ -26,7 +26,7 @@ class AuditReport:
 def audit_split_manifest(
     manifest: SplitManifest,
     policy: str,
-    forbidden_metadata_fields: tuple[str, ...] = ("label", "target", "target_label", "diagnosis"),
+    forbidden_metadata_fields: tuple[str, ...] = ("label", "target", "target_label", "task_label", "diagnosis"),
 ) -> AuditReport:
     violations: list[str] = []
     checked: list[str] = ["record_reuse", "group_overlap", "metadata_labels", "window_overlap"]

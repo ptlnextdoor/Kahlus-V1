@@ -4,6 +4,12 @@ This runner executes one controlled NeuroTwin MOABB infrastructure validation on
 
 This is not a scientific result and not the 3-seed acceptance run.
 
+## Purpose And Non-Purpose
+
+Purpose: prove that this exact commit can run the codeless A100 path end to end on Chapman infrastructure, including checksum verification, environment install, MOABB preparation, eval audit, cluster preflight, one short prepared training run, and report generation.
+
+Non-purpose: this package does not prove model superiority, paper readiness, clinical utility, or a 3-seed scientific result. It also does not hide source cryptographically; it is a practical runner bundle with the Python source required for execution.
+
 ## Operator Workflow
 
 Run these commands on the Chapman login node after the runner tarball has been transferred there:
@@ -42,6 +48,8 @@ All commands after unpacking run on the Chapman login node, not on a laptop or R
 ## Bundle Contents
 
 The runner includes `COMMIT_HASH.txt`, `BUNDLE_MANIFEST.txt`, and `SHA256SUMS` so the transfer can be checked before execution. The runner contains the Python runtime source needed to execute on Chapman. It does not include git history, tests, paper drafts, research notes, graph output, raw data, prepared arrays, checkpoints, caches, local outputs, or `.context/`.
+
+MOABB task labels are intentionally not persisted in prepared event metadata. The forbidden model-visible event metadata fields are `label`, `target`, `target_label`, `task_label`, and `diagnosis`; the prepared eval audit must pass without a post-hoc sanitize step.
 
 ## Raspberry Pi Handoff Path
 
@@ -84,6 +92,56 @@ Pip fallback when the cluster already provides CUDA-enabled PyTorch:
 python -m pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
 python -m pip install -e '.[moabb,cluster]'
 python -m pip install -r requirements/cluster-a100.txt
+```
+
+## Docker Fallback
+
+Use this when the machine has Docker with NVIDIA GPU support but does not have `conda` or `sbatch`. This fallback is for 1-GPU infrastructure validation, not scientific claims. Replace `<gpu_id>` with the visible GPU index.
+
+On the host:
+
+```bash
+export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
+mkdir -p "$PERSISTENT_ROOT"
+docker run --rm -it --gpus "device=<gpu_id>" \
+  -v "$PWD":/workspace/repo \
+  -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
+  -w /workspace/repo \
+  -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
+  -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+```
+
+Inside the container:
+
+```bash
+python -m pip install -e '.[moabb,cluster]'
+bash scripts/run_smoke.sh outputs/smoke
+bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
+python -m neurotwin.cli eval audit \
+  --suite neural_translation_v1 \
+  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
+  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
+  --window-length 128 \
+  --stride 128 \
+  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --require-windows
+python -m neurotwin.cli cluster materialize-config \
+  --template configs/train/moabb_a100_smoke.yaml \
+  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --out outputs/configs/moabb_a100.materialized.yaml
+python -m neurotwin.cli cluster preflight \
+  --config outputs/configs/moabb_a100.materialized.yaml \
+  --run-root "$PERSISTENT_ROOT/runs" \
+  --require-cuda \
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+torchrun --standalone --nproc_per_node=1 \
+  -m neurotwin.cli train \
+  --config outputs/configs/moabb_a100.materialized.yaml \
+  --run-root "$PERSISTENT_ROOT/runs"
+python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
 ```
 
 ## Tiny Smoke Test
@@ -179,6 +237,18 @@ bash scripts/run_full.sh /absolute/shared/persistent/neurotwin
 
 The scripts pass these values to `sbatch` as command-line flags. They are not embedded in `#SBATCH` lines.
 
+## Heavy 6-GPU Follow-Up
+
+Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms six A100s are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
+
+```bash
+export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
+export RUN_ROOT="$NEUROTWIN_DATA/runs"
+RUN_ROOT="$RUN_ROOT" \
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
+  scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
+```
+
 ## Data And Internet
 
 Dataset: MOABB `BNCI2014_001` with `LeftRightImagery`.
@@ -225,6 +295,23 @@ $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.err
 ```
 
 If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` directory first.
+
+## Send Back Evidence
+
+After a run, create the small review bundle from the same extracted runner:
+
+```bash
+bash scripts/package_a100_evidence_bundle.sh "$NEUROTWIN_DATA" outputs
+```
+
+The evidence zip includes summaries, metrics, tables, figures, prepared manifests/audits, logs, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It excludes `checkpoint*.pt`, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, `.env*` files, and private keys.
+
+## Known Limitations
+
+- Docker fallback does not submit Slurm and only validates a single visible GPU.
+- MOABB data preparation may need internet or a populated MOABB cache.
+- The first full run is configured for 50 smoke steps and `scientific_claim_allowed=false`.
+- Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates.
 
 ## Success Condition
 
