@@ -19,6 +19,9 @@ from neurotwin.eval.paper_gate import format_paper_mode_gate, validate_paper_mod
 from neurotwin.repro import write_json
 
 
+MANIFEST_PAIR_ERROR = "--event-manifest and --split-manifest must be provided together"
+
+
 @dataclass(frozen=True)
 class EvalCommandConfig:
     eval_command: str | None = None
@@ -60,12 +63,13 @@ def run_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
 
 def _run_audit_command(config: EvalCommandConfig) -> EvalCommandResult:
     if config.event_manifest or config.split_manifest:
-        manifest_error = _manifest_pair_error(config)
-        if manifest_error:
-            return EvalCommandResult(output="", exit_code=1, error=manifest_error)
+        manifest_paths = _manifest_paths(config)
+        if manifest_paths is None:
+            return EvalCommandResult(output="", exit_code=1, error=MANIFEST_PAIR_ERROR)
+        event_manifest, split_manifest = manifest_paths
         report = audit_prepared_eval_inputs(
-            config.event_manifest,  # type: ignore[arg-type]
-            config.split_manifest,  # type: ignore[arg-type]
+            event_manifest,
+            split_manifest,
             window_length=config.window_length,
             stride=config.stride,
             out_dir=config.out_dir,
@@ -95,15 +99,16 @@ def _run_neural_translation_v1_command(config: EvalCommandConfig) -> EvalCommand
 
 
 def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
-    manifest_error = _manifest_pair_error(config)
-    if manifest_error:
-        return EvalCommandResult(output="", exit_code=1, error=manifest_error)
+    manifest_paths = _manifest_paths(config)
+    if manifest_paths is None:
+        return EvalCommandResult(output="", exit_code=1, error=MANIFEST_PAIR_ERROR)
+    event_manifest, split_manifest = manifest_paths
 
     audit = None
     if config.paper_mode:
         audit = audit_prepared_eval_inputs(
-            config.event_manifest,  # type: ignore[arg-type]
-            config.split_manifest,  # type: ignore[arg-type]
+            event_manifest,
+            split_manifest,
             window_length=config.window_length,
             stride=config.stride,
             out_dir=config.out_dir,
@@ -136,7 +141,12 @@ def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
             )
         if config.seeds:
             payload = run_prepared_baseline_suite_multi_seed(
-                _prepared_suite_config(config, seed=config.seeds[0]),
+                _prepared_suite_config(
+                    config,
+                    seed=config.seeds[0],
+                    event_manifest=event_manifest,
+                    split_manifest=split_manifest,
+                ),
                 seeds=config.seeds,
                 out_dir=config.out_dir,
             )
@@ -149,7 +159,12 @@ def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
             )
 
     payload = run_prepared_baseline_suite(
-        _prepared_suite_config(config, seed=config.seed),
+        _prepared_suite_config(
+            config,
+            seed=config.seed,
+            event_manifest=event_manifest,
+            split_manifest=split_manifest,
+        ),
         out_dir=config.out_dir,
     )
     if config.paper_mode:
@@ -192,10 +207,15 @@ def _run_translation_smoke_command(config: EvalCommandConfig) -> EvalCommandResu
     return EvalCommandResult(output="\n".join(lines))
 
 
-def _prepared_suite_config(config: EvalCommandConfig, seed: int) -> PreparedSuiteConfig:
+def _prepared_suite_config(
+    config: EvalCommandConfig,
+    seed: int,
+    event_manifest: str | Path,
+    split_manifest: str | Path,
+) -> PreparedSuiteConfig:
     return PreparedSuiteConfig(
-        event_manifest=config.event_manifest,  # type: ignore[arg-type]
-        split_manifest=config.split_manifest,  # type: ignore[arg-type]
+        event_manifest=event_manifest,
+        split_manifest=split_manifest,
         window_length=config.window_length,
         stride=config.stride,
         seed=seed,
@@ -203,7 +223,7 @@ def _prepared_suite_config(config: EvalCommandConfig, seed: int) -> PreparedSuit
     )
 
 
-def _manifest_pair_error(config: EvalCommandConfig) -> str | None:
-    if not config.event_manifest or not config.split_manifest:
-        return "--event-manifest and --split-manifest must be provided together"
-    return None
+def _manifest_paths(config: EvalCommandConfig) -> tuple[str | Path, str | Path] | None:
+    if config.event_manifest is None or config.split_manifest is None:
+        return None
+    return config.event_manifest, config.split_manifest

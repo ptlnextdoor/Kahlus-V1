@@ -154,7 +154,7 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertTrue(any("missing 1,2" in violation for violation in missing_seed_report.violations))
         self.assertEqual(missing_seed_report.required_seeds, (0, 1, 2))
         with self.assertRaises(TypeError):
-            validate_paper_mode_payload(payload, audit_report={"passed": True}, required_seeds=(0,))  # type: ignore[call-arg]
+            validate_paper_mode_payload(payload, audit_report={"passed": True}, **{"required_seeds": (0,)})
 
         payload["paper_mode_contract"] = {"observed_seeds": [0, 1, 2]}
         metadata_only_report = validate_paper_mode_payload(payload, audit_report={"passed": True})

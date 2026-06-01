@@ -203,7 +203,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
                 PreparedSuiteConfig(
                     event_manifest=prep_dir / "event_manifest.json",
                     split_manifest=prep_dir / "split_manifest.json",
-                    required_seeds=(0,),  # type: ignore[call-arg]
+                    **{"required_seeds": (0,)},
                 )
 
             result = subprocess.run(

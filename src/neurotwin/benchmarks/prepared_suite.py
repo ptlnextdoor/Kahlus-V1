@@ -78,7 +78,11 @@ def run_prepared_baseline_suite(
         window_length=config.window_length,
         stride=config.stride,
     )
-    payload["tasks"].update(auxiliary_tasks)  # type: ignore[union-attr]
+    task_payloads = payload.get("tasks")
+    if isinstance(task_payloads, dict):
+        task_payloads.update(auxiliary_tasks)
+    else:
+        payload["tasks"] = dict(auxiliary_tasks)
     skipped.extend(auxiliary_skipped)
     payload["prepared_data"] = {
         "event_manifest": str(config.event_manifest),
