@@ -43,6 +43,11 @@ def audit_prepared_eval_inputs(
         "split_policy_leakage",
         "prepared_window_overlap",
         "split_coverage",
+        "duplicate_source_hashes",
+        "duplicate_preprocessing_hashes",
+        "stimulus_segment_leakage",
+        "event_metadata_target_leakage",
+        "hidden_subject_metadata",
     ]
     violations: list[str] = []
     warnings: list[str] = []
@@ -89,6 +94,7 @@ def audit_prepared_eval_inputs(
     empty_splits = [split_name for split_name, count in split_counts.items() if count == 0]
     if empty_splits:
         violations.append("prepared events absent for split(s): " + ", ".join(empty_splits))
+    violations.extend(_event_metadata_violations(batches, split_by_record))
 
     windows = _prepared_windows_by_split(batches, split_by_record, WindowSpec(length=window_length, stride=stride))
     window_counts_by_split = {split_name: len(split_windows) for split_name, split_windows in windows.items()}
@@ -174,3 +180,103 @@ def _window_overlap_violations(windows: dict[str, list[NeuralEventBatch]]) -> li
 
 def _record_id(batch: NeuralEventBatch) -> str:
     return str(batch.metadata.get("record_id") or batch.metadata.get("source_record_id"))
+
+
+def _event_metadata_violations(
+    batches: list[NeuralEventBatch],
+    split_by_record: dict[str, str],
+) -> list[str]:
+    violations: list[str] = []
+    violations.extend(_duplicate_metadata_value_violations(batches, split_by_record, "source_hash"))
+    violations.extend(_duplicate_metadata_value_violations(batches, split_by_record, "preprocessing_hash"))
+    violations.extend(_stimulus_segment_violations(batches, split_by_record))
+    violations.extend(_forbidden_event_metadata_violations(batches))
+    violations.extend(_hidden_subject_metadata_violations(batches))
+    return violations
+
+
+def _duplicate_metadata_value_violations(
+    batches: list[NeuralEventBatch],
+    split_by_record: dict[str, str],
+    field: str,
+) -> list[str]:
+    seen: dict[str, tuple[str, str]] = {}
+    violations: list[str] = []
+    for batch in batches:
+        value = getattr(batch, field)
+        if not value:
+            continue
+        split_name = split_by_record.get(_record_id(batch), "unknown")
+        previous = seen.get(value)
+        if previous is not None and previous[0] != split_name:
+            violations.append(
+                f"duplicate {field} across splits: {value} ({previous[0]}:{previous[1]} vs {split_name}:{_record_id(batch)})"
+            )
+        else:
+            seen[value] = (split_name, _record_id(batch))
+    return violations
+
+
+def _stimulus_segment_violations(
+    batches: list[NeuralEventBatch],
+    split_by_record: dict[str, str],
+) -> list[str]:
+    seen: dict[str, tuple[str, str]] = {}
+    violations: list[str] = []
+    for batch in batches:
+        key = _stimulus_segment_key(batch)
+        if key is None:
+            continue
+        split_name = split_by_record.get(_record_id(batch), "unknown")
+        previous = seen.get(key)
+        if previous is not None and previous[0] != split_name:
+            violations.append(
+                f"stimulus segment leakage across splits: {key} ({previous[0]}:{previous[1]} vs {split_name}:{_record_id(batch)})"
+            )
+        else:
+            seen[key] = (split_name, _record_id(batch))
+    return violations
+
+
+def _stimulus_segment_key(batch: NeuralEventBatch) -> str | None:
+    metadata = batch.metadata
+    for key in ("stimulus_segment_id", "stimulus_clip_id"):
+        value = metadata.get(key)
+        if value is not None:
+            return f"{key}:{value}"
+    stimulus_id = metadata.get("stimulus_id")
+    start = metadata.get("stimulus_start")
+    end = metadata.get("stimulus_end")
+    if stimulus_id is not None and start is not None and end is not None:
+        return f"stimulus_id:{stimulus_id}:{start}:{end}"
+    alignment = batch.stimulus_alignment_metadata
+    if alignment:
+        segment = alignment.get("segment_id") or alignment.get("clip_id")
+        if segment is not None:
+            return f"stimulus_alignment:{segment}"
+    return None
+
+
+def _forbidden_event_metadata_violations(batches: list[NeuralEventBatch]) -> list[str]:
+    forbidden = {"label", "target", "target_label", "task_label", "diagnosis"}
+    violations: list[str] = []
+    for batch in batches:
+        for key in batch.metadata:
+            if key.lower() in forbidden:
+                violations.append(f"forbidden event metadata field {key!r} in record {_record_id(batch)!r}")
+    return violations
+
+
+def _hidden_subject_metadata_violations(batches: list[NeuralEventBatch]) -> list[str]:
+    violations: list[str] = []
+    for batch in batches:
+        for key, value in batch.metadata.items():
+            lowered = key.lower()
+            if "subject" not in lowered and "participant" not in lowered:
+                continue
+            if lowered in {"source_subject_id"}:
+                continue
+            values = value if isinstance(value, (list, tuple, set)) else (value,)
+            if any(str(item) == batch.subject_id for item in values):
+                violations.append(f"hidden subject metadata field {key!r} in record {_record_id(batch)!r}")
+    return violations

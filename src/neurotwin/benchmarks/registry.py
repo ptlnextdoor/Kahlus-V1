@@ -23,9 +23,9 @@ def competitor_registry() -> tuple[CompetitorSpec, ...]:
             family="stimulus-to-fMRI",
             role="Primary baseline for video/audio/language -> fMRI prediction and in-silico neuroscience claims.",
             upstream_url="https://arxiv.org/abs/2605.04326",
-            license_status="paper-first; verify code/weights before reuse",
-            notes="Makes stimulus-to-brain prediction a crowded baseline, not NeuroTwin novelty.",
-            implementation_status="unavailable",
+            license_status="CC BY-NC reference; no code or weights vendored",
+            notes="Local tribe_style is a clean-room stimulus-to-fMRI approximation, not exact TRIBE v2.",
+            implementation_status="clean_room_approximation",
         ),
         CompetitorSpec(
             competitor_id="brainvista",

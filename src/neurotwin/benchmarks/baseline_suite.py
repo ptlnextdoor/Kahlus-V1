@@ -21,6 +21,7 @@ from neurotwin.eval.metrics import (
 )
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
 from neurotwin.models.torch_models import NeuralStateSpaceTranslator, TinySSMBaseline, TinyTransformerBaseline
+from neurotwin.models.tribe_style import TribeStyleStimulusEncoder
 
 
 @dataclass(frozen=True)
@@ -114,6 +115,16 @@ def run_supervised_window_tasks(
             "higher_is_better": False,
             "aggregate_rank": aggregate_rank,
         },
+        "seed": int(seed),
+        "seeds": [int(seed)],
+        "benchmark_contract": {
+            "required_seeds": [0, 1, 2],
+            "require_ci": True,
+            "notes": [
+                "Paper mode requires a passed prepared eval audit, nonempty rankings, all required seeds, and CI summaries.",
+                "Task 3 is expected to replace the single-seed payload with aggregated seed results.",
+            ],
+        },
         "baseline_catalog": _baseline_catalog(tasks),
         "baseline_failures": all_failures,
     }
@@ -189,7 +200,11 @@ def _cross_modal_task(data: dict[str, np.ndarray]) -> SupervisedWindowTask:
 
 def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) -> dict[str, object]:
     runners: dict[str, Callable[[], np.ndarray]] = {
+        "persistence": lambda: _predict_persistence(task),
+        "train_mean": lambda: _predict_train_mean(task.y_train, task.y_test.shape),
+        "random_permutation": lambda: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101),
         "linear_ridge": lambda: _fit_ridge(task.x_train, task.y_train, task.x_test),
+        "autoregressive_ridge": lambda: _fit_autoregressive_ridge(task),
         "mlp": lambda: _fit_torch_sequence_model(
             lambda: TorchMLPBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
             task,
@@ -222,6 +237,8 @@ def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) ->
         ),
         "neurotwin": lambda: _fit_neurotwin(task, seed=seed + 5, steps=train_steps),
     }
+    if task.task_id == "stimulus_to_fmri_response" and task.source_modality == "stimulus" and task.target_modality == "fmri":
+        runners["tribe_style"] = lambda: _fit_tribe_style(task, seed=seed + 6, steps=train_steps)
     predictions: dict[str, np.ndarray] = {}
     failures: list[BaselineFailure] = []
     for model_id, runner in runners.items():
@@ -267,11 +284,61 @@ def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) ->
     }
 
 
+def _predict_persistence(task: SupervisedWindowTask) -> np.ndarray:
+    x_test = np.asarray(task.x_test, dtype=np.float32)
+    if x_test.shape[1:] == task.y_test.shape[1:]:
+        return x_test.copy()
+    if x_test.ndim == 3 and task.y_test.ndim == 3 and x_test.shape[-1] == task.y_test.shape[-1]:
+        last_observed = x_test[:, -1:, :]
+        return np.broadcast_to(last_observed, task.y_test.shape).astype(np.float32).copy()
+    return _predict_train_mean(task.y_train, task.y_test.shape)
+
+
+def _predict_train_mean(y_train: np.ndarray, target_shape: tuple[int, ...]) -> np.ndarray:
+    y_train = np.asarray(y_train, dtype=np.float32)
+    if y_train.ndim == len(target_shape) and y_train.shape[1:] == target_shape[1:]:
+        mean = np.mean(y_train, axis=0, keepdims=True)
+    else:
+        reduce_axes = tuple(range(max(0, y_train.ndim - 1)))
+        mean = np.mean(y_train, axis=reduce_axes).reshape((1,) * (len(target_shape) - 1) + (target_shape[-1],))
+    return np.broadcast_to(mean, target_shape).astype(np.float32).copy()
+
+
+def _predict_random_permutation(y_train: np.ndarray, target_shape: tuple[int, ...], seed: int) -> np.ndarray:
+    y_flat = _flatten_time(np.asarray(y_train, dtype=np.float32))
+    if y_flat.shape[0] == 0:
+        raise ValueError("random_permutation requires at least one training target")
+    rng = np.random.default_rng(seed)
+    n_rows = int(np.prod(target_shape[:-1]))
+    if y_flat.shape[0] >= n_rows:
+        indices = rng.permutation(y_flat.shape[0])[:n_rows]
+    else:
+        indices = rng.choice(y_flat.shape[0], size=n_rows, replace=True)
+    noise = rng.normal(scale=1e-6, size=(n_rows, y_flat.shape[-1])).astype(np.float32)
+    return (y_flat[indices] + noise).reshape(target_shape).astype(np.float32)
+
+
 def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> np.ndarray:
     model = NumpyRidgeBaseline(alpha=1e-2)
     model.fit(_flatten_time(x_train), _flatten_time(y_train))
     pred = model.predict(_flatten_time(x_test))
     return pred.reshape(x_test.shape[0], x_test.shape[1], y_train.shape[-1])
+
+
+def _fit_autoregressive_ridge(task: SupervisedWindowTask) -> np.ndarray:
+    if task.x_train.ndim != 3 or task.y_train.ndim != 3 or task.x_test.ndim != 3 or task.y_test.ndim != 3:
+        raise ValueError("autoregressive_ridge requires [sample, time, feature] windows")
+    if task.x_train.shape[1] < 2 or task.x_test.shape[1] < 2 or task.y_train.shape[1] < 2:
+        raise ValueError("autoregressive_ridge requires at least two timepoints")
+    if task.x_train.shape[1] != task.y_train.shape[1] or task.x_test.shape[1] != task.y_test.shape[1]:
+        raise ValueError("autoregressive_ridge requires aligned source and target sequence lengths")
+
+    model = NumpyRidgeBaseline(alpha=1e-2)
+    model.fit(_flatten_time(task.x_train[:, :-1, :]), _flatten_time(task.y_train[:, 1:, :]))
+    prediction = _predict_train_mean(task.y_train, task.y_test.shape)
+    pred_tail = model.predict(_flatten_time(task.x_test[:, :-1, :]))
+    prediction[:, 1:, :] = pred_tail.reshape(task.x_test.shape[0], task.x_test.shape[1] - 1, task.y_train.shape[-1])
+    return prediction.astype(np.float32)
 
 
 def _fit_torch_sequence_model(
@@ -333,6 +400,15 @@ def _fit_neurotwin(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndar
     return output["prediction"].detach().cpu().numpy()
 
 
+def _fit_tribe_style(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndarray:
+    return _fit_torch_sequence_model(
+        lambda: TribeStyleStimulusEncoder(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
+        task,
+        seed=seed,
+        steps=steps,
+    )
+
+
 def _metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
@@ -390,7 +466,11 @@ def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str,
     task_ids = {task.task_id for task in tasks}
     modalities = {task.source_modality for task in tasks} | {task.target_modality for task in tasks}
     catalog = [
+        {"model_id": "persistence", "status": "local_baseline", "notes": "Last-observation or identity-style forecast with shape-safe fallback."},
+        {"model_id": "train_mean", "status": "local_baseline", "notes": "Broadcast train-target mean negative baseline."},
+        {"model_id": "random_permutation", "status": "negative_control", "notes": "Seeded permutation of training targets with target-shaped output."},
         {"model_id": "linear_ridge", "status": "local_baseline", "notes": "Closed-form sanity baseline on identical prepared windows."},
+        {"model_id": "autoregressive_ridge", "status": "local_baseline", "notes": "Ridge from previous source timepoint to next target timepoint where sequence shapes allow."},
         {"model_id": "mlp", "status": "local_baseline", "notes": "Per-timepoint neural-window baseline."},
         {"model_id": "tcn", "status": "local_baseline", "notes": "Local temporal convolution baseline."},
         {"model_id": "transformer", "status": "local_baseline", "notes": "Small local Transformer with shared splits."},
@@ -398,8 +478,8 @@ def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str,
         {"model_id": "neurotwin", "status": "local_baseline", "notes": "Current NeuroTwin implementation under the same task API."},
         {
             "model_id": "tribe_style",
-            "status": "approximation" if "cross_modal_translation" in task_ids and "fmri" in modalities else "unavailable",
-            "notes": "Approximate stimulus/history-to-fMRI lane only when fMRI-aligned inputs exist; not an exact TRIBE v2 reproduction.",
+            "status": "clean_room_approximation" if "stimulus_to_fmri_response" in task_ids and "fmri" in modalities else "unavailable",
+            "notes": "NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
         },
         {
             "model_id": "brainvista_style",

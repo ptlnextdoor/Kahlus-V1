@@ -13,6 +13,51 @@ bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 
 That launcher prepares MOABB, verifies `window_count=18144`, materializes absolute manifest paths under `outputs/configs/`, dry-runs, and submits exactly one A100 smoke job. `scripts/cluster/chapman_a100_first_run.sh` is a compatibility wrapper around the same path.
 
+## Fast Iteration Lane
+
+Use one A100 for short validation runs before spending a multi-day allocation:
+
+```bash
+PYTHONPATH=src python3 -m unittest
+git diff --check
+bash scripts/run_smoke.sh outputs/smoke-head
+bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
+```
+
+Then run the 3-seed MOABB paper-mode gate on prepared manifests:
+
+```bash
+export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
+export PREPARED_DIR="$NEUROTWIN_DATA/prepared/moabb_benchmark"
+export EVAL_DIR="$NEUROTWIN_DATA/eval/moabb_3seed_head"
+python3 -m neurotwin.cli eval \
+  --suite neural_translation_v1 \
+  --paper-mode \
+  --seeds 0 1 2 \
+  --event-manifest "$PREPARED_DIR/event_manifest.json" \
+  --split-manifest "$PREPARED_DIR/split_manifest.json" \
+  --window-length 128 \
+  --stride 128 \
+  --train-steps 3 \
+  --out-dir "$EVAL_DIR"
+```
+
+MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits, baseline reporting, seed aggregation, and claim gates.
+
+## Heavy 6-GPU Lane
+
+Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Do not assume a seventh GPU is available unless Slurm confirms it.
+
+```bash
+export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
+export RUN_ROOT="$NEUROTWIN_DATA/runs"
+RUN_ROOT="$RUN_ROOT" \
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
+  scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
+```
+
+Use short 1-GPU jobs for debugging. Do not retry failed multi-GPU runs blindly; inspect logs, metrics, checkpoints, and manifests first.
+
 Local readiness checks:
 
 ```bash

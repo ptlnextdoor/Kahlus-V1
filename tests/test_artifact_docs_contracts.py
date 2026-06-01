@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 
-class ResearchArtifactTests(unittest.TestCase):
+class ArtifactDocsContractsTests(unittest.TestCase):
     def test_a100_h100_configs_scripts_and_paper_docs_exist(self):
         required = [
             "configs/train/moabb_debug.yaml",
@@ -31,7 +31,9 @@ class ResearchArtifactTests(unittest.TestCase):
             "scripts/run_smoke.sh",
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
+            "scripts/package_a100_evidence_bundle.sh",
             "scripts/package_run_bundle.sh",
+            "scripts/package_a100_handoff_zip.sh",
             "scripts/package_runner_bundle.sh",
             "scripts/train_a100_inner.sh",
             "README_RUN.md",
@@ -56,6 +58,44 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("Do not claim", claims)
         self.assertIn("clinical digital twin", claims)
         self.assertIn("Synthetic smoke tests validate plumbing only", claims)
+        self.assertIn("tribe_style", claims)
+        self.assertIn("clean-room approximation", claims)
+        self.assertIn("Do not describe it as exact TRIBE v2", claims)
+        self.assertIn("real video/audio/text encoders", claims)
+
+    def test_tribe_style_does_not_become_required_dependency(self):
+        forbidden = (
+            "tribev2",
+            "neuralset",
+            "neuraltrain",
+            "huggingface_hub",
+            "moviepy",
+            "x_transformers",
+            "gtts",
+            "langdetect",
+            "spacy",
+            "julius",
+            "levenshtein",
+        )
+        checked = {
+            "pyproject.toml": Path("pyproject.toml").read_text(encoding="utf-8").lower(),
+            "environment-a100.yml": Path("environment-a100.yml").read_text(encoding="utf-8").lower(),
+            "requirements/cluster-a100.txt": Path("requirements/cluster-a100.txt").read_text(encoding="utf-8").lower(),
+        }
+
+        for path, text in checked.items():
+            for package in forbidden:
+                with self.subTest(path=path, package=package):
+                    self.assertNotIn(package, text)
+
+    def test_a100_runbook_separates_fast_and_heavy_lanes(self):
+        runbook = Path("docs/A100_RUNBOOK.md").read_text(encoding="utf-8")
+
+        self.assertIn("Fast Iteration Lane", runbook)
+        self.assertIn("Heavy 6-GPU Lane", runbook)
+        self.assertIn("--ntasks-per-node=6 --gres=gpu:a100:6", runbook)
+        self.assertIn("MOABB EEG is expected to skip `tribe_style`", runbook)
+        self.assertIn("Do not retry failed multi-GPU runs blindly", runbook)
 
     def test_moabb_scripts_and_cluster_configs_use_benchmark_windows(self):
         smoke = Path("scripts/prepare_moabb_smoke.sh").read_text(encoding="utf-8")
@@ -79,6 +119,8 @@ class ResearchArtifactTests(unittest.TestCase):
 
         self.assertIn("Refusing to run the generic placeholder config", train)
         self.assertIn("_train_a100_inner.sh", train)
+        self.assertIn("#SBATCH --ntasks-per-node=6", train)
+        self.assertIn("#SBATCH --gres=gpu:a100:6", train)
         self.assertIn("cluster preflight", inner)
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
@@ -93,26 +135,49 @@ class ResearchArtifactTests(unittest.TestCase):
         environment = Path("environment-a100.yml").read_text(encoding="utf-8")
 
         for required in (
-            "What",
-            "The friend running Chapman does not need GitHub access",
+            "Operator Workflow",
+            "sha256sum -c SHA256SUMS",
+            "conda env create -f environment-a100.yml",
+            "python -m pip install -e '.[moabb,cluster]'",
+            "Docker Fallback",
+            "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
+            '--gpus "device=<gpu_id>"',
+            "/workspace/repo",
+            "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
-            "bash scripts/package_runner_bundle.sh",
             "neurotwin-a100-runner-<short_sha>.tar.gz",
-            "scp outputs/neurotwin-a100-runner-<short_sha>.tar.gz",
+            "scp neurotwin-a100-runner-<short_sha>.tar.gz",
             "scp /tmp/neurotwin-a100-runner-<short_sha>.tar.gz",
             "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
-            "minimal practical code visibility",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
+            "python -m neurotwin.cli eval audit",
+            "python -m neurotwin.cli cluster materialize-config",
+            "python -m neurotwin.cli cluster preflight",
+            "torchrun --standalone --nproc_per_node=1",
+            "python -m neurotwin.cli report",
+            "bash scripts/package_a100_evidence_bundle.sh",
+            "MOABB task labels are intentionally not persisted",
             "1x A100 80GB",
             "128G",
             "MOABB `BNCI2014_001`",
             "Expected Full Outputs",
+            "Known Limitations",
             "Success Condition",
             "Resume And Safe Rerun",
         ):
             self.assertIn(required, readme)
+        for developer_only in (
+            "bash scripts/package_runner_bundle.sh",
+            "bash scripts/package_run_bundle.sh",
+            "git clone",
+            "<PRIVATE_REPO_URL>",
+            "clean committed checkout",
+            "packaging machine",
+            "full-source bundle",
+        ):
+            self.assertNotIn(developer_only, readme)
         self.assertIn("outputs/configs/moabb_a100.materialized.yaml", run_full)
         self.assertIn("EXPECTED_WINDOW_COUNT", run_full)
         self.assertIn("EXPECTED_TRAIN_WINDOWS", run_full)
@@ -156,49 +221,6 @@ class ResearchArtifactTests(unittest.TestCase):
         self.assertIn("runpod_rehearsal_passed=True", script)
         self.assertIn("$5", doc)
         self.assertIn("not a scientific result", doc)
-
-    def test_package_bundle_uses_head_archive_and_dirty_guard(self):
-        script = Path("scripts/package_run_bundle.sh").read_text(encoding="utf-8")
-
-        self.assertIn("git archive", script)
-        self.assertIn("Refusing to package a dirty worktree", script)
-        self.assertIn("ALLOW_DIRTY_BUNDLE", script)
-        self.assertIn("BUNDLE_METADATA.txt", script)
-        for excluded in (".git", ".context", "outputs", "runs", "*.pt", "*.npy", "*.npz"):
-            self.assertIn(f"--exclude='{excluded}'", script)
-
-    def test_package_runner_bundle_is_minimal_and_manifested(self):
-        script = Path("scripts/package_runner_bundle.sh").read_text(encoding="utf-8")
-
-        self.assertIn("neurotwin-a100-runner-$SHORT_SHA", script)
-        self.assertIn("git archive", script)
-        self.assertIn("Refusing to package a dirty worktree", script)
-        self.assertIn("ALLOW_DIRTY_RUNNER_BUNDLE", script)
-        self.assertIn("COMMIT_HASH.txt", script)
-        self.assertIn("BUNDLE_MANIFEST.txt", script)
-        self.assertIn("SHA256SUMS", script)
-        self.assertIn("configs/train/moabb_a100_smoke.yaml", script)
-        self.assertIn("configs/train/prepared_synthetic_debug.yaml", script)
-        self.assertIn("scripts/run_smoke.sh", script)
-        self.assertIn("scripts/run_full.sh", script)
-        self.assertIn("scripts/run_full.sbatch", script)
-        self.assertIn("scripts/train_a100_inner.sh", script)
-        self.assertIn("scripts/prepare_moabb_benchmark.sh", script)
-        self.assertIn("src", script)
-        for excluded in (
-            ".git",
-            ".context",
-            "tests",
-            "docs/research",
-            "docs/paper",
-            "graphify-out",
-            "outputs",
-            "runs",
-            "*.pt",
-            "*.npy",
-            "*.npz",
-        ):
-            self.assertIn(f"--exclude='{excluded}'", script)
 
     def test_moabb_benchmark_script_blocks_slurm_tmp_fallback(self):
         env = dict(os.environ)

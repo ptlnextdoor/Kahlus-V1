@@ -16,10 +16,12 @@ class TaskSpecTests(unittest.TestCase):
         self.assertIn("few_shot_subject_adaptation", task_ids)
 
     def test_competitor_registry_names_the_crowded_lanes(self):
-        competitor_ids = {competitor.competitor_id for competitor in competitor_registry()}
+        competitors = {competitor.competitor_id: competitor for competitor in competitor_registry()}
 
-        self.assertIn("tribe_v2", competitor_ids)
-        self.assertIn("brainvista", competitor_ids)
-        self.assertIn("brain_of", competitor_ids)
-        self.assertIn("brainomni", competitor_ids)
-        self.assertIn("brain_harmony", competitor_ids)
+        self.assertIn("tribe_v2", competitors)
+        self.assertIn("brainvista", competitors)
+        self.assertIn("brain_of", competitors)
+        self.assertIn("brainomni", competitors)
+        self.assertIn("brain_harmony", competitors)
+        self.assertEqual(competitors["tribe_v2"].implementation_status, "clean_room_approximation")
+        self.assertIn("not exact TRIBE v2", competitors["tribe_v2"].notes)

@@ -57,6 +57,12 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(batches[0].modality, "eeg")
         self.assertEqual(batches[0].signal.shape, (4, 3))
         self.assertEqual(batches[0].metadata["channel_names"], ["C3", "Cz", "C4"])
+        forbidden = {"label", "target", "target_label", "task_label", "diagnosis"}
+        for record in records:
+            self.assertFalse(forbidden.intersection(key.lower() for key in record.metadata))
+        for batch in batches:
+            self.assertFalse(forbidden.intersection(key.lower() for key in batch.metadata))
+            self.assertNotIn("label", batch.behavior)
 
     def test_moabb_channels_first_trials_are_transposed_to_event_schema(self):
         trials = [

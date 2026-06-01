@@ -6,6 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
+from neurotwin.adapters.moabb import trials_to_event_batches, trials_to_recordings
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
@@ -90,6 +93,47 @@ class PreparedEvalAuditTests(unittest.TestCase):
             for split_name in ("train", "val", "test"):
                 self.assertGreater(report.window_counts_by_split[split_name], 0)
 
+    def test_moabb_prepared_metadata_passes_audit_without_sanitization(self):
+        forbidden = {"label", "target", "target_label", "task_label", "diagnosis"}
+        trials = [
+            {
+                "signal": np.ones((256, 3), dtype=np.float32) * idx,
+                "subject": str(idx),
+                "session": "0",
+                "run": "0",
+                "label": "left_hand" if idx % 2 else "right_hand",
+                "sampling_rate": 128.0,
+                "channel_names": ["C3", "Cz", "C4"],
+            }
+            for idx in range(6)
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            records = trials_to_recordings(trials, dataset_id="mock_moabb")
+            batches = trials_to_event_batches(trials, dataset_id="mock_moabb")
+            split = build_split_manifest(records, policy="subject", seed=0)
+            split_path = save_split_manifest(split, root / "split_manifest.json")
+            event_path = save_event_batches(batches, root)
+
+            for event_file in (root / "events").glob("*.npz"):
+                with np.load(event_file, allow_pickle=False) as data:
+                    metadata = json.loads(str(data["metadata_json"].item()))
+                    behavior = json.loads(str(data["behavior_json"].item()))
+                self.assertFalse(forbidden.intersection(key.lower() for key in metadata))
+                self.assertFalse(forbidden.intersection(key.lower() for key in behavior))
+
+            report = audit_prepared_eval_inputs(
+                event_path,
+                split_path,
+                window_length=128,
+                stride=128,
+                require_windows=True,
+            )
+
+            self.assertTrue(report.passed, report.violations)
+            for split_name in ("train", "val", "test"):
+                self.assertGreater(report.window_counts_by_split[split_name], 0)
+
     def test_zero_window_benchmark_fails_required_window_gate(self):
         env = dict(os.environ)
         env["PYTHONPATH"] = "src"
@@ -170,6 +214,45 @@ class PreparedEvalAuditTests(unittest.TestCase):
 
             self.assertFalse(report.passed)
             self.assertTrue(any("prepared window leakage" in violation for violation in report.violations))
+
+    def test_prepared_eval_audit_catches_metadata_leakage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+            split = build_split_manifest(records, policy="subject", seed=0)
+            split_by_record = {}
+            for split_name in ("train", "val", "test"):
+                for record in getattr(split, split_name):
+                    split_by_record[record.record_id] = split_name
+            touched = set()
+            for batch in batches:
+                split_name = split_by_record.get(batch.metadata["record_id"])
+                if split_name == "train" and "train" not in touched:
+                    batch.metadata["source_hash"] = "same-raw-hash"
+                    batch.metadata["preprocessing_hash"] = "same-prep-hash"
+                    batch.metadata["stimulus_segment_id"] = "clip-001:0:10"
+                    touched.add("train")
+                elif split_name == "val" and "val" not in touched:
+                    batch.metadata["target_label"] = "left"
+                    touched.add("val")
+                elif split_name == "test" and "test" not in touched:
+                    batch.metadata["source_hash"] = "same-raw-hash"
+                    batch.metadata["preprocessing_hash"] = "same-prep-hash"
+                    batch.metadata["stimulus_segment_id"] = "clip-001:0:10"
+                    batch.metadata["hidden_subject_id"] = batch.subject_id
+                    touched.add("test")
+            split_path = save_split_manifest(split, root / "split_manifest.json")
+            event_path = save_event_batches(batches, root)
+
+            report = audit_prepared_eval_inputs(event_path, split_path, window_length=8, stride=8)
+
+            self.assertFalse(report.passed)
+            self.assertTrue(any("duplicate source_hash across splits" in violation for violation in report.violations))
+            self.assertTrue(any("duplicate preprocessing_hash across splits" in violation for violation in report.violations))
+            self.assertTrue(any("stimulus segment leakage across splits" in violation for violation in report.violations))
+            self.assertTrue(any("forbidden event metadata field 'target_label'" in violation for violation in report.violations))
+            self.assertTrue(any("hidden subject metadata field 'hidden_subject_id'" in violation for violation in report.violations))
 
 
 if __name__ == "__main__":

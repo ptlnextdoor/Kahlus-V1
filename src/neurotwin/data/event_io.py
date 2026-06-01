@@ -10,6 +10,9 @@ from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.repro import hash_file, stable_hash, write_json
 
 
+EVENT_MANIFEST_SCHEMA = "neurotwin.event_manifest.v2"
+
+
 def save_event_batches(
     batches: list[NeuralEventBatch],
     out_dir: str | Path,
@@ -40,11 +43,20 @@ def save_event_batches(
         rows.append(
             {
                 "record_id": record_id,
+                "recording_id": batch.recording_id,
                 "modality": batch.modality,
                 "dataset": batch.dataset,
+                "dataset_id": batch.dataset_id,
                 "subject_id": batch.subject_id,
                 "session_id": batch.session_id,
                 "site_id": batch.site_id,
+                "task_id": batch.task_id,
+                "sampling_rate": batch.sampling_rate,
+                "time_start": batch.time_start,
+                "time_end": batch.time_end,
+                "source_hash": batch.source_hash,
+                "preprocessing_hash": batch.preprocessing_hash,
+                "split_assignment": batch.split_assignment,
                 "n_time": batch.n_time,
                 "n_space": batch.n_space,
                 "path": str(file_path.relative_to(root)),
@@ -54,7 +66,7 @@ def save_event_batches(
     return write_json(
         root / manifest_name,
         {
-            "schema": "neurotwin.event_manifest.v1",
+            "schema": EVENT_MANIFEST_SCHEMA,
             "event_count": len(rows),
             "manifest_hash": stable_hash(rows),
             "metadata": _jsonable(manifest_metadata or {}),
@@ -77,6 +89,19 @@ def load_event_batches(manifest_path: str | Path) -> list[NeuralEventBatch]:
             uncertainty = data["uncertainty"]
             metadata = _loads_json(data["metadata_json"])
             metadata.setdefault("record_id", row["record_id"])
+            for key in (
+                "recording_id",
+                "dataset_id",
+                "task_id",
+                "sampling_rate",
+                "time_start",
+                "time_end",
+                "source_hash",
+                "preprocessing_hash",
+                "split_assignment",
+            ):
+                if key in row and row.get(key) is not None:
+                    metadata.setdefault(key, row.get(key))
             batches.append(
                 NeuralEventBatch(
                     modality=str(row["modality"]),
@@ -103,6 +128,7 @@ def event_manifest_summary(manifest_path: str | Path) -> dict[str, Any]:
     modalities = sorted({str(row["modality"]) for row in payload.get("events", [])})
     datasets = sorted({str(row["dataset"]) for row in payload.get("events", [])})
     subjects = sorted({str(row["subject_id"]) for row in payload.get("events", [])})
+    task_ids = sorted({str(row.get("task_id")) for row in payload.get("events", []) if row.get("task_id") is not None})
     return {
         "schema": payload.get("schema"),
         "event_count": int(payload.get("event_count", 0)),
@@ -111,6 +137,7 @@ def event_manifest_summary(manifest_path: str | Path) -> dict[str, Any]:
         "modalities": modalities,
         "datasets": datasets,
         "subjects": subjects,
+        "task_ids": task_ids,
     }
 
 

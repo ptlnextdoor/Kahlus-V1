@@ -8,4 +8,5 @@ __pycache__/
 graphify-out/cache/
 runs/
 outputs/
+neurotwin-a100-results-*/
 external/vendor/

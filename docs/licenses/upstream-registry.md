@@ -4,7 +4,7 @@ This repo can reuse upstream work aggressively, but license and access status mu
 
 | Asset | Role | Status |
 | --- | --- | --- |
-| TRIBE v2 | Stimulus/video/audio/language -> fMRI baseline | Verify code/weights license before reuse |
+| TRIBE v2 | Stimulus/video/audio/language -> fMRI baseline | CC BY-NC reference; local `tribe_style` is clean-room approximation only |
 | BrainVista | Naturalistic fMRI next-token baseline | Verify code/weights license before reuse |
 | Brain-OF | fMRI/EEG/MEG foundation baseline, main boss fight | Verify code/weights license before reuse |
 | BrainOmni | EEG/MEG tokenizer/model baseline | Verify code/weights license before reuse |

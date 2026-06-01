@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
-from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, format_prepared_baseline_report, run_prepared_baseline_suite
-from neurotwin.benchmarks.registry import competitor_registry
-from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_neural_translation_v1_synthetic
-from neurotwin.benchmarks.smoke import format_smoke_results, run_translation_smoke
-from neurotwin.benchmarks.task_specs import default_translation_tasks
+from neurotwin.benchmarks.prepared_suite import (
+    PreparedSuiteConfig,
+    format_prepared_baseline_report,
+    run_prepared_baseline_suite,
+)
 from neurotwin.config import ConfigError, load_config
 from neurotwin.data.audit import audit_split_manifest
 from neurotwin.data.leakage import check_manifest_leakage
@@ -16,8 +17,18 @@ from neurotwin.data.manifest_io import save_data_manifest, save_leakage_report, 
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
+from neurotwin.eval.command import EvalCommandConfig, run_eval_command
 from neurotwin.reports import generate_compare_report, generate_run_report, generate_suite_report
-from neurotwin.repro import append_jsonl, capture_environment, create_run_dir, manifest_hash, snapshot_config, stable_hash, write_json
+from neurotwin.repro import (
+    append_jsonl,
+    capture_environment,
+    checkpoint_manifest,
+    create_run_dir,
+    manifest_hash,
+    snapshot_config,
+    stable_hash,
+    write_json,
+)
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
 from neurotwin.runtime.preflight import (
@@ -99,7 +110,10 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--window-length", type=int, default=8)
     eval_parser.add_argument("--stride", type=int, default=8)
     eval_parser.add_argument("--train-steps", type=int, default=5)
+    eval_parser.add_argument("--seed", type=int, default=0)
+    eval_parser.add_argument("--seeds", nargs="*", type=int, default=None)
     eval_parser.add_argument("--require-windows", action="store_true")
+    eval_parser.add_argument("--paper-mode", action="store_true")
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
@@ -130,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     materialize_config.set_defaults(func=_cmd_cluster_materialize_config)
 
     args = parser.parse_args(argv)
+    args._argv = list(sys.argv if argv is None else ["nt", *argv])
     args.func(args)
     return 0
 
@@ -402,9 +417,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
         return
     run_dir = create_run_dir(args.run_root, run_id=str(config.get("experiment", "synthetic_debug")))
     dist = get_distributed_info()
+    environment = capture_environment(argv=getattr(args, "_argv", None))
     if dist.is_rank_zero:
         snapshot_config(config, run_dir)
-        write_json(run_dir / "environment.json", capture_environment())
+        write_json(run_dir / "environment.json", environment)
     configured_split_manifest = _config_value(config, "split_manifest")
     if configured_split_manifest:
         from neurotwin.data.manifest_io import load_split_manifest
@@ -439,7 +455,9 @@ def _cmd_train(args: argparse.Namespace) -> None:
             print("training_status=completed_prepared_training_rank")
             print(f"metrics_jsonl={metrics_path}")
             return
+        checkpoints = checkpoint_manifest(run_dir)
         write_json(run_dir / "metrics.json", result.to_dict())
+        write_json(run_dir / "checkpoint_manifest.json", checkpoints)
         write_json(
             run_dir / "summary.json",
             {
@@ -479,6 +497,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
                     "local_rank": dist.local_rank,
                     "world_size": dist.world_size,
                 },
+                "git": environment["git"],
+                "source_commit_missing": environment["source_commit_missing"],
+                "run": environment["run"],
+                "checkpoint_manifest": checkpoints,
                 "resume": args.resume,
             },
         )
@@ -514,6 +536,8 @@ def _cmd_train(args: argparse.Namespace) -> None:
     import torch
 
     torch.save({"status": "synthetic_smoke", "steps": result.steps, "world_size": dist.world_size}, run_dir / "checkpoint.pt")
+    checkpoints = checkpoint_manifest(run_dir)
+    write_json(run_dir / "checkpoint_manifest.json", checkpoints)
     write_json(
         run_dir / "summary.json",
         {
@@ -530,6 +554,10 @@ def _cmd_train(args: argparse.Namespace) -> None:
                 "local_rank": dist.local_rank,
                 "world_size": dist.world_size,
             },
+            "git": environment["git"],
+            "source_commit_missing": environment["source_commit_missing"],
+            "run": environment["run"],
+            "checkpoint_manifest": checkpoints,
             "resume": args.resume,
         },
     )
@@ -554,55 +582,27 @@ def _cmd_estimate(args: argparse.Namespace) -> None:
 
 
 def _cmd_eval(args: argparse.Namespace) -> None:
-    if args.eval_command == "audit":
-        if args.event_manifest or args.split_manifest:
-            if not args.event_manifest or not args.split_manifest:
-                raise SystemExit("--event-manifest and --split-manifest must be provided together")
-            report = audit_prepared_eval_inputs(
-                args.event_manifest,
-                args.split_manifest,
-                window_length=args.window_length,
-                stride=args.stride,
-                out_dir=args.out_dir,
-                require_windows=args.require_windows,
-            )
-            print(format_prepared_eval_audit(report))
-            if not report.passed:
-                raise SystemExit(1)
-            return
-        print(f"suite={args.suite}")
-        print("eval_audit_passed=True")
-        print("notes=synthetic-only suite has explicit plumbing label")
-        return
-    if args.suite == "neural_translation_v1":
-        if args.event_manifest or args.split_manifest:
-            if not args.event_manifest or not args.split_manifest:
-                raise SystemExit("--event-manifest and --split-manifest must be provided together")
-            payload = run_prepared_baseline_suite(
-                PreparedSuiteConfig(
-                    event_manifest=args.event_manifest,
-                    split_manifest=args.split_manifest,
-                    window_length=args.window_length,
-                    stride=args.stride,
-                    seed=0,
-                    train_steps=args.train_steps,
-                ),
-                out_dir=args.out_dir,
-            )
-            print(format_prepared_baseline_report(payload))
-            return
-        payload = run_neural_translation_v1_synthetic(seed=0, out_dir=args.out_dir)
-        print(format_neural_translation_v1_report(payload))
-        return
-    if args.suite != "translation_smoke":
-        raise SystemExit("Supported suites: translation_smoke, neural_translation_v1")
-    print("suite=translation_smoke")
-    print("tasks=" + ",".join(task.task_id for task in default_translation_tasks()))
-    print("competitors=" + ",".join(competitor.competitor_id for competitor in competitor_registry()))
-    if args.run:
-        print(f"run={args.run}")
-    print()
-    print(format_smoke_results(run_translation_smoke(seed=0)))
+    result = run_eval_command(
+        EvalCommandConfig(
+            eval_command=args.eval_command,
+            suite=args.suite,
+            run=args.run,
+            out_dir=args.out_dir,
+            event_manifest=args.event_manifest,
+            split_manifest=args.split_manifest,
+            window_length=args.window_length,
+            stride=args.stride,
+            train_steps=args.train_steps,
+            seed=args.seed,
+            seeds=tuple(args.seeds) if args.seeds is not None else None,
+            require_windows=args.require_windows,
+            paper_mode=args.paper_mode,
+        )
+    )
+    if result.output:
+        print(result.output)
+    if result.exit_code:
+        raise SystemExit(result.error or result.exit_code)
 
 
 def _cmd_report(args: argparse.Namespace) -> None:
