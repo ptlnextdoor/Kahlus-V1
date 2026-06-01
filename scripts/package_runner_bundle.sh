@@ -35,6 +35,7 @@ ARCHIVE_PATHS=(
   configs/train/prepared_synthetic_debug.yaml
   configs/train/moabb_a100_smoke.yaml
   scripts/run_smoke.sh
+  scripts/run_docker_6gpu.sh
   scripts/run_full.sh
   scripts/run_full.sbatch
   scripts/train_a100_inner.sh

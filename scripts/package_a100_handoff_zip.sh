@@ -44,7 +44,7 @@ This is minimal practical code visibility, not cryptographic source secrecy. The
 
 ## Purpose
 
-This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained briefly on one A100, and reported from a persistent Chapman root.
+This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root.
 
 ## Not A Claim
 
@@ -87,7 +87,7 @@ The Pi is a transfer bridge only. Do not run Python training or submit Slurm job
 
 ## Run On Chapman
 
-Preferred \`conda\` + \`sbatch\` path:
+Extract and verify the runner:
 
 \`\`\`bash
 mkdir -p ~/neurotwin-a100
@@ -95,7 +95,34 @@ tar -xzf ~/$RUNNER_NAME.tar.gz -C ~/neurotwin-a100
 cd ~/neurotwin-a100/$RUNNER_NAME
 cat COMMIT_HASH.txt
 sha256sum -c SHA256SUMS
+\`\`\`
 
+Primary Docker 6-GPU path:
+
+\`\`\`bash
+export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
+bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" 0,1,2,3,4,5
+\`\`\`
+
+The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, and:
+
+\`\`\`bash
+docker run --rm -it --gpus "device=0,1,2,3,4,5" \\
+  -v "\$PWD":/workspace/repo \\
+  -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
+  -w /workspace/repo \\
+  -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
+  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+\`\`\`
+
+The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
+
+## Conda And Slurm Alternative
+
+Use this only when \`conda\` and \`sbatch\` are available:
+
+\`\`\`bash
 conda env create -f environment-a100.yml
 conda activate neurotwin-a100
 python -m pip install -e '.[moabb,cluster]'
@@ -105,22 +132,37 @@ mkdir -p /path/to/shared/persistent/neurotwin
 bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 \`\`\`
 
-Cluster verification inside the extracted runner is:
+For a 6-GPU Slurm follow-up after the materialized config exists:
 
 \`\`\`bash
-sha256sum -c SHA256SUMS
+export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
+export RUN_ROOT="\$NEUROTWIN_DATA/runs"
+RUN_ROOT="\$RUN_ROOT" \\
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \\
+  scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 \`\`\`
 
-The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
+## Docker Command Details
 
-## Docker Fallback
-
-Use this only if Chapman access has Docker with NVIDIA GPU support but no usable \`conda\` or \`sbatch\`. Replace \`<gpu_id>\` with the visible GPU index:
+The packaged helper is the recommended Docker fallback when \`conda\` or \`sbatch\` are missing:
 
 \`\`\`bash
 export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-mkdir -p "\$PERSISTENT_ROOT"
-docker run --rm -it --gpus "device=<gpu_id>" \\
+bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" 0,1,2,3,4,5
+\`\`\`
+
+For a one-GPU diagnostic, pass one visible GPU id and override the process count:
+
+\`\`\`bash
+NPROC_PER_NODE=1 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" <gpu_id>
+\`\`\`
+
+In that diagnostic mode the helper passes Docker \`--gpus "device=<gpu_id>"\`.
+
+The helper runs this host command:
+
+\`\`\`bash
+docker run --rm -it --gpus "device=0,1,2,3,4,5" \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
@@ -129,7 +171,7 @@ docker run --rm -it --gpus "device=<gpu_id>" \\
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
 \`\`\`
 
-Inside the container:
+Inside the container, the helper executes:
 
 \`\`\`bash
 python -m pip install -e '.[moabb,cluster]'
@@ -154,11 +196,12 @@ python -m neurotwin.cli cluster preflight \\
   --require-prepared-windows \\
   --expect-window-count 18144 \\
   --expect-split-windows train:12096,val:2016,test:4032
-torchrun --standalone --nproc_per_node=1 \\
+torchrun --standalone --nproc_per_node=6 \\
   -m neurotwin.cli train \\
   --config outputs/configs/moabb_a100.materialized.yaml \\
   --run-root "\$PERSISTENT_ROOT/runs"
 python -m neurotwin.cli report --run-dir "\$PERSISTENT_ROOT/runs/moabb_a100_smoke"
+bash scripts/package_a100_evidence_bundle.sh "\$PERSISTENT_ROOT" outputs
 \`\`\`
 
 ## Expected Outputs
@@ -208,7 +251,7 @@ This excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, 
 
 ## Known Limitations
 
-- Docker fallback is one-GPU infrastructure validation only.
+- Docker fallback does not submit Slurm; it runs directly inside Docker with the GPU list passed to \`scripts/run_docker_6gpu.sh\`.
 - MOABB preparation may need internet unless the cache is already populated.
 - The short full run is expected to report \`completed_steps=50\`, \`real_data_smoke=true\`, and \`scientific_claim_allowed=false\`.
 - MOABB task labels are intentionally removed from prepared event metadata before persistence; forbidden model-visible event metadata fields are \`label\`, \`target\`, \`target_label\`, \`task_label\`, and \`diagnosis\`.

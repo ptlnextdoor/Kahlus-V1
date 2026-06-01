@@ -29,6 +29,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/cluster/chapman_a100_first_run.sh",
             "scripts/cluster/runpod_a100_rehearsal.sh",
             "scripts/run_smoke.sh",
+            "scripts/run_docker_6gpu.sh",
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
             "scripts/package_a100_evidence_bundle.sh",
@@ -128,6 +129,29 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("Refusing to run default/synthetic eval", eval_script)
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
 
+    def test_docker_6gpu_runner_contains_required_sequence(self):
+        script = Path("scripts/run_docker_6gpu.sh").read_text(encoding="utf-8")
+
+        for required in (
+            "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
+            '--gpus "device=$GPU_LIST"',
+            "-v \"$REPO_ROOT\":/workspace/repo",
+            "/raid/scratch/$USER/neurotwin-<short_sha>",
+            "python -m pip install -e \".[moabb,cluster]\"",
+            "bash scripts/run_smoke.sh outputs/smoke",
+            "bash scripts/prepare_moabb_benchmark.sh",
+            "python -m neurotwin.cli eval audit",
+            "python -m neurotwin.cli cluster materialize-config",
+            "python -m neurotwin.cli cluster preflight",
+            "--require-cuda",
+            "torchrun --standalone --nproc_per_node=\"$NPROC_PER_NODE\"",
+            "python -m neurotwin.cli report",
+            "bash scripts/package_a100_evidence_bundle.sh",
+        ):
+            self.assertIn(required, script)
+        self.assertIn("GPU_LIST=${2:-0,1,2,3,4,5}", script)
+        self.assertIn("NPROC_PER_NODE=${NPROC_PER_NODE:-${#GPU_IDS[@]}}", script)
+
     def test_operator_run_bundle_files_are_self_contained(self):
         readme = Path("README_RUN.md").read_text(encoding="utf-8")
         run_full = Path("scripts/run_full.sh").read_text(encoding="utf-8")
@@ -137,11 +161,14 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         for required in (
             "Operator Workflow",
             "sha256sum -c SHA256SUMS",
+            "Primary Docker 6-GPU Path",
+            "bash scripts/run_docker_6gpu.sh",
             "conda env create -f environment-a100.yml",
             "python -m pip install -e '.[moabb,cluster]'",
             "Docker Fallback",
             "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
             '--gpus "device=<gpu_id>"',
+            '--gpus "device=0,1,2,3,4,5"',
             "/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
@@ -155,11 +182,12 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli eval audit",
             "python -m neurotwin.cli cluster materialize-config",
             "python -m neurotwin.cli cluster preflight",
-            "torchrun --standalone --nproc_per_node=1",
+            "torchrun --standalone --nproc_per_node=6",
             "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
             "MOABB task labels are intentionally not persisted",
             "1x A100 80GB",
+            "6x A100 80GB",
             "128G",
             "MOABB `BNCI2014_001`",
             "Expected Full Outputs",

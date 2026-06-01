@@ -22,7 +22,63 @@ cat COMMIT_HASH.txt
 sha256sum -c SHA256SUMS
 ```
 
-Create the environment:
+### Primary Docker 6-GPU Path
+
+Use this path when the machine has Docker with NVIDIA GPU support. It does not require `conda` or `sbatch`. The default GPU list is `0,1,2,3,4,5`.
+
+```bash
+export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
+bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" 0,1,2,3,4,5
+```
+
+That helper launches:
+
+```bash
+docker run --rm -it --gpus "device=0,1,2,3,4,5" \
+  -v "$PWD":/workspace/repo \
+  -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
+  -w /workspace/repo \
+  -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
+  -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+```
+
+Inside Docker it installs the runner and executes the full handoff sequence:
+
+```bash
+python -m pip install -e '.[moabb,cluster]'
+bash scripts/run_smoke.sh outputs/smoke
+bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
+python -m neurotwin.cli eval audit \
+  --suite neural_translation_v1 \
+  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
+  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
+  --window-length 128 \
+  --stride 128 \
+  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --require-windows
+python -m neurotwin.cli cluster materialize-config \
+  --template configs/train/moabb_a100_smoke.yaml \
+  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --out outputs/configs/moabb_a100.materialized.yaml
+python -m neurotwin.cli cluster preflight \
+  --config outputs/configs/moabb_a100.materialized.yaml \
+  --run-root "$PERSISTENT_ROOT/runs" \
+  --require-cuda \
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+torchrun --standalone --nproc_per_node=6 \
+  -m neurotwin.cli train \
+  --config outputs/configs/moabb_a100.materialized.yaml \
+  --run-root "$PERSISTENT_ROOT/runs"
+python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
+bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs
+```
+
+### Conda And Slurm Alternative
+
+Use this path when `conda` and `sbatch` are available and Chapman should manage the allocation.
 
 ```bash
 conda env create -f environment-a100.yml
@@ -36,7 +92,7 @@ Run the local smoke test before submitting the A100 job:
 bash scripts/run_smoke.sh outputs/smoke
 ```
 
-Prepare a persistent shared root and launch the full infrastructure validation:
+Prepare a persistent shared root and launch the 1-GPU infrastructure validation:
 
 ```bash
 mkdir -p /path/to/shared/persistent/neurotwin
@@ -94,16 +150,30 @@ python -m pip install -e '.[moabb,cluster]'
 python -m pip install -r requirements/cluster-a100.txt
 ```
 
-## Docker Fallback
+## Docker Fallback Details
 
-Use this when the machine has Docker with NVIDIA GPU support but does not have `conda` or `sbatch`. This fallback is for 1-GPU infrastructure validation, not scientific claims. Replace `<gpu_id>` with the visible GPU index.
+The packaged helper is the recommended Docker fallback when `conda` or `sbatch` are not available:
 
-On the host:
+```bash
+export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
+bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" 0,1,2,3,4,5
+```
+
+For a one-GPU diagnostic, pass one visible GPU id and override the process count:
+
+```bash
+NPROC_PER_NODE=1 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" <gpu_id>
+```
+
+In that diagnostic mode the helper passes Docker `--gpus "device=<gpu_id>"`.
+
+The expanded Docker host command is:
+
 
 ```bash
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 mkdir -p "$PERSISTENT_ROOT"
-docker run --rm -it --gpus "device=<gpu_id>" \
+docker run --rm -it --gpus "device=0,1,2,3,4,5" \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
@@ -112,7 +182,7 @@ docker run --rm -it --gpus "device=<gpu_id>" \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
 ```
 
-Inside the container:
+The helper runs these commands inside the container:
 
 ```bash
 python -m pip install -e '.[moabb,cluster]'
@@ -137,11 +207,12 @@ python -m neurotwin.cli cluster preflight \
   --require-prepared-windows \
   --expect-window-count 18144 \
   --expect-split-windows train:12096,val:2016,test:4032
-torchrun --standalone --nproc_per_node=1 \
+torchrun --standalone --nproc_per_node=6 \
   -m neurotwin.cli train \
   --config outputs/configs/moabb_a100.materialized.yaml \
   --run-root "$PERSISTENT_ROOT/runs"
 python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
+bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs
 ```
 
 ## Tiny Smoke Test
@@ -165,12 +236,12 @@ outputs/smoke/runs/prepared_synthetic_debug/figures/metric_summary.json
 
 Smoke succeeds when the script prints `smoke_status=completed`.
 
-## Full A100 Infrastructure Validation
+## Conda/Slurm A100 Infrastructure Validation
 
 Required resources:
 
 ```text
-GPU: 1x A100 80GB
+GPU: 1x A100 80GB for the first Slurm validation, or 6x A100 80GB for the Docker/helper heavy lane
 CPU: 16 cores
 RAM: 128G
 Wall time: 02:00:00 for the first infrastructure validation
@@ -237,7 +308,7 @@ bash scripts/run_full.sh /absolute/shared/persistent/neurotwin
 
 The scripts pass these values to `sbatch` as command-line flags. They are not embedded in `#SBATCH` lines.
 
-## Heavy 6-GPU Follow-Up
+## Heavy 6-GPU Slurm Follow-Up
 
 Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms six A100s are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
 
@@ -308,7 +379,7 @@ The evidence zip includes summaries, metrics, tables, figures, prepared manifest
 
 ## Known Limitations
 
-- Docker fallback does not submit Slurm and only validates a single visible GPU.
+- Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_6gpu.sh`.
 - MOABB data preparation may need internet or a populated MOABB cache.
 - The first full run is configured for 50 smoke steps and `scientific_claim_allowed=false`.
 - Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates.
