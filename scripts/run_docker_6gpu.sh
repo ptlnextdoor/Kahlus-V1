@@ -32,6 +32,13 @@ NEUROTWIN_DOCKER_DRY_RUN=${NEUROTWIN_DOCKER_DRY_RUN:-0}
 A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}
 A100_RUN_ID=${A100_RUN_ID:-$(basename "$A100_CONFIG_TEMPLATE" .yaml)}
 A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yaml}
+A100_REQUIRE_PAPER_MODE_GATE=${A100_REQUIRE_PAPER_MODE_GATE:-}
+if [[ -z "$A100_REQUIRE_PAPER_MODE_GATE" ]]; then
+  A100_REQUIRE_PAPER_MODE_GATE=0
+  if [[ "$A100_RUN_ID" != "moabb_a100_smoke" ]]; then
+    A100_REQUIRE_PAPER_MODE_GATE=1
+  fi
+fi
 for name in GPU_COUNT NPROC_PER_NODE; do
   value=${!name}
   if ! [[ "$value" =~ ^[0-9]+$ ]] || ((value < 1)); then
@@ -96,6 +103,8 @@ fi
   printf 'A100_CONFIG_TEMPLATE=%s\n' "$A100_CONFIG_TEMPLATE"
   printf 'A100_RUN_ID=%s\n' "$A100_RUN_ID"
   printf 'A100_CONFIG_PATH=%s\n' "$A100_CONFIG_PATH"
+  printf 'A100_REQUIRE_PAPER_MODE_GATE=%s\n' "$A100_REQUIRE_PAPER_MODE_GATE"
+  printf 'A100_PAPER_MODE_EVAL_DIR=%s\n' "${A100_PAPER_MODE_EVAL_DIR:-$PERSISTENT_ROOT/eval/${A100_RUN_ID}_paper_mode}"
 } > "$PERSISTENT_ROOT/docker_run.env"
 exec > >(tee -a "$DOCKER_LOG_PATH") 2>&1
 
@@ -108,6 +117,7 @@ echo "nproc_per_node=$NPROC_PER_NODE"
 echo "a100_config_template=$A100_CONFIG_TEMPLATE"
 echo "a100_run_id=$A100_RUN_ID"
 echo "a100_config_path=$A100_CONFIG_PATH"
+echo "a100_require_paper_mode_gate=$A100_REQUIRE_PAPER_MODE_GATE"
 echo "docker_log_path=$DOCKER_LOG_PATH"
 
 if [[ "$NEUROTWIN_DOCKER_DRY_RUN" == "1" ]]; then
@@ -142,6 +152,9 @@ docker run --rm "${DOCKER_TTY[@]}" --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e A100_CONFIG_TEMPLATE="$A100_CONFIG_TEMPLATE" \
   -e A100_RUN_ID="$A100_RUN_ID" \
   -e A100_CONFIG_PATH="$A100_CONFIG_PATH" \
+  -e A100_REQUIRE_PAPER_MODE_GATE="$A100_REQUIRE_PAPER_MODE_GATE" \
+  -e A100_PAPER_MODE_TRAIN_STEPS="${A100_PAPER_MODE_TRAIN_STEPS:-3}" \
+  -e A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-$PERSISTENT_ROOT/eval/${A100_RUN_ID}_paper_mode}" \
   -e NCCL_DEBUG="${NCCL_DEBUG:-INFO}" \
   -e DOCKER_IMAGE="$DOCKER_IMAGE" \
   -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \

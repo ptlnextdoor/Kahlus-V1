@@ -64,6 +64,7 @@ PY'
 
 The exact inside-container sequence lives in `scripts/docker_a100_inner.sh`; deployment-agent details live in `README_AGENT_DEPLOY.md`. The full Docker run command remains `bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"`, which writes `docker_run.env`, the Docker log, `gpu_preflight.json`, run outputs, and the evidence bundle.
 If `A100_CONFIG_TEMPLATE` is unset, the helper keeps the short `configs/train/moabb_a100_smoke.yaml` infrastructure validation behavior. Set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml` and `A100_RUN_ID=moabb_a100` for the long 6-GPU MOABB training lane.
+For non-smoke run ids, the helper defaults `A100_REQUIRE_PAPER_MODE_GATE=1`, runs the 3-seed MOABB paper-mode gate before training, and includes the gate artifacts in the returned evidence bundle.
 
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
@@ -342,6 +343,7 @@ bash scripts/package_a100_evidence_bundle.sh "$NEUROTWIN_DATA" outputs
 ```
 
 The evidence zip includes summaries, metrics, tables, figures, prepared manifests/audits, `run/gpu_preflight.json`, `run/docker_run.env`, current-run logs, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It excludes `checkpoint*.pt`, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, `.env*` files, and private keys.
+For full non-smoke runs, the zip also includes paper-mode baseline artifacts under `paper_mode_eval/`.
 
 ## Known Limitations
 

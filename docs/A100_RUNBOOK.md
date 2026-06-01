@@ -47,6 +47,7 @@ MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits,
 ## Heavy 6-GPU Lane
 
 Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Do not assume a seventh GPU is available unless Slurm confirms it.
+When `A100_RUN_ID` is not `moabb_a100_smoke`, the guarded Docker and Slurm helpers default to running that paper-mode gate before long training and copying the resulting `paper_mode_gate.json` into the run directory before report generation.
 
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin

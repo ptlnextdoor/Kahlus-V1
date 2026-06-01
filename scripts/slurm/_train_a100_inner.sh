@@ -62,4 +62,8 @@ fi
 torchrun --standalone --nproc_per_node="$NPROC" \
   -m neurotwin.cli train --config "$CONFIG" --run-root "$RUN_ROOT"
 
+if [[ -n "${A100_PAPER_MODE_EVAL_DIR:-}" && -f "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" ]]; then
+  cp "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" "$RUN_DIR/paper_mode_gate.json"
+fi
+
 "$PYTHON_BIN" -m neurotwin.cli report --run-dir "$RUN_DIR"

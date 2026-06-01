@@ -100,6 +100,7 @@ PY'
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
 The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
+For non-smoke run ids, the helper runs the 3-seed MOABB paper-mode gate before the long training starts and includes those gate artifacts in the returned evidence bundle under `paper_mode_eval/`.
 
 ## Conda And Slurm Alternative
 

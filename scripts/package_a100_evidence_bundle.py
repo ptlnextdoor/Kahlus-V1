@@ -38,6 +38,13 @@ PREPARED_FILES = (
     "split_manifest.json",
     "leakage_report.json",
 )
+PAPER_MODE_EVAL_FILES = (
+    "prepared_baseline_suite.json",
+    "seed_aggregate.json",
+    "seed_aggregate.csv",
+    "baseline_failures.json",
+    "paper_mode_gate.json",
+)
 JOB_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 DOCKER_LOG_PATTERN = re.compile(r"^neurotwin-a100-docker-[A-Za-z0-9_.:-]+\.log$")
 FORBIDDEN_SUFFIXES = (".pem", ".key", ".pt", ".pth", ".ckpt", ".npy", ".npz", ".tar.gz", ".zip")
@@ -68,6 +75,18 @@ class EvidenceBundleConfig:
     @property
     def prepared_dir(self) -> Path:
         return self.persistent_root / "prepared" / "moabb_benchmark"
+
+    @property
+    def paper_mode_eval_dir(self) -> Path:
+        metadata = load_env_file(self.persistent_root / "docker_run.env")
+        raw = os.environ.get("A100_PAPER_MODE_EVAL_DIR") or metadata.get("A100_PAPER_MODE_EVAL_DIR")
+        if raw:
+            candidate = Path(raw)
+            if candidate.is_absolute():
+                safe = safe_resolved_path(self.persistent_root, candidate)
+                if safe is not None:
+                    return safe
+        return self.persistent_root / "eval" / f"{self.run_id}_paper_mode"
 
     @property
     def logs_dir(self) -> Path:
@@ -310,6 +329,8 @@ def package_evidence_bundle(config: EvidenceBundleConfig) -> Path:
         copy_tree_files(config.run_dir / "figures", stage_root, Path("run") / "figures")
         for rel in PREPARED_FILES:
             copy_bundle_file(config.prepared_dir / rel, stage_root, Path("prepared") / rel)
+        for rel in PAPER_MODE_EVAL_FILES:
+            copy_bundle_file(config.paper_mode_eval_dir / rel, stage_root, Path("paper_mode_eval") / rel)
         copy_current_run_logs(config.logs_dir, stage_root, current_slurm_job_id(config.run_dir))
         copy_current_docker_log(config.logs_dir, stage_root, current_docker_log_path(config.persistent_root, config.run_dir))
         write_readmes(config, stage_root)

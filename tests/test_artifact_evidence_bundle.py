@@ -34,10 +34,12 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         persistent = root / "persistent"
         run = persistent / "runs" / run_id
         prepared = persistent / "prepared" / "moabb_benchmark"
+        paper_eval = persistent / "eval" / f"{run_id}_paper_mode"
         logs = persistent / "logs"
         (run / "tables").mkdir(parents=True)
         (run / "figures").mkdir(parents=True)
         prepared.mkdir(parents=True)
+        paper_eval.mkdir(parents=True)
         logs.mkdir(parents=True)
         files = {
             persistent / "gpu_preflight.json": (
@@ -57,6 +59,11 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             prepared / "event_manifest.json": "{}\n",
             prepared / "split_manifest.json": "{}\n",
             prepared / "leakage_report.json": "{}\n",
+            paper_eval / "prepared_baseline_suite.json": "{}\n",
+            paper_eval / "seed_aggregate.json": "[]\n",
+            paper_eval / "seed_aggregate.csv": "task_id,model_id,metric,mean,std,ci_low,ci_high,n_seeds\n",
+            paper_eval / "baseline_failures.json": "[]\n",
+            paper_eval / "paper_mode_gate.json": '{"passed":true}\n',
             logs / "neurotwin-a100-full-123.out": "ok\n",
             logs / "neurotwin-a100-full-123.err": "\n",
             logs / "neurotwin-a100-full-999.out": "old\n",
@@ -279,6 +286,11 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
                 "prepared/event_manifest.json",
                 "prepared/split_manifest.json",
                 "prepared/leakage_report.json",
+                "paper_mode_eval/prepared_baseline_suite.json",
+                "paper_mode_eval/seed_aggregate.json",
+                "paper_mode_eval/seed_aggregate.csv",
+                "paper_mode_eval/baseline_failures.json",
+                "paper_mode_eval/paper_mode_gate.json",
                 "logs/neurotwin-a100-full-123.out",
                 "logs/neurotwin-a100-full-123.err",
                 "logs/neurotwin-a100-docker-20260531T000000Z.log",
