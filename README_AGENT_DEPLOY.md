@@ -8,7 +8,7 @@ These instructions are for an automated deployment agent running on the A100 clu
 - Persistent root: `/raid/scratch/$USER/neurotwin-<short_sha>`.
 - `GPU_COUNT=6`.
 - `HOST_GPU_IDS=0,1,2,3,4,5` unless the scheduler assigns different host GPU ids.
-- `CUDA_VISIBLE_DEVICES=0,1,2,3,4,5` inside the container.
+- `CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5` inside the container.
 - Docker image: `pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel`.
 
 ## Verify The Runner
@@ -58,7 +58,7 @@ export DOCKER_IMAGE=neurotwin-a100-runner:local
 export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -69,7 +69,7 @@ The launcher uses:
 docker run --rm --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
   --ulimit memlock=-1 --ulimit stack=67108864 \
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
+  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
   -e NCCL_DEBUG=INFO \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
@@ -105,7 +105,7 @@ Use this only to debug Docker/CUDA visibility when six GPUs are not available:
 export HOST_GPU_IDS=<host_gpu_id>
 export GPU_COUNT=1
 export NPROC_PER_NODE=1
-export CUDA_VISIBLE_DEVICES=0
+export CONTAINER_CUDA_VISIBLE_DEVICES=0
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```

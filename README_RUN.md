@@ -30,7 +30,7 @@ Use this path when the machine has Docker with NVIDIA GPU support. It does not r
 export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -46,7 +46,7 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -w /workspace/repo \
   -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
+  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
   -e NCCL_DEBUG=INFO \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash scripts/docker_a100_inner.sh
@@ -195,7 +195,7 @@ The packaged helper is the recommended Docker fallback when `conda` or `sbatch` 
 export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -206,7 +206,7 @@ For a one-GPU diagnostic, pass one visible host GPU id and force one worker:
 export HOST_GPU_IDS=<host_gpu_id>
 export GPU_COUNT=1
 export NPROC_PER_NODE=1
-export CUDA_VISIBLE_DEVICES=0
+export CONTAINER_CUDA_VISIBLE_DEVICES=0
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
@@ -219,7 +219,7 @@ The expanded Docker host command is:
 export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 export DOCKER_RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$PERSISTENT_ROOT"
@@ -231,7 +231,7 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -w /workspace/repo \
   -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
+  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
   -e NCCL_DEBUG=INFO \
   -e DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-$DOCKER_RUN_ID.log" \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \

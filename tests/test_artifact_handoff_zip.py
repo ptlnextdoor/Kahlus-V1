@@ -60,13 +60,12 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "Dockerfile.a100",
                 '--gpus "\\"device=${HOST_GPU_IDS}\\""',
                 "--ipc=host --shm-size=64g",
-                "--ulimit memlock=-1",
                 "HOST_GPU_IDS=0,1,2,3,4,5",
                 "GPU_COUNT=6",
                 "NPROC_PER_NODE=6",
-                "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
-                "NCCL_DEBUG=INFO",
+                "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
                 "exactly six CUDA devices are visible",
+                "For exact Docker flags",
                 "conda env create -f environment-a100.yml",
                 "bash scripts/run_smoke.sh outputs/smoke",
                 "bash scripts/run_full.sh /path/to/shared/persistent/neurotwin",
@@ -79,7 +78,6 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "python -m neurotwin.cli cluster preflight",
                 "torchrun --standalone --nproc_per_node=6",
                 "torchrun --standalone --nproc_per_node=1",
-                "bash scripts/docker_a100_inner.sh",
                 "python -m neurotwin.cli report",
                 "run/docker_run.env",
                 "current Docker log",
@@ -90,6 +88,8 @@ class HandoffZipArtifactTests(unittest.TestCase):
             ):
                 self.assertIn(required, readme)
             self.assertNotIn("<timestamp>", readme)
+            self.assertNotIn("docker run --rm -it", readme)
+            self.assertNotIn("The helper runs this host command", readme)
             self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
             for forbidden in (
                 "git clone",

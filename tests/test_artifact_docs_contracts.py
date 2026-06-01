@@ -1,10 +1,68 @@
 import os
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
 
 class ArtifactDocsContractsTests(unittest.TestCase):
+    def _run_docker_launcher_dry_run(self, env_overrides: dict[str, str]) -> dict[str, str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            persistent = Path(tmp) / "persistent"
+            env = dict(os.environ)
+            env.pop("CUDA_VISIBLE_DEVICES", None)
+            env.pop("CONTAINER_CUDA_VISIBLE_DEVICES", None)
+            env.update(
+                {
+                    "NEUROTWIN_DOCKER_DRY_RUN": "1",
+                    "NEUROTWIN_ALLOW_LOCAL_PERSISTENT_ROOT": "1",
+                    "DOCKER_RUN_ID": "unit-test",
+                    **env_overrides,
+                }
+            )
+            result = subprocess.run(
+                ["bash", "scripts/run_docker_6gpu.sh", str(persistent)],
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            values: dict[str, str] = {}
+            for line in (persistent / "docker_run.env").read_text(encoding="utf-8").splitlines():
+                key, value = line.split("=", 1)
+                values[key] = value
+            return values
+
+    def test_docker_launcher_uses_container_local_cuda_visible_devices(self):
+        values = self._run_docker_launcher_dry_run({"CUDA_VISIBLE_DEVICES": "2,3,4,5,6,7"})
+
+        self.assertEqual(values["HOST_GPU_IDS"], "0,1,2,3,4,5")
+        self.assertEqual(values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5")
+
+    def test_docker_launcher_default_and_diagnostic_cuda_visible_devices(self):
+        default_values = self._run_docker_launcher_dry_run({})
+        diagnostic_values = self._run_docker_launcher_dry_run(
+            {"GPU_COUNT": "1", "NPROC_PER_NODE": "1", "HOST_GPU_IDS": "7"}
+        )
+
+        self.assertEqual(default_values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5")
+        self.assertEqual(diagnostic_values["HOST_GPU_IDS"], "7")
+        self.assertEqual(diagnostic_values["CUDA_VISIBLE_DEVICES"], "0")
+
+    def test_docker_launcher_honors_explicit_container_cuda_visible_devices(self):
+        values = self._run_docker_launcher_dry_run(
+            {
+                "GPU_COUNT": "2",
+                "NPROC_PER_NODE": "2",
+                "HOST_GPU_IDS": "4,5",
+                "CUDA_VISIBLE_DEVICES": "4,5",
+                "CONTAINER_CUDA_VISIBLE_DEVICES": "0,1",
+            }
+        )
+
+        self.assertEqual(values["HOST_GPU_IDS"], "4,5")
+        self.assertEqual(values["CUDA_VISIBLE_DEVICES"], "0,1")
+
     def test_a100_h100_configs_scripts_and_paper_docs_exist(self):
         required = [
             "configs/train/moabb_debug.yaml",
@@ -151,6 +209,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}",
             "GPU_COUNT=${GPU_COUNT:-6}",
             "NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}",
+            "CONTAINER_CUDA_VISIBLE_DEVICES=0",
             "DOCKER_RUN_ID=${DOCKER_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}",
             "DOCKER_LOG_PATH=${DOCKER_LOG_PATH:-\"$RUN_LOG_DIR/neurotwin-a100-docker-$DOCKER_RUN_ID.log\"}",
             "docker_run.env",
@@ -162,6 +221,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         ):
             self.assertIn(required, launcher)
         self.assertNotIn("python - <<", launcher)
+        self.assertNotIn('if [[ -n "${CUDA_VISIBLE_DEVICES:-}"', launcher)
+        self.assertNotIn("CONTAINER_CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES", launcher)
         for required in (
             "python -m pip install -e \".[moabb,cluster]\"",
             "python scripts/docker_gpu_preflight.py \"$PERSISTENT_ROOT/gpu_preflight.json\"",
@@ -198,7 +259,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "device_count",
             "not exactly `6`, stop",
             "HOST_GPU_IDS=0,1,2,3,4,5",
-            "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
+            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
             "GPU_COUNT=6",
             "NPROC_PER_NODE=6",
             "--shm-size=64g",
@@ -247,7 +308,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "HOST_GPU_IDS=0,1,2,3,4,5",
             "GPU_COUNT=6",
             "NPROC_PER_NODE=6",
-            "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
+            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
             "NCCL_DEBUG=INFO",
             "/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
