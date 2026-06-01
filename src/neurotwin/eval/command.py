@@ -8,7 +8,6 @@ from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
     format_prepared_baseline_report,
     run_prepared_baseline_suite,
-    run_prepared_baseline_suite_multi_seed,
 )
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.smoke import format_smoke_results, run_translation_smoke
@@ -16,6 +15,7 @@ from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_
 from neurotwin.benchmarks.task_specs import default_translation_tasks
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
 from neurotwin.eval.paper_gate import format_paper_mode_gate, validate_paper_mode_payload
+from neurotwin.eval.prepared_paper_mode import run_prepared_baseline_suite_multi_seed, write_prepared_paper_mode_artifacts
 from neurotwin.repro import write_json
 
 
@@ -148,12 +148,23 @@ def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
                     split_manifest=split_manifest,
                 ),
                 seeds=config.seeds,
-                out_dir=config.out_dir,
+                out_dir=None,
             )
+            payload["eval_audit"] = audit.to_dict()
+            gate = validate_paper_mode_payload(payload, audit_report=audit, require_ci=True)
+            payload["paper_mode_gate"] = gate.to_dict()
+            payload["paper_mode_contract"] = {
+                "required_seeds": list(gate.required_seeds),
+                "observed_seeds": list(gate.observed_seeds),
+                "require_ci": gate.require_ci,
+                "gate_status": "passed" if gate.passed else "failed",
+            }
+            if config.out_dir:
+                write_prepared_paper_mode_artifacts(payload, config.out_dir, gate)
             gate_payload = payload.get("paper_mode_gate", {})
             gate_passed = bool(gate_payload.get("passed")) if isinstance(gate_payload, dict) else False
             return EvalCommandResult(
-                output="\n".join((format_prepared_eval_audit(audit), format_prepared_baseline_report(payload))),
+                output="\n".join((format_prepared_eval_audit(audit), format_prepared_baseline_report(payload), format_paper_mode_gate(gate))),
                 exit_code=0 if gate_passed else 1,
                 payload=payload,
             )
@@ -187,7 +198,7 @@ def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
             write_json(out_dir / "prepared_baseline_suite.json", payload)
             write_json(out_dir / "paper_mode_gate.json", gate.to_dict())
         return EvalCommandResult(
-            output="\n".join((format_prepared_eval_audit(audit), format_prepared_baseline_report(payload))),
+            output="\n".join((format_prepared_eval_audit(audit), format_prepared_baseline_report(payload), format_paper_mode_gate(gate))),
             exit_code=0 if gate.passed else 1,
             payload=payload,
         )

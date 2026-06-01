@@ -14,17 +14,16 @@ from neurotwin.adapters.synthetic import (
 )
 from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
-    _aggregate_seed_ranks,
     build_prepared_window_tasks,
     format_prepared_baseline_report,
     run_prepared_baseline_suite,
-    run_prepared_baseline_suite_multi_seed,
 )
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.eval.command import EvalCommandConfig, run_eval_command
-from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS
+from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS, validate_paper_mode_payload
+from neurotwin.eval.prepared_paper_mode import _aggregate_seed_ranks, run_prepared_baseline_suite_multi_seed
 
 
 class PreparedEventSuiteTests(unittest.TestCase):
@@ -265,7 +264,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertNotEqual(paper_result.returncode, 0)
             self.assertIn("paper_mode_gate=True", paper_result.stdout)
             self.assertIn("paper_mode_passed=False", paper_result.stdout)
-            self.assertIn("missing 1,2", paper_result.stdout)
+            self.assertIn("missing 0,1,2", paper_result.stdout)
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
 
             paper_pass = subprocess.run(
@@ -303,6 +302,10 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertNotEqual(paper_artifact["tasks"], paper_artifact["seed_results"][0]["tasks"])
             self.assertIn("representative_seed_tasks", paper_artifact)
             self.assertTrue(all(task["status"] == "seed_aggregated" for task in paper_artifact["tasks"].values()))
+            for seed_result in paper_artifact["seed_results"]:
+                for task_result in seed_result["tasks"].values():
+                    metrics = task_result.get("metrics", {})
+                    self.assertFalse(any(str(key).endswith(("_ci_low", "_ci_high")) for key in metrics))
             self.assertIn("status=seed_aggregated", paper_pass.stdout)
             self.assertTrue((eval_dir / "seed_aggregate.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
@@ -335,14 +338,19 @@ class PreparedEventSuiteTests(unittest.TestCase):
                 out_dir=eval_dir,
             )
 
-            self.assertTrue(payload["paper_mode_gate"]["passed"], payload["paper_mode_gate"]["violations"])
-            self.assertEqual(tuple(payload["paper_mode_gate"]["observed_seeds"]), (0, 1, 2))
+            gate = validate_paper_mode_payload(payload, audit_report={"passed": True})
+            self.assertTrue(gate.passed, gate.violations)
+            self.assertEqual(gate.observed_seeds, (0, 1, 2))
             self.assertEqual([row["seed"] for row in payload["seed_results"]], [0, 1, 2])
             self.assertTrue(payload["aggregate"]["aggregate_rank"])
             self.assertTrue(payload["seed_aggregate"])
             self.assertNotEqual(payload["tasks"], payload["seed_results"][0]["tasks"])
             self.assertIn("representative_seed_tasks", payload)
             self.assertTrue(all(task["status"] == "seed_aggregated" for task in payload["tasks"].values()))
+            for seed_result in payload["seed_results"]:
+                for task_result in seed_result["tasks"].values():
+                    metrics = task_result.get("metrics", {})
+                    self.assertFalse(any(str(key).endswith(("_ci_low", "_ci_high")) for key in metrics))
             report = format_prepared_baseline_report(payload)
             self.assertIn("status=seed_aggregated", report)
             example = payload["seed_aggregate"][0]
