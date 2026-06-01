@@ -51,6 +51,12 @@ Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-se
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
 export RUN_ROOT="$NEUROTWIN_DATA/runs"
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
+export A100_RUN_ID=moabb_a100
+PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
+  --template "$A100_CONFIG_TEMPLATE" \
+  --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
+  --out outputs/configs/moabb_a100.materialized.yaml
 RUN_ROOT="$RUN_ROOT" \
 sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml

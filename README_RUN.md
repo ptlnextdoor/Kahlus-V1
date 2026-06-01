@@ -31,6 +31,8 @@ export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
 export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
+export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -61,6 +63,7 @@ PY'
 ```
 
 The exact inside-container sequence lives in `scripts/docker_a100_inner.sh`; deployment-agent details live in `README_AGENT_DEPLOY.md`. The full Docker run command remains `bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"`, which writes `docker_run.env`, the Docker log, `gpu_preflight.json`, run outputs, and the evidence bundle.
+If `A100_CONFIG_TEMPLATE` is unset, the helper keeps the short `configs/train/moabb_a100_smoke.yaml` infrastructure validation behavior. Set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml` and `A100_RUN_ID=moabb_a100` for the long 6-GPU MOABB training lane.
 
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
@@ -147,6 +150,8 @@ export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
 export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
+export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -267,6 +272,12 @@ Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
 export RUN_ROOT="$NEUROTWIN_DATA/runs"
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
+export A100_RUN_ID=moabb_a100
+PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
+  --template "$A100_CONFIG_TEMPLATE" \
+  --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
+  --out outputs/configs/moabb_a100.materialized.yaml
 RUN_ROOT="$RUN_ROOT" \
 sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
@@ -336,7 +347,7 @@ The evidence zip includes summaries, metrics, tables, figures, prepared manifest
 
 - Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_6gpu.sh`.
 - MOABB data preparation may need internet or a populated MOABB cache.
-- The first full run is configured for 50 smoke steps and `scientific_claim_allowed=false`.
+- The default guarded run is configured for 50 smoke steps and `scientific_claim_allowed=false`; the long 6-GPU lane requires `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`.
 - Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates.
 
 ## Success Condition

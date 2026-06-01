@@ -19,6 +19,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
     def _create_a100_evidence_fixture(
         self,
         root: Path,
+        run_id: str = "moabb_a100_smoke",
         environment_json: str | None = '{"run":{"slurm":{"job_id":"123"}}}\n',
         summary_json: str = (
             '{"status":"completed_prepared_training","completed_steps":50,'
@@ -27,10 +28,11 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         docker_run_env: str | None = (
             "DOCKER_LOG_PATH={persistent}/logs/neurotwin-a100-docker-20260531T000000Z.log\n"
             "DOCKER_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel\n"
+            "A100_RUN_ID={run_id}\n"
         ),
     ) -> Path:
         persistent = root / "persistent"
-        run = persistent / "runs" / "moabb_a100_smoke"
+        run = persistent / "runs" / run_id
         prepared = persistent / "prepared" / "moabb_benchmark"
         logs = persistent / "logs"
         (run / "tables").mkdir(parents=True)
@@ -46,7 +48,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             run / "metrics.json": "{}\n",
             run / "metrics.csv": "metric,value\n",
             run / "metrics.jsonl": "{}\n",
-            run / "config.yaml": "experiment: moabb_a100_smoke\n",
+            run / "config.yaml": f"experiment: {run_id}\n",
             run / "split_manifest.json": "{}\n",
             run / "tables" / "metrics_flat.csv": "metric,value\n",
             run / "figures" / "metric_summary.json": "{}\n",
@@ -64,7 +66,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             logs / "other-project.out": "unrelated\n",
         }
         if docker_run_env is not None:
-            files[persistent / "docker_run.env"] = docker_run_env.format(persistent=persistent)
+            files[persistent / "docker_run.env"] = docker_run_env.format(persistent=persistent, run_id=run_id)
         if environment_json is not None:
             files[run / "environment.json"] = environment_json
         for path, body in files.items():
@@ -329,6 +331,15 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             rel_names = self._package_a100_evidence_fixture(persistent, root)
 
         self.assertFalse(any(rel.startswith("logs/") for rel in rel_names))
+
+    def test_package_a100_evidence_bundle_uses_run_id_from_docker_env(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            persistent = self._create_a100_evidence_fixture(root, run_id="moabb_a100")
+            _rel_names, evidence_root = self._package_a100_evidence_fixture_with_root(persistent, root)
+            config = (evidence_root / "run" / "config.yaml").read_text(encoding="utf-8")
+
+        self.assertIn("experiment: moabb_a100", config)
 
     def test_package_a100_evidence_bundle_unsafe_job_id_includes_no_logs(self):
         with tempfile.TemporaryDirectory() as tmp:

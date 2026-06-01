@@ -18,6 +18,17 @@ cd /workspace/repo
 export PYTHONPATH="${PYTHONPATH:-}:src"
 export TOKENIZERS_PARALLELISM=false
 export NCCL_DEBUG="${NCCL_DEBUG:-INFO}"
+A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}
+A100_RUN_ID=${A100_RUN_ID:-$(basename "$A100_CONFIG_TEMPLATE" .yaml)}
+A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yaml}
+if [[ ! -f "$A100_CONFIG_TEMPLATE" ]]; then
+  echo "A100_CONFIG_TEMPLATE does not exist inside runner: $A100_CONFIG_TEMPLATE" >&2
+  exit 2
+fi
+if [[ ! "$A100_RUN_ID" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+  echo "A100_RUN_ID must be a safe run directory name, got: $A100_RUN_ID" >&2
+  exit 2
+fi
 
 mkdir -p \
   "$PERSISTENT_ROOT/moabb" \
@@ -41,11 +52,11 @@ python -m neurotwin.cli eval audit \
   --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
   --require-windows
 python -m neurotwin.cli cluster materialize-config \
-  --template configs/train/moabb_a100_smoke.yaml \
+  --template "$A100_CONFIG_TEMPLATE" \
   --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
-  --out outputs/configs/moabb_a100.materialized.yaml
+  --out "$A100_CONFIG_PATH"
 python -m neurotwin.cli cluster preflight \
-  --config outputs/configs/moabb_a100.materialized.yaml \
+  --config "$A100_CONFIG_PATH" \
   --run-root "$PERSISTENT_ROOT/runs" \
   --require-cuda \
   --require-prepared-windows \
@@ -53,7 +64,7 @@ python -m neurotwin.cli cluster preflight \
   --expect-split-windows "${EXPECTED_SPLIT_WINDOWS:-train:12096,val:2016,test:4032}"
 torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" \
   -m neurotwin.cli train \
-  --config outputs/configs/moabb_a100.materialized.yaml \
+  --config "$A100_CONFIG_PATH" \
   --run-root "$PERSISTENT_ROOT/runs"
-python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
+python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/$A100_RUN_ID"
 bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs

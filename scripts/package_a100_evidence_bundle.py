@@ -53,8 +53,17 @@ class EvidenceBundleConfig:
     full_sha: str
 
     @property
+    def run_id(self) -> str:
+        candidate = (
+            os.environ.get("A100_RUN_ID")
+            or load_env_file(self.persistent_root / "docker_run.env").get("A100_RUN_ID")
+            or "moabb_a100_smoke"
+        )
+        return candidate if is_safe_job_id(candidate) else "moabb_a100_smoke"
+
+    @property
     def run_dir(self) -> Path:
-        return self.persistent_root / "runs" / "moabb_a100_smoke"
+        return self.persistent_root / "runs" / self.run_id
 
     @property
     def prepared_dir(self) -> Path:

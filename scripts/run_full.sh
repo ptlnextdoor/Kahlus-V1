@@ -57,6 +57,17 @@ export RUN_ROOT="$NEUROTWIN_DATA/runs"
 export RUN_LOG_DIR="$NEUROTWIN_DATA/logs"
 export PYTHON_BIN="${PYTHON_BIN:-python3}"
 export PYTHONPATH="${PYTHONPATH:-}:src"
+A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}
+A100_RUN_ID=${A100_RUN_ID:-$(basename "$A100_CONFIG_TEMPLATE" .yaml)}
+A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yaml}
+if [[ ! -f "$A100_CONFIG_TEMPLATE" ]]; then
+  echo "A100_CONFIG_TEMPLATE does not exist: $A100_CONFIG_TEMPLATE" >&2
+  exit 2
+fi
+if [[ ! "$A100_RUN_ID" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+  echo "A100_RUN_ID must be a safe run directory name, got: $A100_RUN_ID" >&2
+  exit 2
+fi
 
 mkdir -p logs outputs/configs "$MOABB_DATA" "$BIDS_ROOT" "$RUN_ROOT" "$RUN_LOG_DIR" "$NEUROTWIN_DATA/prepared"
 if [[ ! -w logs ]]; then
@@ -96,10 +107,10 @@ echo "step=refresh_eval_audit"
   --out-dir "$PREPARED_DIR" \
   --require-windows
 
-CONFIG_PATH="outputs/configs/moabb_a100.materialized.yaml"
+CONFIG_PATH="$A100_CONFIG_PATH"
 echo "step=materialize_config path=$CONFIG_PATH"
 "$PYTHON_BIN" -m neurotwin.cli cluster materialize-config \
-  --template configs/train/moabb_a100_smoke.yaml \
+  --template "$A100_CONFIG_TEMPLATE" \
   --prepared-root "$PREPARED_DIR" \
   --out "$CONFIG_PATH"
 
@@ -123,7 +134,7 @@ if [[ -n "${SBATCH_QOS:-}" ]]; then
 fi
 
 echo "step=submit_a100_job"
-export REPO_ROOT EXPECTED_WINDOW_COUNT EXPECTED_SPLIT_WINDOWS RUN_LOG_DIR
+export REPO_ROOT EXPECTED_WINDOW_COUNT EXPECTED_SPLIT_WINDOWS RUN_LOG_DIR A100_CONFIG_TEMPLATE A100_RUN_ID
 sbatch "${SBATCH_ARGS[@]}" \
   --output "$RUN_LOG_DIR/neurotwin-a100-full-%j.out" \
   --error "$RUN_LOG_DIR/neurotwin-a100-full-%j.err" \

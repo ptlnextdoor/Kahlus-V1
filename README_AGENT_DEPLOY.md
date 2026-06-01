@@ -54,11 +54,15 @@ export DOCKER_IMAGE=neurotwin-a100-runner:local
 
 ## Full 6-GPU Run
 
+The default handoff command runs the short infrastructure smoke template. For the full MOABB A100 training lane, select the canonical long template before launch:
+
 ```bash
 export HOST_GPU_IDS=0,1,2,3,4,5
 export GPU_COUNT=6
 export NPROC_PER_NODE=6
 export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
+export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
@@ -90,7 +94,7 @@ python scripts/docker_gpu_preflight.py "$PERSISTENT_ROOT/gpu_preflight.json"
 bash scripts/run_smoke.sh outputs/smoke
 bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
 python -m neurotwin.cli eval audit ...
-python -m neurotwin.cli cluster materialize-config ...
+python -m neurotwin.cli cluster materialize-config --template "$A100_CONFIG_TEMPLATE" ...
 python -m neurotwin.cli cluster preflight ...
 torchrun --standalone --nproc_per_node=6 -m neurotwin.cli train ...
 python -m neurotwin.cli report ...

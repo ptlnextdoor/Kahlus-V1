@@ -35,8 +35,10 @@ ARCHIVE_PATHS=(
   pyproject.toml
   environment-a100.yml
   requirements/cluster-a100.txt
+  configs/train/moabb_a100.yaml
   configs/train/prepared_synthetic_debug.yaml
   configs/train/moabb_a100_smoke.yaml
+  configs/train/neurotwin_v1_a100.yaml
   scripts/run_smoke.sh
   scripts/run_docker_6gpu.sh
   scripts/docker_a100_inner.sh

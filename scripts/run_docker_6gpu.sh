@@ -8,6 +8,7 @@ usage: scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-<short_sha> [hos
 Examples:
   bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
   HOST_GPU_IDS=2,3,4,5,6,7 bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
+  A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
   GPU_COUNT=1 NPROC_PER_NODE=1 HOST_GPU_IDS=0 CONTAINER_CUDA_VISIBLE_DEVICES=0 bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
 
 Runs the A100 handoff inside Docker with the runner mounted at /workspace/repo.
@@ -28,6 +29,9 @@ GPU_COUNT=${GPU_COUNT:-6}
 HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}
 NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}
 NEUROTWIN_DOCKER_DRY_RUN=${NEUROTWIN_DOCKER_DRY_RUN:-0}
+A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}
+A100_RUN_ID=${A100_RUN_ID:-$(basename "$A100_CONFIG_TEMPLATE" .yaml)}
+A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yaml}
 for name in GPU_COUNT NPROC_PER_NODE; do
   value=${!name}
   if ! [[ "$value" =~ ^[0-9]+$ ]] || ((value < 1)); then
@@ -35,6 +39,10 @@ for name in GPU_COUNT NPROC_PER_NODE; do
     exit 2
   fi
 done
+if [[ ! "$A100_RUN_ID" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+  echo "A100_RUN_ID must be a safe run directory name, got: $A100_RUN_ID" >&2
+  exit 2
+fi
 if [[ -z "${CONTAINER_CUDA_VISIBLE_DEVICES:-}" ]]; then
   CONTAINER_CUDA_VISIBLE_DEVICES=0
   for ((index = 1; index < GPU_COUNT; index++)); do
@@ -85,6 +93,9 @@ fi
   printf 'GPU_COUNT=%s\n' "$GPU_COUNT"
   printf 'NPROC_PER_NODE=%s\n' "$NPROC_PER_NODE"
   printf 'CUDA_VISIBLE_DEVICES=%s\n' "$CONTAINER_CUDA_VISIBLE_DEVICES"
+  printf 'A100_CONFIG_TEMPLATE=%s\n' "$A100_CONFIG_TEMPLATE"
+  printf 'A100_RUN_ID=%s\n' "$A100_RUN_ID"
+  printf 'A100_CONFIG_PATH=%s\n' "$A100_CONFIG_PATH"
 } > "$PERSISTENT_ROOT/docker_run.env"
 exec > >(tee -a "$DOCKER_LOG_PATH") 2>&1
 
@@ -94,6 +105,9 @@ echo "host_gpu_ids=$HOST_GPU_IDS"
 echo "cuda_visible_devices=$CONTAINER_CUDA_VISIBLE_DEVICES"
 echo "gpu_count=$GPU_COUNT"
 echo "nproc_per_node=$NPROC_PER_NODE"
+echo "a100_config_template=$A100_CONFIG_TEMPLATE"
+echo "a100_run_id=$A100_RUN_ID"
+echo "a100_config_path=$A100_CONFIG_PATH"
 echo "docker_log_path=$DOCKER_LOG_PATH"
 
 if [[ "$NEUROTWIN_DOCKER_DRY_RUN" == "1" ]]; then
@@ -125,6 +139,9 @@ docker run --rm "${DOCKER_TTY[@]}" --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e HOST_GPU_IDS="$HOST_GPU_IDS" \
   -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
   -e NPROC_PER_NODE="$NPROC_PER_NODE" \
+  -e A100_CONFIG_TEMPLATE="$A100_CONFIG_TEMPLATE" \
+  -e A100_RUN_ID="$A100_RUN_ID" \
+  -e A100_CONFIG_PATH="$A100_CONFIG_PATH" \
   -e NCCL_DEBUG="${NCCL_DEBUG:-INFO}" \
   -e DOCKER_IMAGE="$DOCKER_IMAGE" \
   -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
