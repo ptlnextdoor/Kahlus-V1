@@ -204,6 +204,8 @@ class BaselineSuiteTests(unittest.TestCase):
         passed_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
         self.assertTrue(passed_report.passed)
         self.assertEqual(passed_report.observed_seeds, (0, 1, 2))
+        self.assertIn("ci_summaries", passed_report.checked)
+        self.assertNotIn("metric_evidence_without_ci", passed_report.checked)
 
         failed_audit_report = validate_paper_mode_payload(payload, audit_report={"passed": False, "violations": ["leakage"]})
         self.assertFalse(failed_audit_report.passed)
@@ -254,6 +256,82 @@ class BaselineSuiteTests(unittest.TestCase):
         top_level_no_ci["test_mse_ci_high"] = 0.14
         top_level_ci_report = validate_paper_mode_payload(top_level_no_ci, audit_report={"passed": True})
         self.assertTrue(top_level_ci_report.passed)
+
+    def test_paper_mode_gate_can_count_seed_metrics_without_ci_when_ci_is_optional(self):
+        payload = {
+            "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]},
+            "seed_results": [
+                {
+                    "seed": 0,
+                    "tasks": {
+                        "future_state_forecasting": {
+                            "ranking": [{"model_id": "linear_ridge", "rank": 1}],
+                            "metrics_by_model": {"linear_ridge": {"mse": 0.30}},
+                        }
+                    },
+                },
+                {
+                    "seed": 1,
+                    "tasks": {
+                        "future_state_forecasting": {
+                            "metrics": {"mse": 0.40},
+                        }
+                    },
+                },
+                {
+                    "seed": 2,
+                    "task_results": [
+                        {
+                            "task_id": "future_state_forecasting",
+                            "test_mse": 0.50,
+                        }
+                    ],
+                },
+            ],
+        }
+
+        strict_report = validate_paper_mode_payload(payload, audit_report={"passed": True})
+        self.assertFalse(strict_report.passed)
+        self.assertEqual(strict_report.observed_seeds, ())
+        self.assertTrue(any("missing 0,1,2" in violation for violation in strict_report.violations))
+        self.assertTrue(any("lacks finite" in violation for violation in strict_report.violations))
+
+        relaxed_report = validate_paper_mode_payload(payload, audit_report={"passed": True}, require_ci=False)
+        self.assertTrue(relaxed_report.passed)
+        self.assertEqual(relaxed_report.observed_seeds, (0, 1, 2))
+        self.assertIn("metric_evidence_without_ci", relaxed_report.checked)
+        self.assertNotIn("ci_summaries", relaxed_report.checked)
+        self.assertFalse(relaxed_report.violations)
+
+        metadata_only = {
+            "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]},
+            "seed_results": [{"seed": 0}, {"seed": 1}, {"seed": 2}],
+        }
+        metadata_only_report = validate_paper_mode_payload(
+            metadata_only,
+            audit_report={"passed": True},
+            require_ci=False,
+        )
+        self.assertFalse(metadata_only_report.passed)
+        self.assertEqual(metadata_only_report.observed_seeds, ())
+        self.assertTrue(any("missing 0,1,2" in violation for violation in metadata_only_report.violations))
+
+        ranking_only = {
+            "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]},
+            "seed_results": [
+                {
+                    "seed": 0,
+                    "tasks": {
+                        "future_state_forecasting": {
+                            "ranking": [{"model_id": "linear_ridge", "rank": 1}],
+                        }
+                    },
+                }
+            ],
+        }
+        ranking_only_report = validate_paper_mode_payload(ranking_only, audit_report={"passed": True}, require_ci=False)
+        self.assertFalse(ranking_only_report.passed)
+        self.assertEqual(ranking_only_report.observed_seeds, ())
 
     def test_eval_suite_writes_baseline_artifact(self):
         env = dict(os.environ)

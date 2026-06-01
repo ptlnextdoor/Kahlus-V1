@@ -41,6 +41,8 @@ from __future__ import annotations
 
 from hashlib import sha256
 from pathlib import Path
+import json
+import re
 import shutil
 import sys
 import tempfile
@@ -73,6 +75,7 @@ prepared_files = (
     "split_manifest.json",
     "leakage_report.json",
 )
+JOB_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 def _is_forbidden(path: Path) -> bool:
@@ -102,6 +105,68 @@ def _copy_tree_files(source_root: Path, destination_root: Path) -> None:
         if any(part.startswith(".") and part != ".gitkeep" for part in rel.parts):
             continue
         _copy_file(source, destination_root / rel)
+
+
+def _load_json(path: Path) -> dict:
+    if not path.is_file() or _is_forbidden(path):
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _find_nested_string(payload: dict, path: tuple[str, ...]) -> str | None:
+    value: object = payload
+    for key in path:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    if isinstance(value, (str, int)) and not isinstance(value, bool) and str(value).strip():
+        return str(value).strip()
+    return None
+
+
+def _is_safe_job_id(value: str) -> bool:
+    return bool(JOB_ID_PATTERN.fullmatch(value))
+
+
+def _current_slurm_job_id(run_root: Path) -> str | None:
+    candidate_paths = (
+        ("run", "slurm", "job_id"),
+        ("slurm", "job_id"),
+        ("slurm_job_id",),
+        ("job_id",),
+    )
+    for filename in ("environment.json", "summary.json"):
+        payload = _load_json(run_root / filename)
+        for path in candidate_paths:
+            job_id = _find_nested_string(payload, path)
+            if job_id:
+                return job_id if _is_safe_job_id(job_id) else None
+    return None
+
+
+def _safe_child(root: Path, filename: str) -> Path | None:
+    root_resolved = root.resolve()
+    candidate = (root / filename).resolve()
+    try:
+        candidate.relative_to(root_resolved)
+    except ValueError:
+        return None
+    return candidate
+
+
+def _copy_current_run_logs(source_root: Path, destination_root: Path, job_id: str | None) -> None:
+    if not job_id or not _is_safe_job_id(job_id) or not source_root.is_dir():
+        return
+    for suffix in (".out", ".err"):
+        filename = f"neurotwin-a100-full-{job_id}{suffix}"
+        source = _safe_child(source_root, filename)
+        destination = _safe_child(destination_root, filename)
+        if source is not None and destination is not None:
+            _copy_file(source, destination)
 
 
 def _write_readmes(root: Path) -> None:
@@ -152,7 +217,7 @@ with tempfile.TemporaryDirectory() as tmp:
     _copy_tree_files(run_dir / "figures", stage_root / "run" / "figures")
     for rel in prepared_files:
         _copy_file(prepared_dir / rel, stage_root / "prepared" / rel)
-    _copy_tree_files(logs_dir, stage_root / "logs")
+    _copy_current_run_logs(logs_dir, stage_root / "logs", _current_slurm_job_id(run_dir))
     _write_readmes(stage_root)
     _write_checksums(stage_root)
 
