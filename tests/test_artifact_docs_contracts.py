@@ -30,6 +30,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/cluster/runpod_a100_rehearsal.sh",
             "scripts/run_smoke.sh",
             "scripts/run_docker_6gpu.sh",
+            "scripts/docker_a100_inner.sh",
+            "scripts/docker_gpu_preflight.py",
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
             "scripts/package_a100_evidence_bundle.sh",
@@ -132,18 +134,31 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
 
     def test_docker_6gpu_runner_contains_required_sequence(self):
-        script = Path("scripts/run_docker_6gpu.sh").read_text(encoding="utf-8")
+        launcher = Path("scripts/run_docker_6gpu.sh").read_text(encoding="utf-8")
+        inner = Path("scripts/docker_a100_inner.sh").read_text(encoding="utf-8")
+        preflight = Path("scripts/docker_gpu_preflight.py").read_text(encoding="utf-8")
 
         for required in (
             "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
-            '--gpus "$DOCKER_GPU_ARG"',
+            '--gpus "\\"device=${HOST_GPU_IDS}\\""',
             "--ipc=host",
+            "--shm-size=64g",
+            "--ulimit memlock=-1",
+            "--ulimit stack=67108864",
             "-v \"$REPO_ROOT\":/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
+            "HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}",
+            "GPU_COUNT=${GPU_COUNT:-6}",
+            "NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}",
+            "-e CUDA_VISIBLE_DEVICES=\"$CONTAINER_CUDA_VISIBLE_DEVICES\"",
+            "-e NCCL_DEBUG=\"${NCCL_DEBUG:-INFO}\"",
+            "bash scripts/docker_a100_inner.sh",
+        ):
+            self.assertIn(required, launcher)
+        self.assertNotIn("python - <<", launcher)
+        for required in (
             "python -m pip install -e \".[moabb,cluster]\"",
-            "gpu_preflight.json",
-            "torch.cuda.device_count()",
-            "ALLOW_FEWER_GPUS=1",
+            "python scripts/docker_gpu_preflight.py \"$PERSISTENT_ROOT/gpu_preflight.json\"",
             "bash scripts/run_smoke.sh outputs/smoke",
             "bash scripts/prepare_moabb_benchmark.sh",
             "python -m neurotwin.cli eval audit",
@@ -154,9 +169,18 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
         ):
-            self.assertIn(required, script)
-        self.assertIn("GPU_SELECTOR=${2:-all}", script)
-        self.assertIn("TARGET_GPUS=${TARGET_GPUS:-6}", script)
+            self.assertIn(required, inner)
+        for required in (
+            "torch.cuda.device_count()",
+            "expected_gpu_count",
+            "visible_gpu_count",
+            "docker_image",
+            "HOST_GPU_IDS",
+            "CUDA_VISIBLE_DEVICES",
+            "NPROC_PER_NODE",
+            "Expected exactly",
+        ):
+            self.assertIn(required, preflight)
 
     def test_agent_deploy_docs_and_dockerfile_are_6gpu_first(self):
         doc = Path("README_AGENT_DEPLOY.md").read_text(encoding="utf-8")
@@ -164,16 +188,28 @@ class ArtifactDocsContractsTests(unittest.TestCase):
 
         for required in (
             "automated deployment agent",
-            "docker run --rm --gpus all --ipc=host",
+            'docker run --rm --gpus "\\"device=${HOST_GPU_IDS}\\""',
             "device_count",
-            "less than `6`, stop",
-            "TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh",
+            "not exactly `6`, stop",
+            "HOST_GPU_IDS=0,1,2,3,4,5",
+            "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
+            "GPU_COUNT=6",
+            "NPROC_PER_NODE=6",
+            "--shm-size=64g",
+            "--ulimit memlock=-1",
+            "NCCL_DEBUG=INFO",
+            "bash scripts/run_docker_6gpu.sh",
             "torchrun --standalone --nproc_per_node=6",
             "One-GPU Diagnostic Only",
             "not the requested 6-GPU handoff run",
+            "torch.cuda.set_device(local_rank)",
+            "DistributedDataParallel",
+            "dependency/runtime image helper",
+            "does not hide source code",
         ):
             self.assertIn(required, doc)
         self.assertIn("FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel", dockerfile)
+        self.assertIn("not a source-hiding image", dockerfile)
         self.assertIn("COPY src ./src", dockerfile)
         self.assertIn("python -m pip install -e '.[moabb,cluster]'", dockerfile)
 
@@ -194,10 +230,15 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m pip install -e '.[moabb,cluster]'",
             "Docker Fallback",
             "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
-            '--gpus "device=<gpu_id>"',
-            "--gpus all --ipc=host",
-            "TARGET_GPUS=6",
-            "ALLOW_FEWER_GPUS=1",
+            '--gpus "\\"device=${HOST_GPU_IDS}\\""',
+            '--gpus "\\"device=<host_gpu_id>\\""',
+            "--ipc=host --shm-size=64g",
+            "--ulimit memlock=-1",
+            "HOST_GPU_IDS=0,1,2,3,4,5",
+            "GPU_COUNT=6",
+            "NPROC_PER_NODE=6",
+            "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
+            "NCCL_DEBUG=INFO",
             "/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
@@ -212,6 +253,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli cluster materialize-config",
             "python -m neurotwin.cli cluster preflight",
             "torchrun --standalone --nproc_per_node=6",
+            "torchrun --standalone --nproc_per_node=1",
             "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",

@@ -64,6 +64,8 @@ def assert_runner_archive(testcase: unittest.TestCase, archive: Path, extract_ro
         "scripts/package_a100_evidence_bundle.sh",
         "scripts/package_runner_bundle.sh",
         "scripts/prepare_moabb_benchmark.sh",
+        "scripts/docker_a100_inner.sh",
+        "scripts/docker_gpu_preflight.py",
         "scripts/run_docker_6gpu.sh",
         "scripts/run_full.sbatch",
         "scripts/run_full.sh",

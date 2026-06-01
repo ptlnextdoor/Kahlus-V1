@@ -1,5 +1,7 @@
 FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
 
+# Dependency/runtime helper image. This is not a source-hiding image; the
+# handoff runner still ships the runtime Python source required to execute.
 ENV PIP_NO_CACHE_DIR=1 \
     PYTHONUNBUFFERED=1 \
     TOKENIZERS_PARALLELISM=false

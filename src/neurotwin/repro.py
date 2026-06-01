@@ -114,6 +114,14 @@ def capture_run_metadata(argv: list[str] | tuple[str, ...] | None = None, env: d
             or environ.get("CONTAINER_NAME")
             or environ.get("HOSTNAME")
         ),
+        "docker_image": environ.get("DOCKER_IMAGE"),
+    }
+    distributed = {
+        "local_rank": environ.get("LOCAL_RANK"),
+        "rank": environ.get("RANK"),
+        "world_size": environ.get("WORLD_SIZE"),
+        "cuda_visible_devices": environ.get("CUDA_VISIBLE_DEVICES"),
+        "nccl_debug": environ.get("NCCL_DEBUG"),
     }
     if slurm["job_id"]:
         mode = "slurm"
@@ -127,6 +135,7 @@ def capture_run_metadata(argv: list[str] | tuple[str, ...] | None = None, env: d
         "command": " ".join(shlex.quote(part) for part in sanitized_argv),
         "slurm": slurm,
         "container": container,
+        "distributed": distributed,
     }
 
 
@@ -193,10 +202,23 @@ def cuda_metadata() -> dict[str, Any]:
         "device_names": names,
         "device_name": current_device_name,
         "version": torch.version.cuda,
+        "nccl_version": _nccl_version(),
     }
 
 
-def capture_environment(repo_root: str | Path = ".", argv: list[str] | tuple[str, ...] | None = None) -> dict[str, Any]:
+def _nccl_version() -> str | None:
+    try:
+        version = torch.cuda.nccl.version()  # type: ignore[attr-defined]
+    except (AttributeError, RuntimeError):
+        return None
+    return ".".join(str(part) for part in version) if isinstance(version, tuple) else str(version)
+
+
+def capture_environment(
+    repo_root: str | Path = ".",
+    argv: list[str] | tuple[str, ...] | None = None,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
     source_commit = resolve_source_commit(repo_root)
     cuda = cuda_metadata()
     return {
@@ -213,6 +235,8 @@ def capture_environment(repo_root: str | Path = ".", argv: list[str] | tuple[str
             "cuda_device_name": cuda["device_name"],
             "cuda_device_names": cuda["device_names"],
             "cuda_version": cuda["version"],
+            "torch_cuda_version": cuda["version"],
+            "nccl_version": cuda["nccl_version"],
         },
         "git": {
             "commit": source_commit["commit"],
@@ -220,7 +244,7 @@ def capture_environment(repo_root: str | Path = ".", argv: list[str] | tuple[str
             "source_commit_missing": source_commit["source_commit_missing"],
         },
         "source_commit_missing": source_commit["source_commit_missing"],
-        "run": capture_run_metadata(argv=argv),
+        "run": capture_run_metadata(argv=argv, env=env),
     }
 
 

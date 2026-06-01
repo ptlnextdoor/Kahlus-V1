@@ -120,6 +120,31 @@ class ConfigReproDoctorTests(unittest.TestCase):
         self.assertEqual(slurm["slurm"]["node_id"], "2")
         self.assertEqual(slurm["argv"][-1], "<redacted>")
 
+    def test_environment_captures_docker_and_ddp_metadata(self):
+        env = capture_environment(
+            argv=["nt", "train"],
+            env={
+                "CONTAINER": "docker",
+                "DOCKER_IMAGE": "neurotwin-a100-runner:local",
+                "CUDA_VISIBLE_DEVICES": "0,1,2,3,4,5",
+                "LOCAL_RANK": "2",
+                "RANK": "2",
+                "WORLD_SIZE": "6",
+                "NCCL_DEBUG": "INFO",
+            },
+        )
+
+        self.assertEqual(env["run"]["mode"], "container")
+        self.assertEqual(env["run"]["container"]["docker_image"], "neurotwin-a100-runner:local")
+        self.assertEqual(env["run"]["distributed"]["cuda_visible_devices"], "0,1,2,3,4,5")
+        self.assertEqual(env["run"]["distributed"]["local_rank"], "2")
+        self.assertEqual(env["run"]["distributed"]["rank"], "2")
+        self.assertEqual(env["run"]["distributed"]["world_size"], "6")
+        self.assertIn("torch_cuda_version", env["torch"])
+        self.assertIn("nccl_version", env["torch"])
+        self.assertIn("cuda_device_count", env["torch"])
+        self.assertIn("cuda_device_names", env["torch"])
+
     def test_run_metadata_redacts_underscore_secret_flags(self):
         metadata = capture_run_metadata(
             argv=[

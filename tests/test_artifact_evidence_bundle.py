@@ -24,6 +24,10 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         prepared.mkdir(parents=True)
         logs.mkdir(parents=True)
         files = {
+            persistent / "gpu_preflight.json": (
+                '{"passed":true,"visible_gpu_count":6,'
+                '"CUDA_VISIBLE_DEVICES":"0,1,2,3,4,5","WORLD_SIZE":"6"}\n'
+            ),
             run / "summary.json": summary_json,
             run / "metrics.json": "{}\n",
             run / "metrics.csv": "metric,value\n",
@@ -100,6 +104,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
                 "run/metrics.jsonl",
                 "run/config.yaml",
                 "run/environment.json",
+                "run/gpu_preflight.json",
                 "run/split_manifest.json",
                 "run/tables/metrics_flat.csv",
                 "run/figures/metric_summary.json",

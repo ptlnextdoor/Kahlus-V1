@@ -100,21 +100,52 @@ sha256sum -c SHA256SUMS
 Primary Docker 6-GPU path:
 
 \`\`\`bash
+export HOST_GPU_IDS=0,1,2,3,4,5
+export GPU_COUNT=6
+export NPROC_PER_NODE=6
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" all
+bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
 \`\`\`
 
-The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, and refuses to train unless six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\`; \`Dockerfile.a100\` is included for agents that prefer to build a local image before running.
+The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, host GPUs mapped to container devices \`cuda:0\` through \`cuda:5\`, and refuses to train unless exactly six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\`; \`Dockerfile.a100\` is a dependency/runtime image helper and does not hide source code.
 
 \`\`\`bash
-docker run --rm -it --gpus all --ipc=host \\
+docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
+  --ipc=host --shm-size=64g \\
+  --ulimit memlock=-1 --ulimit stack=67108864 \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
   -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
   -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
+  -e NCCL_DEBUG=INFO \\
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
 \`\`\`
+
+Six-GPU Docker preflight:
+
+\`\`\`bash
+HOST_GPU_IDS=0,1,2,3,4,5
+docker run --rm --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
+  --ipc=host --shm-size=64g \\
+  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
+  bash -lc 'nvidia-smi && python - <<'"'"'PY'"'"'
+import torch
+print("torch", torch.__version__)
+print("cuda", torch.version.cuda)
+print("cuda_available", torch.cuda.is_available())
+print("device_count", torch.cuda.device_count())
+assert torch.cuda.is_available()
+assert torch.cuda.device_count() == 6
+for i in range(torch.cuda.device_count()):
+    print(i, torch.cuda.get_device_name(i))
+PY'
+\`\`\`
+
+The current training path supports single-node DDP through \`torchrun\`, \`LOCAL_RANK\`, \`RANK\`, \`WORLD_SIZE\`, \`torch.cuda.set_device(local_rank)\`, and PyTorch \`DistributedDataParallel\` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
 The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
 
@@ -147,27 +178,39 @@ sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \\
 The packaged helper is the recommended Docker fallback when \`conda\` or \`sbatch\` are missing:
 
 \`\`\`bash
+export HOST_GPU_IDS=0,1,2,3,4,5
+export GPU_COUNT=6
+export NPROC_PER_NODE=6
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" all
+bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
 \`\`\`
 
-For a one-GPU diagnostic, pass one visible GPU id and override the process count:
+For a one-GPU diagnostic, pass one visible host GPU id and force one worker:
 
 \`\`\`bash
-ALLOW_FEWER_GPUS=1 TARGET_GPUS=1 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" <gpu_id>
+export HOST_GPU_IDS=<host_gpu_id>
+export GPU_COUNT=1
+export NPROC_PER_NODE=1
+export CUDA_VISIBLE_DEVICES=0
+bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
 \`\`\`
 
-In that diagnostic mode the helper passes Docker \`--gpus "device=<gpu_id>"\`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
+In that diagnostic mode the helper passes Docker \`--gpus "\\"device=<host_gpu_id>\\""\` and launches \`torchrun --standalone --nproc_per_node=1\`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
 The helper runs this host command:
 
 \`\`\`bash
-docker run --rm -it --gpus all --ipc=host \\
+docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
+  --ipc=host --shm-size=64g \\
+  --ulimit memlock=-1 --ulimit stack=67108864 \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
   -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
   -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
+  -e NCCL_DEBUG=INFO \\
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
 \`\`\`
 
@@ -175,6 +218,7 @@ Inside the container, the helper executes:
 
 \`\`\`bash
 python -m pip install -e '.[moabb,cluster]'
+python scripts/docker_gpu_preflight.py "\$PERSISTENT_ROOT/gpu_preflight.json"
 bash scripts/run_smoke.sh outputs/smoke
 bash scripts/prepare_moabb_benchmark.sh "\$PERSISTENT_ROOT/prepared/moabb_benchmark"
 python -m neurotwin.cli eval audit \\

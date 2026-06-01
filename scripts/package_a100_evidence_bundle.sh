@@ -189,7 +189,8 @@ def _write_readmes(root: Path) -> None:
     (root / "README_SEND_TO_FRIEND.md").write_text(
         "# Sendable NeuroTwin A100 Evidence\n\n"
         "Send this zip back after an A100 run. It includes small review artifacts only: summaries, metrics, "
-        "tables, figures, prepared manifests/audits, logs, the source commit, and checksums.\n\n"
+        "tables, figures, prepared manifests/audits, Docker GPU preflight proof, logs, the source commit, "
+        "and checksums.\n\n"
         "It intentionally excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, "
         "API keys, SSH keys, `.env*` files, and other secret-looking files. Keep large checkpoints on the cluster "
         "unless they are requested explicitly.\n\n"
@@ -213,6 +214,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     for rel in run_files:
         _copy_file(run_dir / rel, stage_root / "run" / rel)
+    _copy_file(persistent_root / "gpu_preflight.json", stage_root / "run" / "gpu_preflight.json")
     _copy_tree_files(run_dir / "tables", stage_root / "run" / "tables")
     _copy_tree_files(run_dir / "figures", stage_root / "run" / "figures")
     for rel in prepared_files:
