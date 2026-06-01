@@ -300,6 +300,10 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertEqual(paper_artifact["seeds"], [0, 1, 2])
             self.assertEqual([row["seed"] for row in paper_artifact["seed_results"]], [0, 1, 2])
             self.assertTrue(paper_artifact["seed_aggregate"])
+            self.assertNotEqual(paper_artifact["tasks"], paper_artifact["seed_results"][0]["tasks"])
+            self.assertIn("representative_seed_tasks", paper_artifact)
+            self.assertTrue(all(task["status"] == "seed_aggregated" for task in paper_artifact["tasks"].values()))
+            self.assertIn("status=seed_aggregated", paper_pass.stdout)
             self.assertTrue((eval_dir / "seed_aggregate.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
 
@@ -336,6 +340,11 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertEqual([row["seed"] for row in payload["seed_results"]], [0, 1, 2])
             self.assertTrue(payload["aggregate"]["aggregate_rank"])
             self.assertTrue(payload["seed_aggregate"])
+            self.assertNotEqual(payload["tasks"], payload["seed_results"][0]["tasks"])
+            self.assertIn("representative_seed_tasks", payload)
+            self.assertTrue(all(task["status"] == "seed_aggregated" for task in payload["tasks"].values()))
+            report = format_prepared_baseline_report(payload)
+            self.assertIn("status=seed_aggregated", report)
             example = payload["seed_aggregate"][0]
             for key in ("task_id", "model_id", "metric", "mean", "std", "ci_low", "ci_high", "n_seeds"):
                 self.assertIn(key, example)

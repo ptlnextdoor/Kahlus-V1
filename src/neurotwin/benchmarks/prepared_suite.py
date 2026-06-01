@@ -18,7 +18,7 @@ from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
 from neurotwin.eval.audit import audit_prepared_eval_inputs
-from neurotwin.eval.metrics import bootstrap_ci
+from neurotwin.eval.metrics import bootstrap_ci, rank_models
 from neurotwin.eval.paper_gate import (
     CANONICAL_REQUIRED_SEEDS,
     PaperModeGateReport,
@@ -633,6 +633,7 @@ def _merge_seed_payloads(
     first = seed_results[0] if seed_results else {}
     aggregate_rank = _aggregate_seed_ranks(seed_results)
     seed_aggregate = _aggregate_seed_metrics(seed_results)
+    tasks = _aggregate_seed_tasks(first, seed_aggregate)
     failures: list[dict[str, str]] = []
     for result in seed_results:
         raw_failures = result.get("baseline_failures", [])
@@ -642,7 +643,7 @@ def _merge_seed_payloads(
                     failures.append({str(key): str(value) for key, value in failure.items()})
     return {
         "scope": first.get("scope", {"status": "prepared-data", "notes": []}),
-        "tasks": first.get("tasks", {}),
+        "tasks": tasks,
         "aggregate": {
             "selection_metric": "mse",
             "higher_is_better": False,
@@ -652,6 +653,7 @@ def _merge_seed_payloads(
         "seeds": [int(seed) for seed in seeds],
         "seed_results": seed_results,
         "seed_aggregate": seed_aggregate,
+        "representative_seed_tasks": first.get("tasks", {}),
         "prepared_data": first.get(
             "prepared_data",
             {
@@ -672,6 +674,75 @@ def _merge_seed_payloads(
         "baseline_catalog": first.get("baseline_catalog", []),
         "baseline_failures": failures,
     }
+
+
+def _aggregate_seed_tasks(
+    representative_payload: dict[str, object],
+    seed_aggregate: list[dict[str, object]],
+) -> dict[str, dict[str, object]]:
+    representative_tasks = representative_payload.get("tasks", {})
+    if not isinstance(representative_tasks, dict):
+        representative_tasks = {}
+
+    rows_by_task: dict[str, list[dict[str, object]]] = {}
+    for row in seed_aggregate:
+        task_id = row.get("task_id")
+        if task_id is not None:
+            rows_by_task.setdefault(str(task_id), []).append(row)
+
+    tasks: dict[str, dict[str, object]] = {}
+    for task_id, rows in sorted(rows_by_task.items()):
+        representative = representative_tasks.get(task_id, {})
+        if not isinstance(representative, dict):
+            representative = {}
+        metrics: dict[str, float] = {}
+        metrics_by_model: dict[str, dict[str, float]] = {}
+        for row in rows:
+            model_id = row.get("model_id")
+            metric = row.get("metric")
+            if model_id is None or metric is None:
+                continue
+            metric_name = str(metric)
+            mean = _finite_row_float(row, "mean")
+            ci_low = _finite_row_float(row, "ci_low")
+            ci_high = _finite_row_float(row, "ci_high")
+            if mean is None or ci_low is None or ci_high is None:
+                continue
+            target = metrics if str(model_id) == "task_metric" else metrics_by_model.setdefault(str(model_id), {})
+            target[metric_name] = mean
+            target[f"{metric_name}_ci_low"] = ci_low
+            target[f"{metric_name}_ci_high"] = ci_high
+
+        ranking = [
+            {"model_id": row.model_id, "metric": row.metric, "value": row.value, "rank": row.rank}
+            for row in rank_models(metrics_by_model, metric="mse", higher_is_better=False)
+        ] if metrics_by_model and all("mse" in model_metrics for model_metrics in metrics_by_model.values()) else []
+        tasks[task_id] = {
+            "status": "seed_aggregated",
+            "source_modality": representative.get("source_modality"),
+            "target_modality": representative.get("target_modality"),
+            "metrics": metrics,
+            "metrics_by_model": metrics_by_model,
+            "ranking": ranking,
+            "failures": [],
+            "notes": [
+                "aggregate across seed_results; per-seed concrete results are stored in seed_results",
+                *_representative_notes(representative),
+            ],
+        }
+    return tasks
+
+
+def _representative_notes(task_payload: dict[str, object]) -> list[str]:
+    notes = task_payload.get("notes", [])
+    return [str(note) for note in notes] if isinstance(notes, list) else []
+
+
+def _finite_row_float(row: dict[str, object], key: str) -> float | None:
+    value = row.get(key)
+    if isinstance(value, (int, float, np.floating)) and not isinstance(value, bool) and np.isfinite(float(value)):
+        return float(value)
+    return None
 
 
 def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
