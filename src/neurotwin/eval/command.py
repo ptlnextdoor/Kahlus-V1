@@ -4,11 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from neurotwin.benchmarks.prepared_suite import (
-    PreparedSuiteConfig,
-    format_prepared_baseline_report,
-    run_prepared_baseline_suite,
-)
+from neurotwin.benchmarks.prepared_suite import format_prepared_baseline_report, run_prepared_baseline_suite
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.smoke import format_smoke_results, run_translation_smoke
 from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_neural_translation_v1_synthetic
@@ -16,6 +12,7 @@ from neurotwin.benchmarks.task_specs import default_translation_tasks
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
 from neurotwin.eval.paper_gate import format_paper_mode_gate, validate_paper_mode_payload
 from neurotwin.eval.prepared_paper_mode import run_prepared_baseline_suite_multi_seed, write_prepared_paper_mode_artifacts
+from neurotwin.data.prepared_tasks import PreparedSuiteConfig
 from neurotwin.repro import write_json
 
 
@@ -94,7 +91,7 @@ def _run_audit_command(config: EvalCommandConfig) -> EvalCommandResult:
 def _run_neural_translation_v1_command(config: EvalCommandConfig) -> EvalCommandResult:
     if config.event_manifest or config.split_manifest:
         return run_prepared_eval_command(config)
-    payload = run_neural_translation_v1_synthetic(seed=0, out_dir=config.out_dir)
+    payload = run_neural_translation_v1_synthetic(seed=config.seed, out_dir=config.out_dir)
     return EvalCommandResult(output=format_neural_translation_v1_report(payload), payload=payload)
 
 
@@ -179,7 +176,8 @@ def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
         out_dir=config.out_dir,
     )
     if config.paper_mode:
-        assert audit is not None
+        if audit is None:
+            return EvalCommandResult(output="", exit_code=1, error="paper mode audit did not run")
         payload["eval_audit"] = audit.to_dict()
         gate = validate_paper_mode_payload(
             payload,
@@ -214,7 +212,7 @@ def _run_translation_smoke_command(config: EvalCommandConfig) -> EvalCommandResu
     if config.run:
         lines.append(f"run={config.run}")
     lines.append("")
-    lines.append(format_smoke_results(run_translation_smoke(seed=0)))
+    lines.append(format_smoke_results(run_translation_smoke(seed=config.seed)))
     return EvalCommandResult(output="\n".join(lines))
 
 

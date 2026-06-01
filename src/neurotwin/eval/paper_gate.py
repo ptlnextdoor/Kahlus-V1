@@ -8,7 +8,9 @@ from typing import Any
 import numpy as np
 
 
-CANONICAL_REQUIRED_SEEDS = (0, 1, 2)
+from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
+
+
 CONCRETE_SEED_CONTAINER_KEYS = ("runs", "seed_results", "per_seed_results", "baseline_runs", "per_seed_baselines")
 
 
@@ -157,8 +159,10 @@ def load_run_summary(run_dir: str | Path) -> dict[str, Any]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    except json.JSONDecodeError as exc:
+        return _json_artifact_error(path, "invalid_json", str(exc))
+    except OSError as exc:
+        return _json_artifact_error(path, "read_failed", str(exc))
     return payload if isinstance(payload, dict) else {}
 
 
@@ -168,8 +172,10 @@ def load_paper_mode_gate(run_dir: str | Path) -> dict[str, Any]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    except json.JSONDecodeError as exc:
+        return _json_artifact_error(path, "invalid_json", str(exc))
+    except OSError as exc:
+        return _json_artifact_error(path, "read_failed", str(exc))
     return payload if isinstance(payload, dict) else {}
 
 
@@ -179,6 +185,10 @@ def effective_scientific_claim_allowed_for_run(
 ) -> bool:
     summary_payload = summary if isinstance(summary, dict) else load_run_summary(run_dir)
     return effective_scientific_claim_allowed(summary_payload, load_paper_mode_gate(run_dir))
+
+
+def _json_artifact_error(path: Path, error: str, message: str) -> dict[str, Any]:
+    return {"error": error, "path": str(path), "message": message}
 
 
 def _audit_payload(audit_report: Any | None, payload: dict[str, Any]) -> dict[str, Any] | None:

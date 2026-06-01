@@ -138,7 +138,6 @@ def trials_to_recordings(trials: Iterable[dict[str, Any]] | None, dataset_id: st
         run_id = _prefixed("run", trial.get("run", str(idx)))
         start_time = float(trial.get("start_time", 0.0))
         end_time = float(trial.get("end_time", start_time + signal.shape[0] / sampling_rate))
-        record_id = f"{dataset_id}_{subject_id}_{session_id}_{run_id}_trial-{idx:05d}"
         records.append(
             RecordingRecord(
                 record_id=record_id,

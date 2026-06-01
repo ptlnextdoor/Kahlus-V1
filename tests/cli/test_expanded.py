@@ -143,9 +143,24 @@ class ExpandedCliTests(unittest.TestCase):
 
             self.assertTrue((out / "compare_runs.csv").exists())
             self.assertTrue((out / "compare_runs.json").exists())
-            self.assertIn("NeuroTwin Run Comparison", result.stdout)
-            self.assertEqual(compare_rows[0]["scientific_claim_allowed"], True)
-            self.assertEqual(compare_rows[1]["scientific_claim_allowed"], False)
+        self.assertIn("NeuroTwin Run Comparison", result.stdout)
+        self.assertEqual(compare_rows[0]["scientific_claim_allowed"], True)
+        self.assertEqual(compare_rows[1]["scientific_claim_allowed"], False)
+
+    def test_report_compare_surfaces_malformed_json_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run_dir = root / "broken"
+            out = root / "compare"
+            run_dir.mkdir()
+            (run_dir / "metrics.json").write_text("{broken\n", encoding="utf-8")
+
+            result = self.run_cli("report", "--compare", str(run_dir), "--out-dir", str(out))
+            compare_rows = json.loads((out / "compare_runs.json").read_text(encoding="utf-8"))
+
+        self.assertIn("artifact_errors", result.stdout)
+        self.assertEqual(compare_rows[0]["status"], "artifact_error")
+        self.assertIn("invalid_json", compare_rows[0]["artifact_error"])
 
     def test_make_tables_treats_malformed_gate_as_plumbing(self):
         with tempfile.TemporaryDirectory() as tmp:

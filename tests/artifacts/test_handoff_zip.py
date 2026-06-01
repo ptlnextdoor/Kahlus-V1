@@ -5,7 +5,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from tests.artifact_helpers import assert_runner_archive, copy_repo_to_temp_git
+from tests.artifacts.helpers import assert_runner_archive, copy_repo_to_temp_git
 
 
 class HandoffZipArtifactTests(unittest.TestCase):

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator
+from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig
 
 
 class BaselinesAndArchitectureTests(unittest.TestCase):
@@ -27,9 +27,7 @@ class BaselinesAndArchitectureTests(unittest.TestCase):
         model = NeuralStateSpaceTranslator(
             input_dims={"eeg": 4, "fmri": 6},
             output_dims={"eeg": 4, "fmri": 6},
-            latent_dim=16,
-            n_layers=1,
-            subject_adapter_dim=4,
+            config=NeuralStateSpaceTranslatorConfig(latent_dim=16, n_layers=1, subject_adapter_dim=4),
         )
         batch = {
             "eeg": torch.randn(2, 5, 4),

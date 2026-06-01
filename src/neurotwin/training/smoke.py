@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator
+from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig
 
 
 @dataclass(frozen=True)
@@ -28,8 +28,7 @@ def run_synthetic_training(seed: int = 0, steps: int = 24) -> TrainingSmokeResul
     model = NeuralStateSpaceTranslator(
         input_dims={"fmri": 6, "eeg": 4},
         output_dims={"fmri": 6},
-        latent_dim=32,
-        n_layers=1,
+        config=NeuralStateSpaceTranslatorConfig(latent_dim=32, n_layers=1),
     )
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-2)
     loss_fn = nn.MSELoss()

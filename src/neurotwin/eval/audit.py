@@ -69,8 +69,23 @@ def audit_prepared_eval_inputs(
             write_json(Path(out_dir) / "eval_audit.json", report.to_dict())
         return report
 
-    split = load_split_manifest(split_manifest)
-    split_report = audit_split_manifest(split, policy=split.policy)
+    try:
+        split = load_split_manifest(split_manifest)
+        split_report = audit_split_manifest(split, policy=split.policy)
+    except Exception as exc:  # noqa: BLE001 - audit must report split integrity failures, not leak raw errors.
+        report = PreparedEvalAuditReport(
+            passed=False,
+            violations=(f"split manifest integrity failure: {exc}",),
+            warnings=(),
+            checked=tuple(checked),
+            event_count=len(batches),
+            window_count=0,
+            window_counts_by_split={"train": 0, "val": 0, "test": 0},
+            event_summary=summary,
+        )
+        if out_dir is not None:
+            write_json(Path(out_dir) / "eval_audit.json", report.to_dict())
+        return report
     violations.extend(split_report.violations)
 
     split_by_record = {}

@@ -18,6 +18,13 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("tuh_eeg", dataset_ids)
         self.assertIn("paired_eeg_fmri", dataset_ids)
 
+    def test_cli_implemented_dataset_adapters_are_not_marked_planned(self):
+        registry = {dataset.dataset_id: dataset for dataset in dataset_registry()}
+
+        for dataset_id in ("openneuro_bids", "moabb_eeg"):
+            self.assertIn("implemented", registry[dataset_id].adapter_status)
+            self.assertNotIn("planned", registry[dataset_id].adapter_status)
+
     def test_upstream_registry_tracks_reuse_and_quarantine(self):
         upstreams = {upstream.upstream_id: upstream for upstream in upstream_registry()}
 

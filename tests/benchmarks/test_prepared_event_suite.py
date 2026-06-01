@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 from neurotwin.adapters.synthetic import (
     make_synthetic_event_batches,
     make_synthetic_multimodal_event_batches,
@@ -14,15 +16,18 @@ from neurotwin.adapters.synthetic import (
 )
 from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
+    _subject_adaptation_from_windows,
     build_prepared_window_tasks,
     format_prepared_baseline_report,
     run_prepared_baseline_suite,
 )
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
+from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.eval.command import EvalCommandConfig, run_eval_command
-from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS, validate_paper_mode_payload
+from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
+from neurotwin.eval.paper_gate import validate_paper_mode_payload
 from neurotwin.eval.prepared_paper_mode import _aggregate_seed_ranks, run_prepared_baseline_suite_multi_seed
 
 
@@ -310,6 +315,39 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertTrue((eval_dir / "seed_aggregate.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
 
+    def test_subject_adaptation_support_minutes_use_selected_subject_rate(self):
+        def window(subject_id: str, sampling_rate: float, offset: float) -> NeuralEventBatch:
+            return NeuralEventBatch(
+                modality="eeg",
+                dataset="synthetic",
+                subject_id=subject_id,
+                session_id="session-0",
+                site_id="site-0",
+                time=np.arange(4, dtype=np.float32),
+                signal=np.full((4, 2), offset, dtype=np.float32),
+                mask=np.ones((4, 2), dtype=bool),
+                stimulus_embedding=None,
+                behavior={},
+                space_index=np.arange(2),
+                metadata={"sampling_rate": sampling_rate, "record_id": f"{subject_id}-{offset}"},
+            )
+
+        result = _subject_adaptation_from_windows(
+            {
+                "train": [window("train-subject", 10.0, 0.0)],
+                "val": [],
+                "test": [
+                    window("z-first-test-window", 1000.0, 1.0),
+                    window("a-selected-subject", 10.0, 2.0),
+                    window("a-selected-subject", 10.0, 3.0),
+                ],
+            }
+        )
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertAlmostEqual(result.metrics["k1_support_minutes"], 4.0 / 10.0 / 60.0)
+
     def test_prepared_baseline_multi_seed_satisfies_paper_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             prep_dir = Path(tmp) / "prepared"
@@ -422,6 +460,15 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertIn("paper_mode_passed=False", result.output)
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
+
+    def test_eval_command_seed_reaches_synthetic_suites(self):
+        smoke_a = run_eval_command(EvalCommandConfig(suite="translation_smoke", seed=3))
+        smoke_b = run_eval_command(EvalCommandConfig(suite="translation_smoke", seed=4))
+        v1_a = run_eval_command(EvalCommandConfig(suite="neural_translation_v1", seed=3))
+        v1_b = run_eval_command(EvalCommandConfig(suite="neural_translation_v1", seed=4))
+
+        self.assertNotEqual(smoke_a.output, smoke_b.output)
+        self.assertNotEqual(v1_a.payload["future_state_forecasting"]["metrics"], v1_b.payload["future_state_forecasting"]["metrics"])
 
 
 if __name__ == "__main__":

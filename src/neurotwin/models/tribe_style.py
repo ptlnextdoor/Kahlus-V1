@@ -12,9 +12,15 @@ from torch import nn
 
 
 VALID_EVENT_SUFFIXES = {
-    "text_path": {".txt"},
-    "audio_path": {".wav", ".mp3", ".flac", ".ogg"},
-    "video_path": {".mp4", ".avi", ".mkv", ".mov", ".webm"},
+    "text": {".txt"},
+    "audio": {".wav", ".mp3", ".flac", ".ogg"},
+    "video": {".mp4", ".avi", ".mkv", ".mov", ".webm"},
+}
+
+LEGACY_EVENT_PATH_MODALITIES = {
+    "text_path": "text",
+    "audio_path": "audio",
+    "video_path": "video",
 }
 
 
@@ -53,6 +59,12 @@ class TribeStyleSegment:
             "timeline": self.timeline,
             "subject": self.subject,
         }
+
+
+@dataclass(frozen=True)
+class TribeStyleStimulusInput:
+    path: str | Path
+    modality: str
 
 
 class TribeStyleModel:
@@ -137,7 +149,10 @@ class TribeStyleModel:
 
         Prefer :meth:`from_checkpoint`. This method never loads TRIBE v2
         pretrained weights and never downloads from HuggingFace or other
-        external services.
+        external services. The shim exists only for public baseline-plumbing
+        compatibility; do not add new TRIBE-shaped APIs. Sunset this alias when
+        an exact upstream TRIBE reproduction is integrated or before a stable
+        v1 model API is declared.
         """
 
         return cls.from_checkpoint(
@@ -150,9 +165,9 @@ class TribeStyleModel:
 
     def build_events(
         self,
-        text_path: str | None = None,
-        audio_path: str | None = None,
-        video_path: str | None = None,
+        stimulus: TribeStyleStimulusInput | str | Path | None = None,
+        modality: str | None = None,
+        **legacy_paths: str | None,
     ) -> list[dict[str, object]]:
         """Build minimal local event rows for smoke/pipeline tests.
 
@@ -160,24 +175,42 @@ class TribeStyleModel:
         file metadata. Downstream predictions from these rows use deterministic
         hash-derived embeddings; they are not real video/audio/text features.
         Real stimulus-fMRI evaluation should use prepared ``stimulus_embedding``
-        arrays instead.
+        arrays instead. Prefer ``TribeStyleStimulusInput`` or ``path`` plus
+        ``modality``; legacy ``*_path`` keywords are accepted for older callers.
         """
 
-        return _build_events(text_path=text_path, audio_path=audio_path, video_path=video_path)
+        return _build_events(_resolve_stimulus_input(stimulus, modality, legacy_paths))
+
+    def get_event_rows(
+        self,
+        stimulus: TribeStyleStimulusInput | str | Path | None = None,
+        modality: str | None = None,
+        **legacy_paths: str | None,
+    ) -> list[dict[str, object]]:
+        """Return local event-row dictionaries for smoke/pipeline tests.
+
+        Prefer this row-oriented name when callers need the TRIBE-style event
+        facade without implying a pandas dependency or DataFrame return value.
+        Legacy ``*_path`` keywords are accepted only for compatibility.
+        """
+
+        return self.build_events(stimulus, modality=modality, **legacy_paths)
 
     def get_events_dataframe(
         self,
-        text_path: str | None = None,
-        audio_path: str | None = None,
-        video_path: str | None = None,
+        stimulus: TribeStyleStimulusInput | str | Path | None = None,
+        modality: str | None = None,
+        **legacy_paths: str | None,
     ) -> list[dict[str, object]]:
         """Compatibility shim returning local event rows, not a pandas DataFrame.
 
-        Prefer :meth:`build_events`. This method preserves the broad TRIBE-style
-        API shape for smoke tests while staying dependency-light.
+        Prefer :meth:`get_event_rows` or :meth:`build_events`. This method
+        preserves the broad TRIBE-style API shape for smoke tests while staying
+        dependency-light. The shim is a temporary compatibility alias with the
+        same sunset policy as :meth:`from_pretrained`.
         """
 
-        return self.build_events(text_path=text_path, audio_path=audio_path, video_path=video_path)
+        return self.get_event_rows(stimulus, modality=modality, **legacy_paths)
 
     def predict(self, events: Iterable[dict[str, Any]], verbose: bool = True) -> tuple[np.ndarray, list[dict[str, object]]]:
         """Predict toy fMRI responses from event rows.
@@ -208,31 +241,15 @@ class TribeStyleModel:
         return prediction.astype(np.float32), segments
 
 
-def _build_events(
-    text_path: str | None = None,
-    audio_path: str | None = None,
-    video_path: str | None = None,
-) -> list[dict[str, object]]:
-    provided = {
-        name: value
-        for name, value in (
-            ("text_path", text_path),
-            ("audio_path", audio_path),
-            ("video_path", video_path),
-        )
-        if value is not None
-    }
-    if len(provided) != 1:
-        raise ValueError("Exactly one of text_path, audio_path, video_path must be provided")
-
-    name, value = next(iter(provided.items()))
-    path = Path(value)
-    if path.suffix.lower() not in VALID_EVENT_SUFFIXES[name]:
-        raise ValueError(f"{name} must end with one of {sorted(VALID_EVENT_SUFFIXES[name])}")
+def _build_events(stimulus: TribeStyleStimulusInput) -> list[dict[str, object]]:
+    modality = _normal_stimulus_modality(stimulus.modality)
+    path = Path(stimulus.path)
+    if path.suffix.lower() not in VALID_EVENT_SUFFIXES[modality]:
+        raise ValueError(f"{modality} stimulus must end with one of {sorted(VALID_EVENT_SUFFIXES[modality])}")
     if not path.is_file():
-        raise FileNotFoundError(f"{name} does not exist: {path}")
+        raise FileNotFoundError(f"{modality} stimulus does not exist: {path}")
 
-    if name == "text_path":
+    if modality == "text":
         text = path.read_text(encoding="utf-8")
         tokens = [token for token in text.replace("\n", " ").split(" ") if token]
         if not tokens:
@@ -249,7 +266,7 @@ def _build_events(
             for idx, token in enumerate(tokens)
         ]
 
-    event_type = "Audio" if name == "audio_path" else "Video"
+    event_type = "Audio" if modality == "audio" else "Video"
     return [
         {
             "type": event_type,
@@ -260,6 +277,40 @@ def _build_events(
             "subject": "average",
         }
     ]
+
+
+def _resolve_stimulus_input(
+    stimulus: TribeStyleStimulusInput | str | Path | None,
+    modality: str | None,
+    legacy_paths: dict[str, str | None],
+) -> TribeStyleStimulusInput:
+    unknown = sorted(set(legacy_paths) - set(LEGACY_EVENT_PATH_MODALITIES))
+    if unknown:
+        raise TypeError(f"Unknown event path keyword(s): {', '.join(unknown)}")
+    provided_legacy = {key: value for key, value in legacy_paths.items() if value is not None}
+    if stimulus is not None and provided_legacy:
+        raise TypeError("Pass stimulus as either a typed/path input or one legacy *_path keyword, not both")
+    if isinstance(stimulus, TribeStyleStimulusInput):
+        if modality is not None:
+            raise TypeError("modality is already carried by TribeStyleStimulusInput")
+        return stimulus
+    if stimulus is not None:
+        if modality is None:
+            raise ValueError("modality is required when stimulus is a path")
+        return TribeStyleStimulusInput(path=stimulus, modality=modality)
+    if len(provided_legacy) != 1:
+        raise ValueError("Exactly one stimulus input must be provided")
+    legacy_key, path = next(iter(provided_legacy.items()))
+    if modality is not None:
+        raise TypeError("modality cannot be combined with legacy *_path keywords")
+    return TribeStyleStimulusInput(path=path, modality=LEGACY_EVENT_PATH_MODALITIES[legacy_key])
+
+
+def _normal_stimulus_modality(modality: str) -> str:
+    value = modality.lower()
+    if value not in VALID_EVENT_SUFFIXES:
+        raise ValueError(f"modality must be one of {sorted(VALID_EVENT_SUFFIXES)}")
+    return value
 
 
 def _load_local_config(checkpoint_dir: str | Path, checkpoint_name: str) -> dict[str, Any]:

@@ -13,7 +13,7 @@ from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synt
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
-from neurotwin.training.prepared import PreparedBatchSampler, run_prepared_training
+from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 
 
 class PreparedTrainingTests(unittest.TestCase):
@@ -86,6 +86,51 @@ class PreparedTrainingTests(unittest.TestCase):
 
         self.assertEqual(indices, [8, 9])
 
+    def test_prepared_training_config_honors_nested_training_batch_size(self):
+        config = PreparedTrainingConfig.from_mapping(
+            {
+                "event_manifest": "event_manifest.json",
+                "split_manifest": "split_manifest.json",
+                "training": {"batch_size": 7},
+                "model": {"latent_dim": 16},
+            }
+        )
+
+        self.assertEqual(config.batch_size, 7)
+
+    def test_prepared_training_config_honors_top_level_schedule_keys(self):
+        config = PreparedTrainingConfig.from_mapping(
+            {
+                "event_manifest": "event_manifest.json",
+                "split_manifest": "split_manifest.json",
+                "eval_every_steps": 3,
+                "checkpoint_every_steps": 5,
+                "model": {"latent_dim": 16},
+            }
+        )
+
+        self.assertEqual(config.eval_every_steps, 3)
+        self.assertEqual(config.checkpoint_every_steps, 5)
+
+    def test_prepared_training_cleans_up_distributed_group_on_failure(self):
+        config = {
+            "event_manifest": "missing-event-manifest.json",
+            "split_manifest": "missing-split-manifest.json",
+            "task": "future_state_forecasting",
+            "window_size": 8,
+            "steps": 1,
+            "model": {"latent_dim": 16, "n_layers": 1},
+        }
+        with (
+            mock.patch("neurotwin.training.prepared.maybe_init_process_group", return_value=(True, "gloo")),
+            mock.patch("neurotwin.training.prepared.cleanup_process_group") as cleanup,
+            mock.patch("neurotwin.training.prepared.load_event_batches", side_effect=RuntimeError("load failed")),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "load failed"):
+                run_prepared_training(config)
+
+        cleanup.assert_called_once_with()
+
     def test_prepared_training_writes_checkpoint_and_metrics(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -141,6 +186,63 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(resumed.start_step, 2)
             self.assertEqual(resumed.completed_steps, 3)
             self.assertEqual(resumed.resumed_from, str(checkpoint))
+
+    def test_prepared_training_accepts_grouped_run_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            paths = PreparedTrainingRunPaths(
+                checkpoint_path=root / "checkpoint.pt",
+                metrics_csv_path=root / "metrics.csv",
+            )
+
+            result = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "future_state_forecasting",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 1,
+                    "batch_size": 4,
+                    "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                },
+                paths=paths,
+            )
+
+            self.assertEqual(result.status, "completed_prepared_training")
+            self.assertTrue((root / "checkpoint.pt").exists())
+            self.assertTrue((root / "metrics.csv").exists())
+
+    def test_prepared_training_rejects_mixed_run_path_styles(self):
+        with self.assertRaisesRegex(ValueError, "either paths=PreparedTrainingRunPaths"):
+            run_prepared_training(
+                {
+                    "event_manifest": "event_manifest.json",
+                    "split_manifest": "split_manifest.json",
+                    "model": {"latent_dim": 16},
+                },
+                paths=PreparedTrainingRunPaths(),
+                checkpoint_path="checkpoint.pt",
+            )
+
+    def test_prepared_training_rejects_unknown_task_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prepared = self._prepared_dir(Path(tmp))
+
+            with self.assertRaisesRegex(ValueError, "No runnable prepared training task matched"):
+                run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "not_a_prepared_task",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    }
+                )
 
     def test_prepared_training_runs_all_neural_translation_tasks(self):
         with tempfile.TemporaryDirectory() as tmp:

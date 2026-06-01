@@ -1,35 +1,23 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import sys
 
-from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
-from neurotwin.benchmarks.prepared_suite import (
-    PreparedSuiteConfig,
-    format_prepared_baseline_report,
-    run_prepared_baseline_suite,
-)
+from neurotwin.adapters.synthetic import make_synthetic_recordings
 from neurotwin.config import ConfigError, load_config
+from neurotwin.config_types import as_prepared_training_config_input
 from neurotwin.data.audit import audit_split_manifest
-from neurotwin.data.leakage import check_manifest_leakage
-from neurotwin.data.manifest_io import save_data_manifest, save_leakage_report, save_split_manifest
+from neurotwin.data.command import (
+    DataAuditConfig,
+    DataPrepareConfig,
+    run_data_audit_command,
+    run_data_prepare_command,
+)
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
-from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
 from neurotwin.eval.command import EvalCommandConfig, run_eval_command
-from neurotwin.reports import generate_compare_report, generate_run_report, generate_suite_report
-from neurotwin.repro import (
-    append_jsonl,
-    capture_environment,
-    checkpoint_manifest,
-    create_run_dir,
-    manifest_hash,
-    snapshot_config,
-    stable_hash,
-    write_json,
-)
-from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
+from neurotwin.benchmarks.reports import generate_compare_report, generate_run_report, generate_suite_report
+from neurotwin.runtime.command_result import CommandResult
 from neurotwin.runtime.estimate import estimate_config
 from neurotwin.runtime.preflight import (
     format_cluster_materialize_config,
@@ -37,8 +25,8 @@ from neurotwin.runtime.preflight import (
     materialize_cluster_config,
     run_cluster_preflight,
 )
-from neurotwin.training.prepared import run_prepared_training
-from neurotwin.training.smoke import run_synthetic_training
+from neurotwin.runtime.smoke_command import DataSmokeConfig, run_data_smoke_command
+from neurotwin.training.command import TrainingCommandConfig, run_training_command
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -149,230 +137,55 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def _emit_command_result(result: CommandResult) -> None:
+    if result.output:
+        print(result.output)
+    if result.exit_code:
+        raise SystemExit(result.error or result.exit_code)
+
+
 def _cmd_data_prepare(args: argparse.Namespace) -> None:
-    event_batches = None
-    if args.dataset != "synthetic":
-        if args.dataset == "bids":
-            from neurotwin.adapters.bids import records_to_event_batches, scan_bids_manifest
-
-            if not args.root:
-                raise SystemExit("--root is required for --dataset bids")
-            records = scan_bids_manifest(args.root, dataset_id="bids")
-            event_batches = records_to_event_batches(records)
-            if not event_batches:
-                event_batches = None
-        elif args.dataset == "moabb":
-            from neurotwin.adapters.moabb import (
-                MissingOptionalDependency,
-                balanced_trial_subset,
-                load_moabb_trials,
-                trials_to_event_batches,
-                trials_to_recordings,
+    _emit_command_result(
+        run_data_prepare_command(
+            DataPrepareConfig(
+                dataset=args.dataset,
+                split=args.split,
+                root=args.root,
+                out_dir=args.out_dir,
+                moabb_dataset=args.moabb_dataset,
+                moabb_paradigm=args.moabb_paradigm,
+                subjects=args.subjects,
+                max_trials=args.max_trials,
+                sampling_rate=args.sampling_rate,
             )
-
-            try:
-                trials = load_moabb_trials(
-                    args.moabb_dataset,
-                    subjects=tuple(args.subjects) if args.subjects else None,
-                    paradigm=args.moabb_paradigm,
-                    max_trials=None,
-                    sampling_rate=args.sampling_rate,
-                )
-            except MissingOptionalDependency as exc:
-                raise SystemExit(str(exc)) from exc
-            try:
-                trials = balanced_trial_subset(trials, split_policy=args.split, max_trials=args.max_trials)
-            except ValueError as exc:
-                raise SystemExit(str(exc)) from exc
-            records = trials_to_recordings(trials, dataset_id=args.moabb_dataset)
-            event_batches = trials_to_event_batches(trials, dataset_id=args.moabb_dataset)
-        else:
-            raise SystemExit("Supported datasets: synthetic, bids, moabb")
-    else:
-        records = make_synthetic_recordings()
-        event_batches = make_synthetic_event_batches()
-    manifest = build_split_manifest(records, policy=args.split, seed=0)
-    leakage_key = {
-        "subject": ("subject_id",),
-        "session": ("session_id",),
-        "site": ("site_id",),
-        "dataset": ("dataset",),
-        "time": (),
-    }[args.split]
-    report = check_manifest_leakage(manifest, keys=leakage_key)
-    print(f"dataset={args.dataset}")
-    print(f"split_policy={manifest.policy}")
-    print(f"split_stage={manifest.split_stage}")
-    print(f"train={len(manifest.train)} val={len(manifest.val)} test={len(manifest.test)}")
-    print(f"leakage_passed={report.passed}")
-    for violation in report.violations:
-        print(f"violation={violation}")
-    print(f"manifest_hash={manifest_hash([record.__dict__ for record in manifest.all_records])}")
-    if args.out_dir:
-        out_dir = Path(args.out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        split_path = save_split_manifest(manifest, out_dir / "split_manifest.json")
-        data_path = save_data_manifest(records, out_dir / "data_manifest.json")
-        audit_path = save_leakage_report(report, out_dir / "leakage_report.json")
-        print(f"split_manifest={split_path}")
-        print(f"data_manifest={data_path}")
-        print(f"leakage_report={audit_path}")
-        if event_batches is not None:
-            from neurotwin.data.event_io import save_event_batches
-
-            event_path = save_event_batches(
-                event_batches,
-                out_dir,
-                manifest_metadata={
-                    "dataset": args.dataset,
-                    "moabb_dataset": args.moabb_dataset if args.dataset == "moabb" else None,
-                    "moabb_paradigm": args.moabb_paradigm if args.dataset == "moabb" else None,
-                    "subjects": args.subjects,
-                    "split_policy": args.split,
-                    "max_trials": args.max_trials,
-                    "manifest_hash": manifest_hash([record.__dict__ for record in manifest.all_records]),
-                    "leakage_report": str(audit_path),
-                },
-            )
-            print(f"event_manifest={event_path}")
+        )
+    )
 
 
 def _cmd_data_smoke(args: argparse.Namespace) -> None:
-    if args.dataset != "moabb":
-        raise SystemExit("MOABB smoke currently supports --dataset moabb only")
-    from neurotwin.adapters.moabb import (
-        MissingOptionalDependency,
-        balanced_trial_subset,
-        load_moabb_trials,
-        trials_to_event_batches,
-        trials_to_recordings,
+    _emit_command_result(
+        run_data_smoke_command(
+            DataSmokeConfig(
+                dataset=args.dataset,
+                split=args.split,
+                out_dir=args.out_dir,
+                moabb_dataset=args.moabb_dataset,
+                moabb_paradigm=args.moabb_paradigm,
+                subjects=args.subjects,
+                max_trials=args.max_trials,
+                sampling_rate=args.sampling_rate,
+                window_length=args.window_length,
+                stride=args.stride,
+                train_steps=args.train_steps,
+                seed=args.seed,
+                require_windows=args.require_windows,
+            )
+        )
     )
-
-    from neurotwin.data.event_io import save_event_batches
-
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        trials = list(load_moabb_trials(
-            args.moabb_dataset,
-            subjects=tuple(args.subjects) if args.subjects else None,
-            paradigm=args.moabb_paradigm,
-            max_trials=None,
-            sampling_rate=args.sampling_rate,
-        ))
-    except MissingOptionalDependency as exc:
-        raise SystemExit(str(exc)) from exc
-    try:
-        trials = balanced_trial_subset(trials, split_policy=args.split, max_trials=args.max_trials)
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
-    if not trials:
-        raise SystemExit("MOABB smoke produced no trials; adjust subject/paradigm filters.")
-
-    records = trials_to_recordings(trials, dataset_id=args.moabb_dataset)
-    event_batches = trials_to_event_batches(trials, dataset_id=args.moabb_dataset)
-
-    split = build_split_manifest(records, policy=args.split, seed=args.seed)
-    leakage_key = {
-        "subject": ("subject_id",),
-        "session": ("session_id",),
-        "site": ("site_id",),
-        "dataset": ("dataset",),
-        "time": (),
-    }[args.split]
-    report = check_manifest_leakage(split, keys=leakage_key)
-    split_path = save_split_manifest(split, out_dir / "split_manifest.json")
-    data_path = save_data_manifest(records, out_dir / "data_manifest.json")
-    leakage_path = save_leakage_report(report, out_dir / "leakage_report.json")
-    event_path = save_event_batches(
-        event_batches,
-        out_dir,
-        manifest_metadata={
-            "dataset": args.dataset,
-            "moabb_dataset": args.moabb_dataset,
-            "moabb_paradigm": args.moabb_paradigm,
-            "subjects": args.subjects,
-            "split_policy": args.split,
-            "max_trials": args.max_trials,
-            "window_length": args.window_length,
-            "stride": args.stride,
-            "manifest_hash": manifest_hash([record.__dict__ for record in split.all_records]),
-            "leakage_report": str(leakage_path),
-            "real_data_smoke": True,
-        },
-    )
-
-    print(f"dataset={args.dataset}")
-    print(f"moabb_dataset={args.moabb_dataset}")
-    print(f"split_policy={split.policy}")
-    print(f"split_stage={split.split_stage}")
-    print(f"train={len(split.train)} val={len(split.val)} test={len(split.test)}")
-    print(f"leakage_passed={report.passed}")
-    for violation in report.violations:
-        print(f"violation={violation}")
-    print(f"manifest_hash={manifest_hash([record.__dict__ for record in split.all_records])}")
-    print(f"data_manifest={data_path}")
-    print(f"split_manifest={split_path}")
-    print(f"event_manifest={event_path}")
-    print(f"leakage_report={leakage_path}")
-
-    audit = audit_prepared_eval_inputs(
-        event_manifest=event_path,
-        split_manifest=split_path,
-        window_length=args.window_length,
-        stride=args.stride,
-        out_dir=out_dir,
-        require_windows=args.require_windows,
-    )
-    print(format_prepared_eval_audit(audit))
-
-    if not audit.passed:
-        raise SystemExit(1)
-
-    payload = run_prepared_baseline_suite(
-        PreparedSuiteConfig(
-            event_manifest=event_path,
-            split_manifest=split_path,
-            window_length=args.window_length,
-            stride=args.stride,
-            seed=args.seed,
-            train_steps=args.train_steps,
-        ),
-        out_dir=out_dir,
-    )
-    print("scope=real_data_smoke")
-    print(format_prepared_baseline_report(payload))
 
 
 def _cmd_data_audit(args: argparse.Namespace) -> None:
-    if args.dataset == "synthetic":
-        records = make_synthetic_recordings()
-        print("dataset=synthetic")
-        print(f"records={len(records)}")
-        print("audit_passed=True")
-    elif args.dataset == "bids":
-        if not args.root:
-            raise SystemExit("--root is required for BIDS audit")
-        from neurotwin.adapters.bids import bids_manifest_summary, scan_bids_manifest
-
-        records = scan_bids_manifest(args.root, dataset_id="bids")
-        summary = bids_manifest_summary(records)
-        print("dataset=bids")
-        print(f"records={len(records)}")
-        print(f"subjects={len(summary['subjects'])}")
-        print(f"sites={len(summary['sites'])}")
-        print(f"with_timeseries_derivative={summary['with_timeseries_derivative']}")
-        print("derivative_only=True")
-        print(f"audit_passed={len(records) > 0}")
-    elif args.dataset == "moabb":
-        from neurotwin.adapters.moabb import moabb_optional_status
-
-        status = moabb_optional_status()
-        print("dataset=moabb")
-        print(f"optional_status={status}")
-        print(f"audit_passed={all(status.values())}")
-    else:
-        raise SystemExit("Supported datasets: synthetic, bids, moabb")
+    _emit_command_result(run_data_audit_command(DataAuditConfig(dataset=args.dataset, root=args.root)))
 
 
 def _cmd_split_audit(args: argparse.Namespace) -> None:
@@ -400,176 +213,17 @@ def _cmd_split_audit(args: argparse.Namespace) -> None:
 
 
 def _cmd_train(args: argparse.Namespace) -> None:
-    try:
-        config = load_config(args.config)
-    except ConfigError as exc:
-        raise SystemExit(str(exc)) from exc
-    if args.dry_run:
-        estimate = estimate_config(config)
-        dist = get_distributed_info()
-        print(f"config={args.config}")
-        print("dry_run=True")
-        print(f"config_hash={stable_hash(config)}")
-        print(f"world_size={dist.world_size}")
-        print(f"rank={dist.rank}")
-        for key, value in estimate.items():
-            print(f"{key}={value}")
-        return
-    run_dir = create_run_dir(args.run_root, run_id=str(config.get("experiment", "synthetic_debug")))
-    dist = get_distributed_info()
-    environment = capture_environment(argv=getattr(args, "_argv", None))
-    if dist.is_rank_zero:
-        snapshot_config(config, run_dir)
-        write_json(run_dir / "environment.json", environment)
-    configured_split_manifest = _config_value(config, "split_manifest")
-    if configured_split_manifest:
-        from neurotwin.data.manifest_io import load_split_manifest
-
-        split_manifest = load_split_manifest(configured_split_manifest)
-    else:
-        records = make_synthetic_recordings()
-        split_manifest = build_split_manifest(records, policy=str(config.get("split", "subject")), seed=int(config.get("seed", 0)))
-    split_manifest_path = run_dir / "split_manifest.json"
-    if dist.is_rank_zero:
-        save_split_manifest(split_manifest, split_manifest_path)
-    split_manifest_hash = manifest_hash([record.__dict__ for record in split_manifest.all_records])
-    if args.resume:
-        resume_path = Path(args.resume)
-        if not resume_path.exists():
-            raise SystemExit(f"Resume checkpoint does not exist: {resume_path}")
-    if _has_prepared_training_inputs(config):
-        checkpoint_path = run_dir / "checkpoint.pt" if dist.is_rank_zero else None
-        metrics_path = get_rank_metrics_path(run_dir, dist)
-        result = run_prepared_training(
-            config,
-            checkpoint_path=checkpoint_path,
-            resume_path=args.resume,
-            metrics_csv_path=(run_dir / "metrics.csv") if dist.is_rank_zero else None,
-            metrics_jsonl_path=metrics_path,
-            best_checkpoint_path=(run_dir / "checkpoint_best.pt") if dist.is_rank_zero else None,
+    _emit_command_result(
+        run_training_command(
+            TrainingCommandConfig(
+                config_path=args.config,
+                dry_run=args.dry_run,
+                run_root=args.run_root,
+                resume=args.resume,
+                argv=getattr(args, "_argv", None),
+            )
         )
-        if not dist.is_rank_zero:
-            print(f"config={args.config}")
-            print(f"run_dir={run_dir}")
-            print(f"rank={dist.rank}")
-            print("training_status=completed_prepared_training_rank")
-            print(f"metrics_jsonl={metrics_path}")
-            return
-        checkpoints = checkpoint_manifest(run_dir)
-        write_json(run_dir / "metrics.json", result.to_dict())
-        write_json(run_dir / "checkpoint_manifest.json", checkpoints)
-        write_json(
-            run_dir / "summary.json",
-            {
-                "synthetic_only": result.synthetic_only,
-                "status": result.status,
-                "task_id": result.task_id,
-                "source_modality": result.source_modality,
-                "target_modality": result.target_modality,
-                "split_manifest": str(split_manifest_path),
-                "split_manifest_hash": split_manifest_hash,
-                "event_manifest": str(_config_value(config, "event_manifest")),
-                "event_summary": result.event_summary,
-                "precision": result.precision,
-                "gradient_accumulation_steps": result.gradient_accumulation_steps,
-                "completed_steps": result.completed_steps,
-                "eval_every_steps": result.eval_every_steps,
-                "checkpoint_every_steps": result.checkpoint_every_steps,
-                "best_task_id": result.best_task_id,
-                "best_eval_mse": result.best_eval_mse,
-                "best_val_mse": result.best_val_mse,
-                "test_mse": result.test_mse,
-                "test_mae": result.test_mae,
-                "test_pearsonr": result.test_pearsonr,
-                "test_r2": result.test_r2,
-                "test_spearmanr": result.test_spearmanr,
-                "selection_split": result.selection_split,
-                "report_split": result.report_split,
-                "real_data_smoke": bool(config.get("dataset") == "moabb" and "smoke" in str(config.get("experiment", ""))),
-                "scientific_claim_allowed": False,
-                "unavailable_tasks": result.skipped_tasks,
-                "baseline_failures": [],
-                "task_results": result.task_results,
-                "distributed_initialized": result.distributed_initialized,
-                "distributed_backend": result.distributed_backend,
-                "distributed": {
-                    "rank": dist.rank,
-                    "local_rank": dist.local_rank,
-                    "world_size": dist.world_size,
-                },
-                "git": environment["git"],
-                "source_commit_missing": environment["source_commit_missing"],
-                "run": environment["run"],
-                "checkpoint_manifest": checkpoints,
-                "resume": args.resume,
-            },
-        )
-        print(f"config={args.config}")
-        print(f"run_dir={run_dir}")
-        print(f"rank={dist.rank}")
-        print("training_status=completed_prepared_training")
-        print(f"task_id={result.task_id}")
-        print(f"initial_loss={result.initial_loss:.6f}")
-        print(f"final_loss={result.final_loss:.6f}")
-        print(f"eval_mse={result.eval_mse:.6f}")
-        if result.best_task_id:
-            print(f"best_task_id={result.best_task_id}")
-            print(f"best_eval_mse={result.best_eval_mse:.6f}")
-        print(f"steps={result.steps}")
-        print(f"completed_steps={result.completed_steps}")
-        return
-    result = run_synthetic_training(seed=0, steps=24)
-    metrics_path = get_rank_metrics_path(run_dir, dist)
-    append_jsonl(metrics_path, {"step": 0, "loss": result.initial_loss, "rank": dist.rank, "world_size": dist.world_size})
-    append_jsonl(metrics_path, {"step": result.steps, "loss": result.final_loss, "rank": dist.rank, "world_size": dist.world_size})
-    if not dist.is_rank_zero:
-        print(f"config={args.config}")
-        print(f"run_dir={run_dir}")
-        if args.resume:
-            print(f"resume={args.resume}")
-        print(f"rank={dist.rank}")
-        print("training_status=completed_synthetic_smoke_rank")
-        print(f"metrics_jsonl={metrics_path}")
-        return
-
-    write_json(run_dir / "metrics.json", {"initial_loss": result.initial_loss, "final_loss": result.final_loss, "steps": result.steps})
-    import torch
-
-    torch.save({"status": "synthetic_smoke", "steps": result.steps, "world_size": dist.world_size}, run_dir / "checkpoint.pt")
-    checkpoints = checkpoint_manifest(run_dir)
-    write_json(run_dir / "checkpoint_manifest.json", checkpoints)
-    write_json(
-        run_dir / "summary.json",
-        {
-            "synthetic_only": True,
-            "real_data_smoke": False,
-            "scientific_claim_allowed": False,
-            "unavailable_tasks": [],
-            "baseline_failures": [],
-            "status": "completed_synthetic_smoke",
-            "split_manifest": str(split_manifest_path),
-            "split_manifest_hash": split_manifest_hash,
-            "distributed": {
-                "rank": dist.rank,
-                "local_rank": dist.local_rank,
-                "world_size": dist.world_size,
-            },
-            "git": environment["git"],
-            "source_commit_missing": environment["source_commit_missing"],
-            "run": environment["run"],
-            "checkpoint_manifest": checkpoints,
-            "resume": args.resume,
-        },
     )
-    print(f"config={args.config}")
-    print(f"run_dir={run_dir}")
-    if args.resume:
-        print(f"resume={args.resume}")
-    print(f"rank={dist.rank}")
-    print("training_status=completed_synthetic_smoke")
-    print(f"initial_loss={result.initial_loss:.6f}")
-    print(f"final_loss={result.final_loss:.6f}")
-    print(f"steps={result.steps}")
 
 
 def _cmd_estimate(args: argparse.Namespace) -> None:
@@ -577,7 +231,7 @@ def _cmd_estimate(args: argparse.Namespace) -> None:
         config = load_config(args.config)
     except ConfigError as exc:
         raise SystemExit(str(exc)) from exc
-    for key, value in estimate_config(config).items():
+    for key, value in estimate_config(as_prepared_training_config_input(config)).items():
         print(f"{key}={value}")
 
 
@@ -673,16 +327,6 @@ def _parse_split_windows(value: str | None) -> dict[str, int] | None:
     if not parsed:
         raise SystemExit("--expect-split-windows must include at least one split:count entry")
     return parsed
-
-
-def _has_prepared_training_inputs(config: dict[str, object]) -> bool:
-    return bool(_config_value(config, "event_manifest")) and bool(_config_value(config, "split_manifest"))
-
-
-def _config_value(config: dict[str, object], key: str) -> object | None:
-    data = config.get("data")
-    data_config = data if isinstance(data, dict) else {}
-    return config.get(key) or data_config.get(key)
 
 
 if __name__ == "__main__":

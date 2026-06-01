@@ -11,8 +11,11 @@ import torch
 
 
 def _nccl_version() -> str | None:
+    nccl = getattr(torch.cuda, "nccl", None)
+    if nccl is None or not hasattr(nccl, "version"):
+        return None
     try:
-        version = torch.cuda.nccl.version()  # type: ignore[attr-defined]
+        version = nccl.version()
     except (AttributeError, RuntimeError):
         return None
     return ".".join(str(part) for part in version) if isinstance(version, tuple) else str(version)

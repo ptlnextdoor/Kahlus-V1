@@ -32,4 +32,6 @@ Competitor references:
 
 Prepared reports distinguish `exact`, `local_baseline`, `clean_room_approximation`, `approximation`, and `unavailable`. Approximation rows are lanes for fair comparison, not claims of exact reproduction.
 
+The `TribeStyleModel.from_pretrained` and `get_events_dataframe` names are temporary public compatibility aliases for baseline-plumbing smoke tests only. Prefer `get_event_rows` or `build_events` for row-returning local event fixtures so callers do not infer a pandas DataFrame contract. Do not extend the TRIBE-shaped shim surface; sunset those aliases when exact upstream TRIBE reproduction is integrated or before a stable v1 model API is declared.
+
 Do not claim full competitor reproduction unless exact code, data, and protocol are actually used.

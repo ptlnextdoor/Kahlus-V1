@@ -14,9 +14,6 @@ dependencies:
   - pandas
   - moabb>=1.1
   - mne>=1.6
-  - mne-bids>=0.14
-  - tensorboard>=2.16
-  - wandb>=0.16
   - pip
   - pip:
       - -e .

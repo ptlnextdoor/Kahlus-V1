@@ -27,7 +27,7 @@ class DoctorReport:
         return all(check.status in {"ok", "warn"} for check in self.checks)
 
 
-OPTIONAL_MODULES = ("moabb", "mne", "mne_bids", "bids", "pandas", "wandb", "tensorboard")
+OPTIONAL_MODULES = ("moabb", "mne", "pandas")
 
 
 def run_doctor(dataset_roots: tuple[str, ...] = ("NEUROTWIN_DATA", "MOABB_DATA", "BIDS_ROOT")) -> DoctorReport:

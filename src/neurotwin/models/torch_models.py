@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import importlib.util
+from collections.abc import Mapping
+from dataclasses import dataclass, fields
+from typing import Any
 
 import torch
 from torch import nn
@@ -66,6 +68,57 @@ class TinySSMBaseline(nn.Module):
         return self.output(latent)
 
 
+@dataclass(frozen=True)
+class NeuralStateSpaceTranslatorConfig:
+    """Architecture and adaptation options for the torch translator."""
+
+    latent_dim: int = 128
+    n_layers: int = 2
+    dropout: float = 0.0
+    subject_adapter_dim: int = 0
+    projection_dim: int = 64
+    metadata_dim: int = 0
+    geometry_dim: int = 0
+    backbone: str = "ssm_fallback"
+    encoder: str = "auto"
+    n_heads: int = 4
+    subject_vocab_size: int = 0
+    use_subject_embeddings: bool = False
+    adapter_mode: str = "disabled"
+    gradient_checkpointing: bool = False
+
+    @classmethod
+    def from_mapping(cls, values: Mapping[str, Any], *, strict: bool = False) -> "NeuralStateSpaceTranslatorConfig":
+        field_names = {field.name for field in fields(cls)}
+        unknown = sorted(set(values) - field_names)
+        if strict and unknown:
+            raise TypeError(f"Unknown NeuralStateSpaceTranslatorConfig option(s): {', '.join(unknown)}")
+        selected = {key: values[key] for key in field_names if key in values}
+        return cls(
+            latent_dim=int(selected.get("latent_dim", cls.latent_dim)),
+            n_layers=int(selected.get("n_layers", cls.n_layers)),
+            dropout=float(selected.get("dropout", cls.dropout)),
+            subject_adapter_dim=int(selected.get("subject_adapter_dim", cls.subject_adapter_dim)),
+            projection_dim=int(selected.get("projection_dim", cls.projection_dim)),
+            metadata_dim=int(selected.get("metadata_dim", cls.metadata_dim)),
+            geometry_dim=int(selected.get("geometry_dim", cls.geometry_dim)),
+            backbone=str(selected.get("backbone", cls.backbone)),
+            encoder=str(selected.get("encoder", cls.encoder)),
+            n_heads=int(selected.get("n_heads", cls.n_heads)),
+            subject_vocab_size=int(selected.get("subject_vocab_size", cls.subject_vocab_size)),
+            use_subject_embeddings=bool(selected.get("use_subject_embeddings", cls.use_subject_embeddings)),
+            adapter_mode=str(selected.get("adapter_mode", cls.adapter_mode)),
+            gradient_checkpointing=bool(selected.get("gradient_checkpointing", cls.gradient_checkpointing)),
+        )
+
+    def describe(self) -> str:
+        return (
+            f"NeuralStateSpaceTranslator(latent_dim={self.latent_dim}, "
+            f"n_layers={self.n_layers}, backbone={self.backbone}, "
+            f"encoder={self.encoder}, adapter_mode={self.adapter_mode})"
+        )
+
+
 class NeuralStateSpaceTranslator(nn.Module):
     """Modality encoders + shared latent dynamics + modality readouts."""
 
@@ -73,50 +126,47 @@ class NeuralStateSpaceTranslator(nn.Module):
         self,
         input_dims: dict[str, int],
         output_dims: dict[str, int],
-        latent_dim: int = 128,
-        n_layers: int = 2,
-        dropout: float = 0.0,
-        subject_adapter_dim: int = 0,
-        projection_dim: int = 64,
-        metadata_dim: int = 0,
-        geometry_dim: int = 0,
-        backbone: str = "ssm_fallback",
-        encoder: str = "auto",
-        n_heads: int = 4,
-        subject_vocab_size: int = 0,
-        use_subject_embeddings: bool = False,
-        adapter_mode: str = "disabled",
-        gradient_checkpointing: bool = False,
+        config: NeuralStateSpaceTranslatorConfig | Mapping[str, Any] | None = None,
+        **options: Any,
     ) -> None:
         super().__init__()
         if not input_dims:
             raise ValueError("input_dims cannot be empty")
         if not output_dims:
             raise ValueError("output_dims cannot be empty")
+        resolved = _resolve_translator_config(config, options)
+        latent_dim = resolved.latent_dim
         self.input_dims = dict(input_dims)
         self.output_dims = dict(output_dims)
+        self.config = resolved
         self.latent_dim = latent_dim
-        self.subject_adapter_dim = int(subject_adapter_dim)
-        self.metadata_dim = int(metadata_dim)
-        self.geometry_dim = int(geometry_dim)
-        self.backbone_type = str(backbone)
-        self.encoder_type = str(encoder)
-        self.adapter_mode = str(adapter_mode)
-        self.gradient_checkpointing = bool(gradient_checkpointing)
-        self.use_subject_embeddings = bool(use_subject_embeddings) and self.adapter_mode in {"few_shot", "enabled", "subject"}
+        self.subject_adapter_dim = resolved.subject_adapter_dim
+        self.metadata_dim = resolved.metadata_dim
+        self.geometry_dim = resolved.geometry_dim
+        self.backbone_type = resolved.backbone
+        self.encoder_type = resolved.encoder
+        self.adapter_mode = resolved.adapter_mode
+        self.gradient_checkpointing = resolved.gradient_checkpointing
+        self.use_subject_embeddings = resolved.use_subject_embeddings and self.adapter_mode in {"few_shot", "enabled", "subject"}
         self.tokenizers = nn.ModuleDict(
             {
-                modality: _build_modality_encoder(modality, dim, latent_dim, encoder=self.encoder_type, dropout=dropout)
+                modality: _build_modality_encoder(
+                    modality,
+                    dim,
+                    latent_dim,
+                    encoder=self.encoder_type,
+                    dropout=resolved.dropout,
+                )
                 for modality, dim in sorted(input_dims.items())
             }
         )
         self.geometry_encoders = nn.ModuleDict(
-            {modality: nn.Linear(geometry_dim, latent_dim) for modality in sorted(input_dims)}
-        ) if geometry_dim > 0 else nn.ModuleDict()
-        self.metadata_encoder = nn.Linear(metadata_dim, latent_dim) if metadata_dim > 0 else None
+            {modality: nn.Linear(resolved.geometry_dim, latent_dim) for modality in sorted(input_dims)}
+        ) if resolved.geometry_dim > 0 else nn.ModuleDict()
+        self.metadata_encoder = nn.Linear(resolved.metadata_dim, latent_dim) if resolved.metadata_dim > 0 else None
         self.subject_embedding = (
-            nn.Embedding(subject_vocab_size, latent_dim)
-            if self.use_subject_embeddings and subject_vocab_size > 0
+            nn.Embedding(resolved.subject_vocab_size, latent_dim)
+            if self.use_subject_embeddings and resolved.subject_vocab_size > 0
             else None
         )
         self.modality_embeddings = nn.ParameterDict(
@@ -128,9 +178,9 @@ class NeuralStateSpaceTranslator(nn.Module):
         self.core = _build_backbone(
             backbone=self.backbone_type,
             latent_dim=latent_dim,
-            n_layers=n_layers,
-            n_heads=n_heads,
-            dropout=dropout,
+            n_layers=resolved.n_layers,
+            n_heads=resolved.n_heads,
+            dropout=resolved.dropout,
         )
         self.readouts = nn.ModuleDict(
             {modality: nn.Linear(latent_dim, dim) for modality, dim in sorted(output_dims.items())}
@@ -144,15 +194,15 @@ class NeuralStateSpaceTranslator(nn.Module):
         self.projection_head = nn.Sequential(
             nn.Linear(latent_dim, latent_dim),
             nn.GELU(),
-            nn.Linear(latent_dim, projection_dim),
+            nn.Linear(latent_dim, resolved.projection_dim),
         )
         self.subject_adapter = (
             nn.Sequential(
-                nn.Linear(latent_dim, subject_adapter_dim),
+                nn.Linear(latent_dim, resolved.subject_adapter_dim),
                 nn.GELU(),
-                nn.Linear(subject_adapter_dim, latent_dim),
+                nn.Linear(resolved.subject_adapter_dim, latent_dim),
             )
-            if subject_adapter_dim > 0
+            if resolved.subject_adapter_dim > 0
             else None
         )
         self._reset_parameters()
@@ -238,8 +288,10 @@ class NeuralStateSpaceTranslator(nn.Module):
             prediction = self.forecast_heads[target_modality](latent)
         elif task == "reconstruction":
             prediction = self.reconstruction_heads[target_modality](latent)
-        else:
+        elif task == "readout":
             prediction = self.readouts[target_modality](latent)
+        else:
+            raise ValueError("task must be one of 'forecast', 'reconstruction', or 'readout'")
         return {
             "prediction": prediction,
             "latent": latent,
@@ -254,6 +306,21 @@ class NeuralStateSpaceTranslator(nn.Module):
 def _check_sequence_tensor(x: torch.Tensor) -> None:
     if x.ndim != 3:
         raise ValueError("Expected tensor with shape [batch, time, features]")
+
+
+def _resolve_translator_config(
+    config: NeuralStateSpaceTranslatorConfig | Mapping[str, Any] | None,
+    options: Mapping[str, Any],
+) -> NeuralStateSpaceTranslatorConfig:
+    if config is None:
+        return NeuralStateSpaceTranslatorConfig.from_mapping(options, strict=True)
+    if options:
+        raise TypeError("Pass translator architecture options either through config or keyword options, not both")
+    if isinstance(config, NeuralStateSpaceTranslatorConfig):
+        return config
+    if isinstance(config, Mapping):
+        return NeuralStateSpaceTranslatorConfig.from_mapping(config, strict=True)
+    raise TypeError("config must be a NeuralStateSpaceTranslatorConfig or mapping")
 
 
 class _LinearModalityEncoder(nn.Module):
@@ -343,10 +410,7 @@ def _build_backbone(backbone: str, latent_dim: int, n_layers: int, n_heads: int,
     if backbone == "transformer":
         return _TransformerBackbone(latent_dim, n_layers, n_heads, dropout)
     if backbone == "mamba":
-        if importlib.util.find_spec("mamba_ssm") is None:
-            return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
-        # Keep the dependency optional in v1; exact Mamba wiring is pinned only when the package is present.
-        return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
+        raise ValueError('backbone="mamba" is not wired in v1; use backbone="ssm_fallback" until Mamba support is pinned')
     if backbone in {"ssm_fallback", "ssm", "gru"}:
         return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
     raise ValueError(f"Unknown backbone {backbone!r}")

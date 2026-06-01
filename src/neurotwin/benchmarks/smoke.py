@@ -7,7 +7,7 @@ import numpy as np
 from neurotwin.adapters.synthetic import make_synthetic_recordings
 from neurotwin.data.leakage import check_manifest_leakage
 from neurotwin.data.split_manifest import build_split_manifest
-from neurotwin.eval.metrics import RankingRow, mse, pearsonr, rank_models
+from neurotwin.scoring.metrics import RankingRow, mse, pearsonr, rank_models
 
 
 @dataclass(frozen=True)

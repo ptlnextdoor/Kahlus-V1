@@ -19,7 +19,7 @@ from neurotwin.eval.paper_gate import (
     validate_paper_mode_payload,
 )
 from neurotwin.models.baselines import NumpyRidgeBaseline
-from neurotwin.models.tribe_style import TribeStyleModel
+from neurotwin.models.tribe_style import TribeStyleModel, TribeStyleStimulusInput
 
 
 class BaselineSuiteTests(unittest.TestCase):
@@ -122,7 +122,7 @@ class BaselineSuiteTests(unittest.TestCase):
                 config_update={"stimulus_dim": 6, "output_dim": 4, "hidden_dim": 8},
             )
 
-            events = model.build_events(text_path=str(text_path))
+            events = model.build_events(TribeStyleStimulusInput(path=text_path, modality="text"))
             preds, segments = model.predict(events, verbose=False)
 
         self.assertEqual(model.model_id, "tribe_style")
@@ -142,15 +142,32 @@ class BaselineSuiteTests(unittest.TestCase):
             text_path.write_text("compatibility shim", encoding="utf-8")
 
             model = TribeStyleModel.from_pretrained(tmp)
-            preferred_events = model.build_events(text_path=str(text_path))
+            preferred_events = model.build_events(text_path, modality="text")
+            row_events = model.get_event_rows(text_path, modality="text")
             shim_events = model.get_events_dataframe(text_path=str(text_path))
             preds, _ = model.predict(shim_events, verbose=False)
 
         self.assertEqual(model.stimulus_dim, 5)
         self.assertEqual(model.output_dim, 3)
+        self.assertEqual(preferred_events, row_events)
         self.assertEqual(preferred_events, shim_events)
         self.assertEqual(preds.shape, (2, 3))
         self.assertTrue(np.isfinite(preds).all())
+        self.assertIn("Sunset this alias", TribeStyleModel.from_pretrained.__doc__)
+        self.assertIn("row-oriented name", TribeStyleModel.get_event_rows.__doc__)
+        self.assertIn("temporary compatibility alias", TribeStyleModel.get_events_dataframe.__doc__)
+
+    def test_tribe_style_event_inputs_reject_ambiguous_legacy_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            text_path = Path(tmp) / "stimulus.txt"
+            audio_path = Path(tmp) / "stimulus.wav"
+            text_path.write_text("ambiguous event input", encoding="utf-8")
+            audio_path.write_bytes(b"RIFF")
+
+            model = TribeStyleModel.from_checkpoint("local")
+
+            with self.assertRaisesRegex(ValueError, "Exactly one stimulus input"):
+                model.build_events(text_path=str(text_path), audio_path=str(audio_path))
 
     def test_paper_mode_gate_enforces_audit_seeds_ranking_and_ci_contract(self):
         def seed_record(seed: int, with_ci: bool = True) -> dict[str, object]:
@@ -434,7 +451,7 @@ class BaselineSuiteTests(unittest.TestCase):
             self.assertTrue(effective_scientific_claim_allowed_for_run(run_dir))
 
             (run_dir / "summary.json").write_text("{broken\n", encoding="utf-8")
-            self.assertEqual(load_run_summary(run_dir), {})
+            self.assertEqual(load_run_summary(run_dir)["error"], "invalid_json")
             self.assertFalse(effective_scientific_claim_allowed_for_run(run_dir))
 
             (run_dir / "summary.json").unlink()

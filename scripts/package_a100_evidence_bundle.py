@@ -13,14 +13,6 @@ import sys
 import tempfile
 import zipfile
 
-try:
-    from render_a100_handoff_readme import render_handoff_readme
-except ModuleNotFoundError:
-    scripts_dir = Path(__file__).resolve().parent
-    if str(scripts_dir) not in sys.path:
-        sys.path.insert(0, str(scripts_dir))
-    from render_a100_handoff_readme import render_handoff_readme
-
 
 RUN_FILES = (
     "summary.json",
@@ -286,7 +278,7 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
             copied_handoff = False
     if not copied_handoff:
         short_sha = config.full_sha[:7]
-        render_handoff_readme(
+        _render_handoff_readme(
             config.repo_root / "README_HANDOFF.md.in",
             root / "README_HANDOFF.md",
             full_sha=config.full_sha,
@@ -305,6 +297,32 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
         "Verify the bundle after extraction with:\n\n"
         "```bash\nshasum -a 256 -c handoff-SHA256SUMS\n```\n",
         encoding="utf-8",
+    )
+
+
+def _render_handoff_readme(
+    template_path: Path,
+    output_path: Path,
+    *,
+    full_sha: str,
+    short_sha: str,
+    runner_name: str,
+    persistent_root_example: str,
+) -> None:
+    try:
+        from render_a100_handoff_readme import render_handoff_readme
+    except ModuleNotFoundError:
+        from _bootstrap import ensure_scripts_import_path
+
+        ensure_scripts_import_path(__file__)
+        from render_a100_handoff_readme import render_handoff_readme
+    render_handoff_readme(
+        template_path,
+        output_path,
+        full_sha=full_sha,
+        short_sha=short_sha,
+        runner_name=runner_name,
+        persistent_root_example=persistent_root_example,
     )
 
 

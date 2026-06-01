@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.artifact_helpers import assert_runner_archive, copy_repo_to_temp_git
+from tests.artifacts.helpers import assert_runner_archive, copy_repo_to_temp_git
 
 
 class RunnerBundleArtifactTests(unittest.TestCase):

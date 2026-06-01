@@ -9,13 +9,16 @@ from pathlib import Path
 import platform
 import random
 import shlex
-import subprocess
+import shutil
+import subprocess  # nosec B404 - used only for local git metadata with fixed argv, absolute executable, and timeout.
 import tempfile
 from typing import Any
 
 import numpy as np
 import torch
 import yaml
+
+GIT_TIMEOUT_SECONDS = 10
 
 
 def set_global_seed(seed: int) -> None:
@@ -51,16 +54,18 @@ def resolve_source_commit(repo_root: str | Path = ".") -> dict[str, Any]:
     """Resolve a source commit from git, falling back to COMMIT_HASH.txt."""
 
     root = Path(repo_root)
-    if (root / ".git").exists():
+    git_executable = shutil.which("git")
+    if (root / ".git").exists() and git_executable is not None:
         try:
-            result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
+            result = subprocess.run(  # nosec B603 - argv is fixed and git_executable comes from shutil.which.
+                [git_executable, "rev-parse", "HEAD"],
                 cwd=root,
                 check=True,
                 text=True,
                 capture_output=True,
+                timeout=GIT_TIMEOUT_SECONDS,
             )
-        except (OSError, subprocess.CalledProcessError):
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
             result = None
         if result is not None:
             commit = result.stdout.strip()
@@ -208,8 +213,11 @@ def cuda_metadata() -> dict[str, Any]:
 
 
 def _nccl_version() -> str | None:
+    nccl = getattr(torch.cuda, "nccl", None)
+    if nccl is None or not hasattr(nccl, "version"):
+        return None
     try:
-        version = torch.cuda.nccl.version()  # type: ignore[attr-defined]
+        version = nccl.version()
     except (AttributeError, RuntimeError):
         return None
     return ".".join(str(part) for part in version) if isinstance(version, tuple) else str(version)

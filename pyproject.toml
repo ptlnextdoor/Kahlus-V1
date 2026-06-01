@@ -19,18 +19,9 @@ moabb = [
   "moabb>=1.1",
   "mne>=1.6",
 ]
-bids = [
-  "mne-bids>=0.14",
-  "pybids>=0.16",
-]
-h100 = [
-  "tensorboard>=2.16",
-  "wandb>=0.16",
-]
-cluster = [
-  "tensorboard>=2.16",
-  "wandb>=0.16",
-]
+bids = []
+h100 = []
+cluster = []
 dev = [
   "pytest>=8",
 ]

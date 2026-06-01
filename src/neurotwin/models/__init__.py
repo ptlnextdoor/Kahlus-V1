@@ -1,5 +1,25 @@
 """Baseline and NeuroTwin model specifications."""
 
-from neurotwin.models.tribe_style import TribeStyleModel, TribeStyleStimulusEncoder
+from neurotwin.models.baselines import BaselineSpec, NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline, baseline_registry
+from neurotwin.models.torch_models import (
+    NeuralStateSpaceTranslator,
+    NeuralStateSpaceTranslatorConfig,
+    TinySSMBaseline,
+    TinyTransformerBaseline,
+)
+from neurotwin.models.tribe_style import TribeStyleModel, TribeStyleStimulusEncoder, TribeStyleStimulusInput
 
-__all__ = ["TribeStyleModel", "TribeStyleStimulusEncoder"]
+__all__ = [
+    "BaselineSpec",
+    "NeuralStateSpaceTranslator",
+    "NeuralStateSpaceTranslatorConfig",
+    "NumpyRidgeBaseline",
+    "TinySSMBaseline",
+    "TinyTransformerBaseline",
+    "TorchMLPBaseline",
+    "TorchTCNBaseline",
+    "TribeStyleModel",
+    "TribeStyleStimulusEncoder",
+    "TribeStyleStimulusInput",
+    "baseline_registry",
+]

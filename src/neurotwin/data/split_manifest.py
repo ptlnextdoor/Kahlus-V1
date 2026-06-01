@@ -107,7 +107,7 @@ def _group_split(
         grouped.setdefault(str(getattr(record, key)), []).append(record)
 
     groups = list(grouped)
-    random.Random(seed).shuffle(groups)
+    random.Random(seed).shuffle(groups)  # nosec B311 - deterministic split shuffling, not security randomness.
     n_test = _fraction_count(len(groups), test_fraction)
     n_val = _fraction_count(len(groups) - n_test, val_fraction)
 

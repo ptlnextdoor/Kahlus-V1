@@ -376,7 +376,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
         self.assertNotIn("\nsbatch ", run_full_sbatch)
         self.assertIn("scripts/train_a100_inner.sh", run_full_sbatch)
-        for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne-bids", "scikit-learn"):
+        for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne", "scikit-learn"):
             self.assertIn(dependency, environment)
 
     def test_chapman_first_run_launcher_contains_required_sequence(self):

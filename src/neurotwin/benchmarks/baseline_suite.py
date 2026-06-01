@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, TypedDict
 
 import numpy as np
 import torch
 from torch import nn
 
-from neurotwin.eval.metrics import (
+from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
+from neurotwin.data.prepared_tasks import SupervisedWindowTask
+from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
+from neurotwin.models.torch_models import (
+    NeuralStateSpaceTranslator,
+    NeuralStateSpaceTranslatorConfig,
+    TinySSMBaseline,
+    TinyTransformerBaseline,
+)
+from neurotwin.models.tribe_style import TribeStyleStimulusEncoder
+from neurotwin.scoring.metrics import (
     bandpower_error,
     bootstrap_ci,
     mae,
@@ -19,25 +29,6 @@ from neurotwin.eval.metrics import (
     spectral_error,
     spearmanr,
 )
-from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator, TinySSMBaseline, TinyTransformerBaseline
-from neurotwin.models.tribe_style import TribeStyleStimulusEncoder
-
-
-@dataclass(frozen=True)
-class SupervisedWindowTask:
-    task_id: str
-    source_modality: str
-    target_modality: str
-    x_train: np.ndarray
-    y_train: np.ndarray
-    x_test: np.ndarray
-    y_test: np.ndarray
-    metric_mask: np.ndarray | None = None
-    x_val: np.ndarray | None = None
-    y_val: np.ndarray | None = None
-    val_metric_mask: np.ndarray | None = None
-    notes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -50,7 +41,173 @@ class BaselineFailure:
         return {"model_id": self.model_id, "task_id": self.task_id, "reason": self.reason}
 
 
-def run_synthetic_baseline_suite(seed: int = 0, train_steps: int = 10) -> dict[str, object]:
+class ScopePayload(TypedDict):
+    status: str
+    notes: list[str]
+
+
+class RankingPayload(TypedDict):
+    model_id: str
+    metric: str
+    value: float
+    rank: int
+
+
+class AggregateRankPayload(TypedDict):
+    model_id: str
+    mean_rank: float
+    tasks_ranked: int
+
+
+class AggregatePayload(TypedDict):
+    selection_metric: str
+    higher_is_better: bool
+    aggregate_rank: list[AggregateRankPayload]
+
+
+class TaskPayload(TypedDict):
+    status: str
+    source_modality: str
+    target_modality: str
+    metrics_by_model: dict[str, dict[str, float]]
+    ranking: list[RankingPayload]
+    failures: list[dict[str, str]]
+    notes: list[str]
+
+
+class PaperModeContractPayload(TypedDict):
+    required_seeds: list[int]
+    require_ci: bool
+    notes: list[str]
+
+
+class BaselineSuitePayload(TypedDict):
+    scope: ScopePayload
+    tasks: dict[str, TaskPayload]
+    aggregate: AggregatePayload
+    seed: int
+    seeds: list[int]
+    benchmark_contract: PaperModeContractPayload
+    baseline_catalog: list[dict[str, object]]
+    baseline_failures: list[dict[str, str]]
+
+
+class PreparedTaskPayload(TypedDict, total=False):
+    status: str
+    source_modality: str
+    target_modality: str
+    metrics: dict[str, float]
+    metrics_by_model: dict[str, dict[str, float]]
+    ranking: list[RankingPayload]
+    failures: list[dict[str, str]]
+    notes: list[str]
+
+
+class PreparedDataPayload(TypedDict):
+    event_manifest: str
+    split_manifest: str
+    event_summary: dict[str, object]
+    window_length: int
+    stride: int
+    skipped_tasks: list[dict[str, str]]
+
+
+class PreparedPaperModeContractPayload(TypedDict):
+    required_seeds: list[int]
+    observed_seeds: list[int]
+    require_ci: bool
+    gate_status: str
+
+
+class PreparedAggregateRankPayload(AggregateRankPayload, total=False):
+    std_rank: float
+    n_seeds: int
+
+
+class PreparedAggregatePayload(TypedDict):
+    selection_metric: str
+    higher_is_better: bool
+    aggregate_rank: list[PreparedAggregateRankPayload]
+
+
+class PreparedBaselineSuitePayload(TypedDict):
+    scope: ScopePayload
+    tasks: dict[str, PreparedTaskPayload]
+    aggregate: PreparedAggregatePayload
+    seed: int
+    seeds: list[int]
+    benchmark_contract: PaperModeContractPayload
+    baseline_catalog: list[dict[str, object]]
+    baseline_failures: list[dict[str, str]]
+    prepared_data: PreparedDataPayload
+    paper_mode_contract: PreparedPaperModeContractPayload
+
+
+class SeedAggregatePayload(TypedDict):
+    task_id: str
+    model_id: str
+    metric: str
+    mean: float
+    std: float
+    ci_low: float
+    ci_high: float
+    n_seeds: int
+
+
+class SeedAggregatedTaskPayload(TypedDict):
+    status: str
+    source_modality: str | None
+    target_modality: str | None
+    metrics: dict[str, float]
+    metrics_by_model: dict[str, dict[str, float]]
+    ranking: list[RankingPayload]
+    failures: list[dict[str, str]]
+    notes: list[str]
+
+
+class PreparedPaperModePayload(TypedDict):
+    scope: ScopePayload
+    tasks: dict[str, SeedAggregatedTaskPayload]
+    aggregate: PreparedAggregatePayload
+    seed: int
+    seeds: list[int]
+    benchmark_contract: PaperModeContractPayload
+    baseline_catalog: list[dict[str, object]]
+    baseline_failures: list[dict[str, str]]
+    prepared_data: PreparedDataPayload
+    paper_mode_contract: PreparedPaperModeContractPayload
+    seed_results: list[PreparedBaselineSuitePayload]
+    seed_aggregate: list[SeedAggregatePayload]
+    representative_seed_tasks: dict[str, PreparedTaskPayload]
+
+
+BaselineRunner = Callable[[SupervisedWindowTask, int, int], np.ndarray]
+TaskAvailability = Callable[[SupervisedWindowTask], bool]
+CatalogStatus = Callable[[set[str], set[str]], str]
+
+
+@dataclass(frozen=True)
+class RunnableBaselineSpec:
+    model_id: str
+    status: str | CatalogStatus
+    notes: str
+    runner: BaselineRunner | None = None
+    available_for_task: TaskAvailability = lambda task: True
+
+    def catalog_row(self, task_ids: set[str], modalities: set[str]) -> dict[str, object]:
+        status = self.status(task_ids, modalities) if callable(self.status) else self.status
+        return {"model_id": self.model_id, "status": status, "notes": self.notes}
+
+    def supports(self, task: SupervisedWindowTask) -> bool:
+        return self.runner is not None and self.available_for_task(task)
+
+    def predict(self, task: SupervisedWindowTask, seed: int, train_steps: int) -> np.ndarray:
+        if self.runner is None:
+            raise ValueError(f"{self.model_id} has no local runner")
+        return self.runner(task, seed, train_steps)
+
+
+def run_synthetic_baseline_suite(seed: int = 0, train_steps: int = 10) -> BaselineSuitePayload:
     """Run tiny local baselines on paired synthetic windows.
 
     This is intentionally a plumbing benchmark. It validates that all local
@@ -82,14 +239,14 @@ def run_supervised_window_tasks(
     train_steps: int = 10,
     scope_status: str = "prepared-data",
     scope_notes: tuple[str, ...] = (),
-) -> dict[str, object]:
-    task_payloads = {}
+) -> BaselineSuitePayload:
+    task_payloads: dict[str, TaskPayload] = {}
     rank_accumulator: dict[str, list[int]] = {}
     all_failures: list[dict[str, str]] = []
     for task in tasks:
         task_result = _run_task_models(task, seed=seed, train_steps=train_steps)
         task_payloads[task.task_id] = task_result
-        all_failures.extend(task_result.get("failures", []))
+        all_failures.extend(task_result["failures"])
         for row in task_result["ranking"]:
             rank_accumulator.setdefault(str(row["model_id"]), []).append(int(row["rank"]))
 
@@ -118,7 +275,7 @@ def run_supervised_window_tasks(
         "seed": int(seed),
         "seeds": [int(seed)],
         "benchmark_contract": {
-            "required_seeds": [0, 1, 2],
+            "required_seeds": list(CANONICAL_REQUIRED_SEEDS),
             "require_ci": True,
             "notes": [
                 "Paper mode requires a passed prepared eval audit, nonempty rankings, all required seeds, and CI summaries.",
@@ -198,56 +355,16 @@ def _cross_modal_task(data: dict[str, np.ndarray]) -> SupervisedWindowTask:
     )
 
 
-def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) -> dict[str, object]:
-    runners: dict[str, Callable[[], np.ndarray]] = {
-        "persistence": lambda: _predict_persistence(task),
-        "train_mean": lambda: _predict_train_mean(task.y_train, task.y_test.shape),
-        "random_permutation": lambda: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101),
-        "linear_ridge": lambda: _fit_ridge(task.x_train, task.y_train, task.x_test),
-        "autoregressive_ridge": lambda: _fit_autoregressive_ridge(task),
-        "mlp": lambda: _fit_torch_sequence_model(
-            lambda: TorchMLPBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
-            task,
-            seed=seed + 1,
-            steps=train_steps,
-        ),
-        "tcn": lambda: _fit_torch_sequence_model(
-            lambda: TorchTCNBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
-            task,
-            seed=seed + 2,
-            steps=train_steps,
-        ),
-        "transformer": lambda: _fit_torch_sequence_model(
-            lambda: TinyTransformerBaseline(
-                task.x_train.shape[-1],
-                task.y_train.shape[-1],
-                latent_dim=24,
-                n_heads=4,
-                n_layers=1,
-            ),
-            task,
-            seed=seed + 3,
-            steps=train_steps,
-        ),
-        "ssm_fallback": lambda: _fit_torch_sequence_model(
-            lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
-            task,
-            seed=seed + 4,
-            steps=train_steps,
-        ),
-        "neurotwin": lambda: _fit_neurotwin(task, seed=seed + 5, steps=train_steps),
-    }
-    if task.task_id == "stimulus_to_fmri_response" and task.source_modality == "stimulus" and task.target_modality == "fmri":
-        runners["tribe_style"] = lambda: _fit_tribe_style(task, seed=seed + 6, steps=train_steps)
+def _run_task_models(task: SupervisedWindowTask, seed: int, train_steps: int) -> TaskPayload:
     predictions: dict[str, np.ndarray] = {}
     failures: list[BaselineFailure] = []
-    for model_id, runner in runners.items():
+    for spec in _runnable_baseline_specs(task):
         try:
-            prediction = runner()
-            _validate_prediction(task, model_id, prediction)
-            predictions[model_id] = prediction
+            prediction = spec.predict(task, seed, train_steps)
+            _validate_prediction(task, spec.model_id, prediction)
+            predictions[spec.model_id] = prediction
         except Exception as exc:  # noqa: BLE001 - benchmark failures are payload data.
-            failures.append(BaselineFailure(model_id=model_id, task_id=task.task_id, reason=str(exc)))
+            failures.append(BaselineFailure(model_id=spec.model_id, task_id=task.task_id, reason=str(exc)))
 
     metrics_by_model: dict[str, dict[str, float]] = {}
     for model_id, prediction in predictions.items():
@@ -370,9 +487,7 @@ def _fit_neurotwin(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndar
     model = NeuralStateSpaceTranslator(
         input_dims={task.source_modality: task.x_train.shape[-1]},
         output_dims={task.target_modality: task.y_train.shape[-1]},
-        latent_dim=24,
-        n_layers=1,
-        subject_adapter_dim=8,
+        config=NeuralStateSpaceTranslatorConfig(latent_dim=24, n_layers=1, subject_adapter_dim=8),
     )
     x_train = torch.as_tensor(task.x_train, dtype=torch.float32)
     y_train = torch.as_tensor(task.y_train, dtype=torch.float32)
@@ -407,6 +522,152 @@ def _fit_tribe_style(task: SupervisedWindowTask, seed: int, steps: int) -> np.nd
         seed=seed,
         steps=steps,
     )
+
+
+def _is_stimulus_fmri_task(task: SupervisedWindowTask) -> bool:
+    return task.task_id == "stimulus_to_fmri_response" and task.source_modality == "stimulus" and task.target_modality == "fmri"
+
+
+def _tribe_style_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
+    return "clean_room_approximation" if "stimulus_to_fmri_response" in task_ids and "fmri" in modalities else "unavailable"
+
+
+def _brainvista_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
+    return "approximation" if "future_state_forecasting" in task_ids and "fmri" in modalities else "unavailable"
+
+
+def _brain_of_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
+    return "approximation" if "masked_neural_reconstruction" in task_ids and len(modalities) >= 2 else "unavailable"
+
+
+def _brainomni_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
+    return "approximation" if modalities & {"eeg", "meg"} else "unavailable"
+
+
+BASELINE_SPECS: tuple[RunnableBaselineSpec, ...] = (
+    RunnableBaselineSpec(
+        model_id="persistence",
+        status="local_baseline",
+        notes="Last-observation or identity-style forecast with shape-safe fallback.",
+        runner=lambda task, seed, steps: _predict_persistence(task),
+    ),
+    RunnableBaselineSpec(
+        model_id="train_mean",
+        status="local_baseline",
+        notes="Broadcast train-target mean negative baseline.",
+        runner=lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape),
+    ),
+    RunnableBaselineSpec(
+        model_id="random_permutation",
+        status="negative_control",
+        notes="Seeded permutation of training targets with target-shaped output.",
+        runner=lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101),
+    ),
+    RunnableBaselineSpec(
+        model_id="linear_ridge",
+        status="local_baseline",
+        notes="Closed-form sanity baseline on identical prepared windows.",
+        runner=lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test),
+    ),
+    RunnableBaselineSpec(
+        model_id="autoregressive_ridge",
+        status="local_baseline",
+        notes="Ridge from previous source timepoint to next target timepoint where sequence shapes allow.",
+        runner=lambda task, seed, steps: _fit_autoregressive_ridge(task),
+    ),
+    RunnableBaselineSpec(
+        model_id="mlp",
+        status="local_baseline",
+        notes="Per-timepoint neural-window baseline.",
+        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TorchMLPBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
+            task,
+            seed=seed + 1,
+            steps=steps,
+        ),
+    ),
+    RunnableBaselineSpec(
+        model_id="tcn",
+        status="local_baseline",
+        notes="Local temporal convolution baseline.",
+        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TorchTCNBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
+            task,
+            seed=seed + 2,
+            steps=steps,
+        ),
+    ),
+    RunnableBaselineSpec(
+        model_id="transformer",
+        status="local_baseline",
+        notes="Small local Transformer with shared splits.",
+        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TinyTransformerBaseline(
+                task.x_train.shape[-1],
+                task.y_train.shape[-1],
+                latent_dim=24,
+                n_heads=4,
+                n_layers=1,
+            ),
+            task,
+            seed=seed + 3,
+            steps=steps,
+        ),
+    ),
+    RunnableBaselineSpec(
+        model_id="ssm_fallback",
+        status="local_baseline",
+        notes="GRU-based SSM fallback until Mamba is pinned.",
+        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
+            task,
+            seed=seed + 4,
+            steps=steps,
+        ),
+    ),
+    RunnableBaselineSpec(
+        model_id="neurotwin",
+        status="local_baseline",
+        notes="Current NeuroTwin implementation under the same task API.",
+        runner=lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps),
+    ),
+    RunnableBaselineSpec(
+        model_id="tribe_style",
+        status=_tribe_style_catalog_status,
+        notes="NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
+        runner=lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),
+        available_for_task=_is_stimulus_fmri_task,
+    ),
+    RunnableBaselineSpec(
+        model_id="brainvista_style",
+        status=_brainvista_catalog_status,
+        notes="Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
+    ),
+    RunnableBaselineSpec(
+        model_id="brain_of_style",
+        status=_brain_of_catalog_status,
+        notes="Approximate multimodal masked reconstruction lane; not an exact Brain-OF reproduction.",
+    ),
+    RunnableBaselineSpec(
+        model_id="brainomni_style",
+        status=_brainomni_catalog_status,
+        notes="Approximate EEG/MEG tokenizer lane; not an exact BrainOmni reproduction.",
+    ),
+    RunnableBaselineSpec(
+        model_id="braindecode_wrapper",
+        status="unavailable",
+        notes="Optional EEG wrapper slot; exact use requires installed Braindecode and compatible task protocols.",
+    ),
+    RunnableBaselineSpec(
+        model_id="cebra_wrapper",
+        status="unavailable",
+        notes="Optional neural-behavior embedding wrapper slot; exact use requires installed CEBRA and aligned behavior data.",
+    ),
+)
+
+
+def _runnable_baseline_specs(task: SupervisedWindowTask) -> tuple[RunnableBaselineSpec, ...]:
+    return tuple(spec for spec in BASELINE_SPECS if spec.supports(task))
 
 
 def _metrics(
@@ -465,46 +726,4 @@ def _validate_metrics(model_id: str, metrics: dict[str, float]) -> None:
 def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str, object]]:
     task_ids = {task.task_id for task in tasks}
     modalities = {task.source_modality for task in tasks} | {task.target_modality for task in tasks}
-    catalog = [
-        {"model_id": "persistence", "status": "local_baseline", "notes": "Last-observation or identity-style forecast with shape-safe fallback."},
-        {"model_id": "train_mean", "status": "local_baseline", "notes": "Broadcast train-target mean negative baseline."},
-        {"model_id": "random_permutation", "status": "negative_control", "notes": "Seeded permutation of training targets with target-shaped output."},
-        {"model_id": "linear_ridge", "status": "local_baseline", "notes": "Closed-form sanity baseline on identical prepared windows."},
-        {"model_id": "autoregressive_ridge", "status": "local_baseline", "notes": "Ridge from previous source timepoint to next target timepoint where sequence shapes allow."},
-        {"model_id": "mlp", "status": "local_baseline", "notes": "Per-timepoint neural-window baseline."},
-        {"model_id": "tcn", "status": "local_baseline", "notes": "Local temporal convolution baseline."},
-        {"model_id": "transformer", "status": "local_baseline", "notes": "Small local Transformer with shared splits."},
-        {"model_id": "ssm_fallback", "status": "local_baseline", "notes": "GRU-based SSM fallback until Mamba is pinned."},
-        {"model_id": "neurotwin", "status": "local_baseline", "notes": "Current NeuroTwin implementation under the same task API."},
-        {
-            "model_id": "tribe_style",
-            "status": "clean_room_approximation" if "stimulus_to_fmri_response" in task_ids and "fmri" in modalities else "unavailable",
-            "notes": "NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
-        },
-        {
-            "model_id": "brainvista_style",
-            "status": "approximation" if "future_state_forecasting" in task_ids and "fmri" in modalities else "unavailable",
-            "notes": "Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
-        },
-        {
-            "model_id": "brain_of_style",
-            "status": "approximation" if "masked_neural_reconstruction" in task_ids and len(modalities) >= 2 else "unavailable",
-            "notes": "Approximate multimodal masked reconstruction lane; not an exact Brain-OF reproduction.",
-        },
-        {
-            "model_id": "brainomni_style",
-            "status": "approximation" if modalities & {"eeg", "meg"} else "unavailable",
-            "notes": "Approximate EEG/MEG tokenizer lane; not an exact BrainOmni reproduction.",
-        },
-        {
-            "model_id": "braindecode_wrapper",
-            "status": "unavailable",
-            "notes": "Optional EEG wrapper slot; exact use requires installed Braindecode and compatible task protocols.",
-        },
-        {
-            "model_id": "cebra_wrapper",
-            "status": "unavailable",
-            "notes": "Optional neural-behavior embedding wrapper slot; exact use requires installed CEBRA and aligned behavior data.",
-        },
-    ]
-    return catalog
+    return [spec.catalog_row(task_ids, modalities) for spec in BASELINE_SPECS]

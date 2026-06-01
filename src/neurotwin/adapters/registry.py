@@ -26,8 +26,8 @@ def dataset_registry() -> tuple[DatasetAdapterSpec, ...]:
             access="public datasets with dataset-specific terms",
             license_status="dataset-specific; inspect before training",
             alignment_value="BIDS metadata and task events make split manifests auditable.",
-            best_use="fMRI naturalistic tasks, task fMRI, paired behavioral metadata.",
-            adapter_status="planned",
+            best_use="Derivative-only fMRI/EEG/MEG manifests when precomputed time-series arrays are present.",
+            adapter_status="implemented_derivative_only",
         ),
         DatasetAdapterSpec(
             dataset_id="dandi_nwb",
@@ -48,8 +48,8 @@ def dataset_registry() -> tuple[DatasetAdapterSpec, ...]:
             access="public benchmark fetchers",
             license_status="dataset-specific via MOABB metadata",
             alignment_value="Useful cross-dataset EEG benchmark APIs and reproducible splits.",
-            best_use="EEG device/generalization and BCI baselines.",
-            adapter_status="planned",
+            best_use="Implemented optional smoke/prep path for EEG device/generalization and BCI baselines.",
+            adapter_status="implemented_optional",
         ),
         DatasetAdapterSpec(
             dataset_id="tuh_eeg",

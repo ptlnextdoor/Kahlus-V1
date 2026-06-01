@@ -4,17 +4,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-import sys
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_ROOT = REPO_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
-
-from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
 
 
 def main() -> int:
+    from _bootstrap import ensure_src_import_path
+
+    ensure_src_import_path(__file__)
+    from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
+
     parser = argparse.ArgumentParser(description="Create simple markdown tables from NeuroTwin run metrics.")
     parser.add_argument("run_dirs", nargs="+")
     parser.add_argument("--allow-synthetic", action="store_true", help="Allow synthetic-only plumbing runs in generated tables.")

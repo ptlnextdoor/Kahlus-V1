@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
+import shutil
+import subprocess  # nosec B404 - bounded local git invocation with fixed argv shape and timeout.
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = REPO_ROOT / "external" / "upstreams.lock.json"
 VENDOR_DIR = REPO_ROOT / "external" / "vendor"
+GIT_TIMEOUT_SECONDS = 300
 
 
 def main() -> int:
@@ -36,17 +38,34 @@ def main() -> int:
         if args.dry_run:
             print(f"would clone {upstream_id} from {spec['repo']} at {spec['commit']} -> {target}")
             continue
-        _clone_or_checkout(spec["repo"], spec["commit"], target)
+        _clone_or_checkout(upstream_id, spec["repo"], spec["commit"], target)
     return 0
 
 
-def _clone_or_checkout(repo: str, commit: str, target: Path) -> None:
+def _clone_or_checkout(upstream_id: str, repo: str, commit: str, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
+    git = _git_executable()
     if target.exists():
-        subprocess.run(["git", "-C", str(target), "fetch", "--depth", "1", "origin", commit], check=True)
+        _run_git(upstream_id, "fetch", [git, "-C", str(target), "fetch", "--depth", "1", "origin", commit])
     else:
-        subprocess.run(["git", "clone", "--filter=blob:none", repo, str(target)], check=True)
-    subprocess.run(["git", "-C", str(target), "checkout", commit], check=True)
+        _run_git(upstream_id, "clone", [git, "clone", "--filter=blob:none", repo, str(target)])
+    _run_git(upstream_id, "checkout", [git, "-C", str(target), "checkout", commit])
+
+
+def _git_executable() -> str:
+    git = shutil.which("git")
+    if git is None:
+        raise SystemExit("git executable not found")
+    return git
+
+
+def _run_git(upstream_id: str, operation: str, command: list[str]) -> None:
+    try:
+        subprocess.run(command, check=True, timeout=GIT_TIMEOUT_SECONDS)  # nosec B603 - command is built from an absolute git path and pinned lockfile args.
+    except subprocess.TimeoutExpired as exc:
+        raise SystemExit(
+            f"Timed out while running git {operation} for upstream {upstream_id} after {GIT_TIMEOUT_SECONDS}s"
+        ) from exc
 
 
 if __name__ == "__main__":

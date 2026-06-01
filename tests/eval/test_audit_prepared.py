@@ -195,6 +195,20 @@ class PreparedEvalAuditTests(unittest.TestCase):
             self.assertFalse(report.passed)
             self.assertTrue(any("integrity" in violation for violation in report.violations))
 
+    def test_prepared_eval_audit_reports_corrupted_split_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            event_path, split_path = self._write_prepared(root)
+            split_path.write_text("{broken\n", encoding="utf-8")
+            out_dir = root / "audit"
+
+            report = audit_prepared_eval_inputs(event_path, split_path, out_dir=out_dir)
+            audit_payload = json.loads((out_dir / "eval_audit.json").read_text(encoding="utf-8"))
+
+            self.assertFalse(report.passed)
+            self.assertTrue(any("split manifest integrity failure" in violation for violation in report.violations))
+            self.assertEqual(audit_payload["window_counts_by_split"], {"train": 0, "val": 0, "test": 0})
+
     def test_prepared_eval_audit_catches_window_overlap_across_splits(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

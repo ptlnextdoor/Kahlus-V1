@@ -5,22 +5,32 @@ from typing import Any
 
 import numpy as np
 
-from neurotwin.benchmarks.prepared_suite import PreparedSuiteConfig, run_prepared_baseline_suite
+from neurotwin.benchmarks.baseline_suite import (
+    PreparedAggregateRankPayload,
+    PreparedBaselineSuitePayload,
+    PreparedPaperModePayload,
+    SeedAggregatedTaskPayload,
+    PreparedTaskPayload,
+    SeedAggregatePayload,
+)
+from neurotwin.benchmarks.prepared_suite import run_prepared_baseline_suite
+from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
 from neurotwin.data.event_io import event_manifest_summary
-from neurotwin.eval.metrics import bootstrap_ci, rank_models
-from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS, PaperModeGateReport
+from neurotwin.data.prepared_tasks import PreparedSuiteConfig
+from neurotwin.eval.paper_gate import PaperModeGateReport
 from neurotwin.repro import write_json
+from neurotwin.scoring.metrics import bootstrap_ci, rank_models
 
 
 def run_prepared_baseline_suite_multi_seed(
     config: PreparedSuiteConfig,
     seeds: tuple[int, ...] | list[int] = CANONICAL_REQUIRED_SEEDS,
     out_dir: str | Path | None = None,
-) -> dict[str, object]:
+) -> PreparedPaperModePayload:
     """Run prepared baselines for multiple seeds and assemble paper-mode artifacts."""
 
     seed_values = tuple(int(seed) for seed in seeds)
-    seed_results = []
+    seed_results: list[PreparedBaselineSuitePayload] = []
     for seed in seed_values:
         seed_payload = run_prepared_baseline_suite(
             PreparedSuiteConfig(
@@ -45,7 +55,7 @@ def run_prepared_baseline_suite_multi_seed(
 
 
 def write_prepared_paper_mode_artifacts(
-    payload: dict[str, object],
+    payload: PreparedPaperModePayload,
     out_dir: str | Path,
     gate: PaperModeGateReport | None = None,
 ) -> None:
@@ -65,9 +75,9 @@ def write_prepared_paper_mode_artifacts(
 def _merge_seed_payloads(
     config: PreparedSuiteConfig,
     seeds: tuple[int, ...],
-    seed_results: list[dict[str, object]],
-) -> dict[str, object]:
-    first = seed_results[0] if seed_results else {}
+    seed_results: list[PreparedBaselineSuitePayload],
+) -> PreparedPaperModePayload:
+    first: PreparedBaselineSuitePayload | dict[str, object] = seed_results[0] if seed_results else {}
     aggregate_rank = _aggregate_seed_ranks(seed_results)
     seed_aggregate = _aggregate_seed_metrics(seed_results)
     tasks = _aggregate_seed_tasks(first, seed_aggregate)
@@ -114,20 +124,20 @@ def _merge_seed_payloads(
 
 
 def _aggregate_seed_tasks(
-    representative_payload: dict[str, object],
-    seed_aggregate: list[dict[str, object]],
-) -> dict[str, dict[str, object]]:
+    representative_payload: PreparedBaselineSuitePayload | dict[str, object],
+    seed_aggregate: list[SeedAggregatePayload],
+) -> dict[str, SeedAggregatedTaskPayload]:
     representative_tasks = representative_payload.get("tasks", {})
     if not isinstance(representative_tasks, dict):
         representative_tasks = {}
 
-    rows_by_task: dict[str, list[dict[str, object]]] = {}
+    rows_by_task: dict[str, list[SeedAggregatePayload]] = {}
     for row in seed_aggregate:
         task_id = row.get("task_id")
         if task_id is not None:
             rows_by_task.setdefault(str(task_id), []).append(row)
 
-    tasks: dict[str, dict[str, object]] = {}
+    tasks: dict[str, SeedAggregatedTaskPayload] = {}
     for task_id, rows in sorted(rows_by_task.items()):
         representative = representative_tasks.get(task_id, {})
         if not isinstance(representative, dict):
@@ -170,19 +180,19 @@ def _aggregate_seed_tasks(
     return tasks
 
 
-def _representative_notes(task_payload: dict[str, object]) -> list[str]:
+def _representative_notes(task_payload: PreparedTaskPayload | dict[str, object]) -> list[str]:
     notes = task_payload.get("notes", [])
     return [str(note) for note in notes] if isinstance(notes, list) else []
 
 
-def _finite_row_float(row: dict[str, object], key: str) -> float | None:
+def _finite_row_float(row: SeedAggregatePayload | dict[str, object], key: str) -> float | None:
     value = row.get(key)
     if isinstance(value, (int, float, np.floating)) and not isinstance(value, bool) and np.isfinite(float(value)):
         return float(value)
     return None
 
 
-def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
+def _aggregate_seed_ranks(seed_results: list[PreparedBaselineSuitePayload]) -> list[PreparedAggregateRankPayload]:
     ranks_by_model = _collect_concrete_seed_ranks(seed_results)
     return sorted(
         (
@@ -201,7 +211,7 @@ def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[st
     )
 
 
-def _collect_concrete_seed_ranks(seed_results: list[dict[str, object]]) -> dict[str, list[tuple[str, float]]]:
+def _collect_concrete_seed_ranks(seed_results: list[PreparedBaselineSuitePayload]) -> dict[str, list[tuple[str, float]]]:
     ranks_by_model: dict[str, list[tuple[str, float]]] = {}
     for result_idx, result in enumerate(seed_results):
         seed_key = _seed_key(result, result_idx)
@@ -229,12 +239,12 @@ def _collect_concrete_seed_ranks(seed_results: list[dict[str, object]]) -> dict[
     return ranks_by_model
 
 
-def _seed_key(result: dict[str, object], fallback_index: int) -> str:
+def _seed_key(result: PreparedBaselineSuitePayload, fallback_index: int) -> str:
     value = result.get("seed", fallback_index)
     return str(value)
 
 
-def _aggregate_seed_metrics(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
+def _aggregate_seed_metrics(seed_results: list[PreparedBaselineSuitePayload]) -> list[SeedAggregatePayload]:
     values: dict[tuple[str, str, str], list[float]] = {}
     for result in seed_results:
         tasks = result.get("tasks", {})
@@ -251,7 +261,7 @@ def _aggregate_seed_metrics(seed_results: list[dict[str, object]]) -> list[dict[
             task_metrics = task_payload.get("metrics", {})
             if isinstance(task_metrics, dict):
                 _collect_metric_values(values, str(task_id), "task_metric", task_metrics)
-    rows = []
+    rows: list[SeedAggregatePayload] = []
     for (task_id, model_id, metric), metric_values in sorted(values.items()):
         arr = np.asarray(metric_values, dtype=float)
         if arr.size == 0 or not np.isfinite(arr).all():

@@ -2,10 +2,16 @@ import unittest
 
 import numpy as np
 
-from neurotwin.eval.metrics import bandpower_error, bootstrap_ci, mse, pearsonr, rank_models, regionwise_pearsonr, spearmanr
+from neurotwin.scoring.metrics import bandpower_error, bootstrap_ci, mse, pearsonr, rank_models, regionwise_pearsonr, spearmanr
 
 
 class MetricTests(unittest.TestCase):
+    def test_eval_metrics_is_compatibility_reexport(self):
+        from neurotwin.eval import metrics as eval_metrics
+
+        self.assertIs(eval_metrics.mse, mse)
+        self.assertIn("Compatibility re-export", eval_metrics.__doc__ or "")
+
     def test_mse_and_pearsonr(self):
         y_true = np.array([1.0, 2.0, 3.0])
         y_pred = np.array([1.0, 2.5, 2.5])

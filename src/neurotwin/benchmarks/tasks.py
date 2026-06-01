@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from neurotwin.eval.metrics import mse, pearsonr
+from neurotwin.scoring.metrics import mse, pearsonr
 
 
 @dataclass(frozen=True)
