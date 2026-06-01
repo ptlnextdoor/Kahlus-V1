@@ -297,12 +297,70 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(summary["selection_split"], "val")
             self.assertEqual(summary["report_split"], "test")
             self.assertIn("scientific_claim_allowed", summary)
+            self.assertFalse(summary["scientific_claim_allowed"])
             self.assertIn("source_commit_missing", summary)
             self.assertEqual(summary["run"]["mode"], "direct")
             self.assertIn("checkpoint.pt", [entry["filename"] for entry in summary["checkpoint_manifest"]])
             self.assertTrue((run_dir / "checkpoint_manifest.json").exists())
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())
+
+    def test_train_cli_keeps_claims_disabled_for_non_synthetic_non_smoke_runs(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = root / "prepared"
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            for batch in batches:
+                batch.metadata.pop("synthetic", None)
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prepared / "split_manifest.json")
+            save_event_batches(batches, prepared)
+            config_path = root / "prepared_train_realish.yaml"
+            run_root = root / "runs"
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "experiment": "prepared_train_realish",
+                        "data": {
+                            "event_manifest": str(prepared / "event_manifest.json"),
+                            "split_manifest": str(prepared / "split_manifest.json"),
+                        },
+                        "task": "masked_neural_reconstruction",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "seed": 0,
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "train",
+                    "--config",
+                    str(config_path),
+                    "--run-root",
+                    str(run_root),
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+
+            summary = json.loads((run_root / "prepared_train_realish" / "summary.json").read_text(encoding="utf-8"))
+            self.assertFalse(summary["synthetic_only"])
+            self.assertFalse(summary["real_data_smoke"])
+            self.assertFalse(summary["scientific_claim_allowed"])
 
 
 if __name__ == "__main__":

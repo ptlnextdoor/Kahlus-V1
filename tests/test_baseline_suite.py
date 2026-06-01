@@ -11,7 +11,13 @@ from unittest import mock
 import numpy as np
 
 from neurotwin.benchmarks.baseline_suite import SupervisedWindowTask, run_supervised_window_tasks, run_synthetic_baseline_suite
-from neurotwin.eval.paper_gate import validate_paper_mode_payload
+from neurotwin.eval.paper_gate import (
+    effective_scientific_claim_allowed,
+    effective_scientific_claim_allowed_for_run,
+    load_run_summary,
+    paper_mode_gate_allows_claim,
+    validate_paper_mode_payload,
+)
 from neurotwin.models.baselines import NumpyRidgeBaseline
 from neurotwin.models.tribe_style import TribeStyleModel
 
@@ -332,6 +338,97 @@ class BaselineSuiteTests(unittest.TestCase):
         ranking_only_report = validate_paper_mode_payload(ranking_only, audit_report={"passed": True}, require_ci=False)
         self.assertFalse(ranking_only_report.passed)
         self.assertEqual(ranking_only_report.observed_seeds, ())
+
+    def test_effective_scientific_claim_allowed_requires_real_run_and_canonical_gate(self):
+        valid_gate = {
+            "passed": True,
+            "require_ci": True,
+            "violations": [],
+            "required_seeds": [0, 1, 2],
+            "observed_seeds": [0, 1, 2],
+        }
+        self.assertTrue(paper_mode_gate_allows_claim(valid_gate))
+        self.assertTrue(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": False},
+                valid_gate,
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": True, "real_data_smoke": False},
+                valid_gate,
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": True},
+                valid_gate,
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": False},
+                {
+                    "passed": True,
+                    "require_ci": False,
+                    "violations": [],
+                    "required_seeds": [0, 1, 2],
+                    "observed_seeds": [0, 1, 2],
+                },
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": False},
+                {
+                    "passed": True,
+                    "require_ci": True,
+                    "violations": [],
+                    "required_seeds": [0, 1],
+                    "observed_seeds": [0, 1, 2],
+                },
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": False},
+                None,
+            )
+        )
+
+    def test_effective_scientific_claim_allowed_for_run_uses_tolerant_summary_and_gate_loaders(self):
+        valid_gate = {
+            "passed": True,
+            "require_ci": True,
+            "violations": [],
+            "required_seeds": [0, 1, 2],
+            "observed_seeds": [0, 1, 2],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            (run_dir / "summary.json").write_text(
+                json.dumps({"synthetic_only": False, "real_data_smoke": False}),
+                encoding="utf-8",
+            )
+            (run_dir / "paper_mode_gate.json").write_text(json.dumps(valid_gate), encoding="utf-8")
+            self.assertEqual(load_run_summary(run_dir), {"synthetic_only": False, "real_data_smoke": False})
+            self.assertTrue(effective_scientific_claim_allowed_for_run(run_dir))
+
+            (run_dir / "summary.json").write_text("{broken\n", encoding="utf-8")
+            self.assertEqual(load_run_summary(run_dir), {})
+            self.assertFalse(effective_scientific_claim_allowed_for_run(run_dir))
+
+            (run_dir / "summary.json").unlink()
+            self.assertEqual(load_run_summary(run_dir), {})
+            self.assertFalse(effective_scientific_claim_allowed_for_run(run_dir))
+
+            (run_dir / "summary.json").write_text(
+                json.dumps({"synthetic_only": False, "real_data_smoke": False}),
+                encoding="utf-8",
+            )
+            (run_dir / "paper_mode_gate.json").write_text("{broken\n", encoding="utf-8")
+            self.assertFalse(effective_scientific_claim_allowed_for_run(run_dir))
 
     def test_eval_suite_writes_baseline_artifact(self):
         env = dict(os.environ)

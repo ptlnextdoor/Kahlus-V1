@@ -7,6 +7,7 @@ from typing import Any
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.task_specs import default_translation_tasks
+from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
 
 COMPARE_FIELDS = (
     "run",
@@ -122,8 +123,15 @@ def generate_suite_report(suite: str) -> str:
 
 def generate_run_report(run_dir: str | Path) -> str:
     path = Path(run_dir)
-    artifact_paths = _write_run_table_artifacts(path)
-    lines = ["# NeuroTwin Run Report", "", f"run_dir={path}"]
+    summary = load_run_summary(path)
+    effective_claim = effective_scientific_claim_allowed_for_run(path, summary)
+    artifact_paths = _write_run_table_artifacts(path, summary=summary, effective_claim=effective_claim)
+    lines = [
+        "# NeuroTwin Run Report",
+        "",
+        f"run_dir={path}",
+        f"effective_scientific_claim_allowed={effective_claim}",
+    ]
     for filename in ("config.yaml", "environment.json", "metrics.json", "summary.json"):
         file_path = path / filename
         if not file_path.exists():
@@ -141,7 +149,7 @@ def generate_run_report(run_dir: str | Path) -> str:
             lines.append("```yaml")
             lines.append(file_path.read_text(encoding="utf-8").rstrip())
             lines.append("```")
-    if len(lines) == 3:
+    if len(lines) == 4:
         lines.append("")
         lines.append("No run artifacts found.")
     elif artifact_paths:
@@ -166,6 +174,7 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
             if field == "run":
                 continue
             row[field] = _summary_or_metrics(summary, metrics, field, *COMPARE_METRIC_FALLBACKS.get(field, (field,)))
+        row["scientific_claim_allowed"] = effective_scientific_claim_allowed_for_run(path, summary)
         rows.append(row)
     destination = Path(out_dir) if out_dir else None
     if destination is not None:
@@ -185,7 +194,11 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
     return "\n".join(lines)
 
 
-def _write_run_table_artifacts(path: Path) -> list[str]:
+def _write_run_table_artifacts(
+    path: Path,
+    summary: dict[str, Any] | None = None,
+    effective_claim: bool | None = None,
+) -> list[str]:
     if not path.exists():
         return []
     metrics_path = path / "metrics.json"
@@ -197,17 +210,18 @@ def _write_run_table_artifacts(path: Path) -> list[str]:
     tables_dir.mkdir(parents=True, exist_ok=True)
     figures_dir.mkdir(parents=True, exist_ok=True)
     metrics = _read_json(metrics_path)
-    summary = _read_json(summary_path)
+    summary_payload = summary if isinstance(summary, dict) else _read_json(summary_path)
+    effective = effective_scientific_claim_allowed_for_run(path, summary_payload) if effective_claim is None else bool(effective_claim)
     artifacts: list[str] = []
-    flat_rows = list(_flatten_metrics({"metrics": metrics, "summary": summary}))
+    flat_rows = list(_flatten_metrics({"metrics": metrics, "summary": summary_payload}))
     flat_csv = tables_dir / "metrics_flat.csv"
     flat_csv.write_text(_csv_rows(("metric", "value"), flat_rows), encoding="utf-8")
     artifacts.append(str(flat_csv))
 
-    task_results = _task_results(metrics, summary)
+    task_results = _task_results(metrics, summary_payload)
     artifacts.extend(_write_task_results_table(tables_dir, task_results))
     artifacts.extend(_write_baseline_tables(tables_dir, metrics))
-    artifacts.append(str(_write_metric_summary_figure(figures_dir, summary)))
+    artifacts.append(str(_write_metric_summary_figure(figures_dir, summary_payload, effective)))
     adaptation_rows = _adaptation_rows(task_results)
     if adaptation_rows:
         adaptation_json = figures_dir / "adaptation_curve.json"
@@ -287,7 +301,7 @@ def _write_baseline_tables(tables_dir: Path, metrics: Any) -> list[str]:
     return [str(baseline_ranking_csv), str(baseline_failures_csv)]
 
 
-def _write_metric_summary_figure(figures_dir: Path, summary: Any) -> Path:
+def _write_metric_summary_figure(figures_dir: Path, summary: Any, effective_claim: bool) -> Path:
     payload = {
         "synthetic_only": bool(summary.get("synthetic_only")) if isinstance(summary, dict) else None,
         "status": summary.get("status") if isinstance(summary, dict) else None,
@@ -296,7 +310,7 @@ def _write_metric_summary_figure(figures_dir: Path, summary: Any) -> Path:
         "best_val_mse": summary.get("best_val_mse") if isinstance(summary, dict) else None,
         "test_mse": summary.get("test_mse") if isinstance(summary, dict) else None,
         "real_data_smoke": bool(summary.get("real_data_smoke")) if isinstance(summary, dict) else False,
-        "scientific_claim_allowed": bool(summary.get("scientific_claim_allowed")) if isinstance(summary, dict) else False,
+        "scientific_claim_allowed": bool(effective_claim),
     }
     figure_json = figures_dir / "metric_summary.json"
     figure_json.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")

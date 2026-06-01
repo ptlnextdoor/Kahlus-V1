@@ -4,6 +4,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
 
 
 def main() -> int:
@@ -14,17 +22,19 @@ def main() -> int:
     print("| run | metric | value |")
     print("| --- | --- | --- |")
     for run_dir in args.run_dirs:
-        metrics_path = Path(run_dir) / "metrics.json"
+        run_path = Path(run_dir)
+        metrics_path = run_path / "metrics.json"
         if not metrics_path.exists():
             continue
-        summary = _read_summary(Path(run_dir))
+        summary = load_run_summary(run_path)
         if summary.get("synthetic_only") and not args.allow_synthetic:
             raise SystemExit(f"{run_dir} is synthetic-only; rerun with --allow-synthetic for plumbing tables")
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-        claim_status = "real_data_smoke" if summary.get("real_data_smoke") else "scientific" if summary.get("scientific_claim_allowed") else "plumbing"
-        print(f"| {Path(run_dir).name} | claim_status | {claim_status} |")
+        claim_allowed = effective_scientific_claim_allowed_for_run(run_path, summary)
+        claim_status = "real_data_smoke" if summary.get("real_data_smoke") else "scientific" if claim_allowed else "plumbing"
+        print(f"| {run_path.name} | claim_status | {claim_status} |")
         for key, value in _flatten_metrics(metrics):
-            print(f"| {Path(run_dir).name} | {key} | {value} |")
+            print(f"| {run_path.name} | {key} | {value} |")
     return 0
 
 
@@ -47,15 +57,5 @@ def _flatten_metrics(payload: object, prefix: str = "") -> list[tuple[str, objec
     elif isinstance(payload, (int, float, str, bool)) or payload is None:
         rows.append((prefix, payload))
     return rows
-
-
-def _read_summary(run_dir: Path) -> dict[str, object]:
-    path = run_dir / "summary.json"
-    if not path.exists():
-        return {}
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return payload if isinstance(payload, dict) else {}
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

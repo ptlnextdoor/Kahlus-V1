@@ -486,7 +486,7 @@ def _cmd_train(args: argparse.Namespace) -> None:
                 "selection_split": result.selection_split,
                 "report_split": result.report_split,
                 "real_data_smoke": bool(config.get("dataset") == "moabb" and "smoke" in str(config.get("experiment", ""))),
-                "scientific_claim_allowed": bool((not result.synthetic_only) and "smoke" not in str(config.get("experiment", ""))),
+                "scientific_claim_allowed": False,
                 "unavailable_tasks": result.skipped_tasks,
                 "baseline_failures": [],
                 "task_results": result.task_results,

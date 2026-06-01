@@ -4,6 +4,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
 
 
 def main() -> int:
@@ -14,12 +22,12 @@ def main() -> int:
     metrics_path = Path(args.run_dir) / "metrics.json"
     if not metrics_path.exists():
         raise SystemExit(f"No metrics.json found in {args.run_dir}")
-    summary_path = Path(args.run_dir) / "summary.json"
-    summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+    run_path = Path(args.run_dir)
+    summary = load_run_summary(run_path)
     if isinstance(summary, dict) and summary.get("synthetic_only") and not args.allow_synthetic:
         raise SystemExit(f"{args.run_dir} is synthetic-only; rerun with --allow-synthetic for plumbing figures")
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-    out = Path(args.run_dir) / "figure_summary.txt"
+    out = run_path / "figure_summary.txt"
     lines = []
     baseline_suite = metrics.get("baseline_suite") if isinstance(metrics, dict) else None
     if isinstance(baseline_suite, dict):
@@ -31,7 +39,10 @@ def main() -> int:
     if isinstance(summary, dict) and summary.get("real_data_smoke"):
         lines.insert(0, "claim_status: real_data_smoke")
     elif isinstance(summary, dict):
-        lines.insert(0, f"scientific_claim_allowed: {bool(summary.get('scientific_claim_allowed'))}")
+        lines.insert(
+            0,
+            f"scientific_claim_allowed: {effective_scientific_claim_allowed_for_run(run_path, summary)}",
+        )
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(out)
     return 0

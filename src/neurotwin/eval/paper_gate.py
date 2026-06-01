@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -103,6 +105,73 @@ def format_paper_mode_gate(report: PaperModeGateReport) -> str:
     return "\n".join(lines)
 
 
+def paper_mode_gate_allows_claim(payload: PaperModeGateReport | dict[str, Any] | None) -> bool:
+    if isinstance(payload, PaperModeGateReport):
+        required_seeds = payload.required_seeds
+        observed_seeds = payload.observed_seeds
+        violations = payload.violations
+        require_ci = payload.require_ci
+        passed = payload.passed
+    elif isinstance(payload, dict):
+        required_seeds = _normalize_seed_tuple(payload.get("required_seeds"))
+        observed_seeds = _normalize_seed_tuple(payload.get("observed_seeds"))
+        violations = payload.get("violations")
+        require_ci = payload.get("require_ci")
+        passed = payload.get("passed")
+    else:
+        return False
+    if passed is not True or require_ci is not True:
+        return False
+    if not isinstance(violations, (list, tuple)) or any(str(item).strip() for item in violations):
+        return False
+    if required_seeds != CANONICAL_REQUIRED_SEEDS or observed_seeds is None:
+        return False
+    return all(seed in observed_seeds for seed in CANONICAL_REQUIRED_SEEDS)
+
+
+def effective_scientific_claim_allowed(
+    summary: dict[str, Any] | None,
+    gate_payload: PaperModeGateReport | dict[str, Any] | None,
+) -> bool:
+    if not isinstance(summary, dict):
+        return False
+    if summary.get("synthetic_only") is not False:
+        return False
+    if summary.get("real_data_smoke") is not False:
+        return False
+    return paper_mode_gate_allows_claim(gate_payload)
+
+
+def load_run_summary(run_dir: str | Path) -> dict[str, Any]:
+    path = Path(run_dir) / "summary.json"
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def load_paper_mode_gate(run_dir: str | Path) -> dict[str, Any]:
+    path = Path(run_dir) / "paper_mode_gate.json"
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def effective_scientific_claim_allowed_for_run(
+    run_dir: str | Path,
+    summary: dict[str, Any] | None = None,
+) -> bool:
+    summary_payload = summary if isinstance(summary, dict) else load_run_summary(run_dir)
+    return effective_scientific_claim_allowed(summary_payload, load_paper_mode_gate(run_dir))
+
+
 def _audit_payload(audit_report: Any | None, payload: dict[str, Any]) -> dict[str, Any] | None:
     if audit_report is not None:
         if hasattr(audit_report, "to_dict"):
@@ -194,6 +263,18 @@ def _coerce_seed(value: Any) -> int | None:
         except ValueError:
             return None
     return None
+
+
+def _normalize_seed_tuple(value: Any) -> tuple[int, ...] | None:
+    if not isinstance(value, (list, tuple)):
+        return None
+    normalized: list[int] = []
+    for item in value:
+        seed = _coerce_seed(item)
+        if seed is None:
+            return None
+        normalized.append(seed)
+    return tuple(normalized)
 
 
 def _has_result_evidence(record: dict[str, Any], require_ci: bool = True) -> bool:

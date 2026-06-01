@@ -118,12 +118,93 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         self.assertIsNotNone(log_path)
         self.assertEqual(log_path.name, "neurotwin-a100-docker-20260531T000000Z.log")
 
-    def test_evidence_helpers_reject_forbidden_files(self):
-        for name in ("pw.txt", ".env", ".env.local", "checkpoint.pt", "raw.npz", "secret.txt", "ssh.key"):
+    def test_evidence_helpers_reject_forbidden_bundle_paths(self):
+        for name in (
+            "pw.txt",
+            ".env",
+            ".env.local",
+            "checkpoint.pt",
+            "raw.npz",
+            "secret.txt",
+            "ssh.key",
+            "run/tables/secret-folder/metrics.json",
+            "run/figures/password-cache/plot.json",
+        ):
             with self.subTest(name=name):
-                self.assertTrue(evidence.is_forbidden(Path(name)))
-        self.assertFalse(evidence.is_forbidden(Path("docker_run.env")))
-        self.assertFalse(evidence.is_forbidden(Path("metrics.json")))
+                self.assertTrue(evidence.is_forbidden_bundle_path(Path(name)))
+        self.assertFalse(evidence.is_forbidden_bundle_path(Path("docker_run.env")))
+        self.assertFalse(evidence.is_forbidden_bundle_path(Path("metrics.json")))
+
+    def test_evidence_helpers_allow_safe_absolute_source_files_under_secret_ancestors(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "password-parent" / "repo"
+            repo_root.mkdir(parents=True)
+            handoff = repo_root / "README_HANDOFF.md"
+            handoff.write_text("# handoff\n", encoding="utf-8")
+            payload = repo_root / "environment.json"
+            payload.write_text('{"run":{"slurm":{"job_id":"123"}}}\n', encoding="utf-8")
+
+            self.assertTrue(evidence.is_readable_source_file(handoff))
+            loaded = evidence.load_json(payload)
+
+        self.assertEqual(loaded["run"]["slurm"]["job_id"], "123")
+
+    def test_write_readmes_copies_safe_handoff_from_secret_named_repo_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "secret-parent" / "repo"
+            repo_root.mkdir(parents=True)
+            expected = "# copied handoff\n"
+            (repo_root / "README_HANDOFF.md").write_text(expected, encoding="utf-8")
+            (repo_root / "README_HANDOFF.md.in").write_text("fallback ${FULL_SHA}\n", encoding="utf-8")
+            stage_root = root / "stage"
+            stage_root.mkdir()
+
+            evidence.write_readmes(
+                evidence.EvidenceBundleConfig(
+                    persistent_root=root / "persistent",
+                    zip_path=root / "bundle.zip",
+                    evidence_name="evidence",
+                    repo_root=repo_root,
+                    full_sha="abcdef1234567890",
+                ),
+                stage_root,
+            )
+            self.assertEqual((stage_root / "README_HANDOFF.md").read_text(encoding="utf-8"), expected)
+
+    def test_copy_tree_files_filters_using_full_bundle_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tables_source = root / "tables_source"
+            figures_source = root / "figures_source"
+            stage_root = root / "stage"
+            (tables_source / "secret-folder").mkdir(parents=True)
+            (tables_source / "safe").mkdir(parents=True)
+            (figures_source / "password-cache").mkdir(parents=True)
+            (figures_source / "safe").mkdir(parents=True)
+            (tables_source / "secret-folder" / "metrics.json").write_text('{"hidden":true}\n', encoding="utf-8")
+            (tables_source / "safe" / "metrics.json").write_text('{"ok":true}\n', encoding="utf-8")
+            (figures_source / "password-cache" / "plot.json").write_text('{"hidden":true}\n', encoding="utf-8")
+            (figures_source / "safe" / "plot.json").write_text('{"ok":true}\n', encoding="utf-8")
+
+            evidence.copy_tree_files(tables_source, stage_root, Path("run") / "tables")
+            evidence.copy_tree_files(figures_source, stage_root, Path("run") / "figures")
+            self.assertFalse((stage_root / "run" / "tables" / "secret-folder" / "metrics.json").exists())
+            self.assertFalse((stage_root / "run" / "figures" / "password-cache" / "plot.json").exists())
+            self.assertTrue((stage_root / "run" / "tables" / "safe" / "metrics.json").exists())
+            self.assertTrue((stage_root / "run" / "figures" / "safe" / "plot.json").exists())
+
+    def test_copy_bundle_file_rejects_invalid_staged_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.json"
+            source.write_text('{"ok":true}\n', encoding="utf-8")
+            stage_root = root / "stage"
+
+            with self.assertRaises(ValueError):
+                evidence.copy_bundle_file(source, stage_root, Path("/absolute/path.json"))
+            with self.assertRaises(ValueError):
+                evidence.copy_bundle_file(source, stage_root, Path("run") / ".." / "escape.json")
 
     def test_evidence_helpers_write_checksums(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -272,3 +353,29 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             rel_names = self._package_a100_evidence_fixture(persistent, root)
 
         self.assertFalse(any(rel.startswith("logs/") for rel in rel_names))
+
+    def test_package_a100_evidence_bundle_excludes_secret_directories_and_symlinks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            persistent = self._create_a100_evidence_fixture(root)
+            run = persistent / "runs" / "moabb_a100_smoke"
+            logs = persistent / "logs"
+            (run / "tables" / "secret-folder").mkdir(parents=True)
+            (run / "tables" / "secret-folder" / "metrics.json").write_text('{"hidden":true}\n', encoding="utf-8")
+            (run / "figures" / "password-cache").mkdir(parents=True)
+            (run / "figures" / "password-cache" / "plot.json").write_text('{"hidden":true}\n', encoding="utf-8")
+            safe_target = run / "tables" / "safe.txt"
+            safe_target.write_text("safe\n", encoding="utf-8")
+            try:
+                (run / "tables" / "symlinked.txt").symlink_to(safe_target)
+                (logs / "neurotwin-a100-full-123.out").unlink()
+                (logs / "neurotwin-a100-full-123.out").symlink_to(safe_target)
+            except OSError as exc:
+                self.skipTest(f"symlink support unavailable: {exc}")
+
+            rel_names = self._package_a100_evidence_fixture(persistent, root)
+
+        self.assertNotIn("run/tables/secret-folder/metrics.json", rel_names)
+        self.assertNotIn("run/figures/password-cache/plot.json", rel_names)
+        self.assertNotIn("run/tables/symlinked.txt", rel_names)
+        self.assertNotIn("logs/neurotwin-a100-full-123.out", rel_names)
