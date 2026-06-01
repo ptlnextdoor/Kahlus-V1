@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from string import Template
 from typing import Any
 import json
 import re
@@ -12,6 +11,14 @@ import shutil
 import sys
 import tempfile
 import zipfile
+
+try:
+    from render_a100_handoff_readme import render_handoff_readme
+except ModuleNotFoundError:
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from render_a100_handoff_readme import render_handoff_readme
 
 
 RUN_FILES = (
@@ -207,7 +214,15 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
     if handoff_source.is_file() and not is_forbidden(handoff_source):
         shutil.copy2(handoff_source, root / "README_HANDOFF.md")
     else:
-        write_rendered_handoff_readme(config, root / "README_HANDOFF.md")
+        short_sha = config.full_sha[:7]
+        render_handoff_readme(
+            config.repo_root / "README_HANDOFF.md.in",
+            root / "README_HANDOFF.md",
+            full_sha=config.full_sha,
+            short_sha=short_sha,
+            runner_name=f"neurotwin-a100-runner-{short_sha}",
+            persistent_root_example=f"/raid/scratch/$USER/neurotwin-{short_sha}",
+        )
     (root / "README_SEND_TO_FRIEND.md").write_text(
         "# Sendable NeuroTwin A100 Evidence\n\n"
         "Send this zip back after an A100 run. It includes small review artifacts only: summaries, metrics, "
@@ -220,22 +235,6 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
         "```bash\nshasum -a 256 -c handoff-SHA256SUMS\n```\n",
         encoding="utf-8",
     )
-
-
-def write_rendered_handoff_readme(config: EvidenceBundleConfig, output_path: Path) -> None:
-    template_path = config.repo_root / "README_HANDOFF.md.in"
-    if not template_path.is_file() or is_forbidden(template_path):
-        raise SystemExit("README_HANDOFF.md is missing and README_HANDOFF.md.in is unavailable")
-    short_sha = config.full_sha[:7]
-    runner_name = f"neurotwin-a100-runner-{short_sha}"
-    rendered = Template(template_path.read_text(encoding="utf-8")).safe_substitute(
-        FULL_SHA=config.full_sha,
-        SHORT_SHA=short_sha,
-        RUNNER_NAME=runner_name,
-        RUNNER_TARBALL=f"{runner_name}.tar.gz",
-        PERSISTENT_ROOT_EXAMPLE=f"/raid/scratch/$USER/neurotwin-{short_sha}",
-    )
-    output_path.write_text(rendered, encoding="utf-8")
 
 
 def write_checksums(root: Path) -> None:

@@ -299,6 +299,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "README_AGENT_DEPLOY.md",
             "Dockerfile.a100",
             "bash scripts/run_docker_6gpu.sh",
+            "scripts/docker_a100_inner.sh",
             "conda env create -f environment-a100.yml",
             "python -m pip install -e '.[moabb,cluster]'",
             "Docker Fallback",
@@ -319,12 +320,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
             "bash scripts/run_smoke.sh",
             "bash scripts/run_full.sh",
-            "python -m neurotwin.cli eval audit",
-            "python -m neurotwin.cli cluster materialize-config",
-            "python -m neurotwin.cli cluster preflight",
-            "torchrun --standalone --nproc_per_node=6",
             "torchrun --standalone --nproc_per_node=1",
-            "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",
             "$NEUROTWIN_DATA/docker_run.env",
@@ -344,6 +340,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("The expanded Docker host command is", readme)
         self.assertNotIn("docker run --rm -it", readme)
         self.assertNotIn("bash scripts/docker_a100_inner.sh", readme)
+        self.assertNotIn("python -m neurotwin.cli eval audit", readme)
+        self.assertNotIn("python -m neurotwin.cli cluster materialize-config", readme)
+        self.assertNotIn("python -m neurotwin.cli cluster preflight", readme)
+        self.assertNotIn("python -m neurotwin.cli report", readme)
         for developer_only in (
             "bash scripts/package_runner_bundle.sh",
             "bash scripts/package_run_bundle.sh",

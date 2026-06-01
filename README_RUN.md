@@ -60,39 +60,7 @@ for i in range(torch.cuda.device_count()):
 PY'
 ```
 
-Inside Docker it installs the runner and executes the full handoff sequence:
-
-```bash
-python -m pip install -e '.[moabb,cluster]'
-python scripts/docker_gpu_preflight.py "$PERSISTENT_ROOT/gpu_preflight.json"
-bash scripts/run_smoke.sh outputs/smoke
-bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
-python -m neurotwin.cli eval audit \
-  --suite neural_translation_v1 \
-  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
-  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
-  --window-length 128 \
-  --stride 128 \
-  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
-  --require-windows
-python -m neurotwin.cli cluster materialize-config \
-  --template configs/train/moabb_a100_smoke.yaml \
-  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
-  --out outputs/configs/moabb_a100.materialized.yaml
-python -m neurotwin.cli cluster preflight \
-  --config outputs/configs/moabb_a100.materialized.yaml \
-  --run-root "$PERSISTENT_ROOT/runs" \
-  --require-cuda \
-  --require-prepared-windows \
-  --expect-window-count 18144 \
-  --expect-split-windows train:12096,val:2016,test:4032
-torchrun --standalone --nproc_per_node=6 \
-  -m neurotwin.cli train \
-  --config outputs/configs/moabb_a100.materialized.yaml \
-  --run-root "$PERSISTENT_ROOT/runs"
-python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
-bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs
-```
+The exact inside-container sequence lives in `scripts/docker_a100_inner.sh`; deployment-agent details live in `README_AGENT_DEPLOY.md`. The full Docker run command remains `bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"`, which writes `docker_run.env`, the Docker log, `gpu_preflight.json`, run outputs, and the evidence bundle.
 
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
@@ -197,39 +165,7 @@ In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>
 
 For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_6gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
 
-The helper runs these commands inside the container:
-
-```bash
-python -m pip install -e '.[moabb,cluster]'
-python scripts/docker_gpu_preflight.py "$PERSISTENT_ROOT/gpu_preflight.json"
-bash scripts/run_smoke.sh outputs/smoke
-bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
-python -m neurotwin.cli eval audit \
-  --suite neural_translation_v1 \
-  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
-  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
-  --window-length 128 \
-  --stride 128 \
-  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
-  --require-windows
-python -m neurotwin.cli cluster materialize-config \
-  --template configs/train/moabb_a100_smoke.yaml \
-  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
-  --out outputs/configs/moabb_a100.materialized.yaml
-python -m neurotwin.cli cluster preflight \
-  --config outputs/configs/moabb_a100.materialized.yaml \
-  --run-root "$PERSISTENT_ROOT/runs" \
-  --require-cuda \
-  --require-prepared-windows \
-  --expect-window-count 18144 \
-  --expect-split-windows train:12096,val:2016,test:4032
-torchrun --standalone --nproc_per_node=6 \
-  -m neurotwin.cli train \
-  --config outputs/configs/moabb_a100.materialized.yaml \
-  --run-root "$PERSISTENT_ROOT/runs"
-python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/moabb_a100_smoke"
-bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs
-```
+The helper delegates the inside-container install, preflight, audit, materialization, training, reporting, and evidence packaging steps to `scripts/docker_a100_inner.sh`. Use `README_AGENT_DEPLOY.md` for the detailed deployment-agent contract; do not copy a raw `docker run` full-run command from this README.
 
 ## Tiny Smoke Test
 

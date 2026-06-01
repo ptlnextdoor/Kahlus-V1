@@ -216,8 +216,10 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             self.assertIn("This handoff contains a runnable NeuroTwin A100 runner tarball", handoff_readme)
             self.assertIn("bash scripts/run_docker_6gpu.sh", handoff_readme)
             self.assertIn("README_AGENT_DEPLOY.md", handoff_readme)
+            self.assertIn("scripts/docker_a100_inner.sh", handoff_readme)
             self.assertNotIn("Evidence bundle for commit", handoff_readme)
             self.assertNotIn("bash scripts/docker_a100_inner.sh", handoff_readme)
+            self.assertNotIn("python -m neurotwin.cli cluster materialize-config", handoff_readme)
 
     def test_package_a100_evidence_bundle_falls_back_to_summary_job_id(self):
         with tempfile.TemporaryDirectory() as tmp:

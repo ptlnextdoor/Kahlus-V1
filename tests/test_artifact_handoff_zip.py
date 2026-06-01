@@ -57,6 +57,7 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "Primary Docker 6-GPU path",
                 "bash scripts/run_docker_6gpu.sh",
                 "README_AGENT_DEPLOY.md",
+                "scripts/docker_a100_inner.sh",
                 "Dockerfile.a100",
                 '--gpus "\\"device=${HOST_GPU_IDS}\\""',
                 "--ipc=host --shm-size=64g",
@@ -73,17 +74,11 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 '--gpus "\\"device=<host_gpu_id>\\""',
                 "/workspace/repo",
                 "/raid/scratch/$USER/neurotwin-",
-                "python -m neurotwin.cli eval audit",
-                "python -m neurotwin.cli cluster materialize-config",
-                "python -m neurotwin.cli cluster preflight",
-                "torchrun --standalone --nproc_per_node=6",
                 "torchrun --standalone --nproc_per_node=1",
-                "python -m neurotwin.cli report",
                 "run/docker_run.env",
                 "current Docker log",
                 "Expected Outputs",
                 "Known Limitations",
-                "bash scripts/package_a100_evidence_bundle.sh",
                 "MOABB task labels are intentionally removed",
             ):
                 self.assertIn(required, readme)
@@ -91,6 +86,10 @@ class HandoffZipArtifactTests(unittest.TestCase):
             self.assertNotIn("docker run --rm -it", readme)
             self.assertNotIn("The helper runs this host command", readme)
             self.assertNotIn("bash scripts/docker_a100_inner.sh", readme)
+            self.assertNotIn("python -m neurotwin.cli eval audit", readme)
+            self.assertNotIn("python -m neurotwin.cli cluster materialize-config", readme)
+            self.assertNotIn("python -m neurotwin.cli cluster preflight", readme)
+            self.assertNotIn("python -m neurotwin.cli report", readme)
             self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
             for forbidden in (
                 "git clone",
