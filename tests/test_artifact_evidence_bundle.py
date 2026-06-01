@@ -1,8 +1,18 @@
+import importlib.util
 import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+
+
+EVIDENCE_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "package_a100_evidence_bundle.py"
+_SPEC = importlib.util.spec_from_file_location("package_a100_evidence_bundle", EVIDENCE_SCRIPT)
+assert _SPEC is not None and _SPEC.loader is not None
+evidence = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = evidence
+_SPEC.loader.exec_module(evidence)
 
 
 class EvidenceBundleArtifactTests(unittest.TestCase):
@@ -68,6 +78,66 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         (logs / "ssh.key").write_text("secret\n", encoding="utf-8")
         (logs / "runner.tar.gz").write_bytes(b"runner")
         return persistent
+
+    def test_evidence_helpers_select_current_slurm_job_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            persistent = self._create_a100_evidence_fixture(Path(tmp))
+
+            job_id = evidence.current_slurm_job_id(persistent / "runs" / "moabb_a100_smoke")
+
+        self.assertEqual(job_id, "123")
+
+    def test_evidence_helpers_fall_back_to_summary_job_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            persistent = self._create_a100_evidence_fixture(
+                Path(tmp),
+                environment_json="{}\n",
+                summary_json='{"run":{"slurm":{"job_id":"summary-123"}}}\n',
+            )
+
+            job_id = evidence.current_slurm_job_id(persistent / "runs" / "moabb_a100_smoke")
+
+        self.assertEqual(job_id, "summary-123")
+
+    def test_evidence_helpers_reject_unsafe_current_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            persistent = self._create_a100_evidence_fixture(root)
+            logs = persistent / "logs"
+
+            self.assertIsNone(evidence.safe_child(logs, "../other-project.out"))
+            self.assertIsNone(evidence.safe_resolved_path(logs, root / "outside.log"))
+            self.assertIsNone(evidence.safe_resolved_path(logs, Path("/tmp/neurotwin-a100-docker-20260531T000000Z.log")))
+
+    def test_evidence_helpers_select_current_docker_log(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            persistent = self._create_a100_evidence_fixture(Path(tmp))
+
+            log_path = evidence.current_docker_log_path(persistent, persistent / "runs" / "moabb_a100_smoke")
+
+        self.assertIsNotNone(log_path)
+        self.assertEqual(log_path.name, "neurotwin-a100-docker-20260531T000000Z.log")
+
+    def test_evidence_helpers_reject_forbidden_files(self):
+        for name in ("pw.txt", ".env", ".env.local", "checkpoint.pt", "raw.npz", "secret.txt", "ssh.key"):
+            with self.subTest(name=name):
+                self.assertTrue(evidence.is_forbidden(Path(name)))
+        self.assertFalse(evidence.is_forbidden(Path("docker_run.env")))
+        self.assertFalse(evidence.is_forbidden(Path("metrics.json")))
+
+    def test_evidence_helpers_write_checksums(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.txt").write_text("a\n", encoding="utf-8")
+            (root / "nested").mkdir()
+            (root / "nested" / "b.txt").write_text("b\n", encoding="utf-8")
+
+            evidence.write_checksums(root)
+            checksum = (root / "handoff-SHA256SUMS").read_text(encoding="utf-8")
+
+        self.assertIn("a.txt", checksum)
+        self.assertIn("nested/b.txt", checksum)
+        self.assertNotIn("handoff-SHA256SUMS", checksum)
 
     def _package_a100_evidence_fixture(self, persistent: Path, root: Path) -> set[str]:
         result = subprocess.run(

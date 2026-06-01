@@ -111,7 +111,6 @@ bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
 The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, host GPUs mapped to container devices \`cuda:0\` through \`cuda:5\`, and refuses to train unless exactly six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\`; \`Dockerfile.a100\` is a dependency/runtime image helper and does not hide source code.
 
 	\`\`\`bash
-	DOCKER_LOG_PATH="\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 	docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
   --ipc=host --shm-size=64g \\
   --ulimit memlock=-1 --ulimit stack=67108864 \\
@@ -122,10 +121,11 @@ The helper launches Docker with the runner mounted at \`/workspace/repo\`, persi
 	  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
 	  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
 	  -e NCCL_DEBUG=INFO \\
-	  -e DOCKER_LOG_PATH="\$DOCKER_LOG_PATH" \\
 	  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
 	  bash scripts/docker_a100_inner.sh
 	\`\`\`
+
+	The launcher auto-generates \`DOCKER_LOG_PATH\`, writes it to \`\$PERSISTENT_ROOT/docker_run.env\`, and tees output to a current-run log named \`neurotwin-a100-docker-<generated>.log\`.
 
 Six-GPU Docker preflight:
 
@@ -204,7 +204,7 @@ In that diagnostic mode the helper passes Docker \`--gpus "\\"device=<host_gpu_i
 The helper runs this host command:
 
 	\`\`\`bash
-	DOCKER_LOG_PATH="\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
+	DOCKER_RUN_ID="\$(date -u +%Y%m%dT%H%M%SZ)"
 	docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
   --ipc=host --shm-size=64g \\
   --ulimit memlock=-1 --ulimit stack=67108864 \\
@@ -215,7 +215,7 @@ The helper runs this host command:
 	  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
 	  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
 	  -e NCCL_DEBUG=INFO \\
-	  -e DOCKER_LOG_PATH="\$DOCKER_LOG_PATH" \\
+	  -e DOCKER_LOG_PATH="\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-\$DOCKER_RUN_ID.log" \\
 	  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
 	  bash scripts/docker_a100_inner.sh
 	\`\`\`
@@ -281,7 +281,7 @@ Run artifacts:
 	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
 	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
 	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
-	\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log
+	\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<generated>.log
 	\`\`\`
 
 Expected audit gate:

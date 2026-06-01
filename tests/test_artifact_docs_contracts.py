@@ -35,6 +35,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/run_full.sh",
             "scripts/run_full.sbatch",
             "scripts/package_a100_evidence_bundle.sh",
+            "scripts/package_a100_evidence_bundle.py",
             "scripts/package_run_bundle.sh",
             "scripts/package_a100_handoff_zip.sh",
             "scripts/package_runner_bundle.sh",
@@ -216,6 +217,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "does not hide source code",
         ):
             self.assertIn(required, doc)
+        self.assertNotIn("<timestamp>", doc)
         self.assertIn("FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel", dockerfile)
         self.assertIn("not a source-hiding image", dockerfile)
         self.assertIn("COPY src ./src", dockerfile)
@@ -267,7 +269,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",
             "$NEUROTWIN_DATA/docker_run.env",
-            "neurotwin-a100-docker-<timestamp>.log",
+            "neurotwin-a100-docker-<generated>.log",
             "MOABB task labels are intentionally not persisted",
             "1x A100 80GB",
             "6x A100 80GB",
@@ -279,6 +281,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "Resume And Safe Rerun",
         ):
             self.assertIn(required, readme)
+        self.assertNotIn("<timestamp>", readme)
         for developer_only in (
             "bash scripts/package_runner_bundle.sh",
             "bash scripts/package_run_bundle.sh",

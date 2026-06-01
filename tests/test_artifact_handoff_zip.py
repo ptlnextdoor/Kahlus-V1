@@ -89,6 +89,7 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "MOABB task labels are intentionally removed",
             ):
                 self.assertIn(required, readme)
+            self.assertNotIn("<timestamp>", readme)
             self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
             for forbidden in (
                 "git clone",

@@ -66,19 +66,19 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 The launcher uses:
 
 ```bash
-DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 docker run --rm --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
   --ulimit memlock=-1 --ulimit stack=67108864 \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
-  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash scripts/docker_a100_inner.sh
 ```
+
+The host launcher auto-generates `DOCKER_LOG_PATH`, records it in `$PERSISTENT_ROOT/docker_run.env`, and writes `neurotwin-a100-docker-<generated>.log` under `$PERSISTENT_ROOT/logs`.
 
 Inside Docker, the selected host GPUs are addressed as `cuda:0` through `cuda:5`. The training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping.
 

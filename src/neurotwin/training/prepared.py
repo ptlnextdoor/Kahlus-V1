@@ -71,6 +71,37 @@ class PreparedTrainingResult:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class PreparedBatchSampler:
+    num_samples: int
+    batch_size: int
+    gradient_accumulation_steps: int
+    rank: int = 0
+    world_size: int = 1
+
+    def __post_init__(self) -> None:
+        if self.num_samples < 1:
+            raise ValueError("num_samples must be positive")
+        if self.batch_size < 1:
+            raise ValueError("batch_size must be positive")
+        if self.gradient_accumulation_steps < 1:
+            raise ValueError("gradient_accumulation_steps must be positive")
+        if self.world_size < 1:
+            raise ValueError("world_size must be positive")
+        if self.rank < 0 or self.rank >= self.world_size:
+            raise ValueError(f"rank must be in [0, {self.world_size}), got {self.rank}")
+
+    def indices(self, step: int, micro_step: int) -> list[int]:
+        global_micro_step = step * self.gradient_accumulation_steps + micro_step
+        if self.world_size == 1:
+            start = (global_micro_step * self.batch_size) % self.num_samples
+            end = min(start + self.batch_size, self.num_samples)
+            return list(range(start, end))
+
+        start = ((global_micro_step * self.world_size + self.rank) * self.batch_size) % self.num_samples
+        return [(start + offset) % self.num_samples for offset in range(self.batch_size)]
+
+
 def run_prepared_training(
     config: dict[str, Any],
     checkpoint_path: str | Path | None = None,
@@ -355,6 +386,13 @@ def _train_single_task(
     model = wrap_ddp_if_initialized(model, local_rank=dist_local_rank)
     batch_size = max(1, int(config.get("batch_size", x_train.shape[0])))
     eval_batch_size = max(1, int(config.get("eval_batch_size", training_cfg.get("eval_batch_size", batch_size))))
+    train_sampler = PreparedBatchSampler(
+        num_samples=int(x_train.shape[0]),
+        batch_size=batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        rank=dist_rank,
+        world_size=dist_world_size,
+    )
 
     with torch.no_grad():
         initial_loss = _batched_loss(model, task, x_train, y_train, precision=precision, batch_size=eval_batch_size)
@@ -376,15 +414,7 @@ def _train_single_task(
         optimizer.zero_grad(set_to_none=True)
         accumulated_loss = 0.0
         for micro_step in range(gradient_accumulation_steps):
-            batch_indices = _training_batch_indices(
-                int(x_train.shape[0]),
-                batch_size,
-                step,
-                micro_step,
-                gradient_accumulation_steps=gradient_accumulation_steps,
-                rank=dist_rank,
-                world_size=dist_world_size,
-            )
+            batch_indices = train_sampler.indices(step=step, micro_step=micro_step)
             index_tensor = torch.as_tensor(batch_indices, dtype=torch.long, device=device)
             xb = x_train.index_select(0, index_tensor)
             yb = y_train.index_select(0, index_tensor)
@@ -448,36 +478,6 @@ def _train_single_task(
     }
     _append_task_metric(metrics_jsonl_path, {"task_id": task.task_id, "step": start_step + steps, "phase": "final", **val_metrics, **test_metrics})
     return result, model_state, optimizer_state
-
-
-def _training_batch_indices(
-    num_samples: int,
-    batch_size: int,
-    step: int,
-    micro_step: int,
-    gradient_accumulation_steps: int,
-    rank: int = 0,
-    world_size: int = 1,
-) -> list[int]:
-    if num_samples < 1:
-        raise ValueError("num_samples must be positive")
-    if batch_size < 1:
-        raise ValueError("batch_size must be positive")
-    if gradient_accumulation_steps < 1:
-        raise ValueError("gradient_accumulation_steps must be positive")
-    if world_size < 1:
-        raise ValueError("world_size must be positive")
-    if rank < 0 or rank >= world_size:
-        raise ValueError(f"rank must be in [0, {world_size}), got {rank}")
-
-    global_micro_step = step * gradient_accumulation_steps + micro_step
-    if world_size == 1:
-        start = (global_micro_step * batch_size) % num_samples
-        end = min(start + batch_size, num_samples)
-        return list(range(start, end))
-
-    start = ((global_micro_step * world_size + rank) * batch_size) % num_samples
-    return [(start + offset) % num_samples for offset in range(batch_size)]
 
 
 def _batched_loss(

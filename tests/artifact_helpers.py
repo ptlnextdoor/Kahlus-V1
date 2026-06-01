@@ -62,6 +62,7 @@ def assert_runner_archive(testcase: unittest.TestCase, archive: Path, extract_ro
         "requirements/cluster-a100.txt",
         "scripts/lib/moabb_prepare_common.sh",
         "scripts/package_a100_evidence_bundle.sh",
+        "scripts/package_a100_evidence_bundle.py",
         "scripts/package_runner_bundle.sh",
         "scripts/prepare_moabb_benchmark.sh",
         "scripts/docker_a100_inner.sh",

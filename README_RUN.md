@@ -38,7 +38,6 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 That helper launches:
 
 ```bash
-DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
   --ulimit memlock=-1 --ulimit stack=67108864 \
@@ -49,10 +48,11 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
-  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash scripts/docker_a100_inner.sh
 ```
+
+The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
 
 An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` as a dependency/runtime image helper. It does not hide source code; this runner still ships the runtime Python source required to execute.
 
@@ -221,7 +221,7 @@ export GPU_COUNT=6
 export NPROC_PER_NODE=6
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-export DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
+export DOCKER_RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$PERSISTENT_ROOT"
 docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
@@ -233,7 +233,7 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
-  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
+  -e DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-$DOCKER_RUN_ID.log" \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash scripts/docker_a100_inner.sh
 ```
@@ -422,7 +422,7 @@ $NEUROTWIN_DATA/runs/moabb_a100_smoke/tables/metrics_flat.csv
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/figures/metric_summary.json
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.out
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.err
-$NEUROTWIN_DATA/logs/neurotwin-a100-docker-<timestamp>.log
+$NEUROTWIN_DATA/logs/neurotwin-a100-docker-<generated>.log
 ```
 
 If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` directory first.
