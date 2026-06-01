@@ -79,13 +79,17 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "python -m neurotwin.cli cluster preflight",
                 "torchrun --standalone --nproc_per_node=6",
                 "torchrun --standalone --nproc_per_node=1",
+                "bash scripts/docker_a100_inner.sh",
                 "python -m neurotwin.cli report",
+                "run/docker_run.env",
+                "current Docker log",
                 "Expected Outputs",
                 "Known Limitations",
                 "bash scripts/package_a100_evidence_bundle.sh",
                 "MOABB task labels are intentionally removed",
             ):
                 self.assertIn(required, readme)
+            self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
             for forbidden in (
                 "git clone",
                 "<PRIVATE_REPO_URL>",

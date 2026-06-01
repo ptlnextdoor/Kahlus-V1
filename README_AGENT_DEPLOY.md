@@ -66,11 +66,13 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 The launcher uses:
 
 ```bash
+DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 docker run --rm --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
   --ulimit memlock=-1 --ulimit stack=67108864 \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
+  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
@@ -112,4 +114,4 @@ This launches `torchrun --standalone --nproc_per_node=1` and is not the requeste
 
 ## Expected Evidence
 
-After success, send back the evidence zip written under `outputs/`. It should include summaries, metrics, tables, figures, prepared manifests/audits, `run/gpu_preflight.json`, logs, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It must not include checkpoints, secrets, private keys, `.env*`, raw arrays, or the runner tarball.
+After success, send back the evidence zip written under `outputs/`. It should include summaries, metrics, tables, figures, prepared manifests/audits, `run/gpu_preflight.json`, `run/docker_run.env`, the current Docker log, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It must not include checkpoints, secrets, private keys, `.env*`, raw arrays, or the runner tarball.

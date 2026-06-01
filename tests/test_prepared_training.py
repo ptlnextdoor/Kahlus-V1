@@ -13,7 +13,7 @@ from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synt
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
-from neurotwin.training.prepared import run_prepared_training
+from neurotwin.training.prepared import _training_batch_indices, run_prepared_training
 
 
 class PreparedTrainingTests(unittest.TestCase):
@@ -25,6 +25,90 @@ class PreparedTrainingTests(unittest.TestCase):
         save_split_manifest(split, prepared / "split_manifest.json")
         save_event_batches(batches, prepared)
         return prepared
+
+    def test_rank_aware_training_batch_indices_split_distributed_work(self):
+        rank0 = _training_batch_indices(
+            num_samples=32,
+            batch_size=4,
+            step=0,
+            micro_step=0,
+            gradient_accumulation_steps=2,
+            rank=0,
+            world_size=2,
+        )
+        rank1 = _training_batch_indices(
+            num_samples=32,
+            batch_size=4,
+            step=0,
+            micro_step=0,
+            gradient_accumulation_steps=2,
+            rank=1,
+            world_size=2,
+        )
+        next_rank0 = _training_batch_indices(
+            num_samples=32,
+            batch_size=4,
+            step=0,
+            micro_step=1,
+            gradient_accumulation_steps=2,
+            rank=0,
+            world_size=2,
+        )
+        next_rank1 = _training_batch_indices(
+            num_samples=32,
+            batch_size=4,
+            step=0,
+            micro_step=1,
+            gradient_accumulation_steps=2,
+            rank=1,
+            world_size=2,
+        )
+
+        self.assertEqual(rank0, [0, 1, 2, 3])
+        self.assertEqual(rank1, [4, 5, 6, 7])
+        self.assertEqual(next_rank0, [8, 9, 10, 11])
+        self.assertEqual(next_rank1, [12, 13, 14, 15])
+        self.assertTrue(set(rank0).isdisjoint(rank1))
+        self.assertTrue(set(next_rank0).isdisjoint(next_rank1))
+
+    def test_rank_aware_training_batch_indices_wrap_distributed_batches(self):
+        rank0 = _training_batch_indices(
+            num_samples=10,
+            batch_size=4,
+            step=1,
+            micro_step=0,
+            gradient_accumulation_steps=1,
+            rank=0,
+            world_size=2,
+        )
+        rank1 = _training_batch_indices(
+            num_samples=10,
+            batch_size=4,
+            step=1,
+            micro_step=0,
+            gradient_accumulation_steps=1,
+            rank=1,
+            world_size=2,
+        )
+
+        self.assertEqual(rank0, [8, 9, 0, 1])
+        self.assertEqual(rank1, [2, 3, 4, 5])
+        self.assertEqual(len(rank0), 4)
+        self.assertEqual(len(rank1), 4)
+        self.assertTrue(set(rank0).isdisjoint(rank1))
+
+    def test_single_rank_training_batch_indices_keep_sequential_tail(self):
+        indices = _training_batch_indices(
+            num_samples=10,
+            batch_size=4,
+            step=2,
+            micro_step=0,
+            gradient_accumulation_steps=1,
+            rank=0,
+            world_size=1,
+        )
+
+        self.assertEqual(indices, [8, 9])
 
     def test_prepared_training_writes_checkpoint_and_metrics(self):
         with tempfile.TemporaryDirectory() as tmp:

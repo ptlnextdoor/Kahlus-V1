@@ -38,6 +38,7 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 That helper launches:
 
 ```bash
+DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
   --ulimit memlock=-1 --ulimit stack=67108864 \
@@ -48,7 +49,9 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+  bash scripts/docker_a100_inner.sh
 ```
 
 An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` as a dependency/runtime image helper. It does not hide source code; this runner still ships the runtime Python source required to execute.
@@ -218,6 +221,7 @@ export GPU_COUNT=6
 export NPROC_PER_NODE=6
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
+export DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
 mkdir -p "$PERSISTENT_ROOT"
 docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
@@ -229,7 +233,9 @@ docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
   -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
   -e NCCL_DEBUG=INFO \
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
+  -e DOCKER_LOG_PATH="$DOCKER_LOG_PATH" \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+  bash scripts/docker_a100_inner.sh
 ```
 
 The helper runs these commands inside the container:
@@ -403,6 +409,7 @@ Run outputs:
 
 ```text
 $NEUROTWIN_DATA/gpu_preflight.json
+$NEUROTWIN_DATA/docker_run.env
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/config.yaml
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/environment.json
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/checkpoint.pt
@@ -415,6 +422,7 @@ $NEUROTWIN_DATA/runs/moabb_a100_smoke/tables/metrics_flat.csv
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/figures/metric_summary.json
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.out
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.err
+$NEUROTWIN_DATA/logs/neurotwin-a100-docker-<timestamp>.log
 ```
 
 If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` directory first.
@@ -427,7 +435,7 @@ After a run, create the small review bundle from the same extracted runner:
 bash scripts/package_a100_evidence_bundle.sh "$NEUROTWIN_DATA" outputs
 ```
 
-The evidence zip includes summaries, metrics, tables, figures, prepared manifests/audits, logs, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It excludes `checkpoint*.pt`, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, `.env*` files, and private keys.
+The evidence zip includes summaries, metrics, tables, figures, prepared manifests/audits, `run/gpu_preflight.json`, `run/docker_run.env`, current-run logs, `COMMIT_HASH.txt`, `README_HANDOFF.md`, `handoff-SHA256SUMS`, and `README_SEND_TO_FRIEND.md`. It excludes `checkpoint*.pt`, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, `.env*` files, and private keys.
 
 ## Known Limitations
 
@@ -441,6 +449,7 @@ The evidence zip includes summaries, metrics, tables, figures, prepared manifest
 The first A100 validation succeeds only when:
 
 - Slurm starts a job on an A100 allocation.
+- Or, for the primary Docker path, Docker exposes exactly six CUDA devices and `run/gpu_preflight.json` reports `visible_gpu_count=6`.
 - `nt doctor` reports CUDA available and device count greater than zero inside the job.
 - `nt cluster preflight --require-cuda --require-prepared-windows` passes.
 - The prepared window gate is exactly `18144` total windows with `12096/2016/4032` train/val/test windows.

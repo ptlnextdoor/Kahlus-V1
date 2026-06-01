@@ -110,19 +110,22 @@ bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
 
 The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, host GPUs mapped to container devices \`cuda:0\` through \`cuda:5\`, and refuses to train unless exactly six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\`; \`Dockerfile.a100\` is a dependency/runtime image helper and does not hide source code.
 
-\`\`\`bash
-docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
+	\`\`\`bash
+	DOCKER_LOG_PATH="\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
+	docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
   --ipc=host --shm-size=64g \\
   --ulimit memlock=-1 --ulimit stack=67108864 \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
   -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
-  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
-  -e NCCL_DEBUG=INFO \\
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
-\`\`\`
+	  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+	  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
+	  -e NCCL_DEBUG=INFO \\
+	  -e DOCKER_LOG_PATH="\$DOCKER_LOG_PATH" \\
+	  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
+	  bash scripts/docker_a100_inner.sh
+	\`\`\`
 
 Six-GPU Docker preflight:
 
@@ -200,19 +203,22 @@ In that diagnostic mode the helper passes Docker \`--gpus "\\"device=<host_gpu_i
 
 The helper runs this host command:
 
-\`\`\`bash
-docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
+	\`\`\`bash
+	DOCKER_LOG_PATH="\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log"
+	docker run --rm -it --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
   --ipc=host --shm-size=64g \\
   --ulimit memlock=-1 --ulimit stack=67108864 \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
   -e PERSISTENT_ROOT="\$PERSISTENT_ROOT" \\
-  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
-  -e NCCL_DEBUG=INFO \\
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
-\`\`\`
+	  -e NEUROTWIN_DATA="\$PERSISTENT_ROOT" \\
+	  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
+	  -e NCCL_DEBUG=INFO \\
+	  -e DOCKER_LOG_PATH="\$DOCKER_LOG_PATH" \\
+	  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
+	  bash scripts/docker_a100_inner.sh
+	\`\`\`
 
 Inside the container, the helper executes:
 
@@ -262,19 +268,21 @@ Prepared artifacts:
 
 Run artifacts:
 
-\`\`\`text
-\$PERSISTENT_ROOT/gpu_preflight.json
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/config.yaml
+	\`\`\`text
+	\$PERSISTENT_ROOT/gpu_preflight.json
+	\$PERSISTENT_ROOT/docker_run.env
+	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/config.yaml
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/environment.json
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint.pt
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint_best.pt
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.json
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.csv
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.jsonl
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
-\`\`\`
+	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
+	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
+	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
+	\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<timestamp>.log
+	\`\`\`
 
 Expected audit gate:
 
@@ -292,7 +300,7 @@ After the run, package only reviewable outputs:
 bash scripts/package_a100_evidence_bundle.sh "\$PERSISTENT_ROOT" outputs
 \`\`\`
 
-This excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, \`.env*\` files, and private keys.
+	This includes \`run/gpu_preflight.json\`, \`run/docker_run.env\`, and the current Docker log. It excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, \`.env*\` files, and private keys.
 
 ## Known Limitations
 

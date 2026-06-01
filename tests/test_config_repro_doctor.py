@@ -126,6 +126,7 @@ class ConfigReproDoctorTests(unittest.TestCase):
             env={
                 "CONTAINER": "docker",
                 "DOCKER_IMAGE": "neurotwin-a100-runner:local",
+                "DOCKER_LOG_PATH": "/raid/scratch/unit/neurotwin/logs/neurotwin-a100-docker-test.log",
                 "CUDA_VISIBLE_DEVICES": "0,1,2,3,4,5",
                 "LOCAL_RANK": "2",
                 "RANK": "2",
@@ -136,6 +137,10 @@ class ConfigReproDoctorTests(unittest.TestCase):
 
         self.assertEqual(env["run"]["mode"], "container")
         self.assertEqual(env["run"]["container"]["docker_image"], "neurotwin-a100-runner:local")
+        self.assertEqual(
+            env["run"]["container"]["docker_log_path"],
+            "/raid/scratch/unit/neurotwin/logs/neurotwin-a100-docker-test.log",
+        )
         self.assertEqual(env["run"]["distributed"]["cuda_visible_devices"], "0,1,2,3,4,5")
         self.assertEqual(env["run"]["distributed"]["local_rank"], "2")
         self.assertEqual(env["run"]["distributed"]["rank"], "2")

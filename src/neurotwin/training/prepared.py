@@ -134,7 +134,9 @@ def run_prepared_training(
             config=config,
             model_cfg=model_cfg,
             device=device,
+            dist_rank=dist_info.rank,
             dist_local_rank=dist_info.local_rank,
+            dist_world_size=dist_info.world_size,
             resume_checkpoint=resume_checkpoint,
             resume_path=resume_path,
             metrics_jsonl_path=metrics_jsonl_path,
@@ -319,7 +321,9 @@ def _train_single_task(
     config: dict[str, Any],
     model_cfg: dict[str, Any],
     device: torch.device,
+    dist_rank: int,
     dist_local_rank: int,
+    dist_world_size: int,
     resume_checkpoint: dict[str, Any] | None,
     resume_path: str | Path | None,
     metrics_jsonl_path: str | Path | None,
@@ -372,13 +376,18 @@ def _train_single_task(
         optimizer.zero_grad(set_to_none=True)
         accumulated_loss = 0.0
         for micro_step in range(gradient_accumulation_steps):
-            offset = (step * gradient_accumulation_steps + micro_step) * batch_size
-            start = offset % x_train.shape[0]
-            end = min(start + batch_size, x_train.shape[0])
-            if end <= start:
-                start, end = 0, min(batch_size, x_train.shape[0])
-            xb = x_train[start:end]
-            yb = y_train[start:end]
+            batch_indices = _training_batch_indices(
+                int(x_train.shape[0]),
+                batch_size,
+                step,
+                micro_step,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                rank=dist_rank,
+                world_size=dist_world_size,
+            )
+            index_tensor = torch.as_tensor(batch_indices, dtype=torch.long, device=device)
+            xb = x_train.index_select(0, index_tensor)
+            yb = y_train.index_select(0, index_tensor)
             loss = (_mse_loss(_predict(model, task, xb, precision=precision), yb) * objective_weight) / gradient_accumulation_steps
             loss.backward()
             accumulated_loss += float(loss.detach())
@@ -439,6 +448,36 @@ def _train_single_task(
     }
     _append_task_metric(metrics_jsonl_path, {"task_id": task.task_id, "step": start_step + steps, "phase": "final", **val_metrics, **test_metrics})
     return result, model_state, optimizer_state
+
+
+def _training_batch_indices(
+    num_samples: int,
+    batch_size: int,
+    step: int,
+    micro_step: int,
+    gradient_accumulation_steps: int,
+    rank: int = 0,
+    world_size: int = 1,
+) -> list[int]:
+    if num_samples < 1:
+        raise ValueError("num_samples must be positive")
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    if gradient_accumulation_steps < 1:
+        raise ValueError("gradient_accumulation_steps must be positive")
+    if world_size < 1:
+        raise ValueError("world_size must be positive")
+    if rank < 0 or rank >= world_size:
+        raise ValueError(f"rank must be in [0, {world_size}), got {rank}")
+
+    global_micro_step = step * gradient_accumulation_steps + micro_step
+    if world_size == 1:
+        start = (global_micro_step * batch_size) % num_samples
+        end = min(start + batch_size, num_samples)
+        return list(range(start, end))
+
+    start = ((global_micro_step * world_size + rank) * batch_size) % num_samples
+    return [(start + offset) % num_samples for offset in range(batch_size)]
 
 
 def _batched_loss(

@@ -14,6 +14,10 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             '{"status":"completed_prepared_training","completed_steps":50,'
             '"real_data_smoke":true,"scientific_claim_allowed":false}\n'
         ),
+        docker_run_env: str | None = (
+            "DOCKER_LOG_PATH={persistent}/logs/neurotwin-a100-docker-20260531T000000Z.log\n"
+            "DOCKER_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel\n"
+        ),
     ) -> Path:
         persistent = root / "persistent"
         run = persistent / "runs" / "moabb_a100_smoke"
@@ -45,8 +49,12 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             logs / "neurotwin-a100-full-123.err": "\n",
             logs / "neurotwin-a100-full-999.out": "old\n",
             logs / "neurotwin-a100-full-999.err": "old\n",
+            logs / "neurotwin-a100-docker-20260531T000000Z.log": "current docker log\n",
+            logs / "neurotwin-a100-docker-20260530T000000Z.log": "old docker log\n",
             logs / "other-project.out": "unrelated\n",
         }
+        if docker_run_env is not None:
+            files[persistent / "docker_run.env"] = docker_run_env.format(persistent=persistent)
         if environment_json is not None:
             files[run / "environment.json"] = environment_json
         for path, body in files.items():
@@ -105,6 +113,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
                 "run/config.yaml",
                 "run/environment.json",
                 "run/gpu_preflight.json",
+                "run/docker_run.env",
                 "run/split_manifest.json",
                 "run/tables/metrics_flat.csv",
                 "run/figures/metric_summary.json",
@@ -115,16 +124,19 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
                 "prepared/leakage_report.json",
                 "logs/neurotwin-a100-full-123.out",
                 "logs/neurotwin-a100-full-123.err",
+                "logs/neurotwin-a100-docker-20260531T000000Z.log",
             }
             for rel in required:
                 self.assertIn(rel, rel_names)
             self.assertNotIn("logs/neurotwin-a100-full-999.out", rel_names)
             self.assertNotIn("logs/neurotwin-a100-full-999.err", rel_names)
+            self.assertNotIn("logs/neurotwin-a100-docker-20260530T000000Z.log", rel_names)
             self.assertNotIn("logs/other-project.out", rel_names)
             for rel in rel_names:
                 self.assertFalse(rel.endswith((".pt", ".npz", ".tar.gz", ".zip", ".pem", ".key")), rel)
                 self.assertNotIn("pw.txt", rel)
-                self.assertNotIn(".env", rel)
+                if rel != "run/docker_run.env":
+                    self.assertNotIn(".env", rel)
 
     def test_package_a100_evidence_bundle_falls_back_to_summary_job_id(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -138,13 +150,18 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
 
         self.assertIn("logs/neurotwin-a100-full-123.out", rel_names)
         self.assertIn("logs/neurotwin-a100-full-123.err", rel_names)
+        self.assertIn("logs/neurotwin-a100-docker-20260531T000000Z.log", rel_names)
         self.assertNotIn("logs/neurotwin-a100-full-999.out", rel_names)
         self.assertNotIn("logs/other-project.out", rel_names)
 
-    def test_package_a100_evidence_bundle_without_job_id_includes_no_logs(self):
+    def test_package_a100_evidence_bundle_without_log_metadata_includes_no_logs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            persistent = self._create_a100_evidence_fixture(root, environment_json="{}\n")
+            persistent = self._create_a100_evidence_fixture(
+                root,
+                environment_json="{}\n",
+                docker_run_env=None,
+            )
             rel_names = self._package_a100_evidence_fixture(persistent, root)
 
         self.assertFalse(any(rel.startswith("logs/") for rel in rel_names))
@@ -155,6 +172,19 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             persistent = self._create_a100_evidence_fixture(
                 root,
                 environment_json='{"run":{"slurm":{"job_id":"../other-project"}}}\n',
+                docker_run_env=None,
+            )
+            rel_names = self._package_a100_evidence_fixture(persistent, root)
+
+        self.assertFalse(any(rel.startswith("logs/") for rel in rel_names))
+
+    def test_package_a100_evidence_bundle_unsafe_docker_log_path_is_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            persistent = self._create_a100_evidence_fixture(
+                root,
+                environment_json="{}\n",
+                docker_run_env="DOCKER_LOG_PATH=/tmp/neurotwin-a100-docker-20260531T000000Z.log\n",
             )
             rel_names = self._package_a100_evidence_fixture(persistent, root)
 

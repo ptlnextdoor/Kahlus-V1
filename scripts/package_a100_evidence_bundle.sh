@@ -76,6 +76,7 @@ prepared_files = (
     "leakage_report.json",
 )
 JOB_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
+DOCKER_LOG_PATTERN = re.compile(r"^neurotwin-a100-docker-[A-Za-z0-9_.:-]+\.log$")
 
 
 def _is_forbidden(path: Path) -> bool:
@@ -115,6 +116,24 @@ def _load_json(path: Path) -> dict:
     except (OSError, json.JSONDecodeError):
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def _load_env_file(path: Path) -> dict[str, str]:
+    if not path.is_file() or _is_forbidden(path):
+        return {}
+    values: dict[str, str] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return values
+    for line in lines:
+        if not line or line.lstrip().startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if key:
+            values[key] = value.strip()
+    return values
 
 
 def _find_nested_string(payload: dict, path: tuple[str, ...]) -> str | None:
@@ -158,6 +177,16 @@ def _safe_child(root: Path, filename: str) -> Path | None:
     return candidate
 
 
+def _safe_resolved_path(root: Path, candidate: Path) -> Path | None:
+    root_resolved = root.resolve()
+    try:
+        candidate_resolved = candidate.resolve()
+        candidate_resolved.relative_to(root_resolved)
+    except (OSError, ValueError):
+        return None
+    return candidate_resolved
+
+
 def _copy_current_run_logs(source_root: Path, destination_root: Path, job_id: str | None) -> None:
     if not job_id or not _is_safe_job_id(job_id) or not source_root.is_dir():
         return
@@ -167,6 +196,33 @@ def _copy_current_run_logs(source_root: Path, destination_root: Path, job_id: st
         destination = _safe_child(destination_root, filename)
         if source is not None and destination is not None:
             _copy_file(source, destination)
+
+
+def _current_docker_log_path(root: Path, run_root: Path) -> Path | None:
+    docker_env = _load_env_file(root / "docker_run.env")
+    candidates = [
+        docker_env.get("DOCKER_LOG_PATH"),
+        _find_nested_string(_load_json(run_root / "environment.json"), ("run", "container", "docker_log_path")),
+        _find_nested_string(_load_json(run_root / "summary.json"), ("run", "container", "docker_log_path")),
+    ]
+    for raw_path in candidates:
+        if not raw_path:
+            continue
+        path = Path(raw_path)
+        if path.is_absolute():
+            return path
+    return None
+
+
+def _copy_current_docker_log(source_root: Path, destination_root: Path, log_path: Path | None) -> None:
+    if log_path is None or not source_root.is_dir():
+        return
+    source = _safe_resolved_path(source_root, log_path)
+    if source is None or not source.is_file() or not DOCKER_LOG_PATTERN.fullmatch(source.name):
+        return
+    destination = _safe_child(destination_root, source.name)
+    if destination is not None:
+        _copy_file(source, destination)
 
 
 def _write_readmes(root: Path) -> None:
@@ -189,8 +245,8 @@ def _write_readmes(root: Path) -> None:
     (root / "README_SEND_TO_FRIEND.md").write_text(
         "# Sendable NeuroTwin A100 Evidence\n\n"
         "Send this zip back after an A100 run. It includes small review artifacts only: summaries, metrics, "
-        "tables, figures, prepared manifests/audits, Docker GPU preflight proof, logs, the source commit, "
-        "and checksums.\n\n"
+        "tables, figures, prepared manifests/audits, Docker GPU preflight proof, Docker run metadata, "
+        "current-run logs, the source commit, and checksums.\n\n"
         "It intentionally excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, "
         "API keys, SSH keys, `.env*` files, and other secret-looking files. Keep large checkpoints on the cluster "
         "unless they are requested explicitly.\n\n"
@@ -215,11 +271,13 @@ with tempfile.TemporaryDirectory() as tmp:
     for rel in run_files:
         _copy_file(run_dir / rel, stage_root / "run" / rel)
     _copy_file(persistent_root / "gpu_preflight.json", stage_root / "run" / "gpu_preflight.json")
+    _copy_file(persistent_root / "docker_run.env", stage_root / "run" / "docker_run.env")
     _copy_tree_files(run_dir / "tables", stage_root / "run" / "tables")
     _copy_tree_files(run_dir / "figures", stage_root / "run" / "figures")
     for rel in prepared_files:
         _copy_file(prepared_dir / rel, stage_root / "prepared" / rel)
     _copy_current_run_logs(logs_dir, stage_root / "logs", _current_slurm_job_id(run_dir))
+    _copy_current_docker_log(logs_dir, stage_root / "logs", _current_docker_log_path(persistent_root, run_dir))
     _write_readmes(stage_root)
     _write_checksums(stage_root)
 

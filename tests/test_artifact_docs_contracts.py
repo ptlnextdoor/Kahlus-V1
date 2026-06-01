@@ -150,8 +150,13 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}",
             "GPU_COUNT=${GPU_COUNT:-6}",
             "NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}",
+            "DOCKER_RUN_ID=${DOCKER_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}",
+            "DOCKER_LOG_PATH=${DOCKER_LOG_PATH:-\"$RUN_LOG_DIR/neurotwin-a100-docker-$DOCKER_RUN_ID.log\"}",
+            "docker_run.env",
+            "tee -a \"$DOCKER_LOG_PATH\"",
             "-e CUDA_VISIBLE_DEVICES=\"$CONTAINER_CUDA_VISIBLE_DEVICES\"",
             "-e NCCL_DEBUG=\"${NCCL_DEBUG:-INFO}\"",
+            "-e DOCKER_LOG_PATH=\"$DOCKER_LOG_PATH\"",
             "bash scripts/docker_a100_inner.sh",
         ):
             self.assertIn(required, launcher)
@@ -200,6 +205,9 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "NCCL_DEBUG=INFO",
             "bash scripts/run_docker_6gpu.sh",
             "torchrun --standalone --nproc_per_node=6",
+            "DOCKER_LOG_PATH",
+            "run/docker_run.env",
+            "current Docker log",
             "One-GPU Diagnostic Only",
             "not the requested 6-GPU handoff run",
             "torch.cuda.set_device(local_rank)",
@@ -254,9 +262,12 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli cluster preflight",
             "torchrun --standalone --nproc_per_node=6",
             "torchrun --standalone --nproc_per_node=1",
+            "bash scripts/docker_a100_inner.sh",
             "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",
+            "$NEUROTWIN_DATA/docker_run.env",
+            "neurotwin-a100-docker-<timestamp>.log",
             "MOABB task labels are intentionally not persisted",
             "1x A100 80GB",
             "6x A100 80GB",
@@ -278,6 +289,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "full-source bundle",
         ):
             self.assertNotIn(developer_only, readme)
+        self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
         self.assertIn("outputs/configs/moabb_a100.materialized.yaml", run_full)
         self.assertIn("EXPECTED_WINDOW_COUNT", run_full)
         self.assertIn("EXPECTED_TRAIN_WINDOWS", run_full)

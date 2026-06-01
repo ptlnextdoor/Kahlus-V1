@@ -115,6 +115,7 @@ def capture_run_metadata(argv: list[str] | tuple[str, ...] | None = None, env: d
             or environ.get("HOSTNAME")
         ),
         "docker_image": environ.get("DOCKER_IMAGE"),
+        "docker_log_path": environ.get("DOCKER_LOG_PATH"),
     }
     distributed = {
         "local_rank": environ.get("LOCAL_RANK"),
