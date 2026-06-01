@@ -675,20 +675,8 @@ def _merge_seed_payloads(
 
 
 def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:
-    ranks_by_model: dict[str, list[int]] = {}
-    for result in seed_results:
-        aggregate = result.get("aggregate", {})
-        if not isinstance(aggregate, dict):
-            continue
-        for row in aggregate.get("aggregate_rank", []):
-            if not isinstance(row, dict):
-                continue
-            model_id = str(row.get("model_id"))
-            try:
-                rank = int(row.get("mean_rank", row.get("rank")))
-            except (TypeError, ValueError):
-                continue
-            ranks_by_model.setdefault(model_id, []).append(rank)
+    concrete_ranks = _collect_concrete_seed_ranks(seed_results)
+    ranks_by_model = concrete_ranks or _collect_aggregate_seed_ranks(seed_results)
     return sorted(
         (
             {
@@ -696,12 +684,69 @@ def _aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> list[dict[st
                 "mean_rank": float(np.mean(ranks)),
                 "std_rank": float(np.std(ranks)),
                 "tasks_ranked": len(ranks),
-                "n_seeds": len(ranks),
+                "n_seeds": len(seed_keys),
             }
-            for model_id, ranks in ranks_by_model.items()
+            for model_id, values in ranks_by_model.items()
+            for ranks, seed_keys in [([rank for _, rank in values], {seed_key for seed_key, _ in values})]
+            if ranks
         ),
         key=lambda row: (float(row["mean_rank"]), str(row["model_id"])),
     )
+
+
+def _collect_concrete_seed_ranks(seed_results: list[dict[str, object]]) -> dict[str, list[tuple[str, float]]]:
+    ranks_by_model: dict[str, list[tuple[str, float]]] = {}
+    for result_idx, result in enumerate(seed_results):
+        seed_key = _seed_key(result, result_idx)
+        tasks = result.get("tasks", {})
+        if not isinstance(tasks, dict):
+            continue
+        for task_payload in tasks.values():
+            if not isinstance(task_payload, dict):
+                continue
+            ranking = task_payload.get("ranking", [])
+            if not isinstance(ranking, list):
+                continue
+            for row in ranking:
+                if not isinstance(row, dict):
+                    continue
+                model_id = row.get("model_id")
+                if model_id is None:
+                    continue
+                try:
+                    rank = float(row.get("rank", row.get("mean_rank")))
+                except (TypeError, ValueError):
+                    continue
+                if np.isfinite(rank):
+                    ranks_by_model.setdefault(str(model_id), []).append((seed_key, rank))
+    return ranks_by_model
+
+
+def _collect_aggregate_seed_ranks(seed_results: list[dict[str, object]]) -> dict[str, list[tuple[str, float]]]:
+    ranks_by_model: dict[str, list[tuple[str, float]]] = {}
+    for result_idx, result in enumerate(seed_results):
+        seed_key = _seed_key(result, result_idx)
+        aggregate = result.get("aggregate", {})
+        if not isinstance(aggregate, dict):
+            continue
+        for row in aggregate.get("aggregate_rank", []):
+            if not isinstance(row, dict):
+                continue
+            model_id = row.get("model_id")
+            if model_id is None:
+                continue
+            try:
+                rank = float(row.get("mean_rank", row.get("rank")))
+            except (TypeError, ValueError):
+                continue
+            if np.isfinite(rank):
+                ranks_by_model.setdefault(str(model_id), []).append((seed_key, rank))
+    return ranks_by_model
+
+
+def _seed_key(result: dict[str, object], fallback_index: int) -> str:
+    value = result.get("seed", fallback_index)
+    return str(value)
 
 
 def _aggregate_seed_metrics(seed_results: list[dict[str, object]]) -> list[dict[str, object]]:

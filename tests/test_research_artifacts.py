@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -117,7 +118,25 @@ class ResearchArtifactTests(unittest.TestCase):
             capture_output=True,
         )
         self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
+        readme = (bundle_root / "README_RUN.md").read_text(encoding="utf-8")
+        documented_scripts = set(
+            re.findall(r"(?<![\w/.-])(scripts/[A-Za-z0-9_./-]+(?:\.sh|\.sbatch))", readme)
+        )
+        self.assertIn("scripts/slurm/train_a100.sh", documented_scripts)
+        for rel in documented_scripts:
+            self.assertIn(f"{root}/{rel}", names)
         return bundle_root
+
+    def test_copy_repo_to_temp_git_ignores_untracked_files(self):
+        sentinel = Path("__untracked_packaging_sentinel__.txt")
+        self.assertFalse(sentinel.exists(), sentinel)
+        try:
+            sentinel.write_text("must not be copied\n", encoding="utf-8")
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_repo = self._copy_repo_to_temp_git(tmp)
+                self.assertFalse((tmp_repo / sentinel.name).exists())
+        finally:
+            sentinel.unlink(missing_ok=True)
 
     def test_a100_h100_configs_scripts_and_paper_docs_exist(self):
         required = [

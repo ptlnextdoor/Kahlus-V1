@@ -14,6 +14,7 @@ from neurotwin.adapters.synthetic import (
 )
 from neurotwin.benchmarks.prepared_suite import (
     PreparedSuiteConfig,
+    _aggregate_seed_ranks,
     build_prepared_window_tasks,
     format_prepared_baseline_report,
     run_prepared_baseline_suite,
@@ -22,6 +23,7 @@ from neurotwin.benchmarks.prepared_suite import (
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
+from neurotwin.eval.command import EvalCommandConfig, run_eval_command
 from neurotwin.eval.paper_gate import CANONICAL_REQUIRED_SEEDS
 
 
@@ -340,6 +342,69 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
+
+    def test_aggregate_seed_ranks_preserves_fractional_concrete_ranks(self):
+        rows = _aggregate_seed_ranks(
+            [
+                {
+                    "seed": 0,
+                    "tasks": {
+                        "task_a": {
+                            "ranking": [
+                                {"model_id": "model_a", "rank": 1.0},
+                                {"model_id": "model_b", "rank": 2.0},
+                            ]
+                        },
+                        "task_b": {
+                            "ranking": [
+                                {"model_id": "model_a", "rank": 1.2},
+                                {"model_id": "model_b", "rank": 1.8},
+                            ]
+                        },
+                    },
+                    "aggregate": {
+                        "aggregate_rank": [
+                            {"model_id": "model_a", "mean_rank": 9.0},
+                            {"model_id": "model_b", "mean_rank": 9.0},
+                        ]
+                    },
+                }
+            ]
+        )
+
+        by_model = {row["model_id"]: row for row in rows}
+        self.assertAlmostEqual(by_model["model_a"]["mean_rank"], 1.1)
+        self.assertAlmostEqual(by_model["model_b"]["mean_rank"], 1.9)
+        self.assertEqual([row["model_id"] for row in rows], ["model_a", "model_b"])
+        self.assertEqual(by_model["model_a"]["tasks_ranked"], 2)
+        self.assertEqual(by_model["model_a"]["n_seeds"], 1)
+
+    def test_eval_command_service_returns_prepared_paper_mode_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            eval_dir = Path(tmp) / "eval"
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            result = run_eval_command(
+                EvalCommandConfig(
+                    suite="neural_translation_v1",
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    out_dir=eval_dir,
+                    train_steps=1,
+                    paper_mode=True,
+                )
+            )
+
+            self.assertEqual(result.exit_code, 1)
+            self.assertIn("eval_audit_passed=True", result.output)
+            self.assertIn("paper_mode_passed=False", result.output)
+            self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
+            self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
 
 
 if __name__ == "__main__":
