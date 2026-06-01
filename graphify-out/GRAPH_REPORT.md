@@ -1,7 +1,7 @@
 # Graph Report - /Users/aayu/conductor/workspaces/kahlus-v1/little-rock  (2026-06-01)
 
 ## Corpus Check
-- 84 files · ~114,136 words
+- 84 files · ~114,244 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
