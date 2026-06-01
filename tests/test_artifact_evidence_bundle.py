@@ -140,6 +140,10 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         self.assertNotIn("handoff-SHA256SUMS", checksum)
 
     def _package_a100_evidence_fixture(self, persistent: Path, root: Path) -> set[str]:
+        rel_names, _evidence_root = self._package_a100_evidence_fixture_with_root(persistent, root)
+        return rel_names
+
+    def _package_a100_evidence_fixture_with_root(self, persistent: Path, root: Path) -> tuple[set[str], Path]:
         result = subprocess.run(
             ["bash", "scripts/package_a100_evidence_bundle.sh", str(persistent), str(root / "out")],
             text=True,
@@ -164,7 +168,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             capture_output=True,
         )
         self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
-        return {name.split("/", 1)[1] for name in names}
+        return {name.split("/", 1)[1] for name in names}, evidence_root
 
     def test_package_a100_evidence_bundle_excludes_checkpoints_and_secrets(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -207,6 +211,13 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
                 self.assertNotIn("pw.txt", rel)
                 if rel != "run/docker_run.env":
                     self.assertNotIn(".env", rel)
+            _, evidence_root = self._package_a100_evidence_fixture_with_root(persistent, root / "second")
+            handoff_readme = (evidence_root / "README_HANDOFF.md").read_text(encoding="utf-8")
+            self.assertIn("This handoff contains a runnable NeuroTwin A100 runner tarball", handoff_readme)
+            self.assertIn("bash scripts/run_docker_6gpu.sh", handoff_readme)
+            self.assertIn("README_AGENT_DEPLOY.md", handoff_readme)
+            self.assertNotIn("Evidence bundle for commit", handoff_readme)
+            self.assertNotIn("bash scripts/docker_a100_inner.sh", handoff_readme)
 
     def test_package_a100_evidence_bundle_falls_back_to_summary_job_id(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -97,8 +97,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/package_run_bundle.sh",
             "scripts/package_a100_handoff_zip.sh",
             "scripts/package_runner_bundle.sh",
+            "scripts/render_a100_handoff_readme.py",
             "scripts/train_a100_inner.sh",
             "Dockerfile.a100",
+            "README_HANDOFF.md.in",
             "README_AGENT_DEPLOY.md",
             "README_RUN.md",
             "environment-a100.yml",
@@ -304,13 +306,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             '--gpus "\\"device=${HOST_GPU_IDS}\\""',
             '--gpus "\\"device=<host_gpu_id>\\""',
             "--ipc=host --shm-size=64g",
-            "--ulimit memlock=-1",
             "HOST_GPU_IDS=0,1,2,3,4,5",
             "GPU_COUNT=6",
             "NPROC_PER_NODE=6",
             "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
-            "NCCL_DEBUG=INFO",
-            "/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
@@ -325,7 +324,6 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli cluster preflight",
             "torchrun --standalone --nproc_per_node=6",
             "torchrun --standalone --nproc_per_node=1",
-            "bash scripts/docker_a100_inner.sh",
             "python -m neurotwin.cli report",
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",
@@ -343,6 +341,9 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         ):
             self.assertIn(required, readme)
         self.assertNotIn("<timestamp>", readme)
+        self.assertNotIn("The expanded Docker host command is", readme)
+        self.assertNotIn("docker run --rm -it", readme)
+        self.assertNotIn("bash scripts/docker_a100_inner.sh", readme)
         for developer_only in (
             "bash scripts/package_runner_bundle.sh",
             "bash scripts/package_run_bundle.sh",

@@ -33,250 +33,31 @@ mkdir -p "$HANDOFF_ROOT"
 cp "$RUNNER_TARBALL" "$HANDOFF_ROOT/"
 printf '%s\n' "$FULL_SHA" > "$HANDOFF_ROOT/COMMIT_HASH.txt"
 
-cat > "$HANDOFF_ROOT/README_HANDOFF.md" <<EOF
-# NeuroTwin A100 Handoff
+python3 scripts/render_a100_handoff_readme.py \
+  --template README_HANDOFF.md.in \
+  --output "$HANDOFF_ROOT/README_HANDOFF.md" \
+  --full-sha "$FULL_SHA" \
+  --short-sha "$SHORT_SHA" \
+  --runner-name "$RUNNER_NAME"
 
-Commit: \`$FULL_SHA\`
+python3 - "$HANDOFF_ROOT/README_HANDOFF.md" "$RUNNER_TARBALL" "$RUNNER_NAME" <<'PY'
+from pathlib import Path
+import sys
+import tarfile
 
-This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access.
-
-This is minimal practical code visibility, not cryptographic source secrecy. The runner excludes git history, tests, research notes, paper drafts, raw data, prepared arrays, checkpoints, caches, local outputs, and secrets, but the Python runtime source needed to execute the job is present inside the runner tarball.
-
-## Purpose
-
-This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root.
-
-## Not A Claim
-
-This is not a scientific result, not a model-superiority claim, not a 3-seed paper-mode report, and not a clinical claim. The expected \`summary.json\` keeps \`scientific_claim_allowed=false\`.
-
-## Files
-
-- \`$RUNNER_NAME.tar.gz\`: runner bundle to transfer to Chapman.
-- \`COMMIT_HASH.txt\`: private repo commit used to build the runner.
-- \`SHA256SUMS\`: checksums for this handoff folder.
-
-## Verify This Handoff
-
-\`\`\`bash
-cat COMMIT_HASH.txt
-shasum -a 256 -c SHA256SUMS
-\`\`\`
-
-## Transfer Through Raspberry Pi
-
-Copy the runner tarball to the Raspberry Pi:
-
-\`\`\`bash
-scp $RUNNER_NAME.tar.gz <pi_user>@<raspberry_pi_host>:/tmp/
-\`\`\`
-
-From the Pi, copy it to the Chapman login node:
-
-\`\`\`bash
-scp /tmp/$RUNNER_NAME.tar.gz <chapman_user>@<chapman_login_host>:~/
-\`\`\`
-
-SSH from the Pi into the Chapman login node:
-
-\`\`\`bash
-ssh <chapman_user>@<chapman_login_host>
-\`\`\`
-
-The Pi is a transfer bridge only. Do not run Python training or submit Slurm jobs from the Pi outside an SSH session on the Chapman login node.
-
-## Run On Chapman
-
-Extract and verify the runner:
-
-\`\`\`bash
-mkdir -p ~/neurotwin-a100
-tar -xzf ~/$RUNNER_NAME.tar.gz -C ~/neurotwin-a100
-cd ~/neurotwin-a100/$RUNNER_NAME
-cat COMMIT_HASH.txt
-sha256sum -c SHA256SUMS
-\`\`\`
-
-Primary Docker 6-GPU path:
-
-\`\`\`bash
-export HOST_GPU_IDS=0,1,2,3,4,5
-export GPU_COUNT=6
-export NPROC_PER_NODE=6
-export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
-export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
-\`\`\`
-
-The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, host GPUs selected by \`HOST_GPU_IDS\`, and container-local devices exposed as \`cuda:0\` through \`cuda:5\`. It refuses to train unless exactly six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\` for exact Docker details; \`Dockerfile.a100\` is a dependency/runtime image helper and does not hide source code. The launcher auto-generates \`DOCKER_LOG_PATH\`, writes it to \`\$PERSISTENT_ROOT/docker_run.env\`, and tees output to a current-run log named \`neurotwin-a100-docker-<generated>.log\`.
-
-Six-GPU Docker preflight:
-
-\`\`\`bash
-HOST_GPU_IDS=0,1,2,3,4,5
-docker run --rm --gpus "\\"device=\${HOST_GPU_IDS}\\"" \\
-  --ipc=host --shm-size=64g \\
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \\
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \\
-  bash -lc 'nvidia-smi && python - <<'"'"'PY'"'"'
-import torch
-print("torch", torch.__version__)
-print("cuda", torch.version.cuda)
-print("cuda_available", torch.cuda.is_available())
-print("device_count", torch.cuda.device_count())
-assert torch.cuda.is_available()
-assert torch.cuda.device_count() == 6
-for i in range(torch.cuda.device_count()):
-    print(i, torch.cuda.get_device_name(i))
-PY'
-\`\`\`
-
-The current training path supports single-node DDP through \`torchrun\`, \`LOCAL_RANK\`, \`RANK\`, \`WORLD_SIZE\`, \`torch.cuda.set_device(local_rank)\`, and PyTorch \`DistributedDataParallel\` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
-
-The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
-
-## Conda And Slurm Alternative
-
-Use this only when \`conda\` and \`sbatch\` are available:
-
-\`\`\`bash
-conda env create -f environment-a100.yml
-conda activate neurotwin-a100
-python -m pip install -e '.[moabb,cluster]'
-
-bash scripts/run_smoke.sh outputs/smoke
-mkdir -p /path/to/shared/persistent/neurotwin
-bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
-\`\`\`
-
-For a 6-GPU Slurm follow-up after the materialized config exists:
-
-\`\`\`bash
-export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
-export RUN_ROOT="\$NEUROTWIN_DATA/runs"
-RUN_ROOT="\$RUN_ROOT" \\
-sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \\
-  scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
-\`\`\`
-
-## Docker Command Details
-
-The packaged helper is the recommended Docker fallback when \`conda\` or \`sbatch\` are missing:
-
-\`\`\`bash
-export HOST_GPU_IDS=0,1,2,3,4,5
-export GPU_COUNT=6
-export NPROC_PER_NODE=6
-export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
-export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
-\`\`\`
-
-For a one-GPU diagnostic, pass one visible host GPU id and force one worker:
-
-\`\`\`bash
-export HOST_GPU_IDS=<host_gpu_id>
-export GPU_COUNT=1
-export NPROC_PER_NODE=1
-export CONTAINER_CUDA_VISIBLE_DEVICES=0
-bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT"
-\`\`\`
-
-In that diagnostic mode the helper passes Docker \`--gpus "\\"device=<host_gpu_id>\\""\` and launches \`torchrun --standalone --nproc_per_node=1\`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
-
-For exact Docker flags, environment variables, and agent deployment behavior, use \`README_AGENT_DEPLOY.md\` from the extracted runner.
-
-Inside the container, the helper executes:
-
-\`\`\`bash
-python -m pip install -e '.[moabb,cluster]'
-python scripts/docker_gpu_preflight.py "\$PERSISTENT_ROOT/gpu_preflight.json"
-bash scripts/run_smoke.sh outputs/smoke
-bash scripts/prepare_moabb_benchmark.sh "\$PERSISTENT_ROOT/prepared/moabb_benchmark"
-python -m neurotwin.cli eval audit \\
-  --suite neural_translation_v1 \\
-  --event-manifest "\$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \\
-  --split-manifest "\$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \\
-  --window-length 128 \\
-  --stride 128 \\
-  --out-dir "\$PERSISTENT_ROOT/prepared/moabb_benchmark" \\
-  --require-windows
-python -m neurotwin.cli cluster materialize-config \\
-  --template configs/train/moabb_a100_smoke.yaml \\
-  --prepared-root "\$PERSISTENT_ROOT/prepared/moabb_benchmark" \\
-  --out outputs/configs/moabb_a100.materialized.yaml
-python -m neurotwin.cli cluster preflight \\
-  --config outputs/configs/moabb_a100.materialized.yaml \\
-  --run-root "\$PERSISTENT_ROOT/runs" \\
-  --require-cuda \\
-  --require-prepared-windows \\
-  --expect-window-count 18144 \\
-  --expect-split-windows train:12096,val:2016,test:4032
-torchrun --standalone --nproc_per_node=6 \\
-  -m neurotwin.cli train \\
-  --config outputs/configs/moabb_a100.materialized.yaml \\
-  --run-root "\$PERSISTENT_ROOT/runs"
-python -m neurotwin.cli report --run-dir "\$PERSISTENT_ROOT/runs/moabb_a100_smoke"
-bash scripts/package_a100_evidence_bundle.sh "\$PERSISTENT_ROOT" outputs
-\`\`\`
-
-## Expected Outputs
-
-Prepared artifacts:
-
-\`\`\`text
-\$PERSISTENT_ROOT/prepared/moabb_benchmark/eval_audit.json
-\$PERSISTENT_ROOT/prepared/moabb_benchmark/data_manifest.json
-\$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json
-\$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json
-\$PERSISTENT_ROOT/prepared/moabb_benchmark/leakage_report.json
-\`\`\`
-
-Run artifacts:
-
-	\`\`\`text
-	\$PERSISTENT_ROOT/gpu_preflight.json
-	\$PERSISTENT_ROOT/docker_run.env
-	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/config.yaml
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/environment.json
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint.pt
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint_best.pt
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.json
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.csv
-\$PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.jsonl
-	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
-	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
-	\$PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
-	\$PERSISTENT_ROOT/logs/neurotwin-a100-docker-<generated>.log
-	\`\`\`
-
-Expected audit gate:
-
-\`\`\`text
-eval_audit_passed=True
-window_count=18144
-window_counts_by_split=train:12096,val:2016,test:4032
-\`\`\`
-
-## Send Back Evidence
-
-After the run, package only reviewable outputs:
-
-\`\`\`bash
-bash scripts/package_a100_evidence_bundle.sh "\$PERSISTENT_ROOT" outputs
-\`\`\`
-
-	This includes \`run/gpu_preflight.json\`, \`run/docker_run.env\`, and the current Docker log. It excludes checkpoints, raw prepared arrays, runner tarballs, zip artifacts, passwords, API keys, SSH keys, \`.env*\` files, and private keys.
-
-## Known Limitations
-
-- Docker fallback does not submit Slurm; it runs directly inside Docker with the GPU list passed to \`scripts/run_docker_6gpu.sh\`.
-- MOABB preparation may need internet unless the cache is already populated.
-- The short full run is expected to report \`completed_steps=50\`, \`real_data_smoke=true\`, and \`scientific_claim_allowed=false\`.
-- MOABB task labels are intentionally removed from prepared event metadata before persistence; forbidden model-visible event metadata fields are \`label\`, \`target\`, \`target_label\`, \`task_label\`, and \`diagnosis\`.
-
-Do not interpret model quality from this first full run.
-EOF
+handoff_readme = Path(sys.argv[1]).read_text(encoding="utf-8")
+runner_tarball = Path(sys.argv[2])
+runner_name = sys.argv[3]
+with tarfile.open(runner_tarball, "r:gz") as tar:
+    member = tar.extractfile(f"{runner_name}/README_HANDOFF.md")
+    if member is None:
+        print("runner tarball is missing README_HANDOFF.md", file=sys.stderr)
+        sys.exit(4)
+    runner_readme = member.read().decode("utf-8")
+if runner_readme != handoff_readme:
+    print("handoff README does not match runner README_HANDOFF.md", file=sys.stderr)
+    sys.exit(4)
+PY
 
 (
   cd "$HANDOFF_ROOT"

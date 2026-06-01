@@ -90,6 +90,7 @@ class HandoffZipArtifactTests(unittest.TestCase):
             self.assertNotIn("<timestamp>", readme)
             self.assertNotIn("docker run --rm -it", readme)
             self.assertNotIn("The helper runs this host command", readme)
+            self.assertNotIn("bash scripts/docker_a100_inner.sh", readme)
             self.assertNotIn("pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash", readme)
             for forbidden in (
                 "git clone",
@@ -106,4 +107,6 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 capture_output=True,
             )
             self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
-            assert_runner_archive(self, handoff_root / f"{runner_name}.tar.gz", Path(tmp) / "nested")
+            runner_root = assert_runner_archive(self, handoff_root / f"{runner_name}.tar.gz", Path(tmp) / "nested")
+            runner_readme = (runner_root / "README_HANDOFF.md").read_text(encoding="utf-8")
+            self.assertEqual(readme, runner_readme)

@@ -27,6 +27,7 @@ mkdir -p "$OUT_DIR"
 BUNDLE_ROOT="$STAGING/$BUNDLE_NAME"
 VERIFY_ROOT="$STAGING/verify"
 ARCHIVE_PATHS=(
+  README_HANDOFF.md.in
   README_RUN.md
   README_AGENT_DEPLOY.md
   README.md
@@ -45,6 +46,7 @@ ARCHIVE_PATHS=(
   scripts/train_a100_inner.sh
   scripts/package_a100_evidence_bundle.sh
   scripts/package_a100_evidence_bundle.py
+  scripts/render_a100_handoff_readme.py
   scripts/slurm/_train_a100_inner.sh
   scripts/slurm/train_a100.sh
   scripts/prepare_moabb_benchmark.sh
@@ -63,6 +65,13 @@ printf '%s\n' "$FULL_SHA" > "$BUNDLE_ROOT/COMMIT_HASH.txt"
   echo "source=git archive HEAD"
   echo "bundle_type=runner"
 } > "$BUNDLE_ROOT/BUNDLE_METADATA.txt"
+
+python3 "$SCRIPT_DIR/render_a100_handoff_readme.py" \
+  --template "$BUNDLE_ROOT/README_HANDOFF.md.in" \
+  --output "$BUNDLE_ROOT/README_HANDOFF.md" \
+  --full-sha "$FULL_SHA" \
+  --short-sha "$SHORT_SHA" \
+  --runner-name "$BUNDLE_NAME" >/dev/null
 
 python3 - "$BUNDLE_ROOT" <<'PY'
 from pathlib import Path

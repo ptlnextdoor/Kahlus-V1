@@ -35,24 +35,7 @@ export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-That helper launches:
-
-```bash
-docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
-  --ipc=host --shm-size=64g \
-  --ulimit memlock=-1 --ulimit stack=67108864 \
-  -v "$PWD":/workspace/repo \
-  -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
-  -w /workspace/repo \
-  -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
-  -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
-  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
-  -e NCCL_DEBUG=INFO \
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
-  bash scripts/docker_a100_inner.sh
-```
-
-The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
+The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`. Do not bypass `scripts/run_docker_6gpu.sh` for the full Docker run; it owns the log and evidence metadata contract.
 
 An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` as a dependency/runtime image helper. It does not hide source code; this runner still ships the runtime Python source required to execute.
 
@@ -212,31 +195,7 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 
 In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
-The expanded Docker host command is:
-
-
-```bash
-export HOST_GPU_IDS=0,1,2,3,4,5
-export GPU_COUNT=6
-export NPROC_PER_NODE=6
-export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
-export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-export DOCKER_RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p "$PERSISTENT_ROOT"
-docker run --rm -it --gpus "\"device=${HOST_GPU_IDS}\"" \
-  --ipc=host --shm-size=64g \
-  --ulimit memlock=-1 --ulimit stack=67108864 \
-  -v "$PWD":/workspace/repo \
-  -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
-  -w /workspace/repo \
-  -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
-  -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
-  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
-  -e NCCL_DEBUG=INFO \
-  -e DOCKER_LOG_PATH="$PERSISTENT_ROOT/logs/neurotwin-a100-docker-$DOCKER_RUN_ID.log" \
-  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
-  bash scripts/docker_a100_inner.sh
-```
+For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_6gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
 
 The helper runs these commands inside the container:
 
