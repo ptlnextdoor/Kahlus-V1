@@ -1,0 +1,19 @@
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    TOKENIZERS_PARALLELISM=false
+
+WORKDIR /workspace/repo
+
+COPY pyproject.toml README.md README_RUN.md README_AGENT_DEPLOY.md environment-a100.yml ./
+COPY requirements ./requirements
+COPY configs ./configs
+COPY scripts ./scripts
+COPY src ./src
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -e '.[moabb,cluster]' \
+    && chmod +x scripts/*.sh scripts/slurm/*.sh
+
+CMD ["bash"]

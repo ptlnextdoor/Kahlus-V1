@@ -3,12 +3,14 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-<short_sha> [gpu-list]
+usage: scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-<short_sha> [gpu-selector]
 
 Example:
+  bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234 all
   bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234 0,1,2,3,4,5
 
 Runs the A100 handoff inside Docker with the runner mounted at /workspace/repo.
+The default target is 6 visible CUDA devices. Set ALLOW_FEWER_GPUS=1 only for diagnostics.
 EOF
 }
 
@@ -20,7 +22,8 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INPUT_ROOT=$1
-GPU_LIST=${2:-0,1,2,3,4,5}
+GPU_SELECTOR=${2:-all}
+TARGET_GPUS=${TARGET_GPUS:-6}
 DOCKER_IMAGE=${DOCKER_IMAGE:-pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel}
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -46,11 +49,14 @@ case "$INPUT_ROOT" in
     ;;
 esac
 
-IFS=',' read -r -a GPU_IDS <<< "$GPU_LIST"
-NPROC_PER_NODE=${NPROC_PER_NODE:-${#GPU_IDS[@]}}
-if ! [[ "$NPROC_PER_NODE" =~ ^[0-9]+$ ]] || ((NPROC_PER_NODE < 1)); then
-  echo "NPROC_PER_NODE must be positive, got: $NPROC_PER_NODE" >&2
+if ! [[ "$TARGET_GPUS" =~ ^[0-9]+$ ]] || ((TARGET_GPUS < 1)); then
+  echo "TARGET_GPUS must be positive, got: $TARGET_GPUS" >&2
   exit 2
+fi
+if [[ "$GPU_SELECTOR" == all ]]; then
+  DOCKER_GPU_ARG=all
+else
+  DOCKER_GPU_ARG="device=$GPU_SELECTOR"
 fi
 
 mkdir -p "$INPUT_ROOT"
@@ -63,10 +69,10 @@ fi
 
 echo "docker_image=$DOCKER_IMAGE"
 echo "persistent_root=$PERSISTENT_ROOT"
-echo "gpu_list=$GPU_LIST"
-echo "nproc_per_node=$NPROC_PER_NODE"
+echo "gpu_selector=$GPU_SELECTOR"
+echo "target_gpus=$TARGET_GPUS"
 
-docker run --rm "${DOCKER_TTY[@]}" --gpus "device=$GPU_LIST" \
+docker run --rm "${DOCKER_TTY[@]}" --gpus "$DOCKER_GPU_ARG" --ipc=host \
   -v "$REPO_ROOT":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
@@ -77,7 +83,8 @@ docker run --rm "${DOCKER_TTY[@]}" --gpus "device=$GPU_LIST" \
   -e RUN_ROOT="$PERSISTENT_ROOT/runs" \
   -e EXPECTED_WINDOW_COUNT="${EXPECTED_WINDOW_COUNT:-18144}" \
   -e EXPECTED_SPLIT_WINDOWS="${EXPECTED_SPLIT_WINDOWS:-train:12096,val:2016,test:4032}" \
-  -e NPROC_PER_NODE="$NPROC_PER_NODE" \
+  -e TARGET_GPUS="$TARGET_GPUS" \
+  -e ALLOW_FEWER_GPUS="${ALLOW_FEWER_GPUS:-0}" \
   "$DOCKER_IMAGE" \
   bash -lc '
 set -euo pipefail
@@ -86,6 +93,41 @@ export TOKENIZERS_PARALLELISM=false
 mkdir -p "$PERSISTENT_ROOT/moabb" "$PERSISTENT_ROOT/bids" "$PERSISTENT_ROOT/prepared" "$PERSISTENT_ROOT/runs" "$PERSISTENT_ROOT/logs" outputs/configs outputs/smoke
 
 python -m pip install -e ".[moabb,cluster]"
+python - <<'"'"'PY'"'"' > "$PERSISTENT_ROOT/gpu_preflight.json"
+import json
+import os
+import sys
+
+import torch
+
+target = int(os.environ.get("TARGET_GPUS", "6"))
+count = torch.cuda.device_count()
+payload = {
+    "cuda_available": bool(torch.cuda.is_available()),
+    "visible_device_count": count,
+    "target_gpus": target,
+    "device_names": [torch.cuda.get_device_name(i) for i in range(count)],
+}
+print(json.dumps(payload, indent=2))
+if not payload["cuda_available"]:
+    print("CUDA is not available inside Docker.", file=sys.stderr)
+    sys.exit(10)
+if count < target and os.environ.get("ALLOW_FEWER_GPUS") != "1":
+    print(f"Expected at least {target} visible CUDA devices, saw {count}.", file=sys.stderr)
+    print("Set ALLOW_FEWER_GPUS=1 only for a diagnostic run.", file=sys.stderr)
+    sys.exit(11)
+PY
+NPROC_PER_NODE="$(python - <<'"'"'PY'"'"'
+import json
+import os
+from pathlib import Path
+
+payload = json.loads((Path(os.environ["PERSISTENT_ROOT"]) / "gpu_preflight.json").read_text(encoding="utf-8"))
+target = int(os.environ.get("TARGET_GPUS", "6"))
+print(min(payload["visible_device_count"], target))
+PY
+)"
+echo "nproc_per_node=$NPROC_PER_NODE"
 bash scripts/run_smoke.sh outputs/smoke
 bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
 python -m neurotwin.cli eval audit \

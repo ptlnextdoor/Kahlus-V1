@@ -24,17 +24,17 @@ sha256sum -c SHA256SUMS
 
 ### Primary Docker 6-GPU Path
 
-Use this path when the machine has Docker with NVIDIA GPU support. It does not require `conda` or `sbatch`. The default GPU list is `0,1,2,3,4,5`.
+Use this path when the machine has Docker with NVIDIA GPU support. It does not require `conda` or `sbatch`. The launcher defaults to the Docker `all` GPU selector, probes CUDA inside the container, and refuses to train unless six CUDA devices are visible.
 
 ```bash
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" 0,1,2,3,4,5
+TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" all
 ```
 
 That helper launches:
 
 ```bash
-docker run --rm -it --gpus "device=0,1,2,3,4,5" \
+docker run --rm -it --gpus all --ipc=host \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
@@ -42,6 +42,8 @@ docker run --rm -it --gpus "device=0,1,2,3,4,5" \
   -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel bash
 ```
+
+An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` for agents that prefer to build a local image before running.
 
 Inside Docker it installs the runner and executes the full handoff sequence:
 
@@ -156,16 +158,16 @@ The packaged helper is the recommended Docker fallback when `conda` or `sbatch` 
 
 ```bash
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" 0,1,2,3,4,5
+TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" all
 ```
 
 For a one-GPU diagnostic, pass one visible GPU id and override the process count:
 
 ```bash
-NPROC_PER_NODE=1 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" <gpu_id>
+ALLOW_FEWER_GPUS=1 TARGET_GPUS=1 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT" <gpu_id>
 ```
 
-In that diagnostic mode the helper passes Docker `--gpus "device=<gpu_id>"`.
+In that diagnostic mode the helper passes Docker `--gpus "device=<gpu_id>"`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
 The expanded Docker host command is:
 
@@ -173,7 +175,7 @@ The expanded Docker host command is:
 ```bash
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 mkdir -p "$PERSISTENT_ROOT"
-docker run --rm -it --gpus "device=0,1,2,3,4,5" \
+docker run --rm -it --gpus all --ipc=host \
   -v "$PWD":/workspace/repo \
   -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
   -w /workspace/repo \
@@ -351,6 +353,7 @@ window_counts_by_split=train:12096,val:2016,test:4032
 Run outputs:
 
 ```text
+$NEUROTWIN_DATA/gpu_preflight.json
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/config.yaml
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/environment.json
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/checkpoint.pt

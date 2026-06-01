@@ -28,7 +28,9 @@ BUNDLE_ROOT="$STAGING/$BUNDLE_NAME"
 VERIFY_ROOT="$STAGING/verify"
 ARCHIVE_PATHS=(
   README_RUN.md
+  README_AGENT_DEPLOY.md
   README.md
+  Dockerfile.a100
   pyproject.toml
   environment-a100.yml
   requirements/cluster-a100.txt

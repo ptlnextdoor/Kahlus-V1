@@ -101,13 +101,13 @@ Primary Docker 6-GPU path:
 
 \`\`\`bash
 export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" 0,1,2,3,4,5
+TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" all
 \`\`\`
 
-The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, and:
+The helper launches Docker with the runner mounted at \`/workspace/repo\`, persistent outputs under \`/raid/scratch/\$USER/neurotwin-$SHORT_SHA\`, and refuses to train unless six CUDA devices are visible. An automated deployment agent should follow \`README_AGENT_DEPLOY.md\`; \`Dockerfile.a100\` is included for agents that prefer to build a local image before running.
 
 \`\`\`bash
-docker run --rm -it --gpus "device=0,1,2,3,4,5" \\
+docker run --rm -it --gpus all --ipc=host \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
@@ -148,21 +148,21 @@ The packaged helper is the recommended Docker fallback when \`conda\` or \`sbatc
 
 \`\`\`bash
 export PERSISTENT_ROOT=/raid/scratch/\$USER/neurotwin-$SHORT_SHA
-bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" 0,1,2,3,4,5
+TARGET_GPUS=6 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" all
 \`\`\`
 
 For a one-GPU diagnostic, pass one visible GPU id and override the process count:
 
 \`\`\`bash
-NPROC_PER_NODE=1 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" <gpu_id>
+ALLOW_FEWER_GPUS=1 TARGET_GPUS=1 bash scripts/run_docker_6gpu.sh "\$PERSISTENT_ROOT" <gpu_id>
 \`\`\`
 
-In that diagnostic mode the helper passes Docker \`--gpus "device=<gpu_id>"\`.
+In that diagnostic mode the helper passes Docker \`--gpus "device=<gpu_id>"\`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
 The helper runs this host command:
 
 \`\`\`bash
-docker run --rm -it --gpus "device=0,1,2,3,4,5" \\
+docker run --rm -it --gpus all --ipc=host \\
   -v "\$PWD":/workspace/repo \\
   -v "\$PERSISTENT_ROOT":"\$PERSISTENT_ROOT" \\
   -w /workspace/repo \\
@@ -219,6 +219,7 @@ Prepared artifacts:
 Run artifacts:
 
 \`\`\`text
+\$PERSISTENT_ROOT/gpu_preflight.json
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/config.yaml
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/environment.json
 \$PERSISTENT_ROOT/runs/moabb_a100_smoke/checkpoint.pt
