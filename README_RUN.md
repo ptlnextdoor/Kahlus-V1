@@ -3,12 +3,39 @@
 This runner executes one controlled NeuroTwin MOABB infrastructure validation on an A100 cluster. It verifies imports, data preparation, leakage/window gates, CUDA visibility, prepared-manifest training, checkpoint writing, and report generation.
 
 This is not a scientific result and not the 3-seed acceptance run.
+Branch: `ptlnextdoor/a100-current-rerun`
 
 ## Purpose And Non-Purpose
 
 Purpose: prove that this exact commit can run the codeless A100 path end to end on Chapman infrastructure, including checksum verification, environment install, MOABB preparation, eval audit, cluster preflight, one short prepared training run, and report generation.
 
 Non-purpose: this package does not prove model superiority, paper readiness, clinical utility, or a 3-seed scientific result. It also does not hide source cryptographically; it is a practical runner bundle with the Python source required for execution.
+
+## Chapman Queue Order
+
+Use the cluster in two phases. Phase 1 uses one-GPU evidence jobs and can be queued in parallel if Chapman scheduling allows. Phase 2 is one full six-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+
+Phase 1 one-GPU evidence lane:
+
+```text
+paper-mode MOABB seeds 0/1/2
+leakage-demo seeds 0/1/2
+identity-probe seeds 0/1/2
+model-card and artifact generation
+```
+
+Phase 2 full model lane:
+
+```text
+exactly 6 A100 GPUs
+GPU_COUNT=6
+NPROC_PER_NODE=6
+HOST_GPU_IDS=<six comma-separated host GPU ids>
+CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+torchrun --standalone --nproc_per_node=6
+```
+
+Do not request or use 7 or 8 GPUs for this handoff. Chapman may have up to 8 A100s, but this runner is contracted for one-GPU evidence jobs first and exactly one six-GPU DDP full run afterward.
 
 ## Operator Workflow
 
@@ -37,7 +64,7 @@ export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`. Do not bypass `scripts/run_docker_6gpu.sh` for the full Docker run; it owns the log and evidence metadata contract.
+The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`. Do not bypass `scripts/run_docker_6gpu.sh` for the full Docker run; it owns the log and evidence metadata contract. Do not change the full lane to seven or eight GPUs.
 
 An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` as a dependency/runtime image helper. It does not hide source code; this runner still ships the runtime Python source required to execute.
 
@@ -167,7 +194,7 @@ export CONTAINER_CUDA_VISIBLE_DEVICES=0
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
+In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Use this lane for Phase 1 paper evidence diagnostics only. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
 For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_6gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
 
@@ -350,7 +377,8 @@ For full non-smoke runs, the zip also includes paper-mode baseline artifacts und
 - Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_6gpu.sh`.
 - MOABB data preparation may need internet or a populated MOABB cache.
 - The default guarded run is configured for 50 smoke steps and `scientific_claim_allowed=false`; the long 6-GPU lane requires `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`.
-- Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates.
+- `summary.json` is the source of truth for `scientific_claim_allowed`; paper-mode gate status is reported separately.
+- Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates. This handoff evaluates evidence quality and infrastructure, not model superiority.
 
 ## Success Condition
 
