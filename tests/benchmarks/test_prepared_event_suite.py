@@ -501,6 +501,93 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
 
+    def test_eval_command_runs_leakage_demo_and_identity_probe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            leakage = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="leakage-demo",
+                    out_dir=out_dir,
+                    seed=0,
+                )
+            )
+            identity = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="identity-probe",
+                    out_dir=out_dir,
+                    seed=0,
+                )
+            )
+
+            self.assertEqual(leakage.exit_code, 0)
+            self.assertIn("eval_leakage_demo=True", leakage.output)
+            self.assertIn("bad_segment_split", leakage.output)
+            self.assertFalse(leakage.payload["scientific_claim_allowed"])
+            self.assertEqual(leakage.payload["observed_seeds"], [0])
+            self.assertEqual(leakage.payload["evidence_status"], "single_seed_non_paper")
+            self.assertFalse(leakage.payload["paper_demo_gate"]["passed"])
+            bad = [row for row in leakage.payload["comparisons"] if row["split_id"] == "bad_segment_split"][0]
+            self.assertEqual(bad["status"], "negative_control")
+            self.assertGreater(bad["subject_overlap"], 0)
+            self.assertTrue((out_dir / "leakage_demo.json").exists())
+            self.assertTrue((out_dir / "LEAKAGE_DEMO.json").exists())
+
+            self.assertEqual(identity.exit_code, 0)
+            self.assertIn("eval_identity_probe=True", identity.output)
+            self.assertIn("identity_confounding_risk=", identity.output)
+            self.assertFalse(identity.payload["scientific_claim_allowed"])
+            self.assertEqual(identity.payload["observed_seeds"], [0])
+            self.assertEqual(identity.payload["evidence_status"], "single_seed_non_paper")
+            self.assertFalse(identity.payload["paper_demo_gate"]["passed"])
+            self.assertGreater(identity.payload["window_split_probe"]["subject_overlap"], 0)
+            self.assertTrue((out_dir / "identity_probe.json").exists())
+            self.assertTrue((out_dir / "IDENTITY_PROBE.json").exists())
+
+    def test_eval_command_runs_multi_seed_paper_demos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            leakage = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="leakage-demo",
+                    out_dir=out_dir,
+                    seeds=(0, 1, 2),
+                    train_steps=1,
+                )
+            )
+            identity = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="identity-probe",
+                    out_dir=out_dir,
+                    seeds=(0, 1, 2),
+                    train_steps=1,
+                )
+            )
+
+            self.assertEqual(leakage.exit_code, 0)
+            self.assertEqual(leakage.payload["observed_seeds"], [0, 1, 2])
+            self.assertEqual(len(leakage.payload["seed_results"]), 3)
+            self.assertTrue(leakage.payload["paper_demo_gate"]["passed"])
+            self.assertNotIn("seed", leakage.payload)
+            self.assertNotIn("comparisons", leakage.payload)
+            self.assertIn("representative_seed_result", leakage.payload)
+            self.assertLess(leakage.output.index("seed_aggregate="), leakage.output.index("representative_split_result="))
+            self.assertTrue(
+                any(
+                    row["split_id"] == "bad_segment_split" and row["metric"] == "mse" and row["n_seeds"] == 3
+                    for row in leakage.payload["seed_aggregate"]
+                )
+            )
+
+            self.assertEqual(identity.exit_code, 0)
+            self.assertEqual(identity.payload["observed_seeds"], [0, 1, 2])
+            self.assertEqual(len(identity.payload["seed_results"]), 3)
+            self.assertTrue(identity.payload["paper_demo_gate"]["passed"])
+            self.assertNotIn("seed", identity.payload)
+            self.assertNotIn("window_split_probe", identity.payload)
+            self.assertIn("representative_seed_result", identity.payload)
+            self.assertLess(identity.output.index("seed_aggregate="), identity.output.index("representative_window_split_accuracy="))
+            self.assertTrue(any(row["metric"] == "accuracy" and row["n_seeds"] == 3 for row in identity.payload["seed_aggregate"]))
+
     def test_eval_command_seed_reaches_synthetic_suites(self):
         smoke_a = run_eval_command(EvalCommandConfig(suite="translation_smoke", seed=3))
         smoke_b = run_eval_command(EvalCommandConfig(suite="translation_smoke", seed=4))

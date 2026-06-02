@@ -191,6 +191,18 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
         self.assertIn("--require-prepared-windows", inner)
+        for required in (
+            "prepared_baseline_suite.json",
+            "seed_aggregate.json",
+            "seed_aggregate.csv",
+            "baseline_failures.json",
+            "paper_mode_gate.json",
+            "eval leakage-demo",
+            "eval identity-probe",
+            "report model-card",
+            "copy_prepared_eval_audit",
+        ):
+            self.assertIn(required, inner)
         self.assertIn("Refusing to run default/synthetic eval", eval_script)
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
 
@@ -236,6 +248,15 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "--require-cuda",
             "torchrun --standalone --nproc_per_node=\"$NPROC_PER_NODE\"",
             "python -m neurotwin.cli report",
+            "python -m neurotwin.cli eval leakage-demo",
+            "python -m neurotwin.cli eval identity-probe",
+            "python -m neurotwin.cli report model-card",
+            "prepared_baseline_suite.json",
+            "seed_aggregate.json",
+            "seed_aggregate.csv",
+            "baseline_failures.json",
+            "paper_mode_gate.json",
+            "copy_prepared_eval_audit",
             "bash scripts/package_a100_evidence_bundle.sh",
         ):
             self.assertIn(required, inner)

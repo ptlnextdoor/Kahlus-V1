@@ -76,7 +76,7 @@ def resolve_source_commit(repo_root: str | Path = ".") -> dict[str, Any]:
     return {
         "commit": fallback,
         "source": "COMMIT_HASH.txt" if fallback else None,
-        "source_commit_missing": True,
+        "source_commit_missing": fallback is None,
     }
 
 

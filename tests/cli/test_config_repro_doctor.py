@@ -60,6 +60,29 @@ class ConfigReproDoctorTests(unittest.TestCase):
             self.assertEqual(env["run"]["argv"], ["nt", "train"])
             self.assertIn("cuda_device_count", env["torch"])
 
+    def test_git_source_commit_is_not_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init"], cwd=root, check=True, text=True, capture_output=True)
+            subprocess.run(["git", "config", "user.email", "unit@example.com"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Unit Test"], cwd=root, check=True)
+            (root / "tracked.txt").write_text("root\n", encoding="utf-8")
+            subprocess.run(["git", "add", "tracked.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "root"], cwd=root, check=True, text=True, capture_output=True)
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout.strip()
+
+            commit = resolve_source_commit(root)
+
+        self.assertEqual(commit["commit"], head)
+        self.assertEqual(commit["source"], "git")
+        self.assertFalse(commit["source_commit_missing"])
+
     def test_non_git_runner_uses_commit_hash_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -70,9 +93,19 @@ class ConfigReproDoctorTests(unittest.TestCase):
 
             self.assertEqual(commit["commit"], "abc123fallback")
             self.assertEqual(commit["source"], "COMMIT_HASH.txt")
-            self.assertTrue(commit["source_commit_missing"])
+            self.assertFalse(commit["source_commit_missing"])
             self.assertEqual(env["git"]["commit"], "abc123fallback")
-            self.assertTrue(env["source_commit_missing"])
+            self.assertFalse(env["source_commit_missing"])
+
+    def test_source_commit_missing_only_when_no_source_exists(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            commit = resolve_source_commit(root)
+
+        self.assertIsNone(commit["commit"])
+        self.assertIsNone(commit["source"])
+        self.assertTrue(commit["source_commit_missing"])
 
     def test_nested_no_git_runner_ignores_parent_git_commit(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -100,8 +133,8 @@ class ConfigReproDoctorTests(unittest.TestCase):
             self.assertNotEqual(env["git"]["commit"], parent_commit)
             self.assertEqual(env["git"]["commit"], "runnerfallback123")
             self.assertEqual(env["git"]["source"], "COMMIT_HASH.txt")
-            self.assertTrue(env["git"]["source_commit_missing"])
-            self.assertTrue(env["source_commit_missing"])
+            self.assertFalse(env["git"]["source_commit_missing"])
+            self.assertFalse(env["source_commit_missing"])
 
     def test_run_metadata_captures_direct_and_slurm_modes(self):
         direct = capture_run_metadata(argv=["nt", "doctor"], env={})

@@ -132,7 +132,7 @@ echo "step=login_node_preflight_without_cuda"
 if [[ "$A100_REQUIRE_PAPER_MODE_GATE" == "1" ]]; then
   export A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-$NEUROTWIN_DATA/eval/${A100_RUN_ID}_paper_mode}"
   echo "step=paper_mode_gate out_dir=$A100_PAPER_MODE_EVAL_DIR"
-  "$PYTHON_BIN" -m neurotwin.cli eval \
+  "$PYTHON_BIN" -m neurotwin.cli eval suite \
     --suite neural_translation_v1 \
     --paper-mode \
     --seeds 0 1 2 \

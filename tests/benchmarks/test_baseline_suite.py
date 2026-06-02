@@ -90,6 +90,45 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertTrue(any(row["model_id"] == "linear_ridge" for row in failures))
         self.assertNotIn("linear_ridge", ranked)
 
+    def test_filtered_baselines_fail_for_unknown_model_id(self):
+        x = np.random.default_rng(0).normal(size=(6, 4, 2)).astype(np.float32)
+        task = SupervisedWindowTask(
+            task_id="future_state_forecasting",
+            source_modality="eeg",
+            target_modality="eeg",
+            x_train=x[:4],
+            y_train=x[:4],
+            x_test=x[4:],
+            y_test=x[4:],
+        )
+
+        payload = run_supervised_window_tasks((task,), seed=0, train_steps=1, model_ids=("not_a_model",))
+        result = payload["tasks"]["future_state_forecasting"]
+
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(result["metrics_by_model"])
+        self.assertTrue(any(row["model_id"] == "not_a_model" and "unknown" in row["reason"] for row in result["failures"]))
+        self.assertTrue(any(row["model_id"] == "not_a_model" for row in payload["baseline_failures"]))
+
+    def test_filtered_baselines_record_unavailable_model_id(self):
+        x = np.random.default_rng(0).normal(size=(6, 4, 2)).astype(np.float32)
+        task = SupervisedWindowTask(
+            task_id="future_state_forecasting",
+            source_modality="eeg",
+            target_modality="eeg",
+            x_train=x[:4],
+            y_train=x[:4],
+            x_test=x[4:],
+            y_test=x[4:],
+        )
+
+        payload = run_supervised_window_tasks((task,), seed=0, train_steps=1, model_ids=("tribe_style",))
+        result = payload["tasks"]["future_state_forecasting"]
+
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(result["metrics_by_model"])
+        self.assertTrue(any(row["model_id"] == "tribe_style" and "unavailable" in row["reason"] for row in result["failures"]))
+
     def test_tribe_style_runs_on_stimulus_fmri_task(self):
         rng = np.random.default_rng(7)
         x_train = rng.normal(size=(10, 4, 3)).astype(np.float32)
@@ -412,25 +451,31 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertTrue(paper_mode_gate_allows_claim(valid_gate))
         self.assertTrue(
             effective_scientific_claim_allowed(
-                {"synthetic_only": False, "real_data_smoke": False},
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 valid_gate,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
-                {"synthetic_only": True, "real_data_smoke": False},
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": False},
                 valid_gate,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
-                {"synthetic_only": False, "real_data_smoke": True},
+                {"synthetic_only": True, "real_data_smoke": False, "scientific_claim_allowed": True},
                 valid_gate,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
-                {"synthetic_only": False, "real_data_smoke": False},
+                {"synthetic_only": False, "real_data_smoke": True, "scientific_claim_allowed": True},
+                valid_gate,
+            )
+        )
+        self.assertFalse(
+            effective_scientific_claim_allowed(
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 {
                     "passed": True,
                     "require_ci": False,
@@ -442,7 +487,7 @@ class BaselineSuiteTests(unittest.TestCase):
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
-                {"synthetic_only": False, "real_data_smoke": False},
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 {
                     "passed": True,
                     "require_ci": True,
@@ -454,7 +499,7 @@ class BaselineSuiteTests(unittest.TestCase):
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
-                {"synthetic_only": False, "real_data_smoke": False},
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 None,
             )
         )
@@ -470,11 +515,14 @@ class BaselineSuiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             (run_dir / "summary.json").write_text(
-                json.dumps({"synthetic_only": False, "real_data_smoke": False}),
+                json.dumps({"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True}),
                 encoding="utf-8",
             )
             (run_dir / "paper_mode_gate.json").write_text(json.dumps(valid_gate), encoding="utf-8")
-            self.assertEqual(load_run_summary(run_dir), {"synthetic_only": False, "real_data_smoke": False})
+            self.assertEqual(
+                load_run_summary(run_dir),
+                {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
+            )
             self.assertTrue(effective_scientific_claim_allowed_for_run(run_dir))
 
             (run_dir / "summary.json").write_text("{broken\n", encoding="utf-8")
@@ -486,7 +534,7 @@ class BaselineSuiteTests(unittest.TestCase):
             self.assertFalse(effective_scientific_claim_allowed_for_run(run_dir))
 
             (run_dir / "summary.json").write_text(
-                json.dumps({"synthetic_only": False, "real_data_smoke": False}),
+                json.dumps({"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True}),
                 encoding="utf-8",
             )
             (run_dir / "paper_mode_gate.json").write_text("{broken\n", encoding="utf-8")

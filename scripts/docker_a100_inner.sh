@@ -37,6 +37,60 @@ if [[ ! "$A100_RUN_ID" =~ ^[A-Za-z0-9_.-]+$ ]]; then
   echo "A100_RUN_ID must be a safe run directory name, got: $A100_RUN_ID" >&2
   exit 2
 fi
+MOABB_PREPARED_DIR="$PERSISTENT_ROOT/prepared/moabb_benchmark"
+RUN_DIR="$PERSISTENT_ROOT/runs/$A100_RUN_ID"
+
+copy_a100_paper_artifacts() {
+  local run_dir=$1
+  local eval_dir=${A100_PAPER_MODE_EVAL_DIR:-}
+  if [[ -z "$eval_dir" ]]; then
+    return 0
+  fi
+  for artifact in \
+    prepared_baseline_suite.json \
+    seed_aggregate.json \
+    seed_aggregate.csv \
+    baseline_failures.json \
+    paper_mode_gate.json; do
+    if [[ -f "$eval_dir/$artifact" ]]; then
+      cp "$eval_dir/$artifact" "$run_dir/$artifact"
+    fi
+  done
+}
+
+copy_prepared_eval_audit() {
+  local run_dir=$1
+  local prepared_dir=$2
+  if [[ -f "$prepared_dir/eval_audit.json" ]]; then
+    cp "$prepared_dir/eval_audit.json" "$run_dir/eval_audit.json"
+  fi
+}
+
+run_a100_paper_diagnostics() {
+  local run_dir=$1
+  local event_manifest=$2
+  local split_manifest=$3
+  local window_length=$4
+  local stride=$5
+  if [[ ! -f "$event_manifest" || ! -f "$split_manifest" ]]; then
+    echo "Skipping paper diagnostics; prepared manifests are missing." >&2
+    return 0
+  fi
+  python -m neurotwin.cli eval leakage-demo \
+    --seeds 0 1 2 \
+    --event-manifest "$event_manifest" \
+    --split-manifest "$split_manifest" \
+    --window-length "$window_length" \
+    --stride "$stride" \
+    --out-dir "$run_dir"
+  python -m neurotwin.cli eval identity-probe \
+    --seeds 0 1 2 \
+    --event-manifest "$event_manifest" \
+    --split-manifest "$split_manifest" \
+    --window-length "$window_length" \
+    --stride "$stride" \
+    --out-dir "$run_dir"
+}
 
 mkdir -p \
   "$PERSISTENT_ROOT/moabb" \
@@ -50,18 +104,18 @@ mkdir -p \
 python -m pip install -e ".[moabb,cluster]"
 python scripts/docker_gpu_preflight.py "$PERSISTENT_ROOT/gpu_preflight.json"
 bash scripts/run_smoke.sh outputs/smoke
-bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
+bash scripts/prepare_moabb_benchmark.sh "$MOABB_PREPARED_DIR"
 python -m neurotwin.cli eval audit \
   --suite neural_translation_v1 \
-  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
-  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
+  --event-manifest "$MOABB_PREPARED_DIR/event_manifest.json" \
+  --split-manifest "$MOABB_PREPARED_DIR/split_manifest.json" \
   --window-length 128 \
   --stride 128 \
-  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --out-dir "$MOABB_PREPARED_DIR" \
   --require-windows
 python -m neurotwin.cli cluster materialize-config \
   --template "$A100_CONFIG_TEMPLATE" \
-  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --prepared-root "$MOABB_PREPARED_DIR" \
   --out "$A100_CONFIG_PATH"
 python -m neurotwin.cli cluster preflight \
   --config "$A100_CONFIG_PATH" \
@@ -72,12 +126,12 @@ python -m neurotwin.cli cluster preflight \
   --expect-split-windows "${EXPECTED_SPLIT_WINDOWS:-train:12096,val:2016,test:4032}"
 if [[ "$A100_REQUIRE_PAPER_MODE_GATE" == "1" ]]; then
   A100_PAPER_MODE_EVAL_DIR=${A100_PAPER_MODE_EVAL_DIR:-"$PERSISTENT_ROOT/eval/${A100_RUN_ID}_paper_mode"}
-  python -m neurotwin.cli eval \
+  python -m neurotwin.cli eval suite \
     --suite neural_translation_v1 \
     --paper-mode \
     --seeds 0 1 2 \
-    --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
-    --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
+    --event-manifest "$MOABB_PREPARED_DIR/event_manifest.json" \
+    --split-manifest "$MOABB_PREPARED_DIR/split_manifest.json" \
     --window-length 128 \
     --stride 128 \
     --train-steps "$A100_PAPER_MODE_TRAIN_STEPS" \
@@ -87,8 +141,9 @@ torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" \
   -m neurotwin.cli train \
   --config "$A100_CONFIG_PATH" \
   --run-root "$PERSISTENT_ROOT/runs"
-if [[ -n "${A100_PAPER_MODE_EVAL_DIR:-}" && -f "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" ]]; then
-  cp "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" "$PERSISTENT_ROOT/runs/$A100_RUN_ID/paper_mode_gate.json"
-fi
-python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/$A100_RUN_ID"
+copy_a100_paper_artifacts "$RUN_DIR"
+copy_prepared_eval_audit "$RUN_DIR" "$MOABB_PREPARED_DIR"
+python -m neurotwin.cli report --run-dir "$RUN_DIR"
+run_a100_paper_diagnostics "$RUN_DIR" "$MOABB_PREPARED_DIR/event_manifest.json" "$MOABB_PREPARED_DIR/split_manifest.json" 128 128
+python -m neurotwin.cli report model-card --run-dir "$RUN_DIR"
 bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs

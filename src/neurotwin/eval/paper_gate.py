@@ -102,6 +102,8 @@ def effective_scientific_claim_allowed(
 ) -> bool:
     if not isinstance(summary, dict):
         return False
+    if summary.get("scientific_claim_allowed") is not True:
+        return False
     if summary.get("synthetic_only") is not False:
         return False
     if summary.get("real_data_smoke") is not False:

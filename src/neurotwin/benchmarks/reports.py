@@ -7,7 +7,8 @@ from typing import Any
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.task_specs import default_translation_tasks
-from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
+from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
+from neurotwin.reports.model_card import generate_model_card_report
 
 COMPARE_FIELDS = (
     "run",
@@ -15,6 +16,7 @@ COMPARE_FIELDS = (
     "synthetic_only",
     "real_data_smoke",
     "scientific_claim_allowed",
+    "paper_mode_gate_allows_claim",
     "best_task_id",
     "best_val_mse",
     "final_val_mse",
@@ -142,13 +144,15 @@ def _baseline_aggregate_rank_rows(payload: Any) -> list[dict[str, Any]]:
 def generate_run_report(run_dir: str | Path) -> str:
     path = Path(run_dir)
     summary = load_run_summary(path)
-    effective_claim = effective_scientific_claim_allowed_for_run(path, summary)
-    artifact_paths = _write_run_table_artifacts(path, summary=summary, effective_claim=effective_claim)
+    summary_claim = _summary_scientific_claim_allowed(summary)
+    gate_allows_claim = paper_mode_gate_allows_claim(load_paper_mode_gate(path))
+    artifact_paths = _write_run_table_artifacts(path, summary=summary, scientific_claim_allowed=summary_claim, gate_allows_claim=gate_allows_claim)
     lines = [
         "# NeuroTwin Run Report",
         "",
         f"run_dir={path}",
-        f"effective_scientific_claim_allowed={effective_claim}",
+        f"scientific_claim_allowed={summary_claim}",
+        f"paper_mode_gate_allows_claim={gate_allows_claim}",
     ]
     for filename in ("config.yaml", "environment.json", "metrics.json", "summary.json"):
         file_path = path / filename
@@ -172,7 +176,7 @@ def generate_run_report(run_dir: str | Path) -> str:
             lines.append("```yaml")
             lines.append(file_path.read_text(encoding="utf-8").rstrip())
             lines.append("```")
-    if len(lines) == 4:
+    if len(lines) == 5:
         lines.append("")
         lines.append("No run artifacts found.")
     elif artifact_paths:
@@ -202,7 +206,8 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
             row["status"] = "artifact_error"
         if artifact_error:
             row["artifact_error"] = artifact_error
-        row["scientific_claim_allowed"] = effective_scientific_claim_allowed_for_run(path, summary)
+        row["scientific_claim_allowed"] = _summary_scientific_claim_allowed(summary)
+        row["paper_mode_gate_allows_claim"] = paper_mode_gate_allows_claim(load_paper_mode_gate(path))
         rows.append(row)
     destination = Path(out_dir) if out_dir else None
     if destination is not None:
@@ -212,10 +217,15 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
             encoding="utf-8",
         )
         destination.joinpath("compare_runs.json").write_text(json.dumps(rows, indent=2, sort_keys=True), encoding="utf-8")
-    lines = ["# NeuroTwin Run Comparison", "", "| Run | Status | Claim Allowed | Best Task | Best Val MSE | Test MSE |", "| --- | --- | --- | --- | ---: | ---: |"]
+    lines = [
+        "# NeuroTwin Run Comparison",
+        "",
+        "| Run | Status | Claim Allowed | Gate Allows | Best Task | Best Val MSE | Test MSE |",
+        "| --- | --- | --- | --- | --- | ---: | ---: |",
+    ]
     for row in rows:
         lines.append(
-            f"| {row['run']} | {row['status']} | {row['scientific_claim_allowed']} | {row['best_task_id']} | {row['best_val_mse']} | {row['test_mse']} |"
+            f"| {row['run']} | {row['status']} | {row['scientific_claim_allowed']} | {row['paper_mode_gate_allows_claim']} | {row['best_task_id']} | {row['best_val_mse']} | {row['test_mse']} |"
         )
     artifact_errors = [row for row in rows if row.get("artifact_error")]
     if artifact_errors:
@@ -230,7 +240,8 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
 def _write_run_table_artifacts(
     path: Path,
     summary: dict[str, Any] | None = None,
-    effective_claim: bool | None = None,
+    scientific_claim_allowed: bool | None = None,
+    gate_allows_claim: bool | None = None,
 ) -> list[str]:
     if not path.exists():
         return []
@@ -244,7 +255,8 @@ def _write_run_table_artifacts(
     figures_dir.mkdir(parents=True, exist_ok=True)
     metrics = _read_json(metrics_path)
     summary_payload = summary if isinstance(summary, dict) else _read_json(summary_path)
-    effective = effective_scientific_claim_allowed_for_run(path, summary_payload) if effective_claim is None else bool(effective_claim)
+    summary_claim = _summary_scientific_claim_allowed(summary_payload) if scientific_claim_allowed is None else bool(scientific_claim_allowed)
+    gate_allows = paper_mode_gate_allows_claim(load_paper_mode_gate(path)) if gate_allows_claim is None else bool(gate_allows_claim)
     artifacts: list[str] = []
     flat_rows = list(_flatten_metrics({"metrics": metrics, "summary": summary_payload}))
     flat_csv = tables_dir / "metrics_flat.csv"
@@ -253,8 +265,8 @@ def _write_run_table_artifacts(
 
     task_results = _task_results(metrics, summary_payload)
     artifacts.extend(_write_task_results_table(tables_dir, task_results))
-    artifacts.extend(_write_baseline_tables(tables_dir, metrics))
-    artifacts.append(str(_write_metric_summary_figure(figures_dir, summary_payload, effective)))
+    artifacts.extend(_write_baseline_tables(path, tables_dir, metrics))
+    artifacts.append(str(_write_metric_summary_figure(figures_dir, summary_payload, scientific_claim_allowed=summary_claim, paper_mode_gate_allows_claim=gate_allows)))
     adaptation_rows = _adaptation_rows(task_results)
     if adaptation_rows:
         adaptation_json = figures_dir / "adaptation_curve.json"
@@ -301,10 +313,14 @@ def _task_result_row(row: dict[str, Any]) -> tuple[Any, ...]:
     return tuple(values)
 
 
-def _write_baseline_tables(tables_dir: Path, metrics: Any) -> list[str]:
+def _write_baseline_tables(run_dir: Path, tables_dir: Path, metrics: Any) -> list[str]:
     baseline_suite = metrics.get("baseline_suite") if isinstance(metrics, dict) else None
     if not isinstance(baseline_suite, dict):
         baseline_suite = metrics if isinstance(metrics, dict) and "baseline_failures" in metrics else {}
+    if not _baseline_ranking_rows_from_suite(baseline_suite):
+        prepared_suite = _read_json(run_dir / "prepared_baseline_suite.json")
+        if isinstance(prepared_suite, dict) and _baseline_ranking_rows_from_suite(prepared_suite):
+            baseline_suite = prepared_suite
     ranking_rows = []
     failures = []
     tasks = baseline_suite.get("tasks", {}) if isinstance(baseline_suite, dict) else {}
@@ -328,13 +344,21 @@ def _write_baseline_tables(tables_dir: Path, metrics: Any) -> list[str]:
                 failures.append((row.get("task_id", ""), row.get("model_id", ""), row.get("reason", "")))
 
     baseline_ranking_csv = tables_dir / "baseline_ranking.csv"
+    if not ranking_rows:
+        ranking_rows.append(("baseline_ranking_unavailable", "", "status", "no colocated baseline rankings found", ""))
     baseline_ranking_csv.write_text(_csv_rows(("task_id", "model_id", "metric", "value", "rank"), ranking_rows), encoding="utf-8")
     baseline_failures_csv = tables_dir / "baseline_failures.csv"
     baseline_failures_csv.write_text(_csv_rows(("task_id", "model_id", "reason"), failures), encoding="utf-8")
     return [str(baseline_ranking_csv), str(baseline_failures_csv)]
 
 
-def _write_metric_summary_figure(figures_dir: Path, summary: Any, effective_claim: bool) -> Path:
+def _write_metric_summary_figure(
+    figures_dir: Path,
+    summary: Any,
+    *,
+    scientific_claim_allowed: bool,
+    paper_mode_gate_allows_claim: bool,
+) -> Path:
     payload = {
         "synthetic_only": bool(summary.get("synthetic_only")) if isinstance(summary, dict) else None,
         "status": summary.get("status") if isinstance(summary, dict) else None,
@@ -349,11 +373,31 @@ def _write_metric_summary_figure(figures_dir: Path, summary: Any, effective_clai
         "checkpoint_selection_mode": summary.get("checkpoint_selection_mode") if isinstance(summary, dict) else None,
         "test_mse": summary.get("test_mse") if isinstance(summary, dict) else None,
         "real_data_smoke": bool(summary.get("real_data_smoke")) if isinstance(summary, dict) else False,
-        "scientific_claim_allowed": bool(effective_claim),
+        "scientific_claim_allowed": bool(scientific_claim_allowed),
+        "paper_mode_gate_allows_claim": bool(paper_mode_gate_allows_claim),
     }
     figure_json = figures_dir / "metric_summary.json"
     figure_json.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return figure_json
+
+
+def _summary_scientific_claim_allowed(summary: Any) -> bool:
+    return bool(summary.get("scientific_claim_allowed")) if isinstance(summary, dict) else False
+
+
+def _baseline_ranking_rows_from_suite(payload: Any) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict):
+        return []
+    tasks = payload.get("tasks", {})
+    rows = []
+    if isinstance(tasks, dict):
+        for task_payload in tasks.values():
+            if not isinstance(task_payload, dict):
+                continue
+            ranking = task_payload.get("ranking", [])
+            if isinstance(ranking, list):
+                rows.extend(row for row in ranking if isinstance(row, dict))
+    return rows
 
 
 def _adaptation_rows(task_results: Any) -> list[dict[str, Any]]:

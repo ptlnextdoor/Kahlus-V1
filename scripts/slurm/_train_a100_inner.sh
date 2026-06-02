@@ -31,16 +31,85 @@ fi
 export PYTHONPATH="${PYTHONPATH:-}:src"
 export TOKENIZERS_PARALLELISM=false
 
-RUN_DIR="$("$PYTHON_BIN" - "$CONFIG" "$RUN_ROOT" <<'PY'
+eval "$("$PYTHON_BIN" - "$CONFIG" "$RUN_ROOT" <<'PY'
+import shlex
 import sys
 from pathlib import Path
 
 import yaml
 
 config = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
-print(Path(sys.argv[2]) / str(config.get("experiment", "synthetic_debug")))
+data = config.get("data") if isinstance(config.get("data"), dict) else {}
+
+
+def emit(name, value):
+    print(f"{name}={shlex.quote(str(value or ''))}")
+
+
+emit("RUN_DIR", Path(sys.argv[2]) / str(config.get("experiment", "synthetic_debug")))
+emit("EVENT_MANIFEST", data.get("event_manifest") or config.get("event_manifest") or "")
+emit("SPLIT_MANIFEST", data.get("split_manifest") or config.get("split_manifest") or "")
+emit("WINDOW_LENGTH", config.get("window_size", 8))
+emit("STRIDE", config.get("stride", 8))
 PY
 )"
+
+copy_a100_paper_artifacts() {
+  local run_dir=$1
+  local eval_dir=${A100_PAPER_MODE_EVAL_DIR:-}
+  if [[ -z "$eval_dir" ]]; then
+    return 0
+  fi
+  for artifact in \
+    prepared_baseline_suite.json \
+    seed_aggregate.json \
+    seed_aggregate.csv \
+    baseline_failures.json \
+    paper_mode_gate.json; do
+    if [[ -f "$eval_dir/$artifact" ]]; then
+      cp "$eval_dir/$artifact" "$run_dir/$artifact"
+    fi
+  done
+}
+
+copy_prepared_eval_audit() {
+  local run_dir=$1
+  local event_manifest=$2
+  if [[ -z "$event_manifest" || ! -f "$event_manifest" ]]; then
+    return 0
+  fi
+  local prepared_dir
+  prepared_dir="$(dirname "$event_manifest")"
+  if [[ -f "$prepared_dir/eval_audit.json" ]]; then
+    cp "$prepared_dir/eval_audit.json" "$run_dir/eval_audit.json"
+  fi
+}
+
+run_a100_paper_diagnostics() {
+  local run_dir=$1
+  local event_manifest=$2
+  local split_manifest=$3
+  local window_length=$4
+  local stride=$5
+  if [[ ! -f "$event_manifest" || ! -f "$split_manifest" ]]; then
+    echo "Skipping paper diagnostics; prepared manifests are missing." >&2
+    return 0
+  fi
+  "$PYTHON_BIN" -m neurotwin.cli eval leakage-demo \
+    --seeds 0 1 2 \
+    --event-manifest "$event_manifest" \
+    --split-manifest "$split_manifest" \
+    --window-length "$window_length" \
+    --stride "$stride" \
+    --out-dir "$run_dir"
+  "$PYTHON_BIN" -m neurotwin.cli eval identity-probe \
+    --seeds 0 1 2 \
+    --event-manifest "$event_manifest" \
+    --split-manifest "$split_manifest" \
+    --window-length "$window_length" \
+    --stride "$stride" \
+    --out-dir "$run_dir"
+}
 
 PREFLIGHT_ARGS=(
   --config "$CONFIG"
@@ -62,8 +131,8 @@ fi
 torchrun --standalone --nproc_per_node="$NPROC" \
   -m neurotwin.cli train --config "$CONFIG" --run-root "$RUN_ROOT"
 
-if [[ -n "${A100_PAPER_MODE_EVAL_DIR:-}" && -f "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" ]]; then
-  cp "$A100_PAPER_MODE_EVAL_DIR/paper_mode_gate.json" "$RUN_DIR/paper_mode_gate.json"
-fi
-
+copy_a100_paper_artifacts "$RUN_DIR"
+copy_prepared_eval_audit "$RUN_DIR" "$EVENT_MANIFEST"
 "$PYTHON_BIN" -m neurotwin.cli report --run-dir "$RUN_DIR"
+run_a100_paper_diagnostics "$RUN_DIR" "$EVENT_MANIFEST" "$SPLIT_MANIFEST" "$WINDOW_LENGTH" "$STRIDE"
+"$PYTHON_BIN" -m neurotwin.cli report model-card --run-dir "$RUN_DIR"

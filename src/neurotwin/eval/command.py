@@ -11,6 +11,13 @@ from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_
 from neurotwin.benchmarks.task_specs import default_translation_tasks
 from neurotwin.eval.audit import audit_prepared_eval_inputs, format_prepared_eval_audit
 from neurotwin.eval.paper_gate import format_paper_mode_gate, validate_paper_mode_payload
+from neurotwin.eval.paper_demos import (
+    PaperDemoConfig,
+    format_identity_probe,
+    format_leakage_demo,
+    run_identity_probe,
+    run_leakage_demo,
+)
 from neurotwin.eval.prepared_paper_mode import run_prepared_baseline_suite_multi_seed, write_prepared_paper_mode_artifacts
 from neurotwin.data.prepared_tasks import PreparedSuiteConfig
 from neurotwin.repro import write_json
@@ -23,6 +30,7 @@ MANIFEST_PAIR_ERROR = "--event-manifest and --split-manifest must be provided to
 class EvalCommandConfig:
     eval_command: str | None = None
     suite: str = "translation_smoke"
+    dataset: str = "synthetic"
     run: str | None = None
     out_dir: str | Path | None = None
     event_manifest: str | Path | None = None
@@ -47,6 +55,10 @@ class EvalCommandResult:
 def run_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
     if config.eval_command == "audit":
         return _run_audit_command(config)
+    if config.eval_command == "leakage-demo":
+        return _run_leakage_demo_command(config)
+    if config.eval_command == "identity-probe":
+        return _run_identity_probe_command(config)
     if config.suite == "neural_translation_v1":
         return _run_neural_translation_v1_command(config)
     if config.suite != "translation_smoke":
@@ -56,6 +68,32 @@ def run_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
             error="Supported suites: translation_smoke, neural_translation_v1",
         )
     return _run_translation_smoke_command(config)
+
+
+def _run_leakage_demo_command(config: EvalCommandConfig) -> EvalCommandResult:
+    try:
+        payload = run_leakage_demo(_paper_demo_config(config))
+    except ValueError as exc:
+        return EvalCommandResult(output="", exit_code=1, error=str(exc))
+    return EvalCommandResult(
+        output=format_leakage_demo(payload),
+        exit_code=_paper_demo_exit_code(payload),
+        error=_paper_demo_error(payload),
+        payload=payload,
+    )
+
+
+def _run_identity_probe_command(config: EvalCommandConfig) -> EvalCommandResult:
+    try:
+        payload = run_identity_probe(_paper_demo_config(config))
+    except ValueError as exc:
+        return EvalCommandResult(output="", exit_code=1, error=str(exc))
+    return EvalCommandResult(
+        output=format_identity_probe(payload),
+        exit_code=_paper_demo_exit_code(payload),
+        error=_paper_demo_error(payload),
+        payload=payload,
+    )
 
 
 def _run_audit_command(config: EvalCommandConfig) -> EvalCommandResult:
@@ -230,6 +268,38 @@ def _prepared_suite_config(
         seed=seed,
         train_steps=config.train_steps,
     )
+
+
+def _paper_demo_config(config: EvalCommandConfig) -> PaperDemoConfig:
+    return PaperDemoConfig(
+        dataset=config.dataset,
+        event_manifest=config.event_manifest,
+        split_manifest=config.split_manifest,
+        out_dir=config.out_dir,
+        window_length=config.window_length,
+        stride=config.stride,
+        seed=config.seed,
+        seeds=config.seeds,
+        train_steps=config.train_steps,
+    )
+
+
+def _paper_demo_exit_code(payload: dict[str, Any]) -> int:
+    return 1 if _paper_demo_failures(payload) else 0
+
+
+def _paper_demo_error(payload: dict[str, Any]) -> str | None:
+    failures = _paper_demo_failures(payload)
+    if not failures:
+        return None
+    return "; ".join(f"seed {failure.get('seed')}: {failure.get('error')}" for failure in failures)
+
+
+def _paper_demo_failures(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    results = payload.get("seed_results", [])
+    if not isinstance(results, list):
+        return []
+    return [result for result in results if isinstance(result, dict) and result.get("status") != "completed"]
 
 
 def _manifest_paths(config: EvalCommandConfig) -> tuple[str | Path, str | Path] | None:

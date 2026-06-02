@@ -105,7 +105,12 @@ def first_prepared_modality_with_splits(windows_by_split: dict[str, list[NeuralE
     return shared[0] if shared else None
 
 
-def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
+def build_future_forecasting_task_from_windows(
+    windows_by_split: dict[str, list[NeuralEventBatch]],
+    *,
+    task_id: str = "future_state_forecasting",
+    notes: tuple[str, ...] = (),
+) -> SupervisedWindowTask | None:
     modality = first_prepared_modality_with_splits(windows_by_split)
     if modality is None:
         return None
@@ -127,8 +132,12 @@ def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]
         y_test=y_test,
         x_val=x_val,
         y_val=y_val,
-        notes=(f"prepared {modality} next-state windows",),
+        notes=notes or (f"prepared {modality} next-state windows",),
     )
+
+
+def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
+    return build_future_forecasting_task_from_windows(windows_by_split)
 
 
 def _masked_task_from_windows(
