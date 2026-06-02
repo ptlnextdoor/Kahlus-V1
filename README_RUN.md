@@ -28,10 +28,13 @@ Phase 2 full model lane:
 
 ```text
 exactly 6 A100 GPUs
+world_size=6
 GPU_COUNT=6
 NPROC_PER_NODE=6
 HOST_GPU_IDS=<six comma-separated host GPU ids>
 CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+bf16 precision
+selected-best checkpoint semantics included
 torchrun --standalone --nproc_per_node=6
 ```
 
