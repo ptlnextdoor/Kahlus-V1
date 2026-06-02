@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import torch
 import yaml
 
 from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
@@ -285,6 +286,59 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue(best_checkpoint.exists())
             self.assertTrue(metrics_jsonl.exists())
 
+    def test_prepared_training_tracks_best_validation_checkpoint_separately_from_final(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            checkpoint = root / "checkpoint.pt"
+            best_checkpoint = root / "checkpoint_best.pt"
+            val_mse_values = [0.4, 0.3, 0.8]
+
+            def fake_evaluate(model, task, x_test, y_test, precision, prefix, batch_size):
+                if prefix == "val":
+                    value = val_mse_values.pop(0)
+                    return {
+                        "val_mse": value,
+                        "val_mae": value,
+                        "val_pearsonr": 0.0,
+                        "val_spearmanr": 0.0,
+                        "val_r2": 0.0,
+                    }
+                return {
+                    "test_mse": 0.12,
+                    "test_mae": 0.12,
+                    "test_pearsonr": 0.0,
+                    "test_spearmanr": 0.0,
+                    "test_r2": 0.0,
+                }
+
+            with mock.patch("neurotwin.training.prepared_loop.evaluate_task", side_effect=fake_evaluate):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 2,
+                        "batch_size": 4,
+                        "training": {"eval_every_steps": 1},
+                        "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
+                    },
+                    checkpoint_path=checkpoint,
+                    best_checkpoint_path=best_checkpoint,
+                )
+
+            self.assertEqual(result.best_step, 2)
+            self.assertAlmostEqual(result.best_val_mse, 0.3)
+            self.assertAlmostEqual(result.final_val_mse, 0.8)
+            self.assertNotEqual(result.best_val_mse, result.final_val_mse)
+            self.assertEqual(result.best_checkpoint_path, str(best_checkpoint))
+            self.assertEqual(result.final_checkpoint_path, str(checkpoint))
+            best_payload = torch.load(best_checkpoint, map_location="cpu", weights_only=True)
+            self.assertEqual(best_payload["best_step"], 2)
+            self.assertEqual(best_payload["checkpoint_selection_metric"], "val_mse")
+
     def test_objective_weights_are_recorded_for_multitask_training(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -312,16 +366,16 @@ class PreparedTrainingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             prepared = self._prepared_dir(root)
-            import neurotwin.training.prepared as prepared_training
+            import neurotwin.training.prepared_metrics as prepared_metrics
 
             observed_batch_sizes = []
-            original_predict = prepared_training._predict
+            original_predict = prepared_metrics.predict
 
             def recording_predict(model, task, x, precision="fp32"):
                 observed_batch_sizes.append(int(x.shape[0]))
                 return original_predict(model, task, x, precision=precision)
 
-            with mock.patch.object(prepared_training, "_predict", side_effect=recording_predict):
+            with mock.patch.object(prepared_metrics, "predict", side_effect=recording_predict):
                 result = run_prepared_training(
                     {
                         "event_manifest": str(prepared / "event_manifest.json"),
@@ -403,6 +457,12 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertIn("source_commit_missing", summary)
             self.assertEqual(summary["run"]["mode"], "direct")
             self.assertIn("checkpoint.pt", [entry["filename"] for entry in summary["checkpoint_manifest"]])
+            self.assertIn("final_val_mse", summary)
+            self.assertIn("best_step", summary)
+            self.assertIn("best_checkpoint_path", summary)
+            self.assertIn("final_checkpoint_path", summary)
+            self.assertEqual(summary["checkpoint_selection_metric"], "val_mse")
+            self.assertEqual(summary["checkpoint_selection_mode"], "min")
             self.assertTrue((run_dir / "checkpoint_manifest.json").exists())
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())

@@ -10,7 +10,13 @@ from unittest import mock
 
 import numpy as np
 
-from neurotwin.benchmarks.baseline_suite import SupervisedWindowTask, run_supervised_window_tasks, run_synthetic_baseline_suite
+from neurotwin.benchmarks.baseline_suite import (
+    BASELINE_CATALOG,
+    EXECUTABLE_BASELINE_RUNNERS,
+    SupervisedWindowTask,
+    run_supervised_window_tasks,
+    run_synthetic_baseline_suite,
+)
 from neurotwin.eval.paper_gate import (
     effective_scientific_claim_allowed,
     effective_scientific_claim_allowed_for_run,
@@ -112,6 +118,16 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("tribe_style", {row["model_id"] for row in result["ranking"]})
         self.assertEqual(catalog["tribe_style"]["status"], "clean_room_approximation")
         self.assertIn("not an exact TRIBE v2 reproduction", catalog["tribe_style"]["notes"])
+
+    def test_baseline_catalog_is_separate_from_executable_runners(self):
+        catalog_ids = {entry.model_id for entry in BASELINE_CATALOG}
+        runner_ids = {runner.model_id for runner in EXECUTABLE_BASELINE_RUNNERS}
+
+        self.assertIn("brainvista_style", catalog_ids)
+        self.assertIn("brain_of_style", catalog_ids)
+        self.assertNotIn("brainvista_style", runner_ids)
+        self.assertNotIn("brain_of_style", runner_ids)
+        self.assertIn("tribe_style", runner_ids)
 
     def test_tribe_style_facade_predicts_without_external_download(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -259,6 +275,17 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertEqual(passed_report.observed_seeds, (0, 1, 2))
         self.assertIn("ci_summaries", passed_report.checked)
         self.assertNotIn("metric_evidence_without_ci", passed_report.checked)
+
+        top_level_audit_payload = json.loads(json.dumps(payload))
+        top_level_audit_payload["eval_audit"] = {"passed": True}
+        top_level_audit_report = validate_paper_mode_payload(top_level_audit_payload)
+        self.assertTrue(top_level_audit_report.passed, top_level_audit_report.violations)
+
+        failed_top_level_audit_payload = json.loads(json.dumps(payload))
+        failed_top_level_audit_payload["eval_audit"] = {"passed": False, "violations": ["leakage"]}
+        failed_top_level_audit_report = validate_paper_mode_payload(failed_top_level_audit_payload)
+        self.assertFalse(failed_top_level_audit_report.passed)
+        self.assertTrue(any("audit did not pass" in violation for violation in failed_top_level_audit_report.violations))
 
         failed_audit_report = validate_paper_mode_payload(payload, audit_report={"passed": False, "violations": ["leakage"]})
         self.assertFalse(failed_audit_report.passed)

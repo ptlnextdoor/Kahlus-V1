@@ -187,23 +187,40 @@ CatalogStatus = Callable[[set[str], set[str]], str]
 
 
 @dataclass(frozen=True)
-class RunnableBaselineSpec:
+class BaselineCatalogEntry:
     model_id: str
+    display_name: str
     status: str | CatalogStatus
     notes: str
-    runner: BaselineRunner | None = None
-    available_for_task: TaskAvailability = lambda task: True
+    upstream_reference: str | None = None
+    exact_reproduction: bool = False
+    uses_upstream_code: bool = False
+    uses_upstream_weights: bool = False
 
     def catalog_row(self, task_ids: set[str], modalities: set[str]) -> dict[str, object]:
         status = self.status(task_ids, modalities) if callable(self.status) else self.status
-        return {"model_id": self.model_id, "status": status, "notes": self.notes}
+        return {
+            "model_id": self.model_id,
+            "display_name": self.display_name,
+            "status": status,
+            "notes": self.notes,
+            "upstream_reference": self.upstream_reference,
+            "exact_reproduction": self.exact_reproduction,
+            "uses_upstream_code": self.uses_upstream_code,
+            "uses_upstream_weights": self.uses_upstream_weights,
+        }
+
+
+@dataclass(frozen=True)
+class ExecutableBaselineRunner:
+    model_id: str
+    runner: BaselineRunner
+    available_for_task: TaskAvailability = lambda task: True
 
     def supports(self, task: SupervisedWindowTask) -> bool:
-        return self.runner is not None and self.available_for_task(task)
+        return self.available_for_task(task)
 
     def predict(self, task: SupervisedWindowTask, seed: int, train_steps: int) -> np.ndarray:
-        if self.runner is None:
-            raise ValueError(f"{self.model_id} has no local runner")
         return self.runner(task, seed, train_steps)
 
 
@@ -544,64 +561,142 @@ def _brainomni_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
     return "approximation" if modalities & {"eeg", "meg"} else "unavailable"
 
 
-BASELINE_SPECS: tuple[RunnableBaselineSpec, ...] = (
-    RunnableBaselineSpec(
+BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
+    BaselineCatalogEntry(
         model_id="persistence",
+        display_name="Persistence",
         status="local_baseline",
         notes="Last-observation or identity-style forecast with shape-safe fallback.",
-        runner=lambda task, seed, steps: _predict_persistence(task),
     ),
-    RunnableBaselineSpec(
+    BaselineCatalogEntry(
         model_id="train_mean",
+        display_name="Train Mean",
         status="local_baseline",
         notes="Broadcast train-target mean negative baseline.",
-        runner=lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape),
     ),
-    RunnableBaselineSpec(
+    BaselineCatalogEntry(
         model_id="random_permutation",
+        display_name="Random Permutation",
         status="negative_control",
         notes="Seeded permutation of training targets with target-shaped output.",
-        runner=lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101),
     ),
-    RunnableBaselineSpec(
+    BaselineCatalogEntry(
         model_id="linear_ridge",
+        display_name="Linear Ridge",
         status="local_baseline",
         notes="Closed-form sanity baseline on identical prepared windows.",
-        runner=lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test),
     ),
-    RunnableBaselineSpec(
+    BaselineCatalogEntry(
         model_id="autoregressive_ridge",
+        display_name="Autoregressive Ridge",
         status="local_baseline",
         notes="Ridge from previous source timepoint to next target timepoint where sequence shapes allow.",
-        runner=lambda task, seed, steps: _fit_autoregressive_ridge(task),
     ),
-    RunnableBaselineSpec(
+    BaselineCatalogEntry(
         model_id="mlp",
+        display_name="MLP",
         status="local_baseline",
         notes="Per-timepoint neural-window baseline.",
-        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+    ),
+    BaselineCatalogEntry(
+        model_id="tcn",
+        display_name="TCN",
+        status="local_baseline",
+        notes="Local temporal convolution baseline.",
+    ),
+    BaselineCatalogEntry(
+        model_id="transformer",
+        display_name="Transformer",
+        status="local_baseline",
+        notes="Small local Transformer with shared splits.",
+    ),
+    BaselineCatalogEntry(
+        model_id="ssm_fallback",
+        display_name="SSM Fallback",
+        status="local_baseline",
+        notes="GRU-based SSM fallback until Mamba is pinned.",
+    ),
+    BaselineCatalogEntry(
+        model_id="neurotwin",
+        display_name="NeuroTwin",
+        status="local_baseline",
+        notes="Current NeuroTwin implementation under the same task API.",
+    ),
+    BaselineCatalogEntry(
+        model_id="tribe_style",
+        display_name="TRIBE-Style",
+        status=_tribe_style_catalog_status,
+        notes="NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
+        upstream_reference="TRIBE v2",
+        exact_reproduction=False,
+        uses_upstream_code=False,
+        uses_upstream_weights=False,
+    ),
+    BaselineCatalogEntry(
+        model_id="brainvista_style",
+        display_name="BrainVista-Style",
+        status=_brainvista_catalog_status,
+        notes="Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
+        upstream_reference="BrainVista",
+    ),
+    BaselineCatalogEntry(
+        model_id="brain_of_style",
+        display_name="Brain-OF-Style",
+        status=_brain_of_catalog_status,
+        notes="Approximate multimodal masked reconstruction lane; not an exact Brain-OF reproduction.",
+        upstream_reference="Brain-OF",
+    ),
+    BaselineCatalogEntry(
+        model_id="brainomni_style",
+        display_name="BrainOmni-Style",
+        status=_brainomni_catalog_status,
+        notes="Approximate EEG/MEG tokenizer lane; not an exact BrainOmni reproduction.",
+        upstream_reference="BrainOmni",
+    ),
+    BaselineCatalogEntry(
+        model_id="braindecode_wrapper",
+        display_name="Braindecode Wrapper",
+        status="unavailable",
+        notes="Optional EEG wrapper slot; exact use requires installed Braindecode and compatible task protocols.",
+        upstream_reference="Braindecode",
+    ),
+    BaselineCatalogEntry(
+        model_id="cebra_wrapper",
+        display_name="CEBRA Wrapper",
+        status="unavailable",
+        notes="Optional neural-behavior embedding wrapper slot; exact use requires installed CEBRA and aligned behavior data.",
+        upstream_reference="CEBRA",
+    ),
+)
+
+
+EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
+    ExecutableBaselineRunner("persistence", lambda task, seed, steps: _predict_persistence(task)),
+    ExecutableBaselineRunner("train_mean", lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape)),
+    ExecutableBaselineRunner("random_permutation", lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101)),
+    ExecutableBaselineRunner("linear_ridge", lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test)),
+    ExecutableBaselineRunner("autoregressive_ridge", lambda task, seed, steps: _fit_autoregressive_ridge(task)),
+    ExecutableBaselineRunner(
+        "mlp",
+        lambda task, seed, steps: _fit_torch_sequence_model(
             lambda: TorchMLPBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
             task,
             seed=seed + 1,
             steps=steps,
         ),
     ),
-    RunnableBaselineSpec(
-        model_id="tcn",
-        status="local_baseline",
-        notes="Local temporal convolution baseline.",
-        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+    ExecutableBaselineRunner(
+        "tcn",
+        lambda task, seed, steps: _fit_torch_sequence_model(
             lambda: TorchTCNBaseline(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
             task,
             seed=seed + 2,
             steps=steps,
         ),
     ),
-    RunnableBaselineSpec(
-        model_id="transformer",
-        status="local_baseline",
-        notes="Small local Transformer with shared splits.",
-        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+    ExecutableBaselineRunner(
+        "transformer",
+        lambda task, seed, steps: _fit_torch_sequence_model(
             lambda: TinyTransformerBaseline(
                 task.x_train.shape[-1],
                 task.y_train.shape[-1],
@@ -614,60 +709,26 @@ BASELINE_SPECS: tuple[RunnableBaselineSpec, ...] = (
             steps=steps,
         ),
     ),
-    RunnableBaselineSpec(
-        model_id="ssm_fallback",
-        status="local_baseline",
-        notes="GRU-based SSM fallback until Mamba is pinned.",
-        runner=lambda task, seed, steps: _fit_torch_sequence_model(
+    ExecutableBaselineRunner(
+        "ssm_fallback",
+        lambda task, seed, steps: _fit_torch_sequence_model(
             lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
             task,
             seed=seed + 4,
             steps=steps,
         ),
     ),
-    RunnableBaselineSpec(
-        model_id="neurotwin",
-        status="local_baseline",
-        notes="Current NeuroTwin implementation under the same task API.",
-        runner=lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps),
-    ),
-    RunnableBaselineSpec(
-        model_id="tribe_style",
-        status=_tribe_style_catalog_status,
-        notes="NeuroTwin-native stimulus-to-fMRI approximation; not an exact TRIBE v2 reproduction.",
-        runner=lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),
+    ExecutableBaselineRunner("neurotwin", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
+    ExecutableBaselineRunner(
+        "tribe_style",
+        lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),
         available_for_task=_is_stimulus_fmri_task,
-    ),
-    RunnableBaselineSpec(
-        model_id="brainvista_style",
-        status=_brainvista_catalog_status,
-        notes="Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
-    ),
-    RunnableBaselineSpec(
-        model_id="brain_of_style",
-        status=_brain_of_catalog_status,
-        notes="Approximate multimodal masked reconstruction lane; not an exact Brain-OF reproduction.",
-    ),
-    RunnableBaselineSpec(
-        model_id="brainomni_style",
-        status=_brainomni_catalog_status,
-        notes="Approximate EEG/MEG tokenizer lane; not an exact BrainOmni reproduction.",
-    ),
-    RunnableBaselineSpec(
-        model_id="braindecode_wrapper",
-        status="unavailable",
-        notes="Optional EEG wrapper slot; exact use requires installed Braindecode and compatible task protocols.",
-    ),
-    RunnableBaselineSpec(
-        model_id="cebra_wrapper",
-        status="unavailable",
-        notes="Optional neural-behavior embedding wrapper slot; exact use requires installed CEBRA and aligned behavior data.",
     ),
 )
 
 
-def _runnable_baseline_specs(task: SupervisedWindowTask) -> tuple[RunnableBaselineSpec, ...]:
-    return tuple(spec for spec in BASELINE_SPECS if spec.supports(task))
+def _runnable_baseline_specs(task: SupervisedWindowTask) -> tuple[ExecutableBaselineRunner, ...]:
+    return tuple(spec for spec in EXECUTABLE_BASELINE_RUNNERS if spec.supports(task))
 
 
 def _metrics(
@@ -726,4 +787,4 @@ def _validate_metrics(model_id: str, metrics: dict[str, float]) -> None:
 def _baseline_catalog(tasks: tuple[SupervisedWindowTask, ...]) -> list[dict[str, object]]:
     task_ids = {task.task_id for task in tasks}
     modalities = {task.source_modality for task in tasks} | {task.target_modality for task in tasks}
-    return [spec.catalog_row(task_ids, modalities) for spec in BASELINE_SPECS]
+    return [spec.catalog_row(task_ids, modalities) for spec in BASELINE_CATALOG]
