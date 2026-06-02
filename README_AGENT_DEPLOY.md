@@ -2,6 +2,8 @@
 
 These instructions are for an automated deployment agent running on the A100 cluster. The goal is to run the single-node 6x A100 Docker path when six GPUs are allocated, and to stop rather than silently falling back to one GPU.
 
+Before the full 6-GPU run, submit the Phase 1 evidence lane as separate one-GPU jobs. Queue the paper-mode MOABB seeds 0/1/2 job, leakage-demo seeds 0/1/2 job, identity-probe seeds 0/1/2 job, and model-card/artifact job at the same time when Chapman scheduling allows. If the scheduler serializes them, they must still be independent one-GPU jobs and must finish before the full DDP job starts. Do not reserve six GPUs for Phase 1.
+
 ## Inputs
 
 - Extracted runner directory: current working directory.

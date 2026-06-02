@@ -13,16 +13,18 @@ This run is meant to prove that the codeless A100 handoff can be unpacked, verif
 
 ## Chapman Queue Order
 
-Run the handoff in two phases. Phase 1 uses one-GPU evidence jobs and can be queued in parallel if Chapman scheduling allows. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+Run the handoff in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
 
 Phase 1 one-GPU evidence lane:
 
 ```text
-paper-mode MOABB seeds 0/1/2
-leakage-demo seeds 0/1/2
-identity-probe seeds 0/1/2
-model-card and artifact generation
+parallel 1-GPU job: paper-mode MOABB seeds 0/1/2
+parallel 1-GPU job: leakage-demo seeds 0/1/2
+parallel 1-GPU job: identity-probe seeds 0/1/2
+parallel 1-GPU job or post-evidence step: model-card and artifact generation
 ```
+
+Do not reserve six GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs have completed and their artifacts are present or explicitly reported unavailable.
 
 Phase 2 full model lane:
 
