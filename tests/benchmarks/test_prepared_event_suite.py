@@ -27,6 +27,7 @@ from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.eval.command import EvalCommandConfig, run_eval_command
 from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
+from neurotwin.eval.paper_contracts import build_paper_mode_evidence
 from neurotwin.eval.paper_gate import validate_paper_mode_payload
 from neurotwin.eval.prepared_paper_mode import _aggregate_seed_ranks, run_prepared_baseline_suite_multi_seed
 
@@ -397,6 +398,45 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.json").exists())
             self.assertTrue((eval_dir / "seed_aggregate.csv").exists())
+
+    def test_paper_mode_producer_and_gate_share_aggregate_rank_contract(self):
+        def seed_record(seed: int, rank: float) -> dict[str, object]:
+            mse = 0.1 + seed * 0.01
+            return {
+                "seed": seed,
+                "tasks": {
+                    "future_state_forecasting": {
+                        "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": mse, "rank": rank}],
+                        "metrics_by_model": {
+                            "linear_ridge": {
+                                "mse": mse,
+                                "mse_ci_low": mse - 0.01,
+                                "mse_ci_high": mse + 0.01,
+                            }
+                        },
+                    }
+                },
+            }
+
+        evidence = build_paper_mode_evidence(
+            [seed_record(0, 1.0), seed_record(1, 1.2), seed_record(2, 1.4)],
+            required_seeds=CANONICAL_REQUIRED_SEEDS,
+            require_ci=True,
+        )
+        payload = {
+            "aggregate": {
+                "selection_metric": "mse",
+                "higher_is_better": False,
+                "aggregate_rank": [row.to_dict() for row in evidence.aggregate_rank],
+            },
+            "seed_results": list(evidence.seed_results),
+            "seed_aggregate": [row.to_dict() for row in evidence.seed_aggregate],
+        }
+
+        gate = validate_paper_mode_payload(payload, audit_report={"passed": True})
+
+        self.assertTrue(gate.passed, gate.violations)
+        self.assertAlmostEqual(payload["aggregate"]["aggregate_rank"][0]["mean_rank"], 1.2)
 
     def test_aggregate_seed_ranks_preserves_fractional_concrete_ranks(self):
         rows = _aggregate_seed_ranks(

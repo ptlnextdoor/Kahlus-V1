@@ -17,6 +17,8 @@ COMPARE_FIELDS = (
     "scientific_claim_allowed",
     "best_task_id",
     "best_val_mse",
+    "final_val_mse",
+    "best_step",
     "test_mse",
     "test_mae",
     "test_pearsonr",
@@ -42,6 +44,8 @@ TASK_RESULT_FIELDS = (
     "eval_r2",
     "test_mse",
     "best_val_mse",
+    "final_val_mse",
+    "best_step",
 )
 
 
@@ -337,6 +341,12 @@ def _write_metric_summary_figure(figures_dir: Path, summary: Any, effective_clai
         "best_task_id": summary.get("best_task_id") if isinstance(summary, dict) else None,
         "best_eval_mse": summary.get("best_eval_mse") if isinstance(summary, dict) else None,
         "best_val_mse": summary.get("best_val_mse") if isinstance(summary, dict) else None,
+        "final_val_mse": summary.get("final_val_mse") if isinstance(summary, dict) else None,
+        "best_step": summary.get("best_step") if isinstance(summary, dict) else None,
+        "best_checkpoint_path": summary.get("best_checkpoint_path") if isinstance(summary, dict) else None,
+        "final_checkpoint_path": summary.get("final_checkpoint_path") if isinstance(summary, dict) else None,
+        "checkpoint_selection_metric": summary.get("checkpoint_selection_metric") if isinstance(summary, dict) else None,
+        "checkpoint_selection_mode": summary.get("checkpoint_selection_mode") if isinstance(summary, dict) else None,
         "test_mse": summary.get("test_mse") if isinstance(summary, dict) else None,
         "real_data_smoke": bool(summary.get("real_data_smoke")) if isinstance(summary, dict) else False,
         "scientific_claim_allowed": bool(effective_claim),
