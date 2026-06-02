@@ -16,7 +16,7 @@ from neurotwin.runtime.distributed import (
 )
 from neurotwin.training.prepared_checkpoints import resolve_run_paths, save_task_checkpoint
 from neurotwin.training.prepared_loop import train_single_task
-from neurotwin.training.prepared_metrics import aggregate_task_results, predict as _predict, write_metrics_csv
+from neurotwin.training.prepared_metrics import aggregate_task_results, write_metrics_csv
 from neurotwin.training.prepared_runtime import build_prepared_runtime_context
 from neurotwin.training.prepared_types import (
     PreparedBatchSampler,

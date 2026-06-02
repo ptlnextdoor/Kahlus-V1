@@ -221,9 +221,10 @@ def _finalize_task_result(
     monitor.record_eval(step=completed_step, metrics=final_val_metrics, model=model, optimizer=optimizer)
     final_model_state = copy.deepcopy(unwrap_model(model).state_dict())
     final_optimizer_state = copy.deepcopy(optimizer.state_dict())
-    monitor.load_best_model(model)
-    test_metrics = evaluate_task(model, task, tensors.x_test, tensors.y_test, precision=config.precision, prefix="test", batch_size=tensors.eval_batch_size)
     checkpoint_info = monitor.checkpoint_info(final_val_mse=final_val_metrics["val_mse"])
+    monitor.load_best_model(model)
+    selected_val_metrics = dict(monitor.best_snapshot.metrics) if monitor.best_snapshot is not None else final_val_metrics
+    test_metrics = evaluate_task(model, task, tensors.x_test, tensors.y_test, precision=config.precision, prefix="test", batch_size=tensors.eval_batch_size)
     result = _build_task_training_result(
         task,
         config=config,
@@ -233,13 +234,23 @@ def _finalize_task_result(
         initial_loss=initial_loss,
         final_loss=final_loss,
         objective_weight=objective_weight,
-        val_metrics=final_val_metrics,
+        val_metrics=selected_val_metrics,
         test_metrics=test_metrics,
         checkpoint_info=checkpoint_info,
     )
     _append_task_metric(
         runtime.paths.metrics_jsonl_path,
-        {"task_id": task.task_id, "step": completed_step, "phase": "final", **final_val_metrics, **test_metrics},
+        {
+            "task_id": task.task_id,
+            "step": completed_step,
+            "phase": "final",
+            "checkpoint_role": "selected_best",
+            "best_step": checkpoint_info.best_step,
+            "best_val_mse": checkpoint_info.best_val_mse,
+            "final_val_mse": checkpoint_info.final_val_mse,
+            **selected_val_metrics,
+            **test_metrics,
+        },
     )
     return TaskTrainingArtifacts(
         result=result,

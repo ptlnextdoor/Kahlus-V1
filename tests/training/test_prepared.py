@@ -292,6 +292,7 @@ class PreparedTrainingTests(unittest.TestCase):
             prepared = self._prepared_dir(root)
             checkpoint = root / "checkpoint.pt"
             best_checkpoint = root / "checkpoint_best.pt"
+            metrics_jsonl = root / "metrics.jsonl"
             val_mse_values = [0.4, 0.3, 0.8]
 
             def fake_evaluate(model, task, x_test, y_test, precision, prefix, batch_size):
@@ -327,6 +328,7 @@ class PreparedTrainingTests(unittest.TestCase):
                     },
                     checkpoint_path=checkpoint,
                     best_checkpoint_path=best_checkpoint,
+                    metrics_jsonl_path=metrics_jsonl,
                 )
 
             self.assertEqual(result.best_step, 2)
@@ -338,6 +340,16 @@ class PreparedTrainingTests(unittest.TestCase):
             best_payload = torch.load(best_checkpoint, map_location="cpu", weights_only=True)
             self.assertEqual(best_payload["best_step"], 2)
             self.assertEqual(best_payload["checkpoint_selection_metric"], "val_mse")
+            final_rows = [
+                json.loads(line)
+                for line in metrics_jsonl.read_text(encoding="utf-8").splitlines()
+                if json.loads(line).get("phase") == "final"
+            ]
+            self.assertEqual(len(final_rows), 1)
+            self.assertEqual(final_rows[0]["checkpoint_role"], "selected_best")
+            self.assertAlmostEqual(final_rows[0]["val_mse"], 0.3)
+            self.assertAlmostEqual(final_rows[0]["best_val_mse"], 0.3)
+            self.assertAlmostEqual(final_rows[0]["final_val_mse"], 0.8)
 
     def test_objective_weights_are_recorded_for_multitask_training(self):
         with tempfile.TemporaryDirectory() as tmp:
