@@ -16,7 +16,8 @@ from neurotwin.reports.artifact_bundle import (
 
 
 def generate_model_card_report(run_dir: str | Path, out: str | Path | None = None) -> str:
-    source = load_model_card_source_artifacts(run_dir)
+    run_path = Path(run_dir)
+    source = load_model_card_source_artifacts(run_path)
     aliases = write_paper_artifact_aliases(source)
     card_path = Path(out) if out is not None else source.run_dir / "EEG_MODEL_CARD.md"
     lines = model_card_lines(source, aliases=aliases)

@@ -20,7 +20,7 @@ from neurotwin.adapters.synthetic import (
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
-from neurotwin.training.command import _prepared_evidence_gate
+from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 
 
@@ -484,7 +484,7 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue(any(row.get("phase") == "nonfinite_loss" and row.get("optimizer_step_skipped") for row in rows))
 
     def test_prepared_evidence_gate_fails_quarantined_required_task(self):
-        gate = _prepared_evidence_gate(
+        gate = build_prepared_evidence_gate(
             {
                 "scientific_claim_allowed": True,
                 "quarantined_tasks": [{"task_id": "masked_neural_reconstruction", "reason": "nonfinite metric"}],
@@ -500,6 +500,110 @@ class PreparedTrainingTests(unittest.TestCase):
 
         self.assertFalse(gate["passed"])
         self.assertIn("required task quarantined: masked_neural_reconstruction", gate["failures"])
+
+    def test_final_evidence_gate_uses_completed_run_dir_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            summary = {
+                "scientific_claim_allowed": True,
+                "synthetic_only": False,
+                "real_data_smoke": False,
+                "status": "completed",
+                "quarantined_tasks": [],
+                "task_results": [
+                    {
+                        "task_id": "future_state_forecasting",
+                        "best_val_mse": 0.2,
+                        "test_mse": 0.3,
+                    }
+                ],
+            }
+            (run_dir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+
+            missing_gate = write_final_prepared_evidence_gate(run_dir)
+
+            self.assertFalse(missing_gate["passed"])
+            self.assertIn("baseline ranking artifact missing or unavailable", missing_gate["failures"])
+            self.assertIn("paper_mode_gate.json missing or not passed", missing_gate["failures"])
+
+            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(
+                    {
+                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
+                        "tasks": {
+                            "future_state_forecasting": {
+                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.3, "rank": 1}]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            final_gate = write_final_prepared_evidence_gate(run_dir)
+            rewritten_summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(final_gate["passed"])
+        self.assertEqual(final_gate["stage"], "final")
+        self.assertTrue(final_gate["checks"]["baseline_ranking_present"])
+        self.assertTrue(final_gate["checks"]["competitor_reproduction_status_present"])
+        self.assertNotIn("evidence_gate_passed", rewritten_summary)
+        self.assertNotIn("evidence_gate_failures", rewritten_summary)
+
+    def test_final_evidence_gate_csv_ranking_parsing_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            self._write_minimal_final_gate_inputs(run_dir)
+            tables = run_dir / "tables"
+            tables.mkdir()
+            (tables / "baseline_ranking.csv").write_text(
+                "task_id,model_id,metric,value,rank\nbaseline_ranking_unavailable,,status,no colocated baseline rankings found,\n",
+                encoding="utf-8",
+            )
+
+            unavailable_gate = write_final_prepared_evidence_gate(run_dir)
+            (tables / "baseline_ranking.csv").write_text("task,model\nfuture_state_forecasting,linear_ridge\n", encoding="utf-8")
+            malformed_gate = write_final_prepared_evidence_gate(run_dir)
+
+        self.assertFalse(unavailable_gate["checks"]["baseline_ranking_present"])
+        self.assertFalse(malformed_gate["checks"]["baseline_ranking_present"])
+
+    def test_final_evidence_gate_csv_real_ranking_row_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            self._write_minimal_final_gate_inputs(run_dir)
+            tables = run_dir / "tables"
+            tables.mkdir()
+            (tables / "baseline_ranking.csv").write_text(
+                "task_id,model_id,metric,value,rank\nfuture_state_forecasting,linear_ridge,mse,0.3,1\n",
+                encoding="utf-8",
+            )
+
+            gate = write_final_prepared_evidence_gate(run_dir)
+
+        self.assertTrue(gate["checks"]["baseline_ranking_present"])
+        self.assertTrue(gate["passed"])
+
+    def _write_minimal_final_gate_inputs(self, run_dir: Path) -> None:
+        (run_dir / "summary.json").write_text(
+            json.dumps(
+                {
+                    "scientific_claim_allowed": True,
+                    "status": "completed",
+                    "quarantined_tasks": [],
+                    "task_results": [{"task_id": "future_state_forecasting", "best_val_mse": 0.2, "test_mse": 0.3}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+        (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+        (run_dir / "prepared_baseline_suite.json").write_text(
+            json.dumps({"baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}], "tasks": {}}),
+            encoding="utf-8",
+        )
 
     def test_objective_weights_are_recorded_for_multitask_training(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -629,11 +733,12 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue((run_dir / "eval_audit.json").exists())
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())
-            self.assertTrue((run_dir / "evidence_gate.json").exists())
-            self.assertTrue((run_dir / "diagnostic_report.md").exists())
+            self.assertTrue((run_dir / "evidence_gate_provisional.json").exists())
+            self.assertTrue((run_dir / "diagnostic_report_provisional.md").exists())
             self.assertTrue((run_dir / "pair_operator_ablation.csv").exists())
             self.assertTrue((run_dir / "uncertainty_calibration.csv").exists())
-            evidence_gate = json.loads((run_dir / "evidence_gate.json").read_text(encoding="utf-8"))
+            self.assertFalse((run_dir / "evidence_gate.json").exists())
+            evidence_gate = json.loads((run_dir / "evidence_gate_provisional.json").read_text(encoding="utf-8"))
             self.assertFalse(evidence_gate["passed"])
             self.assertFalse(evidence_gate["scientific_claim_allowed"])
             self.assertIn("summary.json scientific_claim_allowed is false", evidence_gate["failures"])

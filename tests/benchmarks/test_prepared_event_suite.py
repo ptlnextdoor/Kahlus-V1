@@ -208,6 +208,120 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertTrue(stimulus_evidence["claim_eligible"])
         self.assertEqual(stimulus_evidence["modalities"], ["audio", "text", "video"])
         self.assertTrue(stimulus_evidence["hash_verified"])
+        self.assertTrue(stimulus_evidence["source_artifact_hash_verified"])
+
+    def test_stimulus_verified_flag_with_hash_mismatch_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_path.write_bytes(b"actual real precomputed stimulus features")
+            declared_hash = hashlib.sha256(b"different stimulus features").hexdigest()
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                    "stimulus_feature_path": str(feature_path),
+                    "stimulus_feature_modalities": ["text", "audio", "video"],
+                    "stimulus_feature_hash": declared_hash,
+                    "stimulus_feature_hash_verified": True,
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "hash_mismatch")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertFalse(stimulus_evidence["source_artifact_hash_verified"])
+        self.assertIn("stimulus_feature_hash is not verified", stimulus_evidence["failure_reasons"])
+
+    def test_embedding_hash_match_does_not_verify_mismatched_source_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_path.write_bytes(b"mismatched source artifact bytes")
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            declared_hash = ""
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    embedding = np.full(batch.stimulus_embedding.shape, 0.125, dtype=np.float32)
+                    batch.stimulus_embedding = embedding
+                    declared_hash = hashlib.sha256(np.ascontiguousarray(embedding[:8]).tobytes()).hexdigest()
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_path": str(feature_path),
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_hash": declared_hash,
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "hash_mismatch")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["source_artifact_hash_verified"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertEqual(stimulus_evidence["stimulus_embedding_hash"], declared_hash)
+        self.assertIn("stimulus_feature_hash is not verified", stimulus_evidence["failure_reasons"])
+
+    def test_stimulus_verified_flag_with_missing_artifact_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_feature_path = Path(tmp) / "missing_stimulus_features.bin"
+            declared_hash = hashlib.sha256(b"real precomputed stimulus features").hexdigest()
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                    "stimulus_feature_path": str(missing_feature_path),
+                    "stimulus_feature_modalities": ["text", "audio", "video"],
+                    "stimulus_feature_hash": declared_hash,
+                    "stimulus_feature_hash_verified": True,
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "unverified")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertIn("stimulus feature source artifact is not verifiable", stimulus_evidence["failure_reasons"])
+
+    def test_transcript_hash_stimulus_features_remain_plumbing_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_bytes = b"hash-derived placeholder"
+            feature_path.write_bytes(feature_bytes)
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "transcript_hash",
+                    "stimulus_feature_path": str(feature_path),
+                    "stimulus_feature_modalities": ["text"],
+                    "stimulus_feature_hash": hashlib.sha256(feature_bytes).hexdigest(),
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertIn("stimulus_feature_source looks hash-derived", stimulus_evidence["failure_reasons"])
 
     def test_require_real_stimulus_without_hash_or_source_is_not_claim_eligible(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -237,10 +351,32 @@ class PreparedEventSuiteTests(unittest.TestCase):
             )
 
         stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
-        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertEqual(stimulus_evidence["status"], "unverified")
         self.assertFalse(stimulus_evidence["claim_eligible"])
         self.assertIn("stimulus_feature_hash is missing", stimulus_evidence["failure_reasons"])
         self.assertIn("stimulus feature path/manifest/uri is missing", stimulus_evidence["failure_reasons"])
+
+    def _stimulus_evidence_for_metadata(self, tmp: str, metadata: dict[str, object]) -> dict[str, object]:
+        prep_dir = Path(tmp) / "prepared"
+        records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        for batch in batches:
+            if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                batch.metadata.update(metadata)
+        split = build_split_manifest(records, policy="subject", seed=0)
+        save_split_manifest(split, prep_dir / "split_manifest.json")
+        save_event_batches(batches, prep_dir)
+
+        payload = run_prepared_baseline_suite(
+            PreparedSuiteConfig(
+                event_manifest=prep_dir / "event_manifest.json",
+                split_manifest=prep_dir / "split_manifest.json",
+                train_steps=1,
+            ),
+        )
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertIsInstance(stimulus_evidence, dict)
+        return stimulus_evidence
 
     def test_prepared_baseline_suite_and_cli_artifacts(self):
         env = dict(os.environ)

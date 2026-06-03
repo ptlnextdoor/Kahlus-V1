@@ -10,6 +10,9 @@ CONFIG=$1
 RUN_ROOT=$2
 NPROC=${3:-${SLURM_NTASKS_PER_NODE:-1}}
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+A100_RUN_PAPER_MODE_IN_FULL="${A100_RUN_PAPER_MODE_IN_FULL:-0}"
+A100_PAPER_MODE_TRAIN_STEPS="${A100_PAPER_MODE_TRAIN_STEPS:-3}"
+A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-}"
 
 if [[ ! -f "$CONFIG" ]]; then
   echo "Config does not exist: $CONFIG" >&2
@@ -54,61 +57,22 @@ emit("STRIDE", config.get("stride", 8))
 PY
 )"
 
-copy_a100_paper_artifacts() {
-  local run_dir=$1
-  local eval_dir=${A100_PAPER_MODE_EVAL_DIR:-}
-  if [[ -z "$eval_dir" ]]; then
-    return 0
-  fi
-  for artifact in \
-    prepared_baseline_suite.json \
-    seed_aggregate.json \
-    seed_aggregate.csv \
-    baseline_failures.json \
-    paper_mode_gate.json; do
-    if [[ -f "$eval_dir/$artifact" ]]; then
-      cp "$eval_dir/$artifact" "$run_dir/$artifact"
-    fi
-  done
-}
+paper_mode_gate_passed() {
+  local eval_dir=$1
+  "$PYTHON_BIN" - "$eval_dir/paper_mode_gate.json" <<'PY'
+import json
+import sys
+from pathlib import Path
 
-copy_prepared_eval_audit() {
-  local run_dir=$1
-  local event_manifest=$2
-  if [[ -z "$event_manifest" || ! -f "$event_manifest" ]]; then
-    return 0
-  fi
-  local prepared_dir
-  prepared_dir="$(dirname "$event_manifest")"
-  if [[ -f "$prepared_dir/eval_audit.json" ]]; then
-    cp "$prepared_dir/eval_audit.json" "$run_dir/eval_audit.json"
-  fi
-}
-
-run_a100_paper_diagnostics() {
-  local run_dir=$1
-  local event_manifest=$2
-  local split_manifest=$3
-  local window_length=$4
-  local stride=$5
-  if [[ ! -f "$event_manifest" || ! -f "$split_manifest" ]]; then
-    echo "Skipping paper diagnostics; prepared manifests are missing." >&2
-    return 0
-  fi
-  "$PYTHON_BIN" -m neurotwin.cli eval leakage-demo \
-    --seeds 0 1 2 \
-    --event-manifest "$event_manifest" \
-    --split-manifest "$split_manifest" \
-    --window-length "$window_length" \
-    --stride "$stride" \
-    --out-dir "$run_dir"
-  "$PYTHON_BIN" -m neurotwin.cli eval identity-probe \
-    --seeds 0 1 2 \
-    --event-manifest "$event_manifest" \
-    --split-manifest "$split_manifest" \
-    --window-length "$window_length" \
-    --stride "$stride" \
-    --out-dir "$run_dir"
+path = Path(sys.argv[1])
+if not path.exists():
+    raise SystemExit(1)
+try:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+except json.JSONDecodeError:
+    raise SystemExit(1)
+raise SystemExit(0 if payload.get("passed") is True else 1)
+PY
 }
 
 PREFLIGHT_ARGS=(
@@ -128,11 +92,32 @@ fi
 "$PYTHON_BIN" -m neurotwin.cli cluster preflight "${PREFLIGHT_ARGS[@]}"
 "$PYTHON_BIN" -m neurotwin.cli train --dry-run --config "$CONFIG"
 
+if [[ "$A100_RUN_PAPER_MODE_IN_FULL" == "1" ]]; then
+  A100_PAPER_MODE_EVAL_DIR=${A100_PAPER_MODE_EVAL_DIR:-"$(dirname "$RUN_ROOT")/eval/$(basename "$RUN_DIR")_paper_mode"}
+  "$PYTHON_BIN" -m neurotwin.cli eval suite \
+    --suite neural_translation_v1 \
+    --paper-mode \
+    --seeds 0 1 2 \
+    --event-manifest "$EVENT_MANIFEST" \
+    --split-manifest "$SPLIT_MANIFEST" \
+    --window-length "$WINDOW_LENGTH" \
+    --stride "$STRIDE" \
+    --train-steps "$A100_PAPER_MODE_TRAIN_STEPS" \
+    --out-dir "$A100_PAPER_MODE_EVAL_DIR"
+elif [[ -n "$A100_PAPER_MODE_EVAL_DIR" ]] && paper_mode_gate_passed "$A100_PAPER_MODE_EVAL_DIR"; then
+  echo "paper_mode_phase1_artifacts=$A100_PAPER_MODE_EVAL_DIR"
+else
+  echo "paper_mode_artifacts_unavailable=Phase 1 artifacts missing; set A100_RUN_PAPER_MODE_IN_FULL=1 to run inside full allocation." >&2
+fi
+
 torchrun --standalone --nproc_per_node="$NPROC" \
   -m neurotwin.cli train --config "$CONFIG" --run-root "$RUN_ROOT"
 
-copy_a100_paper_artifacts "$RUN_DIR"
-copy_prepared_eval_audit "$RUN_DIR" "$EVENT_MANIFEST"
-"$PYTHON_BIN" -m neurotwin.cli report --run-dir "$RUN_DIR"
-run_a100_paper_diagnostics "$RUN_DIR" "$EVENT_MANIFEST" "$SPLIT_MANIFEST" "$WINDOW_LENGTH" "$STRIDE"
-"$PYTHON_BIN" -m neurotwin.cli report model-card --run-dir "$RUN_DIR"
+"$PYTHON_BIN" -m neurotwin.cli run finalize \
+  --run-dir "$RUN_DIR" \
+  --paper-mode-dir "${A100_PAPER_MODE_EVAL_DIR:-}" \
+  --event-manifest "$EVENT_MANIFEST" \
+  --split-manifest "$SPLIT_MANIFEST" \
+  --window-length "$WINDOW_LENGTH" \
+  --stride "$STRIDE" \
+  --seeds 0 1 2

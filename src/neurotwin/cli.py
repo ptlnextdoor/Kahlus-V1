@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import sys
 
 from neurotwin.adapters.synthetic import make_synthetic_recordings
@@ -89,6 +90,18 @@ def main(argv: list[str] | None = None) -> int:
     estimate.add_argument("--config", required=True)
     estimate.set_defaults(func=_cmd_estimate)
 
+    run = subparsers.add_parser("run", help="Run lifecycle commands")
+    run_subparsers = run.add_subparsers(dest="run_command", required=True)
+    finalize = run_subparsers.add_parser("finalize", help="Finalize a completed run evidence bundle")
+    finalize.add_argument("--run-dir", required=True)
+    finalize.add_argument("--paper-mode-dir", default=None)
+    finalize.add_argument("--event-manifest", default=None)
+    finalize.add_argument("--split-manifest", default=None)
+    finalize.add_argument("--window-length", type=int, default=128)
+    finalize.add_argument("--stride", type=int, default=128)
+    finalize.add_argument("--seeds", nargs="*", type=int, default=[0, 1, 2])
+    finalize.set_defaults(func=_cmd_run)
+
     eval_parser = subparsers.add_parser("eval", help="Run evaluation suites and paper diagnostics")
     eval_subparsers = eval_parser.add_subparsers(dest="eval_command", required=True)
     eval_suite = eval_subparsers.add_parser("suite", help="Run an evaluation suite")
@@ -102,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
-    report.add_argument("report_command", nargs="?", choices=("model-card",))
+    report.add_argument("report_command", nargs="?", choices=("model-card", "evidence-gate"))
     report.add_argument("--suite", default=None)
     report.add_argument("--run-dir", default=None)
     report.add_argument("--compare", nargs="*", default=None)
@@ -330,7 +343,39 @@ def _cmd_eval(args: argparse.Namespace) -> None:
     if result.output:
         print(result.output)
     if result.exit_code:
-        raise SystemExit(result.error or result.exit_code)
+            raise SystemExit(result.error or result.exit_code)
+
+
+def _cmd_run(args: argparse.Namespace) -> None:
+    if args.run_command != "finalize":
+        raise SystemExit("supported run commands: finalize")
+    from neurotwin.reports.finalize import RunFinalizeConfig, finalize_run
+
+    try:
+        payload = finalize_run(
+            RunFinalizeConfig(
+                run_dir=args.run_dir,
+                paper_mode_dir=args.paper_mode_dir,
+                event_manifest=args.event_manifest,
+                split_manifest=args.split_manifest,
+                window_length=args.window_length,
+                stride=args.stride,
+                seeds=tuple(args.seeds or (0, 1, 2)),
+            )
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(f"finalize_run_dir={payload.get('run_dir')}")
+    print(f"paper_mode_artifacts_copied={payload.get('paper_mode_artifacts_copied')}")
+    print(f"eval_audit_copied={payload.get('eval_audit_copied')}")
+    diagnostics = payload.get("diagnostics", {})
+    if isinstance(diagnostics, dict):
+        for name, ran in diagnostics.items():
+            print(f"{name}_ran={ran}")
+    print(f"run_report={payload.get('run_report')}")
+    print(f"evidence_gate={payload.get('evidence_gate')}")
+    print(f"evidence_gate_passed={payload.get('evidence_gate_passed')}")
+    print(f"model_card={payload.get('model_card')}")
 
 
 def _cmd_report(args: argparse.Namespace) -> None:
@@ -341,6 +386,23 @@ def _cmd_report(args: argparse.Namespace) -> None:
             print(generate_model_card_report(args.run_dir, args.out))
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
+        return
+    if args.report_command == "evidence-gate":
+        if not args.run_dir:
+            raise SystemExit("report evidence-gate requires --run-dir")
+        from neurotwin.reports.evidence_gate import write_final_prepared_evidence_gate
+
+        try:
+            gate = write_final_prepared_evidence_gate(args.run_dir)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        print(f"evidence_gate={Path(args.run_dir) / 'evidence_gate.json'}")
+        print(f"evidence_gate_passed={gate.get('passed', False)}")
+        print(f"evidence_gate_stage={gate.get('stage', 'unknown')}")
+        failures = gate.get("failures", [])
+        if isinstance(failures, list):
+            for failure in failures:
+                print(f"evidence_gate_failure={failure}")
         return
     if args.compare is not None:
         print(generate_compare_report(args.compare, args.out_dir))

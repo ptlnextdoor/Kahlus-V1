@@ -47,6 +47,21 @@ class CliReportTests(unittest.TestCase):
         self.assertIn("artifact_error=read_failed", report)
         self.assertIn("read blocked", report)
 
+    def test_run_report_does_not_finalize_or_mutate_summary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            summary = {"status": "completed", "scientific_claim_allowed": False}
+            summary_path = run_dir / "summary.json"
+            summary_path.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
+
+            report = generate_run_report(run_dir)
+            rewritten = json.loads(summary_path.read_text(encoding="utf-8"))
+            evidence_gate_exists = (run_dir / "evidence_gate.json").exists()
+
+        self.assertIn("scientific_claim_allowed=False", report)
+        self.assertEqual(rewritten, summary)
+        self.assertFalse(evidence_gate_exists)
+
     def test_model_card_report_writes_card_and_paper_aliases(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp) / "run"
@@ -104,9 +119,11 @@ class CliReportTests(unittest.TestCase):
                 encoding="utf-8",
             )
             out = run_dir / "EEG_MODEL_CARD.md"
+            summary_before = (run_dir / "summary.json").read_text(encoding="utf-8")
 
             report = generate_model_card_report(run_dir, out)
 
+            self.assertEqual((run_dir / "summary.json").read_text(encoding="utf-8"), summary_before)
             self.assertIn("# EEG Model Card", report)
             self.assertTrue(out.exists())
             self.assertTrue((run_dir / "CLAIM_GATE.json").exists())
@@ -163,3 +180,49 @@ class CliReportTests(unittest.TestCase):
 
             self.assertIn("model_card=", result.stdout)
             self.assertTrue(out.exists())
+
+    def test_evidence_gate_cli_explicitly_writes_sidecar_without_mutating_summary(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "run"
+            run_dir.mkdir()
+            summary = {
+                "status": "completed",
+                "scientific_claim_allowed": True,
+                "quarantined_tasks": [],
+                "task_results": [{"task_id": "future_state_forecasting", "best_val_mse": 0.2, "test_mse": 0.3}],
+            }
+            summary_path = run_dir / "summary.json"
+            summary_path.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
+            (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(
+                    {
+                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
+                        "tasks": {
+                            "future_state_forecasting": {
+                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.3, "rank": 1}]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, "-m", "neurotwin.cli", "report", "evidence-gate", "--run-dir", str(run_dir)],
+                cwd=os.getcwd(),
+                env=env,
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+
+            rewritten = json.loads(summary_path.read_text(encoding="utf-8"))
+            evidence_gate_exists = (run_dir / "evidence_gate.json").exists()
+
+        self.assertIn("evidence_gate_passed=True", result.stdout)
+        self.assertEqual(rewritten, summary)
+        self.assertTrue(evidence_gate_exists)

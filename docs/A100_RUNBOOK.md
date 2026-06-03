@@ -47,7 +47,7 @@ MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits,
 ## Heavy 6-GPU Lane
 
 Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Do not assume a seventh GPU is available unless Slurm confirms it.
-When `A100_RUN_ID` is not `moabb_a100_smoke`, the guarded Docker and Slurm helpers default to running that paper-mode gate before long training. After training they copy the small paper-mode artifacts into the run directory, write the run report, run leakage-demo and identity-probe diagnostics, and generate `EEG_MODEL_CARD.md`.
+For the heavy lane, the guarded Docker and Slurm helpers consume existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when `paper_mode_gate.json` passed. If Phase 1 artifacts are missing, they write a `paper_mode_artifacts_unavailable` marker and do not silently run paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation. After training both lanes call `python -m neurotwin.cli run finalize`, which copies the small paper-mode artifacts into the run directory, writes the run report, runs leakage-demo and identity-probe diagnostics, finalizes `evidence_gate.json`, and generates `EEG_MODEL_CARD.md`.
 
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin

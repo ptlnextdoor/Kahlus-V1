@@ -336,7 +336,8 @@ def _stimulus_feature_evidence(windows: list[NeuralEventBatch]) -> dict[str, obj
     looks_synthetic = any(token in f"{source_text} {status_text}" for token in ("synthetic", "default", "placeholder", "plumbing", "hash_only"))
     real_status = bool(statuses) and all(_real_stimulus_status(status) for status in statuses)
     source_verified = all(_stimulus_source_verified(window) for window in used)
-    hash_verified = all(_stimulus_hash_verified(window) for window in used)
+    source_artifact_hash_verified = all(_stimulus_source_artifact_hash_verified(window) for window in used)
+    embedding_hashes = sorted({digest for window in used for digest in _stimulus_embedding_hashes(window)})
     failure_reasons = _stimulus_evidence_failure_reasons(
         require_real=require_real,
         sources=sources,
@@ -348,10 +349,19 @@ def _stimulus_feature_evidence(windows: list[NeuralEventBatch]) -> dict[str, obj
         looks_synthetic=looks_synthetic,
         real_status=real_status,
         source_verified=source_verified,
-        hash_verified=hash_verified,
+        source_artifact_hash_verified=source_artifact_hash_verified,
     )
     claim_eligible = not failure_reasons
-    status = "real_stimulus_features" if claim_eligible else "plumbing_only"
+    status = _stimulus_evidence_status(
+        claim_eligible=claim_eligible,
+        require_real=require_real,
+        looks_hash_only=looks_hash_only,
+        looks_synthetic=looks_synthetic,
+        hashes=hashes,
+        source_artifacts=source_artifacts,
+        source_verified=source_verified,
+        source_artifact_hash_verified=source_artifact_hash_verified,
+    )
     note = (
         "stimulus-to-fMRI uses real precomputed stimulus features"
         if claim_eligible
@@ -367,7 +377,10 @@ def _stimulus_feature_evidence(windows: list[NeuralEventBatch]) -> dict[str, obj
         "hashes": hashes,
         "feature_statuses": statuses,
         "source_artifacts": source_artifacts,
-        "hash_verified": bool(hash_verified),
+        "source_artifact_hash_verified": bool(source_artifact_hash_verified),
+        "hash_verified": bool(source_artifact_hash_verified),
+        "stimulus_embedding_hash": embedding_hashes[0] if len(embedding_hashes) == 1 else None,
+        "stimulus_embedding_hashes": embedding_hashes,
         "failure_reasons": failure_reasons,
     }
 
@@ -415,7 +428,7 @@ def _stimulus_evidence_failure_reasons(
     looks_synthetic: bool,
     real_status: bool,
     source_verified: bool,
-    hash_verified: bool,
+    source_artifact_hash_verified: bool,
 ) -> list[str]:
     reasons: list[str] = []
     if not require_real:
@@ -438,16 +451,36 @@ def _stimulus_evidence_failure_reasons(
         reasons.append("stimulus_feature_source looks hash-derived")
     if looks_synthetic:
         reasons.append("stimulus feature source/status looks synthetic")
-    if hashes and not hash_verified:
+    if hashes and not source_artifact_hash_verified:
         reasons.append("stimulus_feature_hash is not verified")
     return reasons
 
 
 def _real_stimulus_status(status: str) -> bool:
     text = status.lower()
-    return any(token in text for token in ("real", "precomputed", "verified")) and not any(
+    return any(token in text for token in ("real", "precomputed")) and not any(
         token in text for token in ("synthetic", "default", "placeholder", "plumbing", "hash_only")
     )
+
+
+def _stimulus_evidence_status(
+    *,
+    claim_eligible: bool,
+    require_real: bool,
+    looks_hash_only: bool,
+    looks_synthetic: bool,
+    hashes: list[str],
+    source_artifacts: list[str],
+    source_verified: bool,
+    source_artifact_hash_verified: bool,
+) -> str:
+    if claim_eligible:
+        return "real_stimulus_features"
+    if looks_hash_only or looks_synthetic or not require_real:
+        return "plumbing_only"
+    if hashes and source_artifacts and source_verified and not source_artifact_hash_verified:
+        return "hash_mismatch"
+    return "unverified"
 
 
 def _stimulus_source_artifacts(metadata: dict[str, Any]) -> tuple[str, ...]:
@@ -471,27 +504,39 @@ def _stimulus_source_verified(window: NeuralEventBatch) -> bool:
         return False
     for artifact in artifacts:
         path = Path(artifact)
-        if path.exists():
+        if path.is_file():
             return True
-    return bool(window.metadata.get("stimulus_feature_hash_verified"))
+    return False
 
 
-def _stimulus_hash_verified(window: NeuralEventBatch) -> bool:
-    if bool(window.metadata.get("stimulus_feature_hash_verified")):
-        return True
+def _stimulus_source_artifact_hash_verified(window: NeuralEventBatch) -> bool:
     expected = {_normalize_hash(str(value)) for value in _metadata_list(window.metadata.get("stimulus_feature_hash")) if value not in (None, "")}
     expected.discard("")
     if not expected:
         return False
-    for artifact in _stimulus_source_artifacts(window.metadata):
-        path = Path(artifact)
-        if path.exists() and _sha256_bytes(path.read_bytes()) in expected:
-            return True
-    if window.stimulus_embedding is not None:
-        embedding_hash = _sha256_bytes(np.ascontiguousarray(window.stimulus_embedding).tobytes())
-        if embedding_hash in expected:
+    for digest in _stimulus_artifact_hashes(window):
+        if digest in expected:
             return True
     return False
+
+
+def _stimulus_artifact_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
+    hashes: list[str] = []
+    for artifact in _stimulus_source_artifacts(window.metadata):
+        path = Path(artifact)
+        if not path.is_file():
+            continue
+        try:
+            hashes.append(_sha256_bytes(path.read_bytes()))
+        except OSError:
+            continue
+    return tuple(hashes)
+
+
+def _stimulus_embedding_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
+    if window.stimulus_embedding is None:
+        return ()
+    return (_sha256_bytes(np.ascontiguousarray(window.stimulus_embedding).tobytes()),)
 
 
 def _normalize_hash(value: str) -> str:
