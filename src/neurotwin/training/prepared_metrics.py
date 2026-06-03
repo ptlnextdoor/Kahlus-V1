@@ -112,7 +112,15 @@ def aggregate_task_results(task_results: Sequence[dict[str, Any]]) -> dict[str, 
         "test_r2",
         "test_spearmanr",
     )
-    return {key: float(np.mean([float(result[key]) for result in task_results if result.get(key) is not None])) for key in keys}
+    aggregate: dict[str, float] = {}
+    for key in keys:
+        values = [
+            float(result[key])
+            for result in task_results
+            if result.get(key) is not None and np.isfinite(float(result[key]))
+        ]
+        aggregate[key] = float(np.mean(values)) if values else 0.0
+    return aggregate
 
 
 def write_metrics_csv(path: str | Path, result: PreparedTrainingResult) -> Path:

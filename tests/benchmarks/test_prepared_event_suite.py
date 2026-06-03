@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -150,9 +151,14 @@ class PreparedEventSuiteTests(unittest.TestCase):
 
         task = payload["tasks"]["stimulus_to_fmri_response"]
         metrics = task["metrics_by_model"]["tribe_style"]
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
         self.assertIn("mse_ci_low", metrics)
         self.assertIn("mse_ci_high", metrics)
         self.assertIn("tribe_style", {row["model_id"] for row in task["ranking"]})
+        self.assertIn("brainvista_style", {row["model_id"] for row in task["ranking"]})
+        self.assertIn("pair_operator", {row["model_id"] for row in task["ranking"]})
+        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
         self.assertTrue(
             any(
                 row["model_id"] == "tribe_style" and row["status"] == "clean_room_approximation"
@@ -162,6 +168,79 @@ class PreparedEventSuiteTests(unittest.TestCase):
         report = format_prepared_baseline_report(payload)
         self.assertIn("tribe_style: clean_room_approximation", report)
         self.assertIn("not an exact TRIBE v2 reproduction", report)
+        self.assertIn("stimulus_evidence=plumbing_only claim_eligible=False", report)
+
+    def test_real_stimulus_metadata_marks_stimulus_task_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_bytes = b"real precomputed stimulus features"
+            feature_path.write_bytes(feature_bytes)
+            feature_hash = hashlib.sha256(feature_bytes).hexdigest()
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_path": str(feature_path),
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_hash": feature_hash,
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "real_stimulus_features")
+        self.assertTrue(stimulus_evidence["claim_eligible"])
+        self.assertEqual(stimulus_evidence["modalities"], ["audio", "text", "video"])
+        self.assertTrue(stimulus_evidence["hash_verified"])
+
+    def test_require_real_stimulus_without_hash_or_source_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertIn("stimulus_feature_hash is missing", stimulus_evidence["failure_reasons"])
+        self.assertIn("stimulus feature path/manifest/uri is missing", stimulus_evidence["failure_reasons"])
 
     def test_prepared_baseline_suite_and_cli_artifacts(self):
         env = dict(os.environ)

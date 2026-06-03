@@ -1,0 +1,40 @@
+experiment: algonauts_pair_operator_full
+description: Full fMRI-only NeuroTwin Pair-Operator run for Algonauts/CNeuroMod prepared windows after 1x A100 debug passes.
+dataset: prepared_manifest
+task: neural_translation_v1
+split: stimulus_run_group
+data:
+  event_manifest: /path/to/algonauts_prepared/event_manifest.json
+  split_manifest: /path/to/algonauts_prepared/split_manifest.json
+seed: 0
+steps: 50000
+batch_size: 64
+window_size: 128
+stride: 64
+precision: bf16
+gradient_accumulation_steps: 2
+max_grad_norm: 1.0
+checkpoint_every_steps: 1000
+eval_every_steps: 1000
+model:
+  type: NeuroTwinPairOperator
+  latent_dim: 256
+  n_layers: 4
+  backbone: gru
+  n_heads: 8
+  projection_dim: 128
+  pair_rank: 16
+  use_pair_state: true
+  use_uncertainty_head: true
+  refinement_steps: 1
+  hrf_delay_steps: 1
+  modalities:
+    - fmri
+    - stimulus
+training:
+  compile: false
+  internet_required: false
+  objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    stimulus_to_fmri_response: 1.0

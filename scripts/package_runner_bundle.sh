@@ -39,6 +39,10 @@ ARCHIVE_PATHS=(
   configs/train/prepared_synthetic_debug.yaml
   configs/train/moabb_a100_smoke.yaml
   configs/train/neurotwin_v1_a100.yaml
+  configs/train/algonauts_real_stimulus_debug.yaml
+  configs/train/algonauts_pair_operator_debug.yaml
+  configs/train/algonauts_pair_operator_full.yaml
+  configs/train/algonauts_pair_operator_ablation_array.yaml
   scripts/run_smoke.sh
   scripts/run_docker_6gpu.sh
   scripts/docker_a100_inner.sh

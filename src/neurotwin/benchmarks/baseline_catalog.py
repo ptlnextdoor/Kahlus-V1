@@ -114,6 +114,12 @@ BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
         notes="Current NeuroTwin implementation under the same task API.",
     ),
     BaselineCatalogEntry(
+        model_id="pair_operator",
+        display_name="NeuroTwin Pair-Operator",
+        status="local_baseline",
+        notes="fMRI-first pairwise neural operator ablation; clean-room NeuroTwin architecture, not an upstream reproduction.",
+    ),
+    BaselineCatalogEntry(
         model_id="tribe_style",
         display_name="TRIBE-Style",
         status=_tribe_style_catalog_status,

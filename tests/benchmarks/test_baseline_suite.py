@@ -157,6 +157,8 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("tribe_style", {row["model_id"] for row in result["ranking"]})
         self.assertEqual(catalog["tribe_style"]["status"], "clean_room_approximation")
         self.assertIn("not an exact TRIBE v2 reproduction", catalog["tribe_style"]["notes"])
+        self.assertIn("brainvista_style", result["metrics_by_model"])
+        self.assertIn("pair_operator", result["metrics_by_model"])
 
     def test_baseline_catalog_is_separate_from_executable_runners(self):
         catalog_ids = {entry.model_id for entry in BASELINE_CATALOG}
@@ -164,9 +166,10 @@ class BaselineSuiteTests(unittest.TestCase):
 
         self.assertIn("brainvista_style", catalog_ids)
         self.assertIn("brain_of_style", catalog_ids)
-        self.assertNotIn("brainvista_style", runner_ids)
+        self.assertIn("brainvista_style", runner_ids)
         self.assertNotIn("brain_of_style", runner_ids)
         self.assertIn("tribe_style", runner_ids)
+        self.assertIn("pair_operator", runner_ids)
 
     def test_tribe_style_facade_predicts_without_external_download(self):
         with tempfile.TemporaryDirectory() as tmp:

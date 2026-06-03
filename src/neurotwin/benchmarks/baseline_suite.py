@@ -12,6 +12,7 @@ from neurotwin.benchmarks.baseline_runners import ExecutableBaselineRunner
 from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
 from neurotwin.data.prepared_tasks import SupervisedWindowTask
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline
+from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
 from neurotwin.models.torch_models import (
     NeuralStateSpaceTranslator,
     NeuralStateSpaceTranslatorConfig,
@@ -112,6 +113,7 @@ class PreparedDataPayload(TypedDict):
     window_length: int
     stride: int
     skipped_tasks: list[dict[str, str]]
+    stimulus_evidence: dict[str, object] | None
 
 
 class PreparedPaperModeContractPayload(TypedDict):
@@ -519,6 +521,47 @@ def _fit_neurotwin(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndar
     return output["prediction"].detach().cpu().numpy()
 
 
+def _fit_pair_operator(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndarray:
+    torch.manual_seed(seed)
+    model = NeuroTwinPairOperator(
+        input_dims={task.source_modality: task.x_train.shape[-1]},
+        output_dims={task.target_modality: task.y_train.shape[-1]},
+        config=NeuroTwinPairOperatorConfig(
+            latent_dim=24,
+            n_layers=1,
+            pair_rank=4,
+            projection_dim=16,
+            use_pair_state=True,
+            use_uncertainty_head=True,
+            refinement_steps=1,
+        ),
+    )
+    x_train = torch.as_tensor(task.x_train, dtype=torch.float32)
+    y_train = torch.as_tensor(task.y_train, dtype=torch.float32)
+    x_test = torch.as_tensor(task.x_test, dtype=torch.float32)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-2)
+    loss_fn = nn.MSELoss()
+    model.train()
+    for _ in range(steps):
+        optimizer.zero_grad(set_to_none=True)
+        output = model.forward_task(
+            {task.source_modality: x_train},
+            target_modality=task.target_modality,
+            task="forecast" if task.task_id == "future_state_forecasting" else "reconstruction",
+        )
+        loss = loss_fn(output["prediction"], y_train)
+        loss.backward()
+        optimizer.step()
+    model.eval()
+    with torch.no_grad():
+        output = model.forward_task(
+            {task.source_modality: x_test},
+            target_modality=task.target_modality,
+            task="forecast" if task.task_id == "future_state_forecasting" else "reconstruction",
+        )
+    return output["prediction"].detach().cpu().numpy()
+
+
 def _fit_tribe_style(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndarray:
     return _fit_torch_sequence_model(
         lambda: TribeStyleStimulusEncoder(task.x_train.shape[-1], task.y_train.shape[-1], hidden_dim=24),
@@ -528,8 +571,39 @@ def _fit_tribe_style(task: SupervisedWindowTask, seed: int, steps: int) -> np.nd
     )
 
 
+def _fit_brainvista_style(task: SupervisedWindowTask) -> np.ndarray:
+    if task.target_modality != "fmri":
+        raise ValueError("brainvista_style is only available for fMRI target tasks")
+    if _is_stimulus_fmri_task(task):
+        return _fit_causal_stimulus_ridge(task)
+    return _fit_autoregressive_ridge(task)
+
+
+def _fit_causal_stimulus_ridge(task: SupervisedWindowTask) -> np.ndarray:
+    if task.x_train.ndim != 3 or task.y_train.ndim != 3 or task.x_test.ndim != 3 or task.y_test.ndim != 3:
+        raise ValueError("brainvista_style requires [sample, time, feature] windows")
+    model = NumpyRidgeBaseline(alpha=1e-2)
+    model.fit(_flatten_time(_causal_stimulus_features(task.x_train)), _flatten_time(task.y_train))
+    pred = model.predict(_flatten_time(_causal_stimulus_features(task.x_test)))
+    return pred.reshape(task.x_test.shape[0], task.x_test.shape[1], task.y_train.shape[-1]).astype(np.float32)
+
+
+def _causal_stimulus_features(x: np.ndarray) -> np.ndarray:
+    x = np.asarray(x, dtype=np.float32)
+    lag = np.concatenate([x[:, :1, :], x[:, :-1, :]], axis=1)
+    return np.concatenate([lag, x], axis=-1)
+
+
 def _is_stimulus_fmri_task(task: SupervisedWindowTask) -> bool:
     return task.task_id == "stimulus_to_fmri_response" and task.source_modality == "stimulus" and task.target_modality == "fmri"
+
+
+def _is_fmri_operator_task(task: SupervisedWindowTask) -> bool:
+    return task.target_modality == "fmri" and task.x_train.ndim == 3 and task.y_train.ndim == 3
+
+
+def _is_brainvista_style_task(task: SupervisedWindowTask) -> bool:
+    return task.target_modality == "fmri" and task.x_train.ndim == 3 and task.y_train.ndim == 3
 
 
 EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
@@ -585,6 +659,16 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
         "tribe_style",
         lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),
         available_for_task=_is_stimulus_fmri_task,
+    ),
+    ExecutableBaselineRunner(
+        "brainvista_style",
+        lambda task, seed, steps: _fit_brainvista_style(task),
+        available_for_task=_is_brainvista_style_task,
+    ),
+    ExecutableBaselineRunner(
+        "pair_operator",
+        lambda task, seed, steps: _fit_pair_operator(task, seed=seed + 7, steps=steps),
+        available_for_task=_is_fmri_operator_task,
     ),
 )
 

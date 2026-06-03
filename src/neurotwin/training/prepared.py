@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 from typing import Any
 
 import torch
@@ -135,6 +136,7 @@ def _train_selected_prepared_tasks(
             objective_weight=float(config.objective_weights.get(task.task_id, 1.0)),
         )
         task_result = artifact.result.to_dict()
+        _mark_task_quarantine(task_result)
         task_results.append(task_result)
         task_states[task.task_id] = {
             "model_config": task_result["model_config"],
@@ -144,7 +146,7 @@ def _train_selected_prepared_tasks(
         if task_index == 0:
             first_model_state = artifact.model_state
             first_optimizer_state = artifact.optimizer_state
-        task_best = task_result.get("best_val_mse")
+        task_best = None if _is_quarantined_task(task_result) else task_result.get("best_val_mse")
         if task_best is not None and (best_eval_mse is None or float(task_best) < best_eval_mse):
             best_task_id = task.task_id
             best_eval_mse = float(task_best)
@@ -183,8 +185,17 @@ def _build_prepared_training_result(
 ) -> PreparedTrainingResult:
     task_results = training_state.task_results
     primary = task_results[0]
-    aggregate = aggregate_task_results(task_results)
+    aggregateable = tuple(row for row in task_results if not _is_quarantined_task(row))
+    aggregate = aggregate_task_results(aggregateable or task_results)
     summary = event_manifest_summary(resolved.event_manifest)
+    quarantined_tasks = tuple(
+        {
+            "task_id": str(row.get("task_id")),
+            "reason": str(row.get("quarantine_reason", "nonfinite task metric")),
+        }
+        for row in task_results
+        if _is_quarantined_task(row)
+    )
     return PreparedTrainingResult(
         status="completed_prepared_training",
         task_id=resolved.requested_task if len(task_results) > 1 else str(primary["task_id"]),
@@ -215,6 +226,7 @@ def _build_prepared_training_result(
         start_step=training_state.start_step,
         completed_steps=training_state.start_step + resolved.steps,
         gradient_accumulation_steps=resolved.gradient_accumulation_steps,
+        max_grad_norm=resolved.max_grad_norm,
         precision=resolved.precision,
         device=str(runtime.device),
         resumed_from=str(runtime.paths.resume_path) if runtime.paths.resume_path is not None else None,
@@ -232,6 +244,8 @@ def _build_prepared_training_result(
         best_eval_mse=training_state.best_eval_mse,
         eval_every_steps=resolved.eval_every_steps,
         checkpoint_every_steps=resolved.checkpoint_every_steps,
+        quarantined_tasks=quarantined_tasks,
+        stimulus_evidence=_stimulus_evidence_from_tasks(selection.selected_tasks),
     )
 
 
@@ -293,4 +307,29 @@ def _best_step(task_results: tuple[dict[str, Any], ...], best_task_id: str | Non
         if row.get("task_id") == best_task_id:
             value = row.get("best_step")
             return int(value) if value is not None else None
+    return None
+
+
+def _mark_task_quarantine(task_result: dict[str, Any]) -> None:
+    nonfinite = sorted(
+        key
+        for key, value in task_result.items()
+        if isinstance(value, (int, float)) and not math.isfinite(float(value))
+    )
+    if nonfinite:
+        task_result["status"] = "quarantined_nonfinite"
+        task_result["quarantine_reason"] = "nonfinite metric(s): " + ",".join(nonfinite)
+        for key in nonfinite:
+            task_result[key] = None
+
+
+def _is_quarantined_task(task_result: dict[str, Any]) -> bool:
+    return str(task_result.get("status", "")).startswith("quarantined")
+
+
+def _stimulus_evidence_from_tasks(tasks: tuple[Any, ...]) -> dict[str, Any] | None:
+    for task in tasks:
+        metadata = getattr(task, "metadata", {})
+        if isinstance(metadata, dict) and isinstance(metadata.get("stimulus_evidence"), dict):
+            return dict(metadata["stimulus_evidence"])
     return None

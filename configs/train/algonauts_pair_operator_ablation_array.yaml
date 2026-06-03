@@ -1,0 +1,78 @@
+experiment: algonauts_pair_operator_ablation_array
+description: Template for 1-GPU Pair-Operator ablation jobs; materialize one job per ablation variant.
+dataset: prepared_manifest
+task: neural_translation_v1
+split: stimulus_run_group
+data:
+  event_manifest: /path/to/algonauts_prepared/event_manifest.json
+  split_manifest: /path/to/algonauts_prepared/split_manifest.json
+seed: 0
+steps: 10000
+batch_size: 32
+window_size: 128
+stride: 64
+precision: bf16
+gradient_accumulation_steps: 2
+max_grad_norm: 1.0
+checkpoint_every_steps: 500
+eval_every_steps: 500
+ablation_variants:
+  - name: current_neurotwin
+    model:
+      type: NeuralStateSpaceTranslator
+      backbone: ssm_fallback
+      use_pair_state: false
+      use_uncertainty_head: false
+      refinement_steps: 0
+  - name: pair_operator_no_pair_state
+    model:
+      type: NeuroTwinPairOperator
+      use_pair_state: false
+      use_uncertainty_head: true
+      refinement_steps: 1
+  - name: pair_operator_low_rank_pair_state
+    model:
+      type: NeuroTwinPairOperator
+      use_pair_state: true
+      use_uncertainty_head: false
+      refinement_steps: 0
+  - name: pair_operator_pair_state_stimulus_adapter
+    model:
+      type: NeuroTwinPairOperator
+      use_pair_state: true
+      use_uncertainty_head: false
+      refinement_steps: 1
+  - name: pair_operator_pair_state_uncertainty
+    model:
+      type: NeuroTwinPairOperator
+      use_pair_state: true
+      use_uncertainty_head: true
+      refinement_steps: 0
+  - name: pair_operator_full
+    model:
+      type: NeuroTwinPairOperator
+      use_pair_state: true
+      use_uncertainty_head: true
+      refinement_steps: 1
+model:
+  type: NeuroTwinPairOperator
+  latent_dim: 256
+  n_layers: 4
+  backbone: gru
+  n_heads: 8
+  projection_dim: 128
+  pair_rank: 16
+  use_pair_state: true
+  use_uncertainty_head: true
+  refinement_steps: 1
+  hrf_delay_steps: 1
+  modalities:
+    - fmri
+    - stimulus
+training:
+  compile: false
+  internet_required: false
+  objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    stimulus_to_fmri_response: 1.0
