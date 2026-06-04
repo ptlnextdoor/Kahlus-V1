@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from neurotwin.adapters.synthetic import make_synthetic_recordings
 from neurotwin.config import ConfigError, load_config
 from neurotwin.config_types import PreparedTrainingConfigInput, as_prepared_training_config_input
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
+from neurotwin.eval.audit import audit_prepared_eval_inputs
 from neurotwin.repro import (
     append_jsonl,
     capture_environment,
@@ -21,6 +23,7 @@ from neurotwin.repro import (
 from neurotwin.runtime.command_result import CommandResult
 from neurotwin.runtime.distributed import get_distributed_info, get_rank_metrics_path
 from neurotwin.runtime.estimate import estimate_config
+from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, format_evidence_diagnostic_report
 from neurotwin.training.prepared import PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 from neurotwin.training.smoke import run_synthetic_training
 
@@ -130,53 +133,66 @@ def _run_prepared_training_command(
     checkpoints = checkpoint_manifest(run_dir)
     write_json(run_dir / "metrics.json", result.to_dict())
     write_json(run_dir / "checkpoint_manifest.json", checkpoints)
-    write_json(
-        run_dir / "summary.json",
-        {
-            "synthetic_only": result.synthetic_only,
-            "status": result.status,
-            "task_id": result.task_id,
-            "source_modality": result.source_modality,
-            "target_modality": result.target_modality,
-            "split_manifest": str(split_manifest_path),
-            "split_manifest_hash": split_manifest_hash,
-            "event_manifest": str(_config_value(config, "event_manifest")),
-            "event_summary": result.event_summary,
-            "precision": result.precision,
-            "gradient_accumulation_steps": result.gradient_accumulation_steps,
-            "completed_steps": result.completed_steps,
-            "eval_every_steps": result.eval_every_steps,
-            "checkpoint_every_steps": result.checkpoint_every_steps,
-            "best_task_id": result.best_task_id,
-            "best_eval_mse": result.best_eval_mse,
-            "best_val_mse": result.best_val_mse,
-            "final_val_mse": result.final_val_mse,
-            "best_step": result.best_step,
-            "best_checkpoint_path": result.best_checkpoint_path,
-            "final_checkpoint_path": result.final_checkpoint_path,
-            "checkpoint_selection_metric": result.checkpoint_selection_metric,
-            "checkpoint_selection_mode": result.checkpoint_selection_mode,
-            "test_mse": result.test_mse,
-            "test_mae": result.test_mae,
-            "test_pearsonr": result.test_pearsonr,
-            "test_r2": result.test_r2,
-            "test_spearmanr": result.test_spearmanr,
-            "selection_split": result.selection_split,
-            "report_split": result.report_split,
-            "real_data_smoke": bool(config.get("dataset") == "moabb" and "smoke" in str(config.get("experiment", ""))),
-            "scientific_claim_allowed": False,
-            "unavailable_tasks": result.skipped_tasks,
-            "baseline_failures": [],
-            "task_results": result.task_results,
-            "distributed_initialized": result.distributed_initialized,
-            "distributed_backend": result.distributed_backend,
-            "distributed": {"rank": dist.rank, "local_rank": dist.local_rank, "world_size": dist.world_size},
-            "git": environment["git"],
-            "source_commit_missing": environment["source_commit_missing"],
-            "run": environment["run"],
-            "checkpoint_manifest": checkpoints,
-            "resume": command.resume,
-        },
+    summary = {
+        "synthetic_only": result.synthetic_only,
+        "status": result.status,
+        "task_id": result.task_id,
+        "source_modality": result.source_modality,
+        "target_modality": result.target_modality,
+        "split_manifest": str(split_manifest_path),
+        "split_manifest_hash": split_manifest_hash,
+        "event_manifest": str(_config_value(config, "event_manifest")),
+        "window_length": result.event_summary.get("metadata", {}).get("window_length", prepared_config.window_length)
+        if isinstance(result.event_summary.get("metadata"), dict)
+        else prepared_config.window_length,
+        "stride": prepared_config.stride,
+        "event_summary": result.event_summary,
+        "precision": result.precision,
+        "gradient_accumulation_steps": result.gradient_accumulation_steps,
+        "max_grad_norm": result.max_grad_norm,
+        "completed_steps": result.completed_steps,
+        "eval_every_steps": result.eval_every_steps,
+        "checkpoint_every_steps": result.checkpoint_every_steps,
+        "best_task_id": result.best_task_id,
+        "best_eval_mse": result.best_eval_mse,
+        "best_val_mse": result.best_val_mse,
+        "final_val_mse": result.final_val_mse,
+        "best_step": result.best_step,
+        "best_checkpoint_path": result.best_checkpoint_path,
+        "final_checkpoint_path": result.final_checkpoint_path,
+        "checkpoint_selection_metric": result.checkpoint_selection_metric,
+        "checkpoint_selection_mode": result.checkpoint_selection_mode,
+        "test_mse": result.test_mse,
+        "test_mae": result.test_mae,
+        "test_pearsonr": result.test_pearsonr,
+        "test_r2": result.test_r2,
+        "test_spearmanr": result.test_spearmanr,
+        "selection_split": result.selection_split,
+        "report_split": result.report_split,
+        "real_data_smoke": bool(config.get("dataset") == "moabb" and "smoke" in str(config.get("experiment", ""))),
+        "scientific_claim_allowed": False,
+        "unavailable_tasks": result.skipped_tasks,
+        "quarantined_tasks": result.quarantined_tasks,
+        "stimulus_evidence": result.stimulus_evidence,
+        "baseline_failures": [],
+        "task_results": result.task_results,
+        "distributed_initialized": result.distributed_initialized,
+        "distributed_backend": result.distributed_backend,
+        "distributed": {"rank": dist.rank, "local_rank": dist.local_rank, "world_size": dist.world_size},
+        "git": environment["git"],
+        "source_commit_missing": environment["source_commit_missing"],
+        "run": environment["run"],
+        "checkpoint_manifest": checkpoints,
+        "resume": command.resume,
+    }
+    write_json(run_dir / "summary.json", summary)
+    _write_prepared_diagnostic_artifacts(
+        run_dir,
+        summary,
+        event_manifest=str(_config_value(config, "event_manifest")),
+        split_manifest=split_manifest_path,
+        window_length=prepared_config.window_length,
+        stride=prepared_config.stride,
     )
     lines = [
         f"config={command.config_path}",
@@ -265,3 +281,123 @@ def _config_value(config: PreparedTrainingConfigInput, key: str) -> object | Non
     data = config.get("data")
     data_config = data if isinstance(data, dict) else {}
     return config.get(key) or data_config.get(key)
+
+
+def _write_prepared_diagnostic_artifacts(
+    run_dir: Path,
+    summary: dict[str, Any],
+    *,
+    event_manifest: str | Path,
+    split_manifest: str | Path,
+    window_length: int,
+    stride: int,
+) -> None:
+    eval_audit = _write_eval_audit(run_dir, event_manifest, split_manifest, window_length, stride)
+    evidence_gate = build_prepared_evidence_gate(summary, eval_audit=eval_audit, stage="provisional")
+    write_json(run_dir / "evidence_gate_provisional.json", evidence_gate)
+    (run_dir / "diagnostic_report_provisional.md").write_text(format_evidence_diagnostic_report(summary, evidence_gate), encoding="utf-8")
+    (run_dir / "pair_operator_ablation.csv").write_text(_pair_operator_ablation_csv(summary), encoding="utf-8")
+    (run_dir / "uncertainty_calibration.csv").write_text(_uncertainty_calibration_csv(summary), encoding="utf-8")
+
+
+def _write_eval_audit(
+    run_dir: Path,
+    event_manifest: str | Path,
+    split_manifest: str | Path,
+    window_length: int,
+    stride: int,
+) -> dict[str, Any]:
+    try:
+        report = audit_prepared_eval_inputs(
+            event_manifest,
+            split_manifest,
+            window_length=window_length,
+            stride=stride,
+            out_dir=run_dir,
+            require_windows=True,
+        )
+        return report.to_dict()
+    except Exception as exc:  # noqa: BLE001 - diagnostic artifact should fail closed.
+        payload = {
+            "passed": False,
+            "violations": [f"eval audit failed unexpectedly: {exc}"],
+            "warnings": [],
+            "checked": [],
+            "event_count": 0,
+            "window_count": 0,
+            "window_counts_by_split": {"train": 0, "val": 0, "test": 0},
+            "event_summary": {},
+        }
+        write_json(run_dir / "eval_audit.json", payload)
+        return payload
+
+
+def _pair_operator_ablation_csv(summary: dict[str, Any]) -> str:
+    rows: list[tuple[Any, ...]] = []
+    for row in _task_result_rows(summary):
+        model_config = row.get("model_config") if isinstance(row.get("model_config"), dict) else {}
+        if str(model_config.get("type", "")) != "NeuroTwinPairOperator":
+            continue
+        rows.append(
+            (
+                row.get("task_id", ""),
+                _pair_operator_variant(model_config),
+                model_config.get("use_pair_state", ""),
+                model_config.get("use_uncertainty_head", ""),
+                model_config.get("refinement_steps", ""),
+                row.get("status", ""),
+                row.get("test_mse", ""),
+                row.get("test_pearsonr", ""),
+                row.get("test_r2", ""),
+            )
+        )
+    if not rows:
+        rows.append(("unavailable", "not_pair_operator_run", "", "", "", "not_applicable", "", "", ""))
+    return _csv_rows(
+        ("task_id", "ablation", "use_pair_state", "use_uncertainty_head", "refinement_steps", "status", "test_mse", "test_pearsonr", "test_r2"),
+        rows,
+    )
+
+
+def _uncertainty_calibration_csv(summary: dict[str, Any]) -> str:
+    rows: list[tuple[Any, ...]] = []
+    for row in _task_result_rows(summary):
+        model_config = row.get("model_config") if isinstance(row.get("model_config"), dict) else {}
+        if str(model_config.get("type", "")) == "NeuroTwinPairOperator" and bool(model_config.get("use_uncertainty_head")):
+            rows.append((row.get("task_id", ""), "unavailable", "training command does not persist uncertainty predictions", "", ""))
+    if not rows:
+        rows.append(("unavailable", "unavailable", "uncertainty head disabled or not a Pair-Operator run", "", ""))
+    return _csv_rows(("task_id", "status", "reason", "mean_uncertainty", "error_uncertainty_correlation"), rows)
+
+
+def _task_result_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = summary.get("task_results")
+    if not isinstance(rows, (list, tuple)):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _pair_operator_variant(model_config: dict[str, Any]) -> str:
+    use_pair = bool(model_config.get("use_pair_state"))
+    use_uncertainty = bool(model_config.get("use_uncertainty_head"))
+    refinement_steps = int(model_config.get("refinement_steps") or 0)
+    if not use_pair:
+        return "pair_operator_no_pair_state"
+    if not use_uncertainty:
+        return "pair_operator_no_uncertainty"
+    if refinement_steps <= 0:
+        return "pair_operator_no_refinement"
+    return "pair_operator_full"
+
+
+def _csv_rows(header: tuple[str, ...], rows: list[tuple[Any, ...]]) -> str:
+    lines = [",".join(header)]
+    lines.extend(",".join(_csv_cell(value) for value in row) for row in rows)
+    return "\n".join(lines) + "\n"
+
+
+def _csv_cell(value: Any) -> str:
+    text = str(value)
+    if any(char in text for char in (",", "\"", "\n")):
+        return "\"" + text.replace("\"", "\"\"") + "\""
+    return text

@@ -2,6 +2,8 @@
 
 These instructions are for an automated deployment agent running on the A100 cluster. The goal is to run the single-node 6x A100 Docker path when six GPUs are allocated, and to stop rather than silently falling back to one GPU.
 
+Before the full 6-GPU run, submit the Phase 1 evidence lane as separate one-GPU jobs. Queue the paper-mode MOABB seeds 0/1/2 job, leakage-demo seeds 0/1/2 job, identity-probe seeds 0/1/2 job, and model-card/artifact job at the same time when Chapman scheduling allows. If the scheduler serializes them, they must still be independent one-GPU jobs and must finish before the full DDP job starts. Do not reserve six GPUs for Phase 1.
+
 ## Inputs
 
 - Extracted runner directory: current working directory.
@@ -96,13 +98,13 @@ bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchma
 python -m neurotwin.cli eval audit ...
 python -m neurotwin.cli cluster materialize-config --template "$A100_CONFIG_TEMPLATE" ...
 python -m neurotwin.cli cluster preflight ...
-python -m neurotwin.cli eval --paper-mode --seeds 0 1 2 ...  # non-smoke run ids only
+copy Phase 1 paper-mode artifacts from "$A100_PAPER_MODE_EVAL_DIR" when paper_mode_gate.json passed
 torchrun --standalone --nproc_per_node=6 -m neurotwin.cli train ...
-python -m neurotwin.cli report ...
+python -m neurotwin.cli run finalize --run-dir "$RUN_DIR" --paper-mode-dir "$A100_PAPER_MODE_EVAL_DIR" ...
 bash scripts/package_a100_evidence_bundle.sh "$PERSISTENT_ROOT" outputs
 ```
 
-For non-smoke run ids, the helper defaults `A100_REQUIRE_PAPER_MODE_GATE=1`. The paper-mode gate must pass before the long training starts; after training, `paper_mode_gate.json` is copied into the run directory before report generation and included in the evidence bundle under `paper_mode_eval/`.
+For non-smoke run ids, the helper consumes existing Phase 1 artifacts from `A100_PAPER_MODE_EVAL_DIR` when `paper_mode_gate.json` passed. If Phase 1 artifacts are missing, it writes a `paper_mode_artifacts_unavailable` marker and does not silently run paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run paper-mode inside the full allocation.
 
 ## One-GPU Diagnostic Only
 

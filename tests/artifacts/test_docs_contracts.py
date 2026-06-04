@@ -71,6 +71,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "configs/train/moabb_a100.yaml",
             "configs/train/moabb_a100_smoke.yaml",
             "configs/train/neurotwin_v1_a100.yaml",
+            "configs/train/algonauts_real_stimulus_debug.yaml",
+            "configs/train/algonauts_pair_operator_debug.yaml",
+            "configs/train/algonauts_pair_operator_full.yaml",
+            "configs/train/algonauts_pair_operator_ablation_array.yaml",
             "configs/train/moabb_h100.yaml",
             "configs/train/bids_debug.yaml",
             "configs/train/neurotwin_v1_h100.yaml",
@@ -181,6 +185,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
     def test_a100_slurm_scripts_require_safe_inputs(self):
         train = Path("scripts/slurm/train_a100.sh").read_text(encoding="utf-8")
         inner = Path("scripts/slurm/_train_a100_inner.sh").read_text(encoding="utf-8")
+        finalizer = Path("src/neurotwin/reports/finalize.py").read_text(encoding="utf-8")
         eval_script = Path("scripts/slurm/eval_a100.sh").read_text(encoding="utf-8")
 
         self.assertIn("Refusing to run the generic placeholder config", train)
@@ -191,12 +196,35 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
         self.assertIn("--require-prepared-windows", inner)
+        for required in (
+            "run finalize",
+            "--paper-mode-dir",
+            "--event-manifest",
+            "--split-manifest",
+            "--seeds 0 1 2",
+        ):
+            self.assertIn(required, inner)
+        for required in (
+            "prepared_baseline_suite.json",
+            "seed_aggregate.json",
+            "seed_aggregate.csv",
+            "baseline_failures.json",
+            "paper_mode_gate.json",
+            "run_leakage_demo",
+            "run_identity_probe",
+            "write_final_prepared_evidence_gate",
+            "generate_model_card_report",
+            "copy_prepared_eval_audit",
+            "paper_mode_artifacts_unavailable",
+        ):
+            self.assertIn(required, finalizer)
         self.assertIn("Refusing to run default/synthetic eval", eval_script)
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
 
     def test_docker_6gpu_runner_contains_required_sequence(self):
         launcher = Path("scripts/run_docker_6gpu.sh").read_text(encoding="utf-8")
         inner = Path("scripts/docker_a100_inner.sh").read_text(encoding="utf-8")
+        finalizer = Path("src/neurotwin/reports/finalize.py").read_text(encoding="utf-8")
         preflight = Path("scripts/docker_gpu_preflight.py").read_text(encoding="utf-8")
 
         for required in (
@@ -214,11 +242,13 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "CONTAINER_CUDA_VISIBLE_DEVICES=0",
             "DOCKER_RUN_ID=${DOCKER_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}",
             "DOCKER_LOG_PATH=${DOCKER_LOG_PATH:-\"$RUN_LOG_DIR/neurotwin-a100-docker-$DOCKER_RUN_ID.log\"}",
+            "A100_RUN_PAPER_MODE_IN_FULL=${A100_RUN_PAPER_MODE_IN_FULL:-0}",
             "docker_run.env",
             "tee -a \"$DOCKER_LOG_PATH\"",
             "-e CUDA_VISIBLE_DEVICES=\"$CONTAINER_CUDA_VISIBLE_DEVICES\"",
             "-e NCCL_DEBUG=\"${NCCL_DEBUG:-INFO}\"",
             "-e DOCKER_LOG_PATH=\"$DOCKER_LOG_PATH\"",
+            "-e A100_RUN_PAPER_MODE_IN_FULL=\"$A100_RUN_PAPER_MODE_IN_FULL\"",
             "bash scripts/docker_a100_inner.sh",
         ):
             self.assertIn(required, launcher)
@@ -235,10 +265,30 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "python -m neurotwin.cli cluster preflight",
             "--require-cuda",
             "torchrun --standalone --nproc_per_node=\"$NPROC_PER_NODE\"",
-            "python -m neurotwin.cli report",
+            "python -m neurotwin.cli run finalize",
+            "--paper-mode-dir",
+            "--event-manifest",
+            "--split-manifest",
+            "--seeds 0 1 2",
+            "A100_RUN_PAPER_MODE_IN_FULL",
+            "paper_mode_artifacts_unavailable",
             "bash scripts/package_a100_evidence_bundle.sh",
         ):
             self.assertIn(required, inner)
+        for required in (
+            "prepared_baseline_suite.json",
+            "seed_aggregate.json",
+            "seed_aggregate.csv",
+            "baseline_failures.json",
+            "paper_mode_gate.json",
+            "run_leakage_demo",
+            "run_identity_probe",
+            "write_final_prepared_evidence_gate",
+            "generate_model_card_report",
+            "copy_prepared_eval_audit",
+        ):
+            self.assertIn(required, finalizer)
+        self.assertNotIn('A100_REQUIRE_PAPER_MODE_GATE=1', inner)
         for required in (
             "torch.cuda.device_count()",
             "expected_gpu_count",

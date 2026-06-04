@@ -60,14 +60,9 @@ export PYTHONPATH="${PYTHONPATH:-}:src"
 A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}
 A100_RUN_ID=${A100_RUN_ID:-$(basename "$A100_CONFIG_TEMPLATE" .yaml)}
 A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yaml}
-A100_REQUIRE_PAPER_MODE_GATE=${A100_REQUIRE_PAPER_MODE_GATE:-}
+A100_REQUIRE_PAPER_MODE_GATE=${A100_REQUIRE_PAPER_MODE_GATE:-0}
+A100_RUN_PAPER_MODE_IN_FULL=${A100_RUN_PAPER_MODE_IN_FULL:-0}
 A100_PAPER_MODE_TRAIN_STEPS=${A100_PAPER_MODE_TRAIN_STEPS:-3}
-if [[ -z "$A100_REQUIRE_PAPER_MODE_GATE" ]]; then
-  A100_REQUIRE_PAPER_MODE_GATE=0
-  if [[ "$A100_RUN_ID" != "moabb_a100_smoke" ]]; then
-    A100_REQUIRE_PAPER_MODE_GATE=1
-  fi
-fi
 if [[ ! -f "$A100_CONFIG_TEMPLATE" ]]; then
   echo "A100_CONFIG_TEMPLATE does not exist: $A100_CONFIG_TEMPLATE" >&2
   exit 2
@@ -129,19 +124,13 @@ echo "step=login_node_preflight_without_cuda"
   --require-prepared-windows \
   --expect-window-count "$EXPECTED_WINDOW_COUNT" \
   --expect-split-windows "$EXPECTED_SPLIT_WINDOWS"
-if [[ "$A100_REQUIRE_PAPER_MODE_GATE" == "1" ]]; then
-  export A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-$NEUROTWIN_DATA/eval/${A100_RUN_ID}_paper_mode}"
-  echo "step=paper_mode_gate out_dir=$A100_PAPER_MODE_EVAL_DIR"
-  "$PYTHON_BIN" -m neurotwin.cli eval \
-    --suite neural_translation_v1 \
-    --paper-mode \
-    --seeds 0 1 2 \
-    --event-manifest "$EVENT_MANIFEST" \
-    --split-manifest "$SPLIT_MANIFEST" \
-    --window-length 128 \
-    --stride 128 \
-    --train-steps "$A100_PAPER_MODE_TRAIN_STEPS" \
-    --out-dir "$A100_PAPER_MODE_EVAL_DIR"
+export A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-}"
+if [[ "$A100_RUN_PAPER_MODE_IN_FULL" == "1" ]]; then
+  echo "paper_mode_full_allocation_opt_in=1"
+elif [[ -n "$A100_PAPER_MODE_EVAL_DIR" ]]; then
+  echo "paper_mode_phase1_artifacts=$A100_PAPER_MODE_EVAL_DIR"
+else
+  echo "paper_mode_artifacts_unavailable=Phase 1 artifacts missing; full job will not generate them unless A100_RUN_PAPER_MODE_IN_FULL=1" >&2
 fi
 
 SBATCH_ARGS=()
@@ -156,7 +145,7 @@ if [[ -n "${SBATCH_QOS:-}" ]]; then
 fi
 
 echo "step=submit_a100_job"
-export REPO_ROOT EXPECTED_WINDOW_COUNT EXPECTED_SPLIT_WINDOWS RUN_LOG_DIR A100_CONFIG_TEMPLATE A100_RUN_ID A100_PAPER_MODE_EVAL_DIR
+export REPO_ROOT EXPECTED_WINDOW_COUNT EXPECTED_SPLIT_WINDOWS RUN_LOG_DIR A100_CONFIG_TEMPLATE A100_RUN_ID A100_PAPER_MODE_EVAL_DIR A100_RUN_PAPER_MODE_IN_FULL A100_PAPER_MODE_TRAIN_STEPS
 sbatch "${SBATCH_ARGS[@]}" \
   --output "$RUN_LOG_DIR/neurotwin-a100-full-%j.out" \
   --error "$RUN_LOG_DIR/neurotwin-a100-full-%j.err" \

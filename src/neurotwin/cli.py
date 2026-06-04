@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import sys
 
 from neurotwin.adapters.synthetic import make_synthetic_recordings
@@ -16,7 +17,7 @@ from neurotwin.data.command import (
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.doctor import format_doctor_report, run_doctor
 from neurotwin.eval.command import EvalCommandConfig, run_eval_command
-from neurotwin.benchmarks.reports import generate_compare_report, generate_run_report, generate_suite_report
+from neurotwin.benchmarks.reports import generate_compare_report, generate_model_card_report, generate_run_report, generate_suite_report
 from neurotwin.runtime.command_result import CommandResult
 from neurotwin.runtime.estimate import estimate_config
 from neurotwin.runtime.preflight import (
@@ -30,6 +31,7 @@ from neurotwin.training.command import TrainingCommandConfig, run_training_comma
 
 
 def main(argv: list[str] | None = None) -> int:
+    parse_argv = _normalize_eval_argv(list(sys.argv[1:] if argv is None else argv))
     parser = argparse.ArgumentParser(prog="nt", description="NeuroTwin research benchmark CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -88,27 +90,37 @@ def main(argv: list[str] | None = None) -> int:
     estimate.add_argument("--config", required=True)
     estimate.set_defaults(func=_cmd_estimate)
 
-    eval_parser = subparsers.add_parser("eval", help="Describe an evaluation suite")
-    eval_parser.add_argument("eval_command", nargs="?", choices=("audit",))
-    eval_parser.add_argument("--run", default=None)
-    eval_parser.add_argument("--suite", default="translation_smoke")
-    eval_parser.add_argument("--out-dir", default=None)
-    eval_parser.add_argument("--event-manifest", default=None)
-    eval_parser.add_argument("--split-manifest", default=None)
-    eval_parser.add_argument("--window-length", type=int, default=8)
-    eval_parser.add_argument("--stride", type=int, default=8)
-    eval_parser.add_argument("--train-steps", type=int, default=5)
-    eval_parser.add_argument("--seed", type=int, default=0)
-    eval_parser.add_argument("--seeds", nargs="*", type=int, default=None)
-    eval_parser.add_argument("--require-windows", action="store_true")
-    eval_parser.add_argument("--paper-mode", action="store_true")
+    run = subparsers.add_parser("run", help="Run lifecycle commands")
+    run_subparsers = run.add_subparsers(dest="run_command", required=True)
+    finalize = run_subparsers.add_parser("finalize", help="Finalize a completed run evidence bundle")
+    finalize.add_argument("--run-dir", required=True)
+    finalize.add_argument("--paper-mode-dir", default=None)
+    finalize.add_argument("--event-manifest", default=None)
+    finalize.add_argument("--split-manifest", default=None)
+    finalize.add_argument("--window-length", type=int, default=128)
+    finalize.add_argument("--stride", type=int, default=128)
+    finalize.add_argument("--seeds", nargs="*", type=int, default=[0, 1, 2])
+    finalize.set_defaults(func=_cmd_run)
+
+    eval_parser = subparsers.add_parser("eval", help="Run evaluation suites and paper diagnostics")
+    eval_subparsers = eval_parser.add_subparsers(dest="eval_command", required=True)
+    eval_suite = eval_subparsers.add_parser("suite", help="Run an evaluation suite")
+    _add_eval_suite_args(eval_suite)
+    eval_audit = eval_subparsers.add_parser("audit", help="Audit prepared evaluation inputs")
+    _add_eval_audit_args(eval_audit)
+    eval_leakage = eval_subparsers.add_parser("leakage-demo", help="Compare bad segment splits against held-out subject splits")
+    _add_eval_demo_args(eval_leakage)
+    eval_identity = eval_subparsers.add_parser("identity-probe", help="Quantify subject identity leakage risk from windows")
+    _add_eval_demo_args(eval_identity)
     eval_parser.set_defaults(func=_cmd_eval)
 
     report = subparsers.add_parser("report", help="Generate a reproducible benchmark report")
+    report.add_argument("report_command", nargs="?", choices=("model-card", "evidence-gate"))
     report.add_argument("--suite", default=None)
     report.add_argument("--run-dir", default=None)
     report.add_argument("--compare", nargs="*", default=None)
     report.add_argument("--out-dir", default=None)
+    report.add_argument("--out", default=None)
     report.set_defaults(func=_cmd_report)
 
     cluster = subparsers.add_parser("cluster", help="Cluster launch safety checks")
@@ -131,10 +143,24 @@ def main(argv: list[str] | None = None) -> int:
     materialize_config.add_argument("--allow-tracked-output", action="store_true")
     materialize_config.set_defaults(func=_cmd_cluster_materialize_config)
 
-    args = parser.parse_args(argv)
-    args._argv = list(sys.argv if argv is None else ["nt", *argv])
+    args = parser.parse_args(parse_argv)
+    args._argv = list(sys.argv if argv is None else ["nt", *parse_argv])
     args.func(args)
     return 0
+
+
+def _normalize_eval_argv(argv: list[str]) -> list[str]:
+    if not argv or argv[0] != "eval":
+        return argv
+    eval_subcommands = {"suite", "audit", "leakage-demo", "identity-probe"}
+    rest = argv[1:]
+    if not rest:
+        return ["eval", "suite"]
+    if rest[0] in eval_subcommands:
+        return argv
+    if any(token in eval_subcommands for token in rest):
+        return argv
+    return ["eval", "suite", *rest]
 
 
 def _emit_command_result(result: CommandResult) -> None:
@@ -142,6 +168,65 @@ def _emit_command_result(result: CommandResult) -> None:
         print(result.output)
     if result.exit_code:
         raise SystemExit(result.error or result.exit_code)
+
+
+def _add_eval_manifest_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--event-manifest", default=None)
+    parser.add_argument("--split-manifest", default=None)
+
+
+def _add_eval_window_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--window-length", type=int, default=8)
+    parser.add_argument("--stride", type=int, default=8)
+
+
+def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--run", default=None)
+    parser.add_argument("--suite", default="translation_smoke")
+    parser.add_argument("--out-dir", default=None)
+    _add_eval_manifest_args(parser)
+    _add_eval_window_args(parser)
+    parser.add_argument("--train-steps", type=int, default=5)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seeds", nargs="*", type=int, default=None)
+    parser.add_argument("--require-windows", action="store_true")
+    parser.add_argument("--paper-mode", action="store_true")
+    parser.set_defaults(
+        dataset="synthetic",
+        eval_command=None,
+    )
+
+
+def _add_eval_audit_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--suite", default="translation_smoke")
+    parser.add_argument("--out-dir", default=None)
+    _add_eval_manifest_args(parser)
+    _add_eval_window_args(parser)
+    parser.add_argument("--require-windows", action="store_true")
+    parser.set_defaults(
+        dataset="synthetic",
+        run=None,
+        train_steps=5,
+        seed=0,
+        seeds=None,
+        paper_mode=False,
+    )
+
+
+def _add_eval_demo_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--dataset", default="synthetic")
+    parser.add_argument("--out-dir", default=None)
+    _add_eval_manifest_args(parser)
+    _add_eval_window_args(parser)
+    parser.add_argument("--train-steps", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seeds", nargs="*", type=int, default=None)
+    parser.set_defaults(
+        suite="translation_smoke",
+        run=None,
+        require_windows=False,
+        paper_mode=False,
+    )
 
 
 def _cmd_data_prepare(args: argparse.Namespace) -> None:
@@ -236,30 +321,89 @@ def _cmd_estimate(args: argparse.Namespace) -> None:
 
 
 def _cmd_eval(args: argparse.Namespace) -> None:
+    eval_command = None if getattr(args, "eval_command", None) == "suite" else getattr(args, "eval_command", None)
     result = run_eval_command(
         EvalCommandConfig(
-            eval_command=args.eval_command,
-            suite=args.suite,
-            run=args.run,
-            out_dir=args.out_dir,
-            event_manifest=args.event_manifest,
-            split_manifest=args.split_manifest,
-            window_length=args.window_length,
-            stride=args.stride,
-            train_steps=args.train_steps,
-            seed=args.seed,
-            seeds=tuple(args.seeds) if args.seeds is not None else None,
-            require_windows=args.require_windows,
-            paper_mode=args.paper_mode,
+            eval_command=eval_command,
+            suite=getattr(args, "suite", "translation_smoke"),
+            dataset=getattr(args, "dataset", "synthetic"),
+            run=getattr(args, "run", None),
+            out_dir=getattr(args, "out_dir", None),
+            event_manifest=getattr(args, "event_manifest", None),
+            split_manifest=getattr(args, "split_manifest", None),
+            window_length=getattr(args, "window_length", 8),
+            stride=getattr(args, "stride", 8),
+            train_steps=getattr(args, "train_steps", 5),
+            seed=getattr(args, "seed", 0),
+            seeds=tuple(args.seeds) if getattr(args, "seeds", None) is not None else None,
+            require_windows=getattr(args, "require_windows", False),
+            paper_mode=getattr(args, "paper_mode", False),
         )
     )
     if result.output:
         print(result.output)
     if result.exit_code:
-        raise SystemExit(result.error or result.exit_code)
+            raise SystemExit(result.error or result.exit_code)
+
+
+def _cmd_run(args: argparse.Namespace) -> None:
+    if args.run_command != "finalize":
+        raise SystemExit("supported run commands: finalize")
+    from neurotwin.reports.finalize import RunFinalizeConfig, finalize_run
+
+    try:
+        payload = finalize_run(
+            RunFinalizeConfig(
+                run_dir=args.run_dir,
+                paper_mode_dir=args.paper_mode_dir,
+                event_manifest=args.event_manifest,
+                split_manifest=args.split_manifest,
+                window_length=args.window_length,
+                stride=args.stride,
+                seeds=tuple(args.seeds or (0, 1, 2)),
+            )
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    print(f"finalize_run_dir={payload.get('run_dir')}")
+    print(f"paper_mode_artifacts_copied={payload.get('paper_mode_artifacts_copied')}")
+    print(f"eval_audit_copied={payload.get('eval_audit_copied')}")
+    diagnostics = payload.get("diagnostics", {})
+    if isinstance(diagnostics, dict):
+        for name, ran in diagnostics.items():
+            print(f"{name}_ran={ran}")
+    print(f"run_report={payload.get('run_report')}")
+    print(f"evidence_gate={payload.get('evidence_gate')}")
+    print(f"evidence_gate_passed={payload.get('evidence_gate_passed')}")
+    print(f"model_card={payload.get('model_card')}")
 
 
 def _cmd_report(args: argparse.Namespace) -> None:
+    if args.report_command == "model-card":
+        if not args.run_dir:
+            raise SystemExit("report model-card requires --run-dir")
+        try:
+            print(generate_model_card_report(args.run_dir, args.out))
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        return
+    if args.report_command == "evidence-gate":
+        if not args.run_dir:
+            raise SystemExit("report evidence-gate requires --run-dir")
+        from neurotwin.reports.evidence_gate import write_final_prepared_evidence_gate
+
+        try:
+            gate = write_final_prepared_evidence_gate(args.run_dir)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        print(f"evidence_gate={Path(args.run_dir) / 'evidence_gate.json'}")
+        print(f"evidence_gate_passed={gate.get('passed', False)}")
+        print(f"evidence_gate_stage={gate.get('stage', 'unknown')}")
+        failures = gate.get("failures", [])
+        if isinstance(failures, list):
+            for failure in failures:
+                print(f"evidence_gate_failure={failure}")
+        return
     if args.compare is not None:
         print(generate_compare_report(args.compare, args.out_dir))
         return

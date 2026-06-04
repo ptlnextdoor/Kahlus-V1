@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import hashlib
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -35,6 +37,7 @@ class SupervisedWindowTask:
     y_val: np.ndarray | None = None
     val_metric_mask: np.ndarray | None = None
     notes: tuple[str, ...] = ()
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 def build_prepared_window_tasks(
@@ -105,7 +108,12 @@ def first_prepared_modality_with_splits(windows_by_split: dict[str, list[NeuralE
     return shared[0] if shared else None
 
 
-def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
+def build_future_forecasting_task_from_windows(
+    windows_by_split: dict[str, list[NeuralEventBatch]],
+    *,
+    task_id: str = "future_state_forecasting",
+    notes: tuple[str, ...] = (),
+) -> SupervisedWindowTask | None:
     modality = first_prepared_modality_with_splits(windows_by_split)
     if modality is None:
         return None
@@ -127,8 +135,12 @@ def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]
         y_test=y_test,
         x_val=x_val,
         y_val=y_val,
-        notes=(f"prepared {modality} next-state windows",),
+        notes=notes or (f"prepared {modality} next-state windows",),
     )
+
+
+def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
+    return build_future_forecasting_task_from_windows(windows_by_split)
 
 
 def _masked_task_from_windows(
@@ -208,6 +220,13 @@ def _stimulus_fmri_task_from_windows(windows_by_split: dict[str, list[NeuralEven
     x_train, y_train = train
     x_test, y_test = test
     x_val, y_val = val if val is not None else (None, None)
+    evidence = _stimulus_feature_evidence(
+        [
+            *windows_by_split["train"],
+            *windows_by_split["val"],
+            *windows_by_split["test"],
+        ]
+    )
     return SupervisedWindowTask(
         task_id="stimulus_to_fmri_response",
         source_modality="stimulus",
@@ -221,7 +240,9 @@ def _stimulus_fmri_task_from_windows(windows_by_split: dict[str, list[NeuralEven
         notes=(
             "prepared stimulus->fMRI response windows",
             "tribe_style is a clean_room_approximation, not an exact TRIBE v2 reproduction",
+            str(evidence["claim_note"]),
         ),
+        metadata={"stimulus_evidence": evidence},
     )
 
 
@@ -273,6 +294,97 @@ def _stimulus_fmri_xy(windows: list[NeuralEventBatch]) -> tuple[np.ndarray, np.n
     )
 
 
+def _stimulus_feature_evidence(windows: list[NeuralEventBatch]) -> dict[str, object]:
+    used = [
+        window
+        for window in windows
+        if window.modality == "fmri"
+        and window.stimulus_embedding is not None
+        and window.stimulus_embedding.shape[0] == window.signal.shape[0]
+    ]
+    if not used:
+        return {
+            "status": "missing",
+            "require_real_stimulus": False,
+            "claim_eligible": False,
+            "claim_note": "stimulus-to-fMRI unavailable: no aligned stimulus embeddings",
+            "sources": [],
+            "modalities": [],
+            "hashes": [],
+        }
+    sources = sorted({_optional_text(window.metadata.get("stimulus_feature_source")) for window in used if window.metadata.get("stimulus_feature_source")})
+    hashes = sorted({_optional_text(window.metadata.get("stimulus_feature_hash")) for window in used if window.metadata.get("stimulus_feature_hash")})
+    modalities = sorted(
+        {
+            str(item)
+            for window in used
+            for item in _metadata_list(window.metadata.get("stimulus_feature_modalities"))
+        }
+    )
+    statuses = sorted({_optional_text(window.metadata.get("stimulus_feature_status")) for window in used if window.metadata.get("stimulus_feature_status")})
+    source_artifacts = sorted(
+        {
+            str(item)
+            for window in used
+            for item in _stimulus_source_artifacts(window.metadata)
+        }
+    )
+    require_real = all(bool(window.metadata.get("require_real_stimulus")) for window in used)
+    source_text = " ".join(sources).lower()
+    status_text = " ".join(statuses).lower()
+    looks_hash_only = not sources or "transcript_hash" in source_text or ("hash" in source_text and not modalities)
+    looks_synthetic = any(token in f"{source_text} {status_text}" for token in ("synthetic", "default", "placeholder", "plumbing", "hash_only"))
+    real_status = bool(statuses) and all(_real_stimulus_status(status) for status in statuses)
+    source_verified = all(_stimulus_source_verified(window) for window in used)
+    source_artifact_hash_verified = all(_stimulus_source_artifact_hash_verified(window) for window in used)
+    embedding_hashes = sorted({digest for window in used for digest in _stimulus_embedding_hashes(window)})
+    failure_reasons = _stimulus_evidence_failure_reasons(
+        require_real=require_real,
+        sources=sources,
+        hashes=hashes,
+        modalities=modalities,
+        statuses=statuses,
+        source_artifacts=source_artifacts,
+        looks_hash_only=looks_hash_only,
+        looks_synthetic=looks_synthetic,
+        real_status=real_status,
+        source_verified=source_verified,
+        source_artifact_hash_verified=source_artifact_hash_verified,
+    )
+    claim_eligible = not failure_reasons
+    status = _stimulus_evidence_status(
+        claim_eligible=claim_eligible,
+        require_real=require_real,
+        looks_hash_only=looks_hash_only,
+        looks_synthetic=looks_synthetic,
+        hashes=hashes,
+        source_artifacts=source_artifacts,
+        source_verified=source_verified,
+        source_artifact_hash_verified=source_artifact_hash_verified,
+    )
+    note = (
+        "stimulus-to-fMRI uses real precomputed stimulus features"
+        if claim_eligible
+        else "stimulus-to-fMRI is plumbing only: " + "; ".join(failure_reasons)
+    )
+    return {
+        "status": status,
+        "require_real_stimulus": bool(require_real),
+        "claim_eligible": bool(claim_eligible),
+        "claim_note": note,
+        "sources": sources,
+        "modalities": modalities,
+        "hashes": hashes,
+        "feature_statuses": statuses,
+        "source_artifacts": source_artifacts,
+        "source_artifact_hash_verified": bool(source_artifact_hash_verified),
+        "hash_verified": bool(source_artifact_hash_verified),
+        "stimulus_embedding_hash": embedding_hashes[0] if len(embedding_hashes) == 1 else None,
+        "stimulus_embedding_hashes": embedding_hashes,
+        "failure_reasons": failure_reasons,
+    }
+
+
 def _stack_pairs(pairs: list[tuple[np.ndarray, np.ndarray]]) -> tuple[np.ndarray, np.ndarray]:
     return (
         np.asarray([source for source, _ in pairs], dtype=np.float32),
@@ -290,3 +402,150 @@ def _split_record_keys(split: SplitManifest) -> dict[str, str]:
         for record in getattr(split, split_name):
             keys[record.record_id] = split_name
     return keys
+
+
+def _metadata_list(value: object) -> tuple[object, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple, set)):
+        return tuple(value)
+    return (value,)
+
+
+def _optional_text(value: object) -> str:
+    return str(value)
+
+
+def _stimulus_evidence_failure_reasons(
+    *,
+    require_real: bool,
+    sources: list[str],
+    hashes: list[str],
+    modalities: list[str],
+    statuses: list[str],
+    source_artifacts: list[str],
+    looks_hash_only: bool,
+    looks_synthetic: bool,
+    real_status: bool,
+    source_verified: bool,
+    source_artifact_hash_verified: bool,
+) -> list[str]:
+    reasons: list[str] = []
+    if not require_real:
+        reasons.append("require_real_stimulus is false")
+    if not sources:
+        reasons.append("stimulus_feature_source is missing")
+    if not modalities:
+        reasons.append("stimulus_feature_modalities is missing")
+    if not hashes:
+        reasons.append("stimulus_feature_hash is missing")
+    if not statuses:
+        reasons.append("stimulus_feature_status is missing")
+    elif not real_status:
+        reasons.append("stimulus_feature_status is not real/precomputed")
+    if not source_artifacts:
+        reasons.append("stimulus feature path/manifest/uri is missing")
+    elif not source_verified:
+        reasons.append("stimulus feature source artifact is not verifiable")
+    if looks_hash_only:
+        reasons.append("stimulus_feature_source looks hash-derived")
+    if looks_synthetic:
+        reasons.append("stimulus feature source/status looks synthetic")
+    if hashes and not source_artifact_hash_verified:
+        reasons.append("stimulus_feature_hash is not verified")
+    return reasons
+
+
+def _real_stimulus_status(status: str) -> bool:
+    text = status.lower()
+    return any(token in text for token in ("real", "precomputed")) and not any(
+        token in text for token in ("synthetic", "default", "placeholder", "plumbing", "hash_only")
+    )
+
+
+def _stimulus_evidence_status(
+    *,
+    claim_eligible: bool,
+    require_real: bool,
+    looks_hash_only: bool,
+    looks_synthetic: bool,
+    hashes: list[str],
+    source_artifacts: list[str],
+    source_verified: bool,
+    source_artifact_hash_verified: bool,
+) -> str:
+    if claim_eligible:
+        return "real_stimulus_features"
+    if looks_hash_only or looks_synthetic or not require_real:
+        return "plumbing_only"
+    if hashes and source_artifacts and source_verified and not source_artifact_hash_verified:
+        return "hash_mismatch"
+    return "unverified"
+
+
+def _stimulus_source_artifacts(metadata: dict[str, Any]) -> tuple[str, ...]:
+    values: list[str] = []
+    for key in (
+        "stimulus_feature_path",
+        "stimulus_feature_file",
+        "stimulus_feature_manifest",
+        "stimulus_feature_manifest_path",
+        "stimulus_feature_uri",
+    ):
+        for value in _metadata_list(metadata.get(key)):
+            if value not in (None, ""):
+                values.append(str(value))
+    return tuple(values)
+
+
+def _stimulus_source_verified(window: NeuralEventBatch) -> bool:
+    artifacts = _stimulus_source_artifacts(window.metadata)
+    if not artifacts:
+        return False
+    for artifact in artifacts:
+        path = Path(artifact)
+        if path.is_file():
+            return True
+    return False
+
+
+def _stimulus_source_artifact_hash_verified(window: NeuralEventBatch) -> bool:
+    expected = {_normalize_hash(str(value)) for value in _metadata_list(window.metadata.get("stimulus_feature_hash")) if value not in (None, "")}
+    expected.discard("")
+    if not expected:
+        return False
+    for digest in _stimulus_artifact_hashes(window):
+        if digest in expected:
+            return True
+    return False
+
+
+def _stimulus_artifact_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
+    hashes: list[str] = []
+    for artifact in _stimulus_source_artifacts(window.metadata):
+        path = Path(artifact)
+        if not path.is_file():
+            continue
+        try:
+            hashes.append(_sha256_bytes(path.read_bytes()))
+        except OSError:
+            continue
+    return tuple(hashes)
+
+
+def _stimulus_embedding_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
+    if window.stimulus_embedding is None:
+        return ()
+    return (_sha256_bytes(np.ascontiguousarray(window.stimulus_embedding).tobytes()),)
+
+
+def _normalize_hash(value: str) -> str:
+    text = value.strip().lower()
+    for prefix in ("sha256:", "sha256=", "hash:"):
+        if text.startswith(prefix):
+            return text[len(prefix) :]
+    return text
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()

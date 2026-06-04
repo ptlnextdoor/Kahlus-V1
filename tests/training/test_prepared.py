@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -10,10 +11,16 @@ from unittest import mock
 import torch
 import yaml
 
-from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
+from neurotwin.adapters.synthetic import (
+    make_synthetic_event_batches,
+    make_synthetic_multimodal_event_batches,
+    make_synthetic_multimodal_recordings,
+    make_synthetic_recordings,
+)
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
+from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 
 
@@ -22,6 +29,32 @@ class PreparedTrainingTests(unittest.TestCase):
         prepared = root / "prepared"
         records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
         batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
+        split = build_split_manifest(records, policy="subject", seed=0)
+        save_split_manifest(split, prepared / "split_manifest.json")
+        save_event_batches(batches, prepared)
+        return prepared
+
+    def _multimodal_prepared_dir(self, root: Path) -> Path:
+        prepared = root / "prepared"
+        prepared.mkdir(parents=True, exist_ok=True)
+        feature_path = prepared / "stimulus_features.bin"
+        feature_bytes = b"real precomputed stimulus features"
+        feature_path.write_bytes(feature_bytes)
+        feature_hash = hashlib.sha256(feature_bytes).hexdigest()
+        records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        for batch in batches:
+            if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                batch.metadata.update(
+                    {
+                        "require_real_stimulus": True,
+                        "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                        "stimulus_feature_modalities": ["text", "audio", "video"],
+                        "stimulus_feature_hash": feature_hash,
+                        "stimulus_feature_path": str(feature_path),
+                        "stimulus_feature_status": "real_precomputed",
+                    }
+                )
         split = build_split_manifest(records, policy="subject", seed=0)
         save_split_manifest(split, prepared / "split_manifest.json")
         save_event_batches(batches, prepared)
@@ -98,6 +131,7 @@ class PreparedTrainingTests(unittest.TestCase):
         )
 
         self.assertEqual(config.batch_size, 7)
+        self.assertEqual(config.max_grad_norm, 1.0)
 
     def test_prepared_training_config_honors_top_level_schedule_keys(self):
         config = PreparedTrainingConfig.from_mapping(
@@ -149,6 +183,7 @@ class PreparedTrainingTests(unittest.TestCase):
                     "steps": 2,
                     "batch_size": 4,
                     "gradient_accumulation_steps": 2,
+                    "max_grad_norm": 0.5,
                     "model": {"latent_dim": 16, "n_layers": 1, "subject_adapter_dim": 4},
                 },
                 checkpoint_path=checkpoint,
@@ -159,6 +194,7 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(result.task_id, "future_state_forecasting")
             self.assertTrue(result.synthetic_only)
             self.assertEqual(result.gradient_accumulation_steps, 2)
+            self.assertEqual(result.max_grad_norm, 0.5)
             self.assertEqual(result.completed_steps, 2)
             self.assertEqual(result.selection_split, "val")
             self.assertEqual(result.report_split, "test")
@@ -292,6 +328,7 @@ class PreparedTrainingTests(unittest.TestCase):
             prepared = self._prepared_dir(root)
             checkpoint = root / "checkpoint.pt"
             best_checkpoint = root / "checkpoint_best.pt"
+            metrics_jsonl = root / "metrics.jsonl"
             val_mse_values = [0.4, 0.3, 0.8]
 
             def fake_evaluate(model, task, x_test, y_test, precision, prefix, batch_size):
@@ -327,6 +364,7 @@ class PreparedTrainingTests(unittest.TestCase):
                     },
                     checkpoint_path=checkpoint,
                     best_checkpoint_path=best_checkpoint,
+                    metrics_jsonl_path=metrics_jsonl,
                 )
 
             self.assertEqual(result.best_step, 2)
@@ -338,6 +376,234 @@ class PreparedTrainingTests(unittest.TestCase):
             best_payload = torch.load(best_checkpoint, map_location="cpu", weights_only=True)
             self.assertEqual(best_payload["best_step"], 2)
             self.assertEqual(best_payload["checkpoint_selection_metric"], "val_mse")
+            final_rows = [
+                json.loads(line)
+                for line in metrics_jsonl.read_text(encoding="utf-8").splitlines()
+                if json.loads(line).get("phase") == "final"
+            ]
+            self.assertEqual(len(final_rows), 1)
+            self.assertEqual(final_rows[0]["checkpoint_role"], "selected_best")
+            self.assertAlmostEqual(final_rows[0]["val_mse"], 0.3)
+            self.assertAlmostEqual(final_rows[0]["best_val_mse"], 0.3)
+            self.assertAlmostEqual(final_rows[0]["final_val_mse"], 0.8)
+
+    def test_prepared_training_runs_pair_operator_stimulus_fmri_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._multimodal_prepared_dir(root)
+
+            result = run_prepared_training(
+                {
+                    "event_manifest": str(prepared / "event_manifest.json"),
+                    "split_manifest": str(prepared / "split_manifest.json"),
+                    "task": "stimulus_to_fmri_response",
+                    "window_size": 8,
+                    "stride": 8,
+                    "steps": 1,
+                    "batch_size": 4,
+                    "model": {
+                        "type": "NeuroTwinPairOperator",
+                        "latent_dim": 16,
+                        "n_layers": 1,
+                        "pair_rank": 3,
+                        "projection_dim": 8,
+                    },
+                }
+            )
+
+            self.assertEqual(result.status, "completed_prepared_training")
+            self.assertEqual(result.task_id, "stimulus_to_fmri_response")
+            self.assertEqual(result.task_results[0]["model_config"]["type"], "NeuroTwinPairOperator")
+            self.assertEqual(result.stimulus_evidence["status"], "real_stimulus_features")
+            self.assertTrue(result.stimulus_evidence["hash_verified"])
+            self.assertFalse(result.quarantined_tasks)
+
+    def test_nonfinite_task_metrics_are_quarantined_and_best_checkpoint_skips_them(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+
+            def fake_evaluate(model, task, x_test, y_test, precision, prefix, batch_size):
+                key = f"{prefix}_mse"
+                return {
+                    key: float("nan"),
+                    f"{prefix}_mae": float("nan"),
+                    f"{prefix}_pearsonr": float("nan"),
+                    f"{prefix}_spearmanr": float("nan"),
+                    f"{prefix}_r2": float("nan"),
+                }
+
+            with mock.patch("neurotwin.training.prepared_loop.evaluate_task", side_effect=fake_evaluate):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "model": {"latent_dim": 16, "n_layers": 1},
+                    }
+                )
+
+            self.assertEqual(result.task_results[0]["status"], "quarantined_nonfinite")
+            self.assertTrue(result.quarantined_tasks)
+            self.assertIsNone(result.best_task_id)
+            self.assertIsNone(result.best_eval_mse)
+
+    def test_nonfinite_training_loss_skips_optimizer_step_and_quarantines_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            metrics_jsonl = root / "metrics.jsonl"
+
+            def nan_predict(model, task, xb, precision):
+                del model, precision
+                return torch.full((xb.shape[0], *task.y_train.shape[1:]), float("nan"), device=xb.device)
+
+            with mock.patch("neurotwin.training.prepared_loop.predict", side_effect=nan_predict):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 2,
+                        "batch_size": 4,
+                        "model": {"latent_dim": 16, "n_layers": 1},
+                    },
+                    metrics_jsonl_path=metrics_jsonl,
+                )
+
+            rows = [json.loads(line) for line in metrics_jsonl.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(result.task_results[0]["status"], "quarantined_nonfinite")
+            self.assertTrue(result.quarantined_tasks)
+            self.assertIsNone(result.task_results[0]["final_loss"])
+            self.assertTrue(any(row.get("phase") == "nonfinite_loss" and row.get("optimizer_step_skipped") for row in rows))
+
+    def test_prepared_evidence_gate_fails_quarantined_required_task(self):
+        gate = build_prepared_evidence_gate(
+            {
+                "scientific_claim_allowed": True,
+                "quarantined_tasks": [{"task_id": "masked_neural_reconstruction", "reason": "nonfinite metric"}],
+                "task_results": [
+                    {
+                        "task_id": "masked_neural_reconstruction",
+                        "best_val_mse": None,
+                        "test_mse": None,
+                    }
+                ],
+            }
+        )
+
+        self.assertFalse(gate["passed"])
+        self.assertIn("required task quarantined: masked_neural_reconstruction", gate["failures"])
+
+    def test_final_evidence_gate_uses_completed_run_dir_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            summary = {
+                "scientific_claim_allowed": True,
+                "synthetic_only": False,
+                "real_data_smoke": False,
+                "status": "completed",
+                "quarantined_tasks": [],
+                "task_results": [
+                    {
+                        "task_id": "future_state_forecasting",
+                        "best_val_mse": 0.2,
+                        "test_mse": 0.3,
+                    }
+                ],
+            }
+            (run_dir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+
+            missing_gate = write_final_prepared_evidence_gate(run_dir)
+
+            self.assertFalse(missing_gate["passed"])
+            self.assertIn("baseline ranking artifact missing or unavailable", missing_gate["failures"])
+            self.assertIn("paper_mode_gate.json missing or not passed", missing_gate["failures"])
+
+            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(
+                    {
+                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
+                        "tasks": {
+                            "future_state_forecasting": {
+                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.3, "rank": 1}]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            final_gate = write_final_prepared_evidence_gate(run_dir)
+            rewritten_summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(final_gate["passed"])
+        self.assertEqual(final_gate["stage"], "final")
+        self.assertTrue(final_gate["checks"]["baseline_ranking_present"])
+        self.assertTrue(final_gate["checks"]["competitor_reproduction_status_present"])
+        self.assertNotIn("evidence_gate_passed", rewritten_summary)
+        self.assertNotIn("evidence_gate_failures", rewritten_summary)
+
+    def test_final_evidence_gate_csv_ranking_parsing_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            self._write_minimal_final_gate_inputs(run_dir)
+            tables = run_dir / "tables"
+            tables.mkdir()
+            (tables / "baseline_ranking.csv").write_text(
+                "task_id,model_id,metric,value,rank\nbaseline_ranking_unavailable,,status,no colocated baseline rankings found,\n",
+                encoding="utf-8",
+            )
+
+            unavailable_gate = write_final_prepared_evidence_gate(run_dir)
+            (tables / "baseline_ranking.csv").write_text("task,model\nfuture_state_forecasting,linear_ridge\n", encoding="utf-8")
+            malformed_gate = write_final_prepared_evidence_gate(run_dir)
+
+        self.assertFalse(unavailable_gate["checks"]["baseline_ranking_present"])
+        self.assertFalse(malformed_gate["checks"]["baseline_ranking_present"])
+
+    def test_final_evidence_gate_csv_real_ranking_row_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            self._write_minimal_final_gate_inputs(run_dir)
+            tables = run_dir / "tables"
+            tables.mkdir()
+            (tables / "baseline_ranking.csv").write_text(
+                "task_id,model_id,metric,value,rank\nfuture_state_forecasting,linear_ridge,mse,0.3,1\n",
+                encoding="utf-8",
+            )
+
+            gate = write_final_prepared_evidence_gate(run_dir)
+
+        self.assertTrue(gate["checks"]["baseline_ranking_present"])
+        self.assertTrue(gate["passed"])
+
+    def _write_minimal_final_gate_inputs(self, run_dir: Path) -> None:
+        (run_dir / "summary.json").write_text(
+            json.dumps(
+                {
+                    "scientific_claim_allowed": True,
+                    "status": "completed",
+                    "quarantined_tasks": [],
+                    "task_results": [{"task_id": "future_state_forecasting", "best_val_mse": 0.2, "test_mse": 0.3}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+        (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+        (run_dir / "prepared_baseline_suite.json").write_text(
+            json.dumps({"baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}], "tasks": {}}),
+            encoding="utf-8",
+        )
 
     def test_objective_weights_are_recorded_for_multitask_training(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -464,8 +730,22 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertEqual(summary["checkpoint_selection_metric"], "val_mse")
             self.assertEqual(summary["checkpoint_selection_mode"], "min")
             self.assertTrue((run_dir / "checkpoint_manifest.json").exists())
+            self.assertTrue((run_dir / "eval_audit.json").exists())
             self.assertTrue((run_dir / "metrics.csv").exists())
             self.assertTrue((run_dir / "checkpoint.pt").exists())
+            self.assertTrue((run_dir / "evidence_gate_provisional.json").exists())
+            self.assertTrue((run_dir / "diagnostic_report_provisional.md").exists())
+            self.assertTrue((run_dir / "pair_operator_ablation.csv").exists())
+            self.assertTrue((run_dir / "uncertainty_calibration.csv").exists())
+            self.assertFalse((run_dir / "evidence_gate.json").exists())
+            evidence_gate = json.loads((run_dir / "evidence_gate_provisional.json").read_text(encoding="utf-8"))
+            self.assertFalse(evidence_gate["passed"])
+            self.assertFalse(evidence_gate["scientific_claim_allowed"])
+            self.assertIn("summary.json scientific_claim_allowed is false", evidence_gate["failures"])
+            self.assertIn(
+                "not_pair_operator_run",
+                (run_dir / "pair_operator_ablation.csv").read_text(encoding="utf-8"),
+            )
 
     def test_train_cli_keeps_claims_disabled_for_non_synthetic_non_smoke_runs(self):
         env = dict(os.environ)

@@ -10,7 +10,7 @@ def main() -> int:
     from _bootstrap import ensure_src_import_path
 
     ensure_src_import_path(__file__)
-    from neurotwin.eval.paper_gate import effective_scientific_claim_allowed_for_run, load_run_summary
+    from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
 
     parser = argparse.ArgumentParser(description="Create simple markdown tables from NeuroTwin run metrics.")
     parser.add_argument("run_dirs", nargs="+")
@@ -27,9 +27,12 @@ def main() -> int:
         if summary.get("synthetic_only") and not args.allow_synthetic:
             raise SystemExit(f"{run_dir} is synthetic-only; rerun with --allow-synthetic for plumbing tables")
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-        claim_allowed = effective_scientific_claim_allowed_for_run(run_path, summary)
+        claim_allowed = bool(summary.get("scientific_claim_allowed"))
+        gate_allows = paper_mode_gate_allows_claim(load_paper_mode_gate(run_path))
         claim_status = "real_data_smoke" if summary.get("real_data_smoke") else "scientific" if claim_allowed else "plumbing"
         print(f"| {run_path.name} | claim_status | {claim_status} |")
+        print(f"| {run_path.name} | scientific_claim_allowed | {claim_allowed} |")
+        print(f"| {run_path.name} | paper_mode_gate_allows_claim | {gate_allows} |")
         for key, value in _flatten_metrics(metrics):
             print(f"| {run_path.name} | {key} | {value} |")
     return 0

@@ -140,6 +140,23 @@ class NeuralEventBatch:
         return dict(value) if isinstance(value, dict) else {}
 
     @property
+    def stimulus_feature_metadata(self) -> dict[str, Any]:
+        keys = (
+            "stimulus_feature_source",
+            "stimulus_feature_path",
+            "stimulus_feature_file",
+            "stimulus_feature_manifest",
+            "stimulus_feature_manifest_path",
+            "stimulus_feature_uri",
+            "stimulus_feature_modalities",
+            "stimulus_feature_hash",
+            "stimulus_feature_hash_verified",
+            "stimulus_feature_status",
+            "require_real_stimulus",
+        )
+        return {key: self.metadata[key] for key in keys if key in self.metadata}
+
+    @property
     def behavior_metadata(self) -> dict[str, Any]:
         value = self.metadata.get("behavior_metadata")
         return dict(value) if isinstance(value, dict) else {}

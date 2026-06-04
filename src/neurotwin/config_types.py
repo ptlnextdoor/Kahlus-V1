@@ -27,6 +27,7 @@ class PreparedDataConfig(TypedDict, total=False):
 
 
 class PreparedModelConfig(TypedDict, total=False):
+    type: str
     latent_dim: int
     n_layers: int
     input_dim: int
@@ -43,12 +44,19 @@ class PreparedModelConfig(TypedDict, total=False):
     use_subject_embeddings: bool
     adapter_mode: str
     gradient_checkpointing: bool
+    pair_rank: int
+    use_pair_state: bool
+    use_uncertainty_head: bool
+    refinement_steps: int
+    hrf_delay_steps: int
 
 
 class PreparedTrainingSectionConfig(TypedDict, total=False):
     batch_size: int
     eval_batch_size: int
     gradient_accumulation_steps: int
+    max_grad_norm: float
+    gradient_clip_norm: float
     precision: str
     compile: bool
     eval_every_steps: int
@@ -76,6 +84,8 @@ class PreparedTrainingConfigInput(TypedDict, total=False):
     batch_size: int
     eval_batch_size: int
     gradient_accumulation_steps: int
+    max_grad_norm: float
+    gradient_clip_norm: float
     precision: str
     compile: bool
     learning_rate: float
@@ -95,6 +105,7 @@ def as_prepared_training_config_input(config: Mapping[str, Any]) -> PreparedTrai
 
 @dataclass(frozen=True)
 class ResolvedPreparedModelConfig:
+    type: str
     latent_dim: int
     n_layers: int
     input_dim: int
@@ -111,6 +122,11 @@ class ResolvedPreparedModelConfig:
     use_subject_embeddings: bool
     adapter_mode: str
     gradient_checkpointing: bool
+    pair_rank: int
+    use_pair_state: bool
+    use_uncertainty_head: bool
+    refinement_steps: int
+    hrf_delay_steps: int
 
 
 @dataclass(frozen=True)
@@ -118,6 +134,7 @@ class ResolvedPreparedRuntimeConfig:
     batch_size: int | None
     eval_batch_size: int | None
     gradient_accumulation_steps: int
+    max_grad_norm: float | None
     precision: str
     compile: bool
     eval_every_steps: int
@@ -160,7 +177,15 @@ def resolve_prepared_config(
     batch_size = config.get("batch_size", training_config.get("batch_size"))
     eval_batch_size = config.get("eval_batch_size", training_config.get("eval_batch_size"))
     objective_weights = training_config.get("objective_weights", config.get("objective_weights", {}))
+    max_grad_norm = config.get(
+        "max_grad_norm",
+        config.get(
+            "gradient_clip_norm",
+            training_config.get("max_grad_norm", training_config.get("gradient_clip_norm", 1.0)),
+        ),
+    )
     model = ResolvedPreparedModelConfig(
+        type=str(model_config.get("type", "NeuralStateSpaceTranslator")),
         latent_dim=int(model_config.get("latent_dim", latent_dim_default)),
         n_layers=int(model_config.get("n_layers", n_layers_default)),
         input_dim=int(model_config.get("input_dim", 16)),
@@ -182,6 +207,11 @@ def resolve_prepared_config(
                 model_config.get("gradient_checkpointing", training_config.get("gradient_checkpointing", False)),
             )
         ),
+        pair_rank=int(model_config.get("pair_rank", 8)),
+        use_pair_state=bool(model_config.get("use_pair_state", True)),
+        use_uncertainty_head=bool(model_config.get("use_uncertainty_head", True)),
+        refinement_steps=max(0, int(model_config.get("refinement_steps", 1))),
+        hrf_delay_steps=max(0, int(model_config.get("hrf_delay_steps", 1))),
     )
     runtime = ResolvedPreparedRuntimeConfig(
         batch_size=_optional_int(batch_size),
@@ -190,6 +220,7 @@ def resolve_prepared_config(
             1,
             int(config.get("gradient_accumulation_steps", training_config.get("gradient_accumulation_steps", 1))),
         ),
+        max_grad_norm=_optional_nonnegative_float(max_grad_norm),
         precision=str(config.get("precision", training_config.get("precision", "fp32"))).lower(),
         compile=bool(config.get("compile", training_config.get("compile", False))),
         eval_every_steps=max(0, int(config.get("eval_every_steps", training_config.get("eval_every_steps", 0)))),
@@ -219,6 +250,13 @@ def _mapping(value: object) -> Mapping[str, Any]:
 
 def _optional_int(value: object) -> int | None:
     return int(value) if value is not None else None
+
+
+def _optional_nonnegative_float(value: object) -> float | None:
+    if value is None:
+        return None
+    parsed = float(value)
+    return parsed if parsed > 0.0 else None
 
 
 def _resolve_modalities(model_config: Mapping[str, Any]) -> tuple[str, ...]:

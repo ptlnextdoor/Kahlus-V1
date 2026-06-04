@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import copy
+import math
 from typing import Any
 
 import torch
 from torch import nn
 
+from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
 from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig
 from neurotwin.repro import append_jsonl
 from neurotwin.runtime.distributed import unwrap_model, wrap_ddp_if_initialized
@@ -43,6 +45,9 @@ class PreparedTrainingMonitor:
         optimizer: torch.optim.Optimizer,
     ) -> None:
         if self.checkpoint_selection_metric not in metrics:
+            return
+        selection_value = float(metrics[self.checkpoint_selection_metric])
+        if not math.isfinite(selection_value):
             return
         snapshot = PreparedEvalSnapshot(step=step, metrics=dict(metrics), selection_metric=self.checkpoint_selection_metric)
         self.snapshots.append(snapshot)
@@ -170,8 +175,37 @@ def _run_task_training_loop(
             xb = tensors.x_train.index_select(0, index_tensor)
             yb = tensors.y_train.index_select(0, index_tensor)
             loss = (mse_loss(predict(model, task, xb, precision=config.precision), yb) * objective_weight) / config.gradient_accumulation_steps
+            loss_value = float(loss.detach())
+            if not math.isfinite(loss_value):
+                optimizer.zero_grad(set_to_none=True)
+                _append_task_metric(
+                    runtime.paths.metrics_jsonl_path,
+                    {
+                        "task_id": task.task_id,
+                        "step": runtime.start_step + step + 1,
+                        "phase": "nonfinite_loss",
+                        "micro_step": micro_step,
+                        "loss": loss_value,
+                        "optimizer_step_skipped": True,
+                    },
+                )
+                return initial_loss, float("nan")
             loss.backward()
-            accumulated_loss += float(loss.detach())
+            accumulated_loss += loss_value
+        grad_norm = _clip_or_measure_grad_norm(model, config.max_grad_norm)
+        if grad_norm is not None and not math.isfinite(grad_norm):
+            optimizer.zero_grad(set_to_none=True)
+            _append_task_metric(
+                runtime.paths.metrics_jsonl_path,
+                {
+                    "task_id": task.task_id,
+                    "step": runtime.start_step + step + 1,
+                    "phase": "nonfinite_gradient",
+                    "grad_norm": grad_norm,
+                    "optimizer_step_skipped": True,
+                },
+            )
+            return initial_loss, float("nan")
         optimizer.step()
         final_loss = accumulated_loss
         completed_step = runtime.start_step + step + 1
@@ -221,9 +255,10 @@ def _finalize_task_result(
     monitor.record_eval(step=completed_step, metrics=final_val_metrics, model=model, optimizer=optimizer)
     final_model_state = copy.deepcopy(unwrap_model(model).state_dict())
     final_optimizer_state = copy.deepcopy(optimizer.state_dict())
-    monitor.load_best_model(model)
-    test_metrics = evaluate_task(model, task, tensors.x_test, tensors.y_test, precision=config.precision, prefix="test", batch_size=tensors.eval_batch_size)
     checkpoint_info = monitor.checkpoint_info(final_val_mse=final_val_metrics["val_mse"])
+    monitor.load_best_model(model)
+    selected_val_metrics = dict(monitor.best_snapshot.metrics) if monitor.best_snapshot is not None else final_val_metrics
+    test_metrics = evaluate_task(model, task, tensors.x_test, tensors.y_test, precision=config.precision, prefix="test", batch_size=tensors.eval_batch_size)
     result = _build_task_training_result(
         task,
         config=config,
@@ -233,13 +268,23 @@ def _finalize_task_result(
         initial_loss=initial_loss,
         final_loss=final_loss,
         objective_weight=objective_weight,
-        val_metrics=final_val_metrics,
+        val_metrics=selected_val_metrics,
         test_metrics=test_metrics,
         checkpoint_info=checkpoint_info,
     )
     _append_task_metric(
         runtime.paths.metrics_jsonl_path,
-        {"task_id": task.task_id, "step": completed_step, "phase": "final", **final_val_metrics, **test_metrics},
+        {
+            "task_id": task.task_id,
+            "step": completed_step,
+            "phase": "final",
+            "checkpoint_role": "selected_best",
+            "best_step": checkpoint_info.best_step,
+            "best_val_mse": checkpoint_info.best_val_mse,
+            "final_val_mse": checkpoint_info.final_val_mse,
+            **selected_val_metrics,
+            **test_metrics,
+        },
     )
     return TaskTrainingArtifacts(
         result=result,
@@ -333,6 +378,26 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
     model_cfg = config.model
     adapter_mode = model_cfg.adapter_mode
     use_subject_embeddings = model_cfg.use_subject_embeddings and adapter_mode in {"few_shot", "enabled", "subject"}
+    model_type = _normalize_model_type(model_cfg.type)
+    if model_type == "NeuroTwinPairOperator":
+        architecture = NeuroTwinPairOperatorConfig(
+            latent_dim=model_cfg.latent_dim,
+            n_layers=model_cfg.n_layers,
+            backbone=model_cfg.backbone,
+            n_heads=model_cfg.n_heads,
+            projection_dim=model_cfg.projection_dim,
+            pair_rank=model_cfg.pair_rank,
+            use_pair_state=model_cfg.use_pair_state,
+            use_uncertainty_head=model_cfg.use_uncertainty_head,
+            refinement_steps=model_cfg.refinement_steps,
+            hrf_delay_steps=model_cfg.hrf_delay_steps,
+        )
+        return {
+            "type": model_type,
+            "input_dims": {task.source_modality: task.x_train.shape[-1]},
+            "output_dims": {task.target_modality: task.y_train.shape[-1]},
+            **asdict(architecture),
+        }
     architecture = NeuralStateSpaceTranslatorConfig(
         latent_dim=model_cfg.latent_dim,
         n_layers=model_cfg.n_layers,
@@ -349,13 +414,21 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
         gradient_checkpointing=config.gradient_checkpointing,
     )
     return {
+        "type": model_type,
         "input_dims": {task.source_modality: task.x_train.shape[-1]},
         "output_dims": {task.target_modality: task.y_train.shape[-1]},
         **asdict(architecture),
     }
 
 
-def _translator_from_model_config(model_config: dict[str, Any]) -> NeuralStateSpaceTranslator:
+def _translator_from_model_config(model_config: dict[str, Any]) -> nn.Module:
+    model_type = _normalize_model_type(str(model_config.get("type", "NeuralStateSpaceTranslator")))
+    if model_type == "NeuroTwinPairOperator":
+        return NeuroTwinPairOperator(
+            input_dims=dict(model_config["input_dims"]),
+            output_dims=dict(model_config["output_dims"]),
+            config=NeuroTwinPairOperatorConfig.from_mapping(model_config),
+        )
     return NeuralStateSpaceTranslator(
         input_dims=dict(model_config["input_dims"]),
         output_dims=dict(model_config["output_dims"]),
@@ -363,6 +436,39 @@ def _translator_from_model_config(model_config: dict[str, Any]) -> NeuralStateSp
     )
 
 
+def _normalize_model_type(value: str) -> str:
+    normalized = value.strip().lower().replace("-", "_")
+    if normalized in {"neuralstatespacetranslator", "neural_state_space_translator", "translator"}:
+        return "NeuralStateSpaceTranslator"
+    if normalized in {"neurotwinpairoperator", "neurotwin_pair_operator", "pair_operator", "ntp_o"}:
+        return "NeuroTwinPairOperator"
+    raise ValueError(f"Unknown prepared model type {value!r}")
+
+
 def _append_task_metric(path: str | None, row: dict[str, Any]) -> None:
     if path is not None:
-        append_jsonl(path, row)
+        append_jsonl(path, _json_safe_metric_row(row))
+
+
+def _json_safe_metric_row(row: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    for key, value in row.items():
+        if isinstance(value, (int, float)) and not math.isfinite(float(value)):
+            safe[key] = None
+        else:
+            safe[key] = value
+    return safe
+
+
+def _clip_or_measure_grad_norm(model: nn.Module, max_grad_norm: float | None) -> float | None:
+    parameters = [parameter for parameter in model.parameters() if parameter.grad is not None]
+    if not parameters:
+        return None
+    if max_grad_norm is not None:
+        norm = torch.nn.utils.clip_grad_norm_(parameters, max_norm=max_grad_norm)
+        return float(norm.detach().cpu())
+    total = torch.zeros((), device=parameters[0].device)
+    for parameter in parameters:
+        grad = parameter.grad.detach()
+        total = total + grad.pow(2).sum()
+    return float(torch.sqrt(total).detach().cpu())

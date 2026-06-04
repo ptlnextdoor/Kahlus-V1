@@ -1,0 +1,34 @@
+experiment: algonauts_real_stimulus_debug
+description: Algonauts/CNeuroMod fMRI debug run with precomputed real stimulus embeddings. No raw stimulus extraction happens in training.
+dataset: prepared_manifest
+task: stimulus_to_fmri_response
+split: stimulus_run_group
+data:
+  event_manifest: /path/to/algonauts_prepared/event_manifest.json
+  split_manifest: /path/to/algonauts_prepared/split_manifest.json
+seed: 0
+steps: 2000
+batch_size: 32
+window_size: 128
+stride: 64
+precision: bf16
+gradient_accumulation_steps: 2
+max_grad_norm: 1.0
+checkpoint_every_steps: 200
+eval_every_steps: 200
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 256
+  n_layers: 6
+  backbone: ssm_fallback
+  encoder: linear
+  n_heads: 8
+  projection_dim: 128
+  modalities:
+    - stimulus
+    - fmri
+training:
+  compile: false
+  internet_required: false
+  objective_weights:
+    stimulus_to_fmri_response: 1.0

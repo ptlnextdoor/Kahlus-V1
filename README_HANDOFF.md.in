@@ -1,6 +1,7 @@
 # NeuroTwin A100 Handoff
 
 Commit: `${FULL_SHA}`
+Branch: `ptlnextdoor/a100-current-rerun`
 
 This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access.
 
@@ -10,9 +11,40 @@ This is minimal practical code visibility, not cryptographic source secrecy. The
 
 This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root.
 
+## Chapman Queue Order
+
+Run the handoff in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+
+Phase 1 one-GPU evidence lane:
+
+```text
+parallel 1-GPU job: paper-mode MOABB seeds 0/1/2
+parallel 1-GPU job: leakage-demo seeds 0/1/2
+parallel 1-GPU job: identity-probe seeds 0/1/2
+parallel 1-GPU job or post-evidence step: model-card and artifact generation
+```
+
+Do not reserve six GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs have completed and their artifacts are present or explicitly reported unavailable.
+
+Phase 2 full model lane:
+
+```text
+exactly 6 A100 GPUs
+world_size=6
+GPU_COUNT=6
+NPROC_PER_NODE=6
+HOST_GPU_IDS=<six comma-separated host GPU ids>
+CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+bf16 precision
+selected-best checkpoint semantics included
+torchrun --standalone --nproc_per_node=6
+```
+
+Do not request or use 7 or 8 GPUs for this handoff. Chapman may have up to 8 A100s, but this runner is contracted for one-GPU evidence jobs first and exactly one six-GPU DDP full run afterward.
+
 ## Not A Claim
 
-This is not a scientific result, not a model-superiority claim, not a 3-seed paper-mode report, and not a clinical claim. The expected `summary.json` keeps `scientific_claim_allowed=false`.
+This is not a scientific result, not a model-superiority claim, and not a clinical claim. The expected `summary.json` keeps `scientific_claim_allowed=false` unless the summary explicitly says otherwise; `summary.json` is the source of truth for `scientific_claim_allowed`, and paper-mode gate status is reported separately.
 
 ## Files
 
@@ -74,7 +106,7 @@ export PERSISTENT_ROOT=${PERSISTENT_ROOT_EXAMPLE}
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-The helper launches Docker with the runner mounted at `/workspace/repo`, persistent outputs under `${PERSISTENT_ROOT_EXAMPLE}`, host GPUs selected by `HOST_GPU_IDS`, and container-local devices exposed as `cuda:0` through `cuda:5`. It refuses to train unless exactly six CUDA devices are visible. An automated deployment agent should follow `README_AGENT_DEPLOY.md` for exact Docker flags, environment variables, and agent deployment behavior. `Dockerfile.a100` is a dependency/runtime image helper and does not hide source code. The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
+The helper launches Docker with the runner mounted at `/workspace/repo`, persistent outputs under `${PERSISTENT_ROOT_EXAMPLE}`, host GPUs selected by `HOST_GPU_IDS`, and container-local devices exposed as `cuda:0` through `cuda:5`. It refuses to train unless exactly six CUDA devices are visible. Do not change this to seven or eight GPUs. An automated deployment agent should follow `README_AGENT_DEPLOY.md` for exact Docker flags, environment variables, and agent deployment behavior. `Dockerfile.a100` is a dependency/runtime image helper and does not hide source code. The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
 
 Six-GPU Docker preflight:
 
@@ -100,7 +132,7 @@ PY'
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
 The smoke test does not require an A100 or internet. MOABB preparation may need internet unless the MOABB cache is already populated. The training job reads prepared manifests from the persistent root and should not download data.
-For non-smoke run ids, the helper runs the 3-seed MOABB paper-mode gate before the long training starts and includes those gate artifacts in the returned evidence bundle under `paper_mode_eval/`.
+For non-smoke run ids, the full lane consumes existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when that directory contains a passing `paper_mode_gate.json`. If Phase 1 artifacts are missing, the full lane writes an explicit `paper_mode_artifacts_unavailable` marker and does not silently run paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation.
 
 ## Conda And Slurm Alternative
 
@@ -151,7 +183,7 @@ export CONTAINER_CUDA_VISIBLE_DEVICES=0
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
+In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Use this lane for Phase 1 paper evidence diagnostics only. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
 For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md` from the extracted runner. Do not bypass `scripts/run_docker_6gpu.sh` for the full Docker run; that launcher writes `docker_run.env`, tees the current Docker log, and preserves the evidence-bundle contract.
 

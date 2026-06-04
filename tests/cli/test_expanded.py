@@ -58,6 +58,27 @@ class ExpandedCliTests(unittest.TestCase):
         self.assertIn("audit_passed=True", data.stdout)
         self.assertIn("leakage_passed=True", split.stdout)
 
+    def test_eval_leakage_demo_subcommand_accepts_multi_seed(self):
+        result = self.run_cli("eval", "leakage-demo", "--seeds", "0", "1", "2")
+
+        self.assertIn("eval_leakage_demo=True", result.stdout)
+        self.assertIn("observed_seeds=0,1,2", result.stdout)
+        self.assertIn("representative_split_result=", result.stdout)
+
+    def test_eval_rejects_options_before_real_subcommand(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        result = subprocess.run(
+            [sys.executable, "-m", "neurotwin.cli", "eval", "--seeds", "0", "1", "2", "leakage-demo"],
+            check=False,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invalid choice", result.stderr)
+
     def test_report_run_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
@@ -68,11 +89,40 @@ class ExpandedCliTests(unittest.TestCase):
             self.assertTrue((run_dir / "tables" / "baseline_ranking.csv").exists())
             self.assertTrue((run_dir / "tables" / "baseline_failures.csv").exists())
             self.assertTrue((run_dir / "figures" / "metric_summary.json").exists())
+            ranking_csv = (run_dir / "tables" / "baseline_ranking.csv").read_text(encoding="utf-8")
 
         self.assertIn("NeuroTwin Run Report", result.stdout)
         self.assertIn("mse", result.stdout)
+        self.assertIn("baseline_ranking_unavailable", ranking_csv)
 
-    def test_report_run_dir_promotes_claim_from_valid_colocated_gate(self):
+    def test_report_run_dir_uses_colocated_prepared_baseline_suite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            (run_dir / "metrics.json").write_text('{"test_mse": 0.1}', encoding="utf-8")
+            (run_dir / "summary.json").write_text(
+                '{"synthetic_only": false, "real_data_smoke": false, "status": "completed"}',
+                encoding="utf-8",
+            )
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(
+                    {
+                        "tasks": {
+                            "future_state_forecasting": {
+                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.12, "rank": 1}]
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.run_cli("report", "--run-dir", str(run_dir))
+            ranking_csv = (run_dir / "tables" / "baseline_ranking.csv").read_text(encoding="utf-8")
+
+        self.assertIn("future_state_forecasting,linear_ridge,mse,0.12,1", ranking_csv)
+        self.assertNotIn("baseline_ranking_unavailable", ranking_csv)
+
+    def test_report_run_dir_keeps_summary_claim_source_of_truth_with_valid_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             (run_dir / "metrics.json").write_text('{"test_mse": 0.1}', encoding="utf-8")
@@ -88,8 +138,10 @@ class ExpandedCliTests(unittest.TestCase):
             result = self.run_cli("report", "--run-dir", str(run_dir))
             metric_summary = json.loads((run_dir / "figures" / "metric_summary.json").read_text(encoding="utf-8"))
 
-        self.assertIn("effective_scientific_claim_allowed=True", result.stdout)
-        self.assertTrue(metric_summary["scientific_claim_allowed"])
+        self.assertIn("scientific_claim_allowed=False", result.stdout)
+        self.assertIn("paper_mode_gate_allows_claim=True", result.stdout)
+        self.assertFalse(metric_summary["scientific_claim_allowed"])
+        self.assertTrue(metric_summary["paper_mode_gate_allows_claim"])
 
     def test_report_run_dir_rejects_invalid_colocated_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -115,8 +167,10 @@ class ExpandedCliTests(unittest.TestCase):
             result = self.run_cli("report", "--run-dir", str(run_dir))
             metric_summary = json.loads((run_dir / "figures" / "metric_summary.json").read_text(encoding="utf-8"))
 
-        self.assertIn("effective_scientific_claim_allowed=False", result.stdout)
+        self.assertIn("scientific_claim_allowed=False", result.stdout)
+        self.assertIn("paper_mode_gate_allows_claim=False", result.stdout)
         self.assertFalse(metric_summary["scientific_claim_allowed"])
+        self.assertFalse(metric_summary["paper_mode_gate_allows_claim"])
 
     def test_report_compare_writes_aggregate_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -144,8 +198,10 @@ class ExpandedCliTests(unittest.TestCase):
             self.assertTrue((out / "compare_runs.csv").exists())
             self.assertTrue((out / "compare_runs.json").exists())
         self.assertIn("NeuroTwin Run Comparison", result.stdout)
-        self.assertEqual(compare_rows[0]["scientific_claim_allowed"], True)
+        self.assertEqual(compare_rows[0]["scientific_claim_allowed"], False)
+        self.assertEqual(compare_rows[0]["paper_mode_gate_allows_claim"], True)
         self.assertEqual(compare_rows[1]["scientific_claim_allowed"], False)
+        self.assertEqual(compare_rows[1]["paper_mode_gate_allows_claim"], False)
 
     def test_report_compare_surfaces_malformed_json_artifact(self):
         with tempfile.TemporaryDirectory() as tmp:

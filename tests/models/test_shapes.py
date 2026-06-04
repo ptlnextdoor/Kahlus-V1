@@ -3,6 +3,7 @@ import unittest
 import torch
 
 import neurotwin.models as models
+from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
 from neurotwin.models.torch_models import (
     NeuralStateSpaceTranslator,
     NeuralStateSpaceTranslatorConfig,
@@ -15,6 +16,8 @@ class ModelShapeTests(unittest.TestCase):
     def test_models_package_exports_active_translator_and_local_baselines(self):
         self.assertIs(models.NeuralStateSpaceTranslator, NeuralStateSpaceTranslator)
         self.assertIs(models.NeuralStateSpaceTranslatorConfig, NeuralStateSpaceTranslatorConfig)
+        self.assertIs(models.NeuroTwinPairOperator, NeuroTwinPairOperator)
+        self.assertIs(models.NeuroTwinPairOperatorConfig, NeuroTwinPairOperatorConfig)
         self.assertIs(models.TinySSMBaseline, TinySSMBaseline)
 
     def test_baseline_shape_contracts(self):
@@ -106,3 +109,35 @@ class ModelShapeTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "task must be one of"):
             model.forward_task({"fmri": torch.randn(1, 2, 3)}, target_modality="fmri", task="forcast")
+
+    def test_pair_operator_fmri_shape_contract_and_uncertainty(self):
+        model = NeuroTwinPairOperator(
+            input_dims={"stimulus": 5},
+            output_dims={"fmri": 7},
+            config=NeuroTwinPairOperatorConfig(latent_dim=16, n_layers=1, pair_rank=3, projection_dim=8),
+        )
+
+        output = model.forward_task(
+            {"stimulus": torch.randn(2, 6, 5)},
+            target_modality="fmri",
+            task="reconstruction",
+        )
+
+        self.assertEqual(output["prediction"].shape, (2, 6, 7))
+        self.assertEqual(output["uncertainty"].shape, (2, 6, 7))
+        self.assertEqual(output["pair_confidence"].shape, (7, 7))
+        self.assertEqual(output["projection"].shape, (2, 8))
+        self.assertTrue(torch.isfinite(output["prediction"]).all())
+
+    def test_pair_operator_pair_state_can_be_disabled(self):
+        model = NeuroTwinPairOperator(
+            input_dims={"fmri": 4},
+            output_dims={"fmri": 4},
+            config=NeuroTwinPairOperatorConfig(latent_dim=12, use_pair_state=False, use_uncertainty_head=False),
+        )
+
+        output = model.forward_task({"fmri": torch.randn(2, 5, 4)}, target_modality="fmri", task="forecast")
+
+        self.assertEqual(output["prediction"].shape, (2, 5, 4))
+        self.assertNotIn("uncertainty", output)
+        self.assertTrue(torch.allclose(output["pair_confidence"], torch.eye(4)))

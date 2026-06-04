@@ -98,6 +98,7 @@ def run_prepared_baseline_suite(
         "window_length": config.window_length,
         "stride": config.stride,
         "skipped_tasks": skipped,
+        "stimulus_evidence": _stimulus_evidence_from_tasks(tasks),
     }
     payload["paper_mode_contract"] = {
         "required_seeds": list(CANONICAL_REQUIRED_SEEDS),
@@ -129,6 +130,7 @@ def format_prepared_baseline_report(payload: PreparedBaselineSuitePayload | Prep
                 f"split_manifest={prepared.get('split_manifest')}",
                 f"window_length={prepared.get('window_length')}",
                 f"stride={prepared.get('stride')}",
+                f"stimulus_evidence={_format_stimulus_evidence(prepared.get('stimulus_evidence'))}",
                 "",
             ]
         )
@@ -315,3 +317,17 @@ def _task_result_to_dict(result: TaskResult) -> PreparedTaskPayload:
         "metrics": result.metrics,
         "notes": result.notes,
     }
+
+
+def _stimulus_evidence_from_tasks(tasks: tuple[object, ...]) -> dict[str, object] | None:
+    for task in tasks:
+        metadata = getattr(task, "metadata", {})
+        if isinstance(metadata, dict) and isinstance(metadata.get("stimulus_evidence"), dict):
+            return dict(metadata["stimulus_evidence"])
+    return None
+
+
+def _format_stimulus_evidence(value: object) -> str:
+    if not isinstance(value, dict):
+        return "none"
+    return f"{value.get('status', 'unknown')} claim_eligible={value.get('claim_eligible', False)}"

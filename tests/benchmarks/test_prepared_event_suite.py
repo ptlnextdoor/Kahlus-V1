@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -150,9 +151,14 @@ class PreparedEventSuiteTests(unittest.TestCase):
 
         task = payload["tasks"]["stimulus_to_fmri_response"]
         metrics = task["metrics_by_model"]["tribe_style"]
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
         self.assertIn("mse_ci_low", metrics)
         self.assertIn("mse_ci_high", metrics)
         self.assertIn("tribe_style", {row["model_id"] for row in task["ranking"]})
+        self.assertIn("brainvista_style", {row["model_id"] for row in task["ranking"]})
+        self.assertIn("pair_operator", {row["model_id"] for row in task["ranking"]})
+        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
         self.assertTrue(
             any(
                 row["model_id"] == "tribe_style" and row["status"] == "clean_room_approximation"
@@ -162,6 +168,215 @@ class PreparedEventSuiteTests(unittest.TestCase):
         report = format_prepared_baseline_report(payload)
         self.assertIn("tribe_style: clean_room_approximation", report)
         self.assertIn("not an exact TRIBE v2 reproduction", report)
+        self.assertIn("stimulus_evidence=plumbing_only claim_eligible=False", report)
+
+    def test_real_stimulus_metadata_marks_stimulus_task_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_bytes = b"real precomputed stimulus features"
+            feature_path.write_bytes(feature_bytes)
+            feature_hash = hashlib.sha256(feature_bytes).hexdigest()
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_path": str(feature_path),
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_hash": feature_hash,
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "real_stimulus_features")
+        self.assertTrue(stimulus_evidence["claim_eligible"])
+        self.assertEqual(stimulus_evidence["modalities"], ["audio", "text", "video"])
+        self.assertTrue(stimulus_evidence["hash_verified"])
+        self.assertTrue(stimulus_evidence["source_artifact_hash_verified"])
+
+    def test_stimulus_verified_flag_with_hash_mismatch_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_path.write_bytes(b"actual real precomputed stimulus features")
+            declared_hash = hashlib.sha256(b"different stimulus features").hexdigest()
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                    "stimulus_feature_path": str(feature_path),
+                    "stimulus_feature_modalities": ["text", "audio", "video"],
+                    "stimulus_feature_hash": declared_hash,
+                    "stimulus_feature_hash_verified": True,
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "hash_mismatch")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertFalse(stimulus_evidence["source_artifact_hash_verified"])
+        self.assertIn("stimulus_feature_hash is not verified", stimulus_evidence["failure_reasons"])
+
+    def test_embedding_hash_match_does_not_verify_mismatched_source_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_path.write_bytes(b"mismatched source artifact bytes")
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            declared_hash = ""
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    embedding = np.full(batch.stimulus_embedding.shape, 0.125, dtype=np.float32)
+                    batch.stimulus_embedding = embedding
+                    declared_hash = hashlib.sha256(np.ascontiguousarray(embedding[:8]).tobytes()).hexdigest()
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_path": str(feature_path),
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_hash": declared_hash,
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "hash_mismatch")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["source_artifact_hash_verified"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertEqual(stimulus_evidence["stimulus_embedding_hash"], declared_hash)
+        self.assertIn("stimulus_feature_hash is not verified", stimulus_evidence["failure_reasons"])
+
+    def test_stimulus_verified_flag_with_missing_artifact_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_feature_path = Path(tmp) / "missing_stimulus_features.bin"
+            declared_hash = hashlib.sha256(b"real precomputed stimulus features").hexdigest()
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                    "stimulus_feature_path": str(missing_feature_path),
+                    "stimulus_feature_modalities": ["text", "audio", "video"],
+                    "stimulus_feature_hash": declared_hash,
+                    "stimulus_feature_hash_verified": True,
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "unverified")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertFalse(stimulus_evidence["hash_verified"])
+        self.assertIn("stimulus feature source artifact is not verifiable", stimulus_evidence["failure_reasons"])
+
+    def test_transcript_hash_stimulus_features_remain_plumbing_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_bytes = b"hash-derived placeholder"
+            feature_path.write_bytes(feature_bytes)
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "transcript_hash",
+                    "stimulus_feature_path": str(feature_path),
+                    "stimulus_feature_modalities": ["text"],
+                    "stimulus_feature_hash": hashlib.sha256(feature_bytes).hexdigest(),
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "plumbing_only")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertIn("stimulus_feature_source looks hash-derived", stimulus_evidence["failure_reasons"])
+
+    def test_require_real_stimulus_without_hash_or_source_is_not_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+            for batch in batches:
+                if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                    batch.metadata.update(
+                        {
+                            "require_real_stimulus": True,
+                            "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                            "stimulus_feature_modalities": ["text", "audio", "video"],
+                            "stimulus_feature_status": "real_precomputed",
+                        }
+                    )
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                ),
+            )
+
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertEqual(stimulus_evidence["status"], "unverified")
+        self.assertFalse(stimulus_evidence["claim_eligible"])
+        self.assertIn("stimulus_feature_hash is missing", stimulus_evidence["failure_reasons"])
+        self.assertIn("stimulus feature path/manifest/uri is missing", stimulus_evidence["failure_reasons"])
+
+    def _stimulus_evidence_for_metadata(self, tmp: str, metadata: dict[str, object]) -> dict[str, object]:
+        prep_dir = Path(tmp) / "prepared"
+        records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
+        for batch in batches:
+            if batch.modality == "fmri" and batch.stimulus_embedding is not None:
+                batch.metadata.update(metadata)
+        split = build_split_manifest(records, policy="subject", seed=0)
+        save_split_manifest(split, prep_dir / "split_manifest.json")
+        save_event_batches(batches, prep_dir)
+
+        payload = run_prepared_baseline_suite(
+            PreparedSuiteConfig(
+                event_manifest=prep_dir / "event_manifest.json",
+                split_manifest=prep_dir / "split_manifest.json",
+                train_steps=1,
+            ),
+        )
+        stimulus_evidence = payload["prepared_data"]["stimulus_evidence"]
+        self.assertIsInstance(stimulus_evidence, dict)
+        return stimulus_evidence
 
     def test_prepared_baseline_suite_and_cli_artifacts(self):
         env = dict(os.environ)
@@ -500,6 +715,93 @@ class PreparedEventSuiteTests(unittest.TestCase):
             self.assertIn("paper_mode_passed=False", result.output)
             self.assertTrue((eval_dir / "prepared_baseline_suite.json").exists())
             self.assertTrue((eval_dir / "paper_mode_gate.json").exists())
+
+    def test_eval_command_runs_leakage_demo_and_identity_probe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            leakage = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="leakage-demo",
+                    out_dir=out_dir,
+                    seed=0,
+                )
+            )
+            identity = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="identity-probe",
+                    out_dir=out_dir,
+                    seed=0,
+                )
+            )
+
+            self.assertEqual(leakage.exit_code, 0)
+            self.assertIn("eval_leakage_demo=True", leakage.output)
+            self.assertIn("bad_segment_split", leakage.output)
+            self.assertFalse(leakage.payload["scientific_claim_allowed"])
+            self.assertEqual(leakage.payload["observed_seeds"], [0])
+            self.assertEqual(leakage.payload["evidence_status"], "single_seed_non_paper")
+            self.assertFalse(leakage.payload["paper_demo_gate"]["passed"])
+            bad = [row for row in leakage.payload["comparisons"] if row["split_id"] == "bad_segment_split"][0]
+            self.assertEqual(bad["status"], "negative_control")
+            self.assertGreater(bad["subject_overlap"], 0)
+            self.assertTrue((out_dir / "leakage_demo.json").exists())
+            self.assertTrue((out_dir / "LEAKAGE_DEMO.json").exists())
+
+            self.assertEqual(identity.exit_code, 0)
+            self.assertIn("eval_identity_probe=True", identity.output)
+            self.assertIn("identity_confounding_risk=", identity.output)
+            self.assertFalse(identity.payload["scientific_claim_allowed"])
+            self.assertEqual(identity.payload["observed_seeds"], [0])
+            self.assertEqual(identity.payload["evidence_status"], "single_seed_non_paper")
+            self.assertFalse(identity.payload["paper_demo_gate"]["passed"])
+            self.assertGreater(identity.payload["window_split_probe"]["subject_overlap"], 0)
+            self.assertTrue((out_dir / "identity_probe.json").exists())
+            self.assertTrue((out_dir / "IDENTITY_PROBE.json").exists())
+
+    def test_eval_command_runs_multi_seed_paper_demos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            leakage = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="leakage-demo",
+                    out_dir=out_dir,
+                    seeds=(0, 1, 2),
+                    train_steps=1,
+                )
+            )
+            identity = run_eval_command(
+                EvalCommandConfig(
+                    eval_command="identity-probe",
+                    out_dir=out_dir,
+                    seeds=(0, 1, 2),
+                    train_steps=1,
+                )
+            )
+
+            self.assertEqual(leakage.exit_code, 0)
+            self.assertEqual(leakage.payload["observed_seeds"], [0, 1, 2])
+            self.assertEqual(len(leakage.payload["seed_results"]), 3)
+            self.assertTrue(leakage.payload["paper_demo_gate"]["passed"])
+            self.assertNotIn("seed", leakage.payload)
+            self.assertNotIn("comparisons", leakage.payload)
+            self.assertIn("representative_seed_result", leakage.payload)
+            self.assertLess(leakage.output.index("seed_aggregate="), leakage.output.index("representative_split_result="))
+            self.assertTrue(
+                any(
+                    row["split_id"] == "bad_segment_split" and row["metric"] == "mse" and row["n_seeds"] == 3
+                    for row in leakage.payload["seed_aggregate"]
+                )
+            )
+
+            self.assertEqual(identity.exit_code, 0)
+            self.assertEqual(identity.payload["observed_seeds"], [0, 1, 2])
+            self.assertEqual(len(identity.payload["seed_results"]), 3)
+            self.assertTrue(identity.payload["paper_demo_gate"]["passed"])
+            self.assertNotIn("seed", identity.payload)
+            self.assertNotIn("window_split_probe", identity.payload)
+            self.assertIn("representative_seed_result", identity.payload)
+            self.assertLess(identity.output.index("seed_aggregate="), identity.output.index("representative_window_split_accuracy="))
+            self.assertTrue(any(row["metric"] == "accuracy" and row["n_seeds"] == 3 for row in identity.payload["seed_aggregate"]))
 
     def test_eval_command_seed_reaches_synthetic_suites(self):
         smoke_a = run_eval_command(EvalCommandConfig(suite="translation_smoke", seed=3))

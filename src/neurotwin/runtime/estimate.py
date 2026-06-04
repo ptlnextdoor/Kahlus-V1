@@ -21,7 +21,11 @@ def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | floa
         backbone_params = model.n_layers * (6 * model.latent_dim * model.latent_dim)
     head_params = len(model.modalities) * model.latent_dim * model.output_dim * 3
     adapter_params = model.subject_adapter_dim * model.latent_dim * 2
+    pair_operator_params = 0
+    if model.type.strip().lower().replace("-", "_") in {"neurotwin_pair_operator", "neurotwinpairoperator", "pair_operator", "ntp_o"}:
+        pair_operator_params = model.output_dim * model.pair_rank * 2 + model.latent_dim * model.latent_dim
     estimated_parameters = encoder_params + backbone_params + head_params + adapter_params
+    estimated_parameters += pair_operator_params
     activation_mb = batch_size * resolved.window_length * model.latent_dim * bytes_per_value * max(model.n_layers, 1) / (1024 * 1024)
     optimizer_mb = estimated_parameters * 8 / (1024 * 1024)
     checkpoint_mb = estimated_parameters * bytes_per_value / (1024 * 1024)
@@ -31,6 +35,7 @@ def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | floa
         "estimated_optimizer_mb": round(optimizer_mb, 3),
         "estimated_checkpoint_mb": round(checkpoint_mb, 3),
         "effective_batch_size": batch_size * max(grad_accum, 1),
+        "model_type": model.type,
         "backbone": model.backbone,
         "encoder": model.encoder,
         "precision": precision,

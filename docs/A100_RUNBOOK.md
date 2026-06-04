@@ -42,12 +42,12 @@ python3 -m neurotwin.cli eval \
   --out-dir "$EVAL_DIR"
 ```
 
-MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits, baseline reporting, seed aggregation, and claim gates.
+MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits, baseline reporting, seed aggregation, and the paper artifact contract. It does not set `scientific_claim_allowed=true`; that remains an explicit run-summary decision.
 
 ## Heavy 6-GPU Lane
 
 Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Do not assume a seventh GPU is available unless Slurm confirms it.
-When `A100_RUN_ID` is not `moabb_a100_smoke`, the guarded Docker and Slurm helpers default to running that paper-mode gate before long training and copying the resulting `paper_mode_gate.json` into the run directory before report generation.
+For the heavy lane, the guarded Docker and Slurm helpers consume existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when `paper_mode_gate.json` passed. If Phase 1 artifacts are missing, they write a `paper_mode_artifacts_unavailable` marker and do not silently run paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation. After training both lanes call `python -m neurotwin.cli run finalize`, which copies the small paper-mode artifacts into the run directory, writes the run report, runs leakage-demo and identity-probe diagnostics, finalizes `evidence_gate.json`, and generates `EEG_MODEL_CARD.md`.
 
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
@@ -100,4 +100,4 @@ sbatch scripts/slurm/eval_a100.sh "$RUN_ROOT/<run_id>"
 sbatch scripts/slurm/sweep_a100.sh outputs/configs/moabb_a100_seed*.yaml
 ```
 
-Every real run should write config, split manifest, metrics, best checkpoint, environment, git commit, split hash, report tables, and figure specs. Scientific claims require repeated real-data runs, strict held-out splits, and no synthetic-only or smoke-only labeling.
+Every real run should write config, split manifest, metrics, best checkpoint, environment, git commit, split hash, report tables, figure specs, `LEAKAGE_AUDIT.json`, `CLAIM_GATE.json`, baseline rankings, seed aggregates, leakage-demo output, identity-probe output, and `EEG_MODEL_CARD.md`. A passed paper-mode gate means the artifact contract is satisfied; scientific/model claim allowance is controlled by `summary.json` and stays false unless that summary explicitly allows it. The allowed evidence statement is leakage-proof evaluation and infrastructure validation, not model superiority.

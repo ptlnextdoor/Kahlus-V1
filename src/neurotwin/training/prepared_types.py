@@ -59,6 +59,10 @@ class PreparedTrainingConfig:
         return self.runtime.gradient_accumulation_steps
 
     @property
+    def max_grad_norm(self) -> float | None:
+        return self.runtime.max_grad_norm
+
+    @property
     def precision(self) -> str:
         return self.runtime.precision
 
@@ -135,6 +139,7 @@ class PreparedTrainingResult:
     start_step: int
     completed_steps: int
     gradient_accumulation_steps: int
+    max_grad_norm: float | None
     precision: str
     device: str
     resumed_from: str | None
@@ -158,6 +163,8 @@ class PreparedTrainingResult:
     final_checkpoint_path: str | None = None
     checkpoint_selection_metric: str = "val_mse"
     checkpoint_selection_mode: str = "min"
+    quarantined_tasks: tuple[dict[str, str], ...] = ()
+    stimulus_evidence: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

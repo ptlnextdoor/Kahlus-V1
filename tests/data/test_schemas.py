@@ -31,6 +31,13 @@ class NeuralEventBatchTests(unittest.TestCase):
                 "split_assignment": "test",
                 "geometry": {"space": "parcel"},
                 "stimulus_alignment": {"stimulus_id": "clip-1"},
+                "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                "stimulus_feature_path": "/tmp/stimulus_features.npy",
+                "stimulus_feature_modalities": ["text", "audio", "video"],
+                "stimulus_feature_hash": "feature-hash",
+                "stimulus_feature_hash_verified": True,
+                "stimulus_feature_status": "real_precomputed",
+                "require_real_stimulus": True,
                 "behavior_metadata": {"label_space": "rt"},
             },
         )
@@ -50,6 +57,10 @@ class NeuralEventBatchTests(unittest.TestCase):
         self.assertEqual(batch.split_assignment, "test")
         self.assertEqual(batch.geometry_metadata["space"], "parcel")
         self.assertEqual(batch.stimulus_alignment_metadata["stimulus_id"], "clip-1")
+        self.assertEqual(batch.stimulus_feature_metadata["stimulus_feature_hash"], "feature-hash")
+        self.assertEqual(batch.stimulus_feature_metadata["stimulus_feature_path"], "/tmp/stimulus_features.npy")
+        self.assertTrue(batch.stimulus_feature_metadata["stimulus_feature_hash_verified"])
+        self.assertTrue(batch.stimulus_feature_metadata["require_real_stimulus"])
         self.assertEqual(batch.behavior_metadata["label_space"], "rt")
 
     def test_rejects_mismatched_time_axis(self):
