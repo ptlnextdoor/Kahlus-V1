@@ -1,7 +1,7 @@
 # Graph Report - /Users/aayu/.codex/worktrees/66ca/Kahlus-V1  (2026-06-05)
 
 ## Corpus Check
-- 139 files · ~192,906 words
+- 139 files · ~192,719 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -475,11 +475,11 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `_require_bundle_rel()` connect `Community 10` to `Community 2`?**
-  _High betweenness centrality (0.120) - this node is a cross-community bridge._
-- **Why does `build_split_manifest()` connect `Community 1` to `Community 2`, `Community 3`, `Community 5`, `Community 7`, `Community 8`, `Community 13`?**
   _High betweenness centrality (0.071) - this node is a cross-community bridge._
+- **Why does `build_split_manifest()` connect `Community 1` to `Community 2`, `Community 3`, `Community 5`, `Community 7`, `Community 8`, `Community 13`?**
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **Why does `NeuralEventBatch` connect `Community 1` to `Community 0`, `Community 4`, `Community 8`, `Community 11`, `Community 18`?**
-  _High betweenness centrality (0.063) - this node is a cross-community bridge._
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
 - **Are the 86 inferred relationships involving `ValueError` (e.g. with `_require_bundle_rel()` and `resolve_prepared_config()`) actually correct?**
   _`ValueError` has 86 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 46 inferred relationships involving `NeuralStateSpaceTranslator` (e.g. with `ModelMetadataGeometryTests` and `ModelShapeTests`) actually correct?**

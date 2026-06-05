@@ -1,0 +1,81 @@
+ARG BASE_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
+
+FROM --platform=$TARGETPLATFORM ${BASE_IMAGE} AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    TOKENIZERS_PARALLELISM=false
+
+WORKDIR /build
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY configs ./configs
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --prefix=/opt/neurotwin-runtime '.[moabb,cluster]' \
+    && python -m compileall -q -b /opt/neurotwin-runtime \
+    && find /opt/neurotwin-runtime -path '*/site-packages/neurotwin/*.py' -delete \
+    && find /opt/neurotwin-runtime -path '*/site-packages/neurotwin/**/*.py' -delete \
+    && find /opt/neurotwin-runtime -path '*/site-packages/neurotwin/*.pyi' -delete \
+    && find /opt/neurotwin-runtime -path '*/site-packages/neurotwin/**/*.pyi' -delete \
+    && find /opt/neurotwin-runtime -type d -name '__pycache__' -prune -exec rm -rf {} + \
+    && mkdir -p /opt/neurotwin \
+    && cp -R configs /opt/neurotwin/configs \
+    && python - <<'PY'
+from pathlib import Path
+
+project_roots = list(Path("/opt/neurotwin-runtime").glob("**/site-packages/neurotwin"))
+if not project_roots:
+    raise SystemExit("installed neurotwin package was not found")
+violations = []
+for root in project_roots:
+    violations.extend(path.as_posix() for path in root.rglob("*.py"))
+    violations.extend(path.as_posix() for path in root.rglob("*.pyi"))
+if violations:
+    raise SystemExit("plaintext project sources remain:\n" + "\n".join(sorted(violations)))
+PY
+
+FROM --platform=$TARGETPLATFORM ${BASE_IMAGE}
+
+ARG BUILD_COMMIT=unknown
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    TOKENIZERS_PARALLELISM=false
+
+WORKDIR /opt/neurotwin
+
+COPY --from=builder /opt/neurotwin-runtime /opt/neurotwin-runtime
+COPY --from=builder /opt/neurotwin /opt/neurotwin
+
+RUN python - <<'PY'
+from pathlib import Path
+import os
+import site
+
+source = next(Path("/opt/neurotwin-runtime/lib").glob("python*/site-packages"))
+target = Path(site.getsitepackages()[0])
+target.mkdir(parents=True, exist_ok=True)
+for child in sorted(source.iterdir()):
+    link = target / child.name
+    if link.exists():
+        continue
+    os.symlink(child, link)
+
+import neurotwin.cli  # noqa: F401
+
+project_root = target / "neurotwin"
+violations = []
+if project_root.exists():
+    violations.extend(path.as_posix() for path in project_root.rglob("*.py"))
+    violations.extend(path.as_posix() for path in project_root.rglob("*.pyi"))
+if violations:
+    raise SystemExit("plaintext project sources remain:\n" + "\n".join(sorted(violations)))
+PY
+
+LABEL org.opencontainers.image.title="NeuroTwin A100 Runtime" \
+      org.opencontainers.image.description="NeuroTwin NFC A100 runtime image without plaintext project Python sources." \
+      org.opencontainers.image.revision="${BUILD_COMMIT}"
+
+CMD ["bash"]

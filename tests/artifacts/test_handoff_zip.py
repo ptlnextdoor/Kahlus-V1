@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import tempfile
@@ -15,11 +16,14 @@ class HandoffZipArtifactTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_repo = copy_repo_to_temp_git(tmp)
+            env = dict(os.environ)
+            env["NEUROTWIN_DOCKER_IMAGE_REF"] = "ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime@sha256:" + "a" * 64
             result = subprocess.run(
                 ["bash", "scripts/package_a100_nfc_docker_handoff_zip.sh"],
                 cwd=tmp_repo,
                 text=True,
                 capture_output=True,
+                env=env,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
 
@@ -50,6 +54,9 @@ class HandoffZipArtifactTests(unittest.TestCase):
             readme = (handoff_root / "README_KRISH_AGENT.md").read_text(encoding="utf-8")
             self.assertIn("Docker runtime image", readme)
             self.assertIn("NEUROTWIN_DOCKER_IMAGE", readme)
+            self.assertIn("ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime@sha256:" + "a" * 64, readme)
+            self.assertIn("docker login ghcr.io", readme)
+            self.assertIn("docker pull \"$NEUROTWIN_DOCKER_IMAGE\"", readme)
             self.assertIn("--suite nfc_synthetic", readme)
             self.assertIn("--seeds 0 1 2", readme)
             self.assertIn("uncertainty_calibration.csv", readme)

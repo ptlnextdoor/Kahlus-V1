@@ -8,6 +8,7 @@ cd "$REPO_ROOT"
 
 SHORT_SHA="$(git rev-parse --short HEAD)"
 FULL_SHA="$(git rev-parse HEAD)"
+IMAGE_REF="${NEUROTWIN_DOCKER_IMAGE_REF:-ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime:$SHORT_SHA}"
 OUT_DIR="outputs"
 HANDOFF_NAME="neurotwin-a100-nfc-docker-handoff-$SHORT_SHA"
 HANDOFF_ZIP="$OUT_DIR/$HANDOFF_NAME.zip"
@@ -34,15 +35,16 @@ HANDOFF_ROOT="$STAGING/$HANDOFF_NAME"
 mkdir -p "$HANDOFF_ROOT"
 printf '%s\n' "$FULL_SHA" > "$HANDOFF_ROOT/COMMIT_HASH.txt"
 
-python3 - "$FULL_SHA" "$SHORT_SHA" README_KRISH_AGENT_NFC_A100.md.in "$HANDOFF_ROOT/README_KRISH_AGENT.md" <<'PY'
+python3 - "$FULL_SHA" "$SHORT_SHA" "$IMAGE_REF" README_KRISH_AGENT_NFC_A100.md.in "$HANDOFF_ROOT/README_KRISH_AGENT.md" <<'PY'
 from pathlib import Path
 from string import Template
 import sys
 
-full_sha, short_sha, template_path, output_path = sys.argv[1:5]
+full_sha, short_sha, image_ref, template_path, output_path = sys.argv[1:6]
 rendered = Template(Path(template_path).read_text(encoding="utf-8")).safe_substitute(
     FULL_SHA=full_sha,
     SHORT_SHA=short_sha,
+    IMAGE_REF=image_ref,
 )
 Path(output_path).write_text(rendered, encoding="utf-8")
 PY
@@ -124,3 +126,4 @@ print(f"nfc_docker_handoff_zip={zip_path}")
 print(f"nfc_docker_handoff_zip_sha256={sha256(zip_path.read_bytes()).hexdigest()}")
 PY
 echo "commit=$FULL_SHA"
+echo "image_ref=$IMAGE_REF"

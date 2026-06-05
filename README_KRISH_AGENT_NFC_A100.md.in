@@ -10,10 +10,20 @@ This handoff is for an AI agent running on Krish's A100 cluster account. It cont
 This zip is the operator runbook and checksum package. The executable artifact is the Docker image. Before running, set:
 
 ```bash
-export NEUROTWIN_DOCKER_IMAGE=<image-name-or-digest-for-${SHORT_SHA}>
+export NEUROTWIN_DOCKER_IMAGE=${IMAGE_REF}
 ```
 
 If `NEUROTWIN_DOCKER_IMAGE` is missing or the image cannot be pulled or loaded, stop and ask Aayu for the matching Docker runtime artifact.
+
+If the cluster account needs to authenticate to GitHub Container Registry first, use a read-only package token supplied by Aayu:
+
+```bash
+export GHCR_USER=<github-user>
+export GHCR_TOKEN=<token-with-read-package-access>
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+unset GHCR_TOKEN
+docker pull "$NEUROTWIN_DOCKER_IMAGE"
+```
 
 ## Verify The Handoff Zip
 
@@ -49,7 +59,7 @@ Use one A100 first. Replace `HOST_GPU_ID` if the scheduler assigns a different h
 
 ```bash
 export HOST_GPU_ID=0
-export NEUROTWIN_DOCKER_IMAGE=<private-image-or-digest-for-${SHORT_SHA}>
+export NEUROTWIN_DOCKER_IMAGE=${IMAGE_REF}
 
 docker run --rm --gpus "\"device=${HOST_GPU_ID}\"" \
   --ipc=host --shm-size=64g \
@@ -168,13 +178,22 @@ docker run --rm --gpus "\"device=${HOST_GPU_ID}\"" \
   -v "$RUN_ROOT":"$RUN_ROOT" \
   -v /raid/scratch/$USER/materialized_configs:/raid/scratch/$USER/materialized_configs:ro \
   "$NEUROTWIN_DOCKER_IMAGE" \
-  bash -lc 'PYTHON_BIN=python3 bash /opt/neurotwin/scripts/slurm/_train_a100_inner.sh \
-    /raid/scratch/$USER/materialized_configs/algonauts_field_compiler_debug.yaml \
-    "$RUN_ROOT" \
-    1'
+  bash -lc 'set -euo pipefail
+    CONFIG=/raid/scratch/$USER/materialized_configs/algonauts_field_compiler_debug.yaml
+    python -m neurotwin.cli doctor
+    python -m neurotwin.cli cluster preflight \
+      --config "$CONFIG" \
+      --run-root "$RUN_ROOT" \
+      --require-cuda \
+      --require-prepared-windows
+    python -m neurotwin.cli train --dry-run --config "$CONFIG"
+    torchrun --standalone --nproc_per_node=1 \
+      -m neurotwin.cli train \
+      --config "$CONFIG" \
+      --run-root "$RUN_ROOT"'
 ```
 
-If the image does not contain `/opt/neurotwin/scripts/slurm/_train_a100_inner.sh`, stop and ask Aayu for the matching Docker runtime image.
+If `python -m neurotwin.cli doctor` fails inside the image, stop and ask Aayu for the matching Docker runtime image.
 
 ## Only After Algonauts Debug Passes: 6x A100 DDP
 
