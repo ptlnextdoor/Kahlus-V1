@@ -46,9 +46,14 @@ class PreparedModelConfig(TypedDict, total=False):
     gradient_checkpointing: bool
     pair_rank: int
     use_pair_state: bool
+    use_pair_kernel: bool
+    use_observation_operator: bool
+    use_uncertainty: bool
     use_uncertainty_head: bool
     refinement_steps: int
     hrf_delay_steps: int
+    stimulus_lag_steps: int
+    subject_state_dim: int
 
 
 class PreparedTrainingSectionConfig(TypedDict, total=False):
@@ -124,9 +129,14 @@ class ResolvedPreparedModelConfig:
     gradient_checkpointing: bool
     pair_rank: int
     use_pair_state: bool
+    use_pair_kernel: bool
+    use_observation_operator: bool
+    use_uncertainty: bool
     use_uncertainty_head: bool
     refinement_steps: int
     hrf_delay_steps: int
+    stimulus_lag_steps: int
+    subject_state_dim: int
 
 
 @dataclass(frozen=True)
@@ -209,9 +219,14 @@ def resolve_prepared_config(
         ),
         pair_rank=int(model_config.get("pair_rank", 8)),
         use_pair_state=bool(model_config.get("use_pair_state", True)),
+        use_pair_kernel=bool(model_config.get("use_pair_kernel", model_config.get("use_pair_state", True))),
+        use_observation_operator=bool(model_config.get("use_observation_operator", True)),
+        use_uncertainty=bool(model_config.get("use_uncertainty", model_config.get("use_uncertainty_head", True))),
         use_uncertainty_head=bool(model_config.get("use_uncertainty_head", True)),
         refinement_steps=max(0, int(model_config.get("refinement_steps", 1))),
         hrf_delay_steps=max(0, int(model_config.get("hrf_delay_steps", 1))),
+        stimulus_lag_steps=max(0, int(model_config.get("stimulus_lag_steps", model_config.get("hrf_delay_steps", 1)))),
+        subject_state_dim=max(0, int(model_config.get("subject_state_dim", 0))),
     )
     runtime = ResolvedPreparedRuntimeConfig(
         batch_size=_optional_int(batch_size),

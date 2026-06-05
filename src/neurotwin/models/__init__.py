@@ -1,6 +1,7 @@
 """Baseline and NeuroTwin model specifications."""
 
 from neurotwin.models.baselines import BaselineSpec, NumpyRidgeBaseline, TorchMLPBaseline, TorchTCNBaseline, baseline_registry
+from neurotwin.models.nfc import NeuralFieldCompiler, NeuralFieldCompilerConfig
 from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
 from neurotwin.models.torch_models import (
     NeuralStateSpaceTranslator,
@@ -14,6 +15,8 @@ __all__ = [
     "BaselineSpec",
     "NeuralStateSpaceTranslator",
     "NeuralStateSpaceTranslatorConfig",
+    "NeuralFieldCompiler",
+    "NeuralFieldCompilerConfig",
     "NeuroTwinPairOperator",
     "NeuroTwinPairOperatorConfig",
     "NumpyRidgeBaseline",

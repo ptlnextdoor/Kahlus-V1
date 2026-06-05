@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from neurotwin.benchmarks.nfc_suite import format_nfc_synthetic_report, run_nfc_synthetic_suite
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.task_specs import default_translation_tasks
@@ -52,6 +53,8 @@ TASK_RESULT_FIELDS = (
 
 
 def generate_suite_report(suite: str) -> str:
+    if suite == "nfc_synthetic":
+        return format_nfc_synthetic_report(run_nfc_synthetic_suite(seed=0, train_steps=1))
     if suite == "neural_translation_v1":
         payload = run_neural_translation_v1_synthetic(seed=0)
         lines = [
