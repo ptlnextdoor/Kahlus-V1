@@ -126,7 +126,8 @@ def evaluate_task(
         finite = np.isfinite(abs_error) & np.isfinite(uncertainty)
         if finite.any():
             metrics[f"{prefix}_mean_uncertainty"] = float(np.mean(uncertainty[finite]))
-            metrics[f"{prefix}_error_uncertainty_correlation"] = pearsonr(abs_error[finite], uncertainty[finite])
+            if int(np.sum(finite)) >= 2:
+                metrics[f"{prefix}_error_uncertainty_correlation"] = pearsonr(abs_error[finite], uncertainty[finite])
     return metrics
 
 
