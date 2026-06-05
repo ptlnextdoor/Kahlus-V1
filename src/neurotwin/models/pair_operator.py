@@ -17,11 +17,15 @@ class NeuroTwinPairOperatorConfig:
     n_layers: int = 1
     dropout: float = 0.0
     pair_rank: int = 8
+    pair_top_k: int = 0
+    network_blocks: int = 1
+    pair_confidence_max_parcels: int = 256
     backbone: str = "gru"
     n_heads: int = 4
     projection_dim: int = 32
     use_pair_state: bool = True
     use_uncertainty_head: bool = True
+    use_pair_uncertainty: bool = False
     refinement_steps: int = 1
     hrf_delay_steps: int = 1
 
@@ -39,11 +43,15 @@ class NeuroTwinPairOperatorConfig:
             n_layers=int(selected.get("n_layers", cls.n_layers)),
             dropout=float(selected.get("dropout", cls.dropout)),
             pair_rank=int(selected.get("pair_rank", cls.pair_rank)),
+            pair_top_k=max(0, int(selected.get("pair_top_k", cls.pair_top_k))),
+            network_blocks=max(1, int(selected.get("network_blocks", cls.network_blocks))),
+            pair_confidence_max_parcels=max(0, int(selected.get("pair_confidence_max_parcels", cls.pair_confidence_max_parcels))),
             backbone=str(selected.get("backbone", cls.backbone)),
             n_heads=int(selected.get("n_heads", cls.n_heads)),
             projection_dim=int(selected.get("projection_dim", cls.projection_dim)),
             use_pair_state=bool(selected.get("use_pair_state", cls.use_pair_state)),
             use_uncertainty_head=bool(selected.get("use_uncertainty_head", cls.use_uncertainty_head)),
+            use_pair_uncertainty=bool(selected.get("use_pair_uncertainty", cls.use_pair_uncertainty)),
             refinement_steps=max(0, int(selected.get("refinement_steps", cls.refinement_steps))),
             hrf_delay_steps=max(0, int(selected.get("hrf_delay_steps", cls.hrf_delay_steps))),
         )
@@ -79,8 +87,12 @@ class NeuroTwinPairOperator(nn.Module):
         self.config = resolved
         self.latent_dim = resolved.latent_dim
         self.pair_rank = resolved.pair_rank
+        self.pair_top_k = resolved.pair_top_k
+        self.network_blocks = resolved.network_blocks
+        self.pair_confidence_max_parcels = resolved.pair_confidence_max_parcels
         self.use_pair_state = resolved.use_pair_state
         self.use_uncertainty_head = resolved.use_uncertainty_head
+        self.use_pair_uncertainty = resolved.use_pair_uncertainty
         self.refinement_steps = resolved.refinement_steps
         self.hrf_delay_steps = resolved.hrf_delay_steps
 
@@ -105,6 +117,12 @@ class NeuroTwinPairOperator(nn.Module):
         self.pair_right = nn.ParameterDict(
             {modality: nn.Parameter(torch.randn(dim, resolved.pair_rank) * 0.02) for modality, dim in sorted(output_dims.items())}
         )
+        self.pair_block_gates = nn.ParameterDict(
+            {
+                modality: nn.Parameter(torch.ones(resolved.network_blocks, resolved.pair_rank))
+                for modality in sorted(output_dims)
+            }
+        )
         self.pair_update = nn.Sequential(nn.Linear(resolved.latent_dim, resolved.latent_dim), nn.GELU())
         self.hrf_adapter = nn.Sequential(
             nn.Conv1d(resolved.latent_dim, resolved.latent_dim, kernel_size=3, padding=resolved.hrf_delay_steps),
@@ -117,6 +135,7 @@ class NeuroTwinPairOperator(nn.Module):
         self.readouts = nn.ModuleDict({modality: nn.Linear(resolved.latent_dim, 1) for modality in sorted(output_dims)})
         self.refinement = nn.Sequential(nn.Linear(2, resolved.latent_dim), nn.GELU(), nn.Linear(resolved.latent_dim, 1))
         self.uncertainty_head = nn.Linear(resolved.latent_dim, 1)
+        self.pair_uncertainty_head = nn.Linear(resolved.pair_rank, 1)
         self.projection_head = nn.Sequential(
             nn.Linear(resolved.latent_dim, resolved.latent_dim),
             nn.GELU(),
@@ -151,8 +170,7 @@ class NeuroTwinPairOperator(nn.Module):
             drive = self.stimulus_encoders[source_modality](x.float()).unsqueeze(2)
             node_tokens = node_tokens + drive
         if self.use_pair_state:
-            pair = self._pair_weights(target_modality, dtype=node_tokens.dtype, device=node_tokens.device)
-            pair_context = torch.einsum("ij,btjl->btil", pair, node_tokens)
+            pair_context = self._pair_context(target_modality, node_tokens)
             node_tokens = node_tokens + self.pair_update(pair_context)
         if target_modality == "fmri":
             node_tokens = node_tokens + self._hrf_context(node_tokens)
@@ -178,18 +196,56 @@ class NeuroTwinPairOperator(nn.Module):
         }
         if self.use_uncertainty_head:
             output["uncertainty"] = torch.nn.functional.softplus(self.uncertainty_head(latent).squeeze(-1)) + 1e-6
+        if self.use_pair_uncertainty:
+            output["pair_uncertainty"] = self._pair_uncertainty(target_modality, dtype=prediction.dtype, device=prediction.device)
         return output
 
-    def _pair_weights(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+    def _pair_factors(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
         left = self.pair_left[target_modality].to(device=device, dtype=dtype)
         right = self.pair_right[target_modality].to(device=device, dtype=dtype)
-        return torch.softmax((left @ right.T) / sqrt(float(self.pair_rank)), dim=-1)
+        if self.network_blocks > 1:
+            block_ids = torch.arange(left.shape[0], device=device) % self.network_blocks
+            block_gates = torch.sigmoid(self.pair_block_gates[target_modality].to(device=device, dtype=dtype))
+            left = left * block_gates.index_select(0, block_ids)
+        if 0 < self.pair_top_k < right.shape[0]:
+            mask = torch.zeros_like(right)
+            topk = torch.topk(right.abs(), k=self.pair_top_k, dim=0).indices
+            mask.scatter_(0, topk, 1.0)
+            right = right * mask
+        return torch.tanh(left), torch.tanh(right)
+
+    def _pair_context(self, target_modality: str, node_tokens: torch.Tensor) -> torch.Tensor:
+        left, right = self._pair_factors(target_modality, dtype=node_tokens.dtype, device=node_tokens.device)
+        source_summary = torch.einsum("nr,btnl->btrl", right, node_tokens)
+        source_summary = source_summary / sqrt(float(max(1, right.shape[0])))
+        context = torch.einsum("nr,btrl->btnl", left, source_summary)
+        return context / sqrt(float(max(1, self.pair_rank)))
+
+    def _pair_weights(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+        left, right = self._pair_factors(target_modality, dtype=dtype, device=device)
+        weights = (left @ right.T) / sqrt(float(max(1, self.pair_rank)))
+        return torch.softmax(weights, dim=-1)
 
     def _pair_confidence(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
         if not self.use_pair_state:
             dim = self.output_dims[target_modality]
-            return torch.eye(dim, dtype=dtype, device=device)
-        return self._pair_weights(target_modality, dtype=dtype, device=device)
+            if dim <= self.pair_confidence_max_parcels:
+                return torch.eye(dim, dtype=dtype, device=device)
+            return torch.zeros((2, dim, self.pair_rank), dtype=dtype, device=device)
+        dim = self.output_dims[target_modality]
+        left, right = self._pair_factors(target_modality, dtype=dtype, device=device)
+        if dim <= self.pair_confidence_max_parcels:
+            return torch.softmax((left @ right.T) / sqrt(float(max(1, self.pair_rank))), dim=-1)
+        return torch.stack((left, right), dim=0)
+
+    def _pair_uncertainty(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+        left, right = self._pair_factors(target_modality, dtype=dtype, device=device)
+        compact = 0.5 * (left.abs() + right.abs())
+        values = torch.nn.functional.softplus(self.pair_uncertainty_head(compact).squeeze(-1)) + 1e-6
+        dim = self.output_dims[target_modality]
+        if dim <= self.pair_confidence_max_parcels:
+            return values[:, None].expand(dim, dim)
+        return values
 
     def _hrf_context(self, node_tokens: torch.Tensor) -> torch.Tensor:
         batch, time, parcels, latent_dim = node_tokens.shape

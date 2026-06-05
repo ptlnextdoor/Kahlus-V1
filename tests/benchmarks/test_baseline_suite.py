@@ -12,8 +12,10 @@ import numpy as np
 
 from neurotwin.benchmarks.baseline_suite import (
     BASELINE_CATALOG,
+    BrainVistaStyleConfig,
     EXECUTABLE_BASELINE_RUNNERS,
     SupervisedWindowTask,
+    _causal_stimulus_features,
     run_supervised_window_tasks,
     run_synthetic_baseline_suite,
 )
@@ -159,6 +161,8 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("not an exact TRIBE v2 reproduction", catalog["tribe_style"]["notes"])
         self.assertIn("brainvista_style", result["metrics_by_model"])
         self.assertIn("pair_operator", result["metrics_by_model"])
+        self.assertIn("tribe_style_clean_room", result["metrics_by_model"])
+        self.assertIn("pair_operator_no_pair_state", result["metrics_by_model"])
 
     def test_baseline_catalog_is_separate_from_executable_runners(self):
         catalog_ids = {entry.model_id for entry in BASELINE_CATALOG}
@@ -166,10 +170,31 @@ class BaselineSuiteTests(unittest.TestCase):
 
         self.assertIn("brainvista_style", catalog_ids)
         self.assertIn("brain_of_style", catalog_ids)
+        self.assertIn("tribe_style_clean_room", catalog_ids)
+        self.assertIn("pair_operator_no_pair_state", catalog_ids)
         self.assertIn("brainvista_style", runner_ids)
         self.assertNotIn("brain_of_style", runner_ids)
         self.assertIn("tribe_style", runner_ids)
+        self.assertIn("tribe_style_clean_room", runner_ids)
         self.assertIn("pair_operator", runner_ids)
+        self.assertIn("pair_operator_no_pair_state", runner_ids)
+
+    def test_brainvista_style_stimulus_features_are_history_only_by_default(self):
+        x = np.arange(1 * 5 * 3, dtype=np.float32).reshape(1, 5, 3)
+        config = BrainVistaStyleConfig(stimulus_lag_steps=1, include_current_stimulus=False, hrf_lag_steps=2)
+        baseline_features = _causal_stimulus_features(x, config=config)
+
+        future_changed = x.copy()
+        future_changed[:, 3, :] += 1000.0
+        self.assertTrue(np.array_equal(baseline_features[:, 2, :], _causal_stimulus_features(future_changed, config=config)[:, 2, :]))
+
+        current_changed = x.copy()
+        current_changed[:, 2, :] += 1000.0
+        self.assertTrue(np.array_equal(baseline_features[:, 2, :], _causal_stimulus_features(current_changed, config=config)[:, 2, :]))
+
+        past_changed = x.copy()
+        past_changed[:, 1, :] += 1000.0
+        self.assertFalse(np.array_equal(baseline_features[:, 2, :], _causal_stimulus_features(past_changed, config=config)[:, 2, :]))
 
     def test_tribe_style_facade_predicts_without_external_download(self):
         with tempfile.TemporaryDirectory() as tmp:

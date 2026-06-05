@@ -18,6 +18,10 @@ fi
 
 CONFIG=$1
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+if [[ "$CONFIG" != /* ]]; then
+  echo "Config must be a materialized absolute path before A100 launch, got: $CONFIG" >&2
+  exit 2
+fi
 if [[ -z "${RUN_ROOT:-}" ]]; then
   echo "RUN_ROOT must be set to a persistent absolute path before A100 launch." >&2
   exit 2

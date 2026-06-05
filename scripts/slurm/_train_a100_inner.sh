@@ -14,6 +14,10 @@ A100_RUN_PAPER_MODE_IN_FULL="${A100_RUN_PAPER_MODE_IN_FULL:-0}"
 A100_PAPER_MODE_TRAIN_STEPS="${A100_PAPER_MODE_TRAIN_STEPS:-3}"
 A100_PAPER_MODE_EVAL_DIR="${A100_PAPER_MODE_EVAL_DIR:-}"
 
+if [[ "$CONFIG" != /* ]]; then
+  echo "Config must be a materialized absolute path before A100 launch, got: $CONFIG" >&2
+  exit 2
+fi
 if [[ ! -f "$CONFIG" ]]; then
   echo "Config does not exist: $CONFIG" >&2
   exit 2
