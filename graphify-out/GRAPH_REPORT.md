@@ -1,4 +1,4 @@
-# Graph Report - /Users/aayu/.codex/worktrees/a2e5/Kahlus-V1  (2026-06-03)
+# Graph Report - Kahlus-V1  (2026-06-03)
 
 ## Corpus Check
 - 124 files · ~186,184 words
