@@ -10,6 +10,8 @@ Planned experiments:
 
 Baselines include ridge, MLP, TCN, Transformer, SSM fallback, modality specialists, and clearly labeled competitor references.
 
+NFC experiments add synthetic latent-field recovery before real-data scaling. The comparison table includes current NeuroTwin, Pair-Operator, no-pair NFC, no-observation-operator NFC, and full NFC.
+
 Current executable prepared-manifest suite:
 
 - ranks ridge, MLP, TCN, Transformer, SSM fallback, and NeuroTwin on forecasting, reconstruction, and cross-modal translation;

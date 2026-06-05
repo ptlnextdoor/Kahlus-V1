@@ -5,6 +5,9 @@ A100 is the canonical cluster target for NeuroTwin v1. H100 configs remain compa
 Prepare data before training. Cluster jobs must read local prepared manifests and must not download MOABB, OpenNeuro, or other public data during training.
 Set `NEUROTWIN_DATA` to a persistent shared filesystem location; prepared benchmark artifacts belong under `$NEUROTWIN_DATA/prepared/`, not node-local `/tmp`.
 
+For the NFC pivot, run the local synthetic field-compiler suite before any A100
+debug job. Pair-Operator is an ablation/baseline, not the main architecture.
+
 For the first Chapman run, prefer the guarded one-command path:
 
 ```bash
@@ -20,6 +23,7 @@ Use one A100 for short validation runs before spending a multi-day allocation:
 ```bash
 PYTHONPATH=src python3 -m unittest
 git diff --check
+PYTHONPATH=src python3 -m neurotwin.cli eval --suite nfc_synthetic --out-dir outputs/nfc_synthetic --train-steps 1 --seed 0
 bash scripts/run_smoke.sh outputs/smoke-head
 bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```

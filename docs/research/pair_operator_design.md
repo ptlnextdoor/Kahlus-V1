@@ -1,12 +1,17 @@
-# NeuroTwin Pair-Operator Design Audit
+# NeuroTwin Pair-Operator Historical Ablation Audit
 
-Status: architecture branch design audit
+Status: superseded architecture branch; retained as NFC ablation
 Branch scope: Pair-Operator plus real-stimulus evidence hygiene
 Claim scope: infrastructure and model experiment readiness only; no model-superiority claim
 
+Pair-Operator is no longer the main NeuroTwin architecture. The main
+experimental architecture is NeuroTwin NFC, the Neural Field Compiler. This file
+is retained to document the historical Pair-Operator branch and to define the
+baseline/ablation role it now plays inside NFC.
+
 ## Research Thesis
 
-The Pair-Operator branch tests one narrow architecture bet: naturalistic brain
+The Pair-Operator branch tested one narrow architecture bet: naturalistic brain
 dynamics should be modeled as a time-evolving relational system, not only as a
 flat temporal sequence. The minimal representation is:
 
@@ -15,7 +20,7 @@ flat temporal sequence. The minimal representation is:
 - stimulus drive: real precomputed stimulus features aligned to neural time
 - evidence metadata: split, audit, stimulus provenance, and claim eligibility
 
-For this branch the implementation remains fMRI-first. EEG, calcium, spikes,
+For this ablation the implementation remains fMRI-first. EEG, calcium, spikes,
 clinical labels, and additional modalities are out of scope until the fMRI path
 wins or loses cleanly.
 
@@ -138,7 +143,7 @@ The local runner labels must remain explicit:
 - `brainvista_style` is a local clean-room approximation, not exact BrainVista.
 - `tribe_style` or `tribe_style_clean_room` is a local clean-room approximation
   when present, not exact TRIBE v2.
-- `pair_operator` is the local NeuroTwin architecture under test.
+- `pair_operator` is the local NeuroTwin Pair-Operator baseline/ablation.
 
 Exact upstream reproduction claims require explicit upstream code/weights and
 license/provenance review.
@@ -170,13 +175,15 @@ ready only when:
 - baseline ranking is nonempty or explicitly unavailable
 - model card and diagnostic report list evidence status and failures
 
-## A100 Command Plan
+## Historical A100 Command Plan
 
-The generic Slurm wrapper `scripts/slurm/train_a100.sh` requests six A100 GPUs.
-Use the inner launcher for one-GPU debug jobs, or submit a one-GPU Slurm wrapper
-around the same inner command if the cluster requires all GPU work to be queued.
+These commands are retained for reproducibility of the superseded Pair-Operator
+branch. They are not the main NFC launch path. The generic Slurm wrapper
+`scripts/slurm/train_a100.sh` requests six A100 GPUs. Use the inner launcher for
+one-GPU debug jobs, or submit a one-GPU Slurm wrapper around the same inner
+command if the cluster requires all GPU work to be queued.
 
-### 1x A100 Pair-Operator Debug
+### Historical 1x A100 Pair-Operator Debug
 
 Run this before any full DDP job:
 
@@ -201,7 +208,7 @@ A100_RUN_ID=algonauts_pair_operator_debug \
 bash scripts/run_docker_6gpu.sh /cluster/scratch/$USER/neurotwin_pair_operator_debug
 ```
 
-### 6x A100 Full Pair-Operator DDP
+### Historical 6x A100 Pair-Operator Ablation DDP
 
 Only run this after the 1x debug run passes:
 
@@ -259,11 +266,9 @@ PYTHON_BIN=python3 bash scripts/slurm/_train_a100_inner.sh \
 
 ## Success and Failure Interpretation
 
-This becomes a model paper only if Pair-Operator beats strong simple baselines
-or the current NeuroTwin translator on at least one core task under leakage-safe
-held-out evaluation. Preferred wins are future fMRI forecasting, long-horizon
-rollout, regionwise Pearson, stable masked reconstruction, or calibrated
-uncertainty correlated with error.
+This no longer becomes the model paper by itself. Pair-Operator now supports the
+NFC paper only if it clarifies whether low-rank relational state helps the full
+Neural Field Compiler under leakage-safe held-out evaluation.
 
 If Pair-Operator loses to ridge and BrainVista-style approximations, report the
 failure directly. The result remains useful as leakage-gated infrastructure and

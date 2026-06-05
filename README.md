@@ -1,10 +1,12 @@
 # NeuroTwin
 
-NeuroTwin v1 is a research repo for a leakage-proof Neural Translation benchmark and model scaffold. The claim is not "first brain foundation model", "first multimodal brain model", "first stimulus-to-brain model", or a clinical digital twin.
+NeuroTwin v1 is a research repo for a leakage-proof Neural Translation benchmark and model scaffold. The current experimental architecture is NeuroTwin NFC, a Neural Field Compiler. The claim is not "first brain foundation model", "first multimodal brain model", "first stimulus-to-brain model", or a clinical digital twin.
 
 The defensible v1 target is stricter:
 
 > Cross-modal neural translation, missing-modality reconstruction, future-state forecasting, and few-shot subject adaptation under held-out subject/site/dataset splits.
+
+NFC treats fMRI, EEG, behavior, stimulus responses, and future modalities as partial observations of one latent neural field. Pair-Operator remains usable, but only as a baseline/ablation for low-rank relational field updates.
 
 Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Brain-OF, BrainOmni, Brain Harmony, plus Transformer, SSM/Mamba, and modality-specialist baselines. Brain-OF is treated as the main benchmark opponent for generic multimodal neural foundation modeling.
 
@@ -24,6 +26,7 @@ Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Br
 - A100 is the canonical cluster target through `configs/train/*_a100.yaml`, `scripts/slurm/*_a100.sh`, and `docs/A100_RUNBOOK.md`; H100 remains a compatible high-memory variant.
 - Chapman A100 first launch has a guarded one-command path in `scripts/cluster/chapman_a100_first_run.sh`, with explicit preflight against placeholder paths, zero-window data, missing CUDA, and non-persistent run roots.
 - Modular NeuroTwin model internals now expose modality encoders, `transformer`/`ssm_fallback` backbone selection, geometry/metadata encoders, projection heads, and leakage-safe subject-adapter controls. `mamba` remains an upstream baseline target, not a wired NeuroTwin backbone selector.
+- Experimental NFC internals expose `NeuralFieldCompiler`, `LatentNeuralField`, causal field updates, low-rank pair kernels, observation operators, stimulus conditioning, uncertainty maps, and a synthetic latent-field suite. Synthetic NFC outputs are plumbing checks, not science.
 - Reproducibility helpers for deterministic seeds, config snapshots, environment capture, git commit capture, and stable manifest hashes.
 - CLI surface:
   - `nt doctor`
@@ -85,6 +88,7 @@ PYTHONPATH=src python3 -m neurotwin.cli train --config configs/train/moabb_smoke
 PYTHONPATH=src python3 -m neurotwin.cli eval --suite translation_smoke
 PYTHONPATH=src python3 -m neurotwin.cli eval audit --suite neural_translation_v1 --event-manifest /tmp/neurotwin_prepared/event_manifest.json --split-manifest /tmp/neurotwin_prepared/split_manifest.json
 PYTHONPATH=src python3 -m neurotwin.cli eval --suite neural_translation_v1 --event-manifest /tmp/neurotwin_prepared/event_manifest.json --split-manifest /tmp/neurotwin_prepared/split_manifest.json --train-steps 1
+PYTHONPATH=src python3 -m neurotwin.cli eval --suite nfc_synthetic --out-dir /tmp/neurotwin_nfc_synthetic --train-steps 1 --seed 0
 PYTHONPATH=src python3 -m neurotwin.cli report --suite translation_smoke
 bash -n scripts/slurm/*.sh
 ```
