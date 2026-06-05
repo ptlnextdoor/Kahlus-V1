@@ -126,6 +126,71 @@ class NeuralFieldCompilerShapeTests(unittest.TestCase):
         self.assertIn("uncertainty", output)
         self.assertTrue(torch.isfinite(output["prediction"]).all())
 
+    def test_forward_uses_structural_prior_geometry_without_tensor_truthiness(self):
+        model = self._geometry_model()
+        spy = _SpyFieldUpdate()
+        model.field_update = spy
+        structural = torch.zeros(7, 7)
+        anatomy = torch.ones(7, 7)
+
+        model.forward_task(
+            {"stimulus": torch.randn(2, 6, 4)},
+            target_modality="fmri",
+            geometry={"structural_prior": structural, "anatomy": anatomy},
+        )
+
+        self.assertIs(spy.anatomy, structural)
+
+    def test_forward_uses_anatomy_geometry_fallback(self):
+        model = self._geometry_model()
+        spy = _SpyFieldUpdate()
+        model.field_update = spy
+        anatomy = torch.ones(7, 7)
+
+        model.forward_task(
+            {"stimulus": torch.randn(2, 6, 4)},
+            target_modality="fmri",
+            geometry={"anatomy": anatomy},
+        )
+
+        self.assertIs(spy.anatomy, anatomy)
+
+    def test_forward_allows_missing_geometry(self):
+        model = self._geometry_model()
+        spy = _SpyFieldUpdate()
+        model.field_update = spy
+
+        output = model.forward_task({"stimulus": torch.randn(2, 6, 4)}, target_modality="fmri")
+
+        self.assertIsNone(spy.anatomy)
+        self.assertEqual(output["prediction"].shape, (2, 6, 7))
+
+    @staticmethod
+    def _geometry_model() -> NeuralFieldCompiler:
+        return NeuralFieldCompiler(
+            input_dims={"stimulus": 4},
+            output_dims={"fmri": 7},
+            config=NeuralFieldCompilerConfig(latent_dim=8, pair_rank=3, use_observation_operator=True),
+        )
+
+
+class _SpyFieldUpdate(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.anatomy: torch.Tensor | None = None
+
+    def forward(
+        self,
+        field: torch.Tensor,
+        *,
+        stimulus_state: torch.Tensor | None = None,
+        anatomy: torch.Tensor | None = None,
+        subject_state: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        del stimulus_state, subject_state
+        self.anatomy = anatomy
+        return field
+
 
 if __name__ == "__main__":
     unittest.main()

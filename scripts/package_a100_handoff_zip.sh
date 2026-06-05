@@ -8,7 +8,7 @@ cd "$REPO_ROOT"
 
 SHORT_SHA="$(git rev-parse --short HEAD)"
 FULL_SHA="$(git rev-parse HEAD)"
-IMAGE_REF="${NEUROTWIN_DOCKER_IMAGE_REF:-ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime@sha256:c144c4b10a2f43d260ccf611c16f562be66a2a029b36746efe5fdf1631c29ddc}"
+IMAGE_REF="${NEUROTWIN_DOCKER_IMAGE_REF:-pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel}"
 OUT_DIR="outputs"
 RUNNER_NAME="neurotwin-a100-runner-$SHORT_SHA"
 RUNNER_TARBALL="$OUT_DIR/$RUNNER_NAME.tar.gz"

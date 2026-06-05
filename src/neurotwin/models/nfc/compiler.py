@@ -167,7 +167,12 @@ class NeuralFieldCompiler(nn.Module):
         initial = self.latent_field(node_values, subject_state=subject_state, stimulus_state=stimulus_state)
         anatomy = None
         if geometry is not None:
-            candidate = geometry.get("structural_prior") or geometry.get("anatomy")
+            if "structural_prior" in geometry:
+                candidate = geometry["structural_prior"]
+            elif "anatomy" in geometry:
+                candidate = geometry["anatomy"]
+            else:
+                candidate = None
             if isinstance(candidate, torch.Tensor):
                 anatomy = candidate
         latent = self.field_update(initial, stimulus_state=stimulus_state, anatomy=anatomy, subject_state=subject_state)

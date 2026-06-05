@@ -8,9 +8,10 @@ from typing import Any
 import torch
 from torch import nn
 
-from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
-from neurotwin.models.nfc import NeuralFieldCompiler, NeuralFieldCompilerConfig
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig
+from neurotwin.models.architecture_registry import build_architecture_model, normalize_architecture_type
+from neurotwin.models.pair_operator import NeuroTwinPairOperatorConfig
+from neurotwin.models.nfc import NeuralFieldCompilerConfig
+from neurotwin.models.torch_models import NeuralStateSpaceTranslatorConfig
 from neurotwin.repro import append_jsonl
 from neurotwin.runtime.distributed import unwrap_model, wrap_ddp_if_initialized
 from neurotwin.training.prepared_checkpoints import load_task_resume, save_task_checkpoint
@@ -443,35 +444,11 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
 
 
 def _translator_from_model_config(model_config: dict[str, Any]) -> nn.Module:
-    model_type = _normalize_model_type(str(model_config.get("type", "NeuralStateSpaceTranslator")))
-    if model_type == "NeuroTwinPairOperator":
-        return NeuroTwinPairOperator(
-            input_dims=dict(model_config["input_dims"]),
-            output_dims=dict(model_config["output_dims"]),
-            config=NeuroTwinPairOperatorConfig.from_mapping(model_config),
-        )
-    if model_type == "NeuralFieldCompiler":
-        return NeuralFieldCompiler(
-            input_dims=dict(model_config["input_dims"]),
-            output_dims=dict(model_config["output_dims"]),
-            config=NeuralFieldCompilerConfig.from_mapping(model_config),
-        )
-    return NeuralStateSpaceTranslator(
-        input_dims=dict(model_config["input_dims"]),
-        output_dims=dict(model_config["output_dims"]),
-        config=NeuralStateSpaceTranslatorConfig.from_mapping(model_config),
-    )
+    return build_architecture_model(model_config)
 
 
 def _normalize_model_type(value: str) -> str:
-    normalized = value.strip().lower().replace("-", "_")
-    if normalized in {"neuralstatespacetranslator", "neural_state_space_translator", "translator"}:
-        return "NeuralStateSpaceTranslator"
-    if normalized in {"neurotwinpairoperator", "neurotwin_pair_operator", "pair_operator", "ntp_o"}:
-        return "NeuroTwinPairOperator"
-    if normalized in {"neuralfieldcompiler", "neural_field_compiler", "neurotwin_nfc", "nfc", "field_compiler"}:
-        return "NeuralFieldCompiler"
-    raise ValueError(f"Unknown prepared model type {value!r}")
+    return normalize_architecture_type(value)
 
 
 def _append_task_metric(path: str | None, row: dict[str, Any]) -> None:

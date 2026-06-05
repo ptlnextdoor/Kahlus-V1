@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from neurotwin.config_types import PreparedTrainingConfigInput, resolve_prepared_config
+from neurotwin.models.architecture_registry import architecture_status, estimate_architecture_extra_parameters
 
 
 def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | float | str]:
@@ -21,16 +22,9 @@ def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | floa
         backbone_params = model.n_layers * (6 * model.latent_dim * model.latent_dim)
     head_params = len(model.modalities) * model.latent_dim * model.output_dim * 3
     adapter_params = model.subject_adapter_dim * model.latent_dim * 2
-    pair_operator_params = 0
-    normalized_type = model.type.strip().lower().replace("-", "_")
-    if normalized_type in {"neurotwin_pair_operator", "neurotwinpairoperator", "pair_operator", "ntp_o"}:
-        pair_operator_params = model.output_dim * model.pair_rank * 2 + model.latent_dim * model.latent_dim
-    nfc_params = 0
-    if normalized_type in {"neurotwin_nfc", "nfc", "neural_field_compiler", "neuralfieldcompiler", "field_compiler"}:
-        nfc_params = model.output_dim * model.pair_rank * 2 + model.latent_dim * model.latent_dim * 3
     estimated_parameters = encoder_params + backbone_params + head_params + adapter_params
-    estimated_parameters += pair_operator_params + nfc_params
-    model_status = "experimental_architecture" if nfc_params else "local_baseline"
+    estimated_parameters += estimate_architecture_extra_parameters(model)
+    model_status = architecture_status(model.type)
     activation_mb = batch_size * resolved.window_length * model.latent_dim * bytes_per_value * max(model.n_layers, 1) / (1024 * 1024)
     optimizer_mb = estimated_parameters * 8 / (1024 * 1024)
     checkpoint_mb = estimated_parameters * bytes_per_value / (1024 * 1024)

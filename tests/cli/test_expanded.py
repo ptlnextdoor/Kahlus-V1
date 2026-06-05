@@ -8,6 +8,8 @@ from pathlib import Path
 
 import numpy as np
 
+from neurotwin.benchmarks.nfc_suite import nfc_falsification_status
+
 
 class ExpandedCliTests(unittest.TestCase):
     @staticmethod
@@ -93,6 +95,38 @@ class ExpandedCliTests(unittest.TestCase):
 
         self.assertEqual(payload["seeds"], [0, 1])
         self.assertIn("seeds=0,1", result.stdout)
+
+    def test_eval_nfc_synthetic_require_pass_fails_needs_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env = dict(os.environ)
+            env["PYTHONPATH"] = "src"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neurotwin.cli",
+                    "eval",
+                    "--suite",
+                    "nfc_synthetic",
+                    "--out-dir",
+                    tmp,
+                    "--train-steps",
+                    "1",
+                    "--seed",
+                    "0",
+                    "--require-pass",
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("falsification status=needs_evidence", result.stderr)
+
+    def test_nfc_falsification_status_helper_accepts_passed_payload(self):
+        self.assertEqual(nfc_falsification_status({"falsification": {"status": "passed"}}), "passed")
 
     def test_data_and_split_audits(self):
         data = self.run_cli("data", "audit", "--dataset", "synthetic")
