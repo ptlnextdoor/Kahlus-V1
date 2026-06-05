@@ -83,6 +83,17 @@ The Pi is a transfer bridge only. Do not run Python training or submit Slurm job
 
 ## Run On Chapman
 
+For an automated agent, use the helper script in this handoff directory after unzipping:
+
+```bash
+export GHCR_USER=ptlnextdoor
+export GHCR_TOKEN='<token supplied separately by Aayu>'
+./run_krish_agent.sh synthetic50
+unset GHCR_TOKEN
+```
+
+The helper verifies this handoff, extracts the runner tarball, logs into GHCR, pulls the runtime Docker image, and runs the 1x A100 NFC synthetic diagnostic. It never needs private GitHub repo access. Do not paste tokens into files or commit them.
+
 Extract and verify the runner:
 
 ```bash

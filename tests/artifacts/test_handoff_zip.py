@@ -102,6 +102,7 @@ class HandoffZipArtifactTests(unittest.TestCase):
             expected = {
                 f"{root}/COMMIT_HASH.txt",
                 f"{root}/README_HANDOFF.md",
+                f"{root}/run_krish_agent.sh",
                 f"{root}/SHA256SUMS",
                 f"{root}/{runner_name}.tar.gz",
             }
@@ -141,8 +142,25 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "Expected Outputs",
                 "Known Limitations",
                 "MOABB task labels are intentionally removed",
+                "./run_krish_agent.sh synthetic50",
+                "GHCR_TOKEN",
             ):
                 self.assertIn(required, readme)
+            script = (handoff_root / "run_krish_agent.sh").read_text(encoding="utf-8")
+            for required in (
+                "synthetic50",
+                "synthetic100",
+                "algonauts-debug",
+                "full6",
+                "docker login ghcr.io",
+                "docker pull \"$NEUROTWIN_DOCKER_IMAGE\"",
+                "python -m neurotwin.cli eval",
+                "--suite nfc_synthetic",
+                "--seeds 0 1 2",
+                "scripts/run_docker_6gpu.sh",
+            ):
+                self.assertIn(required, script)
+            self.assertNotIn("ghp_", script)
             self.assertNotIn("<timestamp>", readme)
             self.assertNotIn("docker run --rm -it", readme)
             self.assertNotIn("The helper runs this host command", readme)
