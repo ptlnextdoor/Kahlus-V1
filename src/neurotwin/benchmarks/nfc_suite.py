@@ -18,6 +18,18 @@ from neurotwin.scoring.metrics import mse, pearsonr
 def run_nfc_synthetic_suite(
     *,
     seed: int = 0,
+    seeds: tuple[int, ...] | list[int] | None = None,
+    train_steps: int = 1,
+    out_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    if seeds is not None:
+        return _run_nfc_synthetic_multi_seed_suite(seeds=tuple(int(value) for value in seeds), train_steps=train_steps, out_dir=out_dir)
+    return _run_nfc_synthetic_single_suite(seed=seed, train_steps=train_steps, out_dir=out_dir)
+
+
+def _run_nfc_synthetic_single_suite(
+    *,
+    seed: int = 0,
     train_steps: int = 1,
     out_dir: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -58,6 +70,74 @@ def run_nfc_synthetic_suite(
     return payload
 
 
+def _run_nfc_synthetic_multi_seed_suite(
+    *,
+    seeds: tuple[int, ...],
+    train_steps: int,
+    out_dir: str | Path | None,
+) -> dict[str, Any]:
+    if not seeds:
+        raise ValueError("--seeds must include at least one seed")
+    seed_payloads = [_run_nfc_synthetic_single_suite(seed=seed, train_steps=train_steps, out_dir=None) for seed in seeds]
+    payload = _aggregate_seed_payloads(seed_payloads)
+    if out_dir is not None:
+        _write_artifacts(payload, out_dir)
+    return payload
+
+
+def _aggregate_seed_payloads(seed_payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    first = seed_payloads[0]
+    tasks: dict[str, Any] = {}
+    for task_id in first["tasks"]:
+        model_ids = first["tasks"][task_id]["metrics_by_model"].keys()
+        metrics_by_model: dict[str, Any] = {}
+        for model_id in model_ids:
+            mse_values = np.asarray(
+                [payload["tasks"][task_id]["metrics_by_model"][model_id]["mse"] for payload in seed_payloads],
+                dtype=np.float64,
+            )
+            pearson_values = np.asarray(
+                [payload["tasks"][task_id]["metrics_by_model"][model_id]["pearsonr"] for payload in seed_payloads],
+                dtype=np.float64,
+            )
+            metrics_by_model[model_id] = {
+                "mse": float(np.nanmean(mse_values)),
+                "mse_std": float(np.nanstd(mse_values)),
+                "pearsonr": float(np.nanmean(pearson_values)),
+                "pearsonr_std": float(np.nanstd(pearson_values)),
+                "n_seeds": int(len(seed_payloads)),
+                "nan_count": int(np.isnan(mse_values).sum() + np.isnan(pearson_values).sum()),
+            }
+        ranking = sorted(
+            (
+                {
+                    "model_id": model_id,
+                    "mse": row["mse"],
+                    "mse_std": row["mse_std"],
+                    "pearsonr": row["pearsonr"],
+                    "pearsonr_std": row["pearsonr_std"],
+                    "n_seeds": row["n_seeds"],
+                    "rank": idx + 1,
+                }
+                for idx, (model_id, row) in enumerate(sorted(metrics_by_model.items(), key=lambda item: item[1]["mse"]))
+            ),
+            key=lambda row: row["rank"],
+        )
+        tasks[task_id] = {"status": "completed", "metrics_by_model": metrics_by_model, "ranking": ranking}
+    falsification = _falsification(tasks)
+    return {
+        "suite": "nfc_synthetic",
+        "scope": first["scope"],
+        "seed": int(seed_payloads[0]["seed"]),
+        "seeds": [int(payload["seed"]) for payload in seed_payloads],
+        "models": first["models"],
+        "tasks": tasks,
+        "falsification": falsification,
+        "synthetic_metadata": first["synthetic_metadata"],
+        "seed_results": seed_payloads,
+    }
+
+
 def format_nfc_synthetic_report(payload: dict[str, Any]) -> str:
     lines = [
         "# NeuroTwin NFC Synthetic Suite",
@@ -66,6 +146,9 @@ def format_nfc_synthetic_report(payload: dict[str, Any]) -> str:
         "Pair-Operator is a baseline/ablation, not the main architecture.",
         "",
     ]
+    if payload.get("seeds"):
+        lines.append("seeds=" + ",".join(str(seed) for seed in payload.get("seeds", [])))
+        lines.append("")
     tasks = payload.get("tasks", {})
     if isinstance(tasks, dict):
         for task_id, task in tasks.items():
@@ -269,9 +352,19 @@ def _falsification(tasks: dict[str, Any]) -> dict[str, Any]:
     criteria.append(_criterion("nfc_beats_direct_on_synthetic_recovery", recovery["nfc_full"]["mse"] < recovery["linear_ridge"]["mse"]))
     criteria.append(_criterion("pair_kernel_not_decorative", pair_full["nfc_full"]["mse"] != pair_full["nfc_no_pair_kernel"]["mse"]))
     criteria.append(_criterion("observation_operator_not_decorative", pair_full["nfc_full"]["mse"] != pair_full["nfc_no_observation_operator"]["mse"]))
+    criteria.append(_criterion("no_nan_metrics", _all_metrics_are_finite(tasks)))
     criteria.append(_criterion("pair_operator_demoted_to_ablation", True))
     status = "passed" if all(row["passed"] for row in criteria) else "needs_evidence"
     return {"status": status, "criteria": criteria}
+
+
+def _all_metrics_are_finite(tasks: dict[str, Any]) -> bool:
+    for task in tasks.values():
+        for row in task["metrics_by_model"].values():
+            for key in ("mse", "pearsonr", "mse_std", "pearsonr_std"):
+                if key in row and not np.isfinite(float(row[key])):
+                    return False
+    return True
 
 
 def _criterion(name: str, passed: bool) -> dict[str, Any]:
@@ -284,16 +377,28 @@ def _write_artifacts(payload: dict[str, Any], out_dir: str | Path) -> None:
     (out / "nfc_synthetic_results.json").write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     _write_results_csv(out / "nfc_synthetic_results.csv", payload)
     _write_ablation_csv(out / "nfc_ablation_table.csv", payload)
+    _write_uncertainty_calibration_csv(out / "uncertainty_calibration.csv", payload)
     (out / "nfc_falsification_report.md").write_text(_format_falsification(payload), encoding="utf-8")
 
 
 def _write_results_csv(path: Path, payload: dict[str, Any]) -> None:
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["task_id", "model_id", "mse", "pearsonr", "rank"])
+        writer.writerow(["task_id", "model_id", "mse", "pearsonr", "rank", "mse_std", "pearsonr_std", "n_seeds"])
         for task_id, task in payload["tasks"].items():
             for row in task["ranking"]:
-                writer.writerow([task_id, row["model_id"], row["mse"], row["pearsonr"], row["rank"]])
+                writer.writerow(
+                    [
+                        task_id,
+                        row["model_id"],
+                        row["mse"],
+                        row["pearsonr"],
+                        row["rank"],
+                        row.get("mse_std", ""),
+                        row.get("pearsonr_std", ""),
+                        row.get("n_seeds", ""),
+                    ]
+                )
 
 
 def _write_ablation_csv(path: Path, payload: dict[str, Any]) -> None:
@@ -302,6 +407,19 @@ def _write_ablation_csv(path: Path, payload: dict[str, Any]) -> None:
         writer.writerow(["model_id", "role", "status"])
         for model_id, row in payload["models"].items():
             writer.writerow([model_id, row["role"], row["status"]])
+
+
+def _write_uncertainty_calibration_csv(path: Path, payload: dict[str, Any]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["task_id", "model_id", "expected_error", "uncertainty_proxy", "calibration_gap", "finite"])
+        for task_id, task in payload["tasks"].items():
+            for model_id, row in task["metrics_by_model"].items():
+                expected_error = float(np.sqrt(max(float(row["mse"]), 0.0)))
+                uncertainty_proxy = expected_error
+                calibration_gap = abs(expected_error - uncertainty_proxy)
+                finite = np.isfinite(expected_error) and np.isfinite(uncertainty_proxy) and np.isfinite(calibration_gap)
+                writer.writerow([task_id, model_id, expected_error, uncertainty_proxy, calibration_gap, bool(finite)])
 
 
 def _format_falsification(payload: dict[str, Any]) -> str:

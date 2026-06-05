@@ -9,6 +9,60 @@ from tests.artifacts.helpers import assert_runner_archive, copy_repo_to_temp_git
 
 
 class HandoffZipArtifactTests(unittest.TestCase):
+    def test_package_a100_nfc_docker_handoff_zip_contains_no_runner_or_source(self):
+        if shutil.which("shasum") is None:
+            self.skipTest("shasum is required for handoff bundle verification")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_repo = copy_repo_to_temp_git(tmp)
+            result = subprocess.run(
+                ["bash", "scripts/package_a100_nfc_docker_handoff_zip.sh"],
+                cwd=tmp_repo,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            zips = sorted((tmp_repo / "outputs").glob("neurotwin-a100-nfc-docker-handoff-*.zip"))
+            self.assertEqual(len(zips), 1)
+
+            extract_root = Path(tmp) / "nfc-docker"
+            with zipfile.ZipFile(zips[0], "r") as archive:
+                names = set(archive.namelist())
+                archive.extractall(extract_root)
+
+            roots = {name.split("/", 1)[0] for name in names if name}
+            self.assertEqual(len(roots), 1)
+            root = roots.pop()
+            self.assertEqual(
+                names,
+                {
+                    f"{root}/COMMIT_HASH.txt",
+                    f"{root}/README_KRISH_AGENT.md",
+                    f"{root}/SHA256SUMS",
+                },
+            )
+            for name in names:
+                self.assertFalse(name.endswith((".py", ".pyc", ".whl", ".tar", ".tar.gz", ".pt", ".npz")), name)
+                self.assertNotIn("/src/", name)
+
+            handoff_root = extract_root / root
+            readme = (handoff_root / "README_KRISH_AGENT.md").read_text(encoding="utf-8")
+            self.assertIn("Docker runtime image", readme)
+            self.assertIn("NEUROTWIN_DOCKER_IMAGE", readme)
+            self.assertIn("--suite nfc_synthetic", readme)
+            self.assertIn("--seeds 0 1 2", readme)
+            self.assertIn("uncertainty_calibration.csv", readme)
+            self.assertNotIn("runner tarball", readme.lower())
+
+            checksum = subprocess.run(
+                ["shasum", "-a", "256", "-c", "SHA256SUMS"],
+                cwd=handoff_root,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
+
     def test_package_a100_handoff_zip_smokes_real_archive(self):
         if shutil.which("shasum") is None:
             self.skipTest("shasum is required for handoff bundle verification")

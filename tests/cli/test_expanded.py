@@ -70,9 +70,29 @@ class ExpandedCliTests(unittest.TestCase):
             self.assertTrue((out / "nfc_synthetic_results.csv").exists())
             self.assertTrue((out / "nfc_ablation_table.csv").exists())
             self.assertTrue((out / "nfc_falsification_report.md").exists())
+            self.assertTrue((out / "uncertainty_calibration.csv").exists())
 
         self.assertIn("NeuroTwin NFC Synthetic Suite", result.stdout)
         self.assertIn("Pair-Operator is a baseline/ablation", result.stdout)
+
+    def test_eval_nfc_synthetic_suite_honors_multiple_seeds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.run_cli(
+                "eval",
+                "--suite",
+                "nfc_synthetic",
+                "--out-dir",
+                tmp,
+                "--train-steps",
+                "1",
+                "--seeds",
+                "0",
+                "1",
+            )
+            payload = json.loads((Path(tmp) / "nfc_synthetic_results.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["seeds"], [0, 1])
+        self.assertIn("seeds=0,1", result.stdout)
 
     def test_data_and_split_audits(self):
         data = self.run_cli("data", "audit", "--dataset", "synthetic")

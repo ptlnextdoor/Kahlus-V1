@@ -139,7 +139,7 @@ def _run_neural_translation_v1_command(config: EvalCommandConfig) -> EvalCommand
 def _run_nfc_synthetic_command(config: EvalCommandConfig) -> EvalCommandResult:
     if config.event_manifest or config.split_manifest:
         return EvalCommandResult(output="", exit_code=1, error="nfc_synthetic is synthetic-only and does not accept prepared manifests")
-    payload = run_nfc_synthetic_suite(seed=config.seed, train_steps=config.train_steps, out_dir=config.out_dir)
+    payload = run_nfc_synthetic_suite(seed=config.seed, seeds=config.seeds, train_steps=config.train_steps, out_dir=config.out_dir)
     return EvalCommandResult(output=format_nfc_synthetic_report(payload), payload=payload)
 
 
