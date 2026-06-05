@@ -2,6 +2,12 @@ name: Build A100 Runtime Image
 
 on:
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch, tag, or SHA to package into the runtime image.
+        required: true
+        default: codex/neurotwin-nfc-a100-handoff
+        type: string
 
 permissions:
   contents: read
@@ -13,6 +19,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
 
       - name: Set image metadata
         id: image
@@ -20,10 +28,12 @@ jobs:
         run: |
           set -euo pipefail
           repo="${GITHUB_REPOSITORY,,}"
-          short_sha="${GITHUB_SHA::7}"
+          source_sha="$(git rev-parse HEAD)"
+          short_sha="${source_sha::7}"
           image="ghcr.io/${repo}-a100-runtime"
           {
             echo "name=$image"
+            echo "source_sha=$source_sha"
             echo "short_sha=$short_sha"
           } >> "$GITHUB_OUTPUT"
 
@@ -46,9 +56,9 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            BUILD_COMMIT=${{ github.sha }}
+            BUILD_COMMIT=${{ steps.image.outputs.source_sha }}
           tags: |
-            ${{ steps.image.outputs.name }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:${{ steps.image.outputs.source_sha }}
             ${{ steps.image.outputs.name }}:${{ steps.image.outputs.short_sha }}
             ${{ steps.image.outputs.name }}:nfc-a100
 
