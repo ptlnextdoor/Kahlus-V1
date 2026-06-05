@@ -210,6 +210,29 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertTrue(stimulus_evidence["hash_verified"])
         self.assertTrue(stimulus_evidence["source_artifact_hash_verified"])
 
+    def test_file_uri_stimulus_artifact_hash_marks_claim_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feature_path = Path(tmp) / "stimulus_features.bin"
+            feature_bytes = b"real precomputed stimulus features via file uri"
+            feature_path.write_bytes(feature_bytes)
+            feature_hash = hashlib.sha256(feature_bytes).hexdigest()
+
+            stimulus_evidence = self._stimulus_evidence_for_metadata(
+                tmp,
+                {
+                    "require_real_stimulus": True,
+                    "stimulus_feature_source": "sentence_transformer_audio_video_cache",
+                    "stimulus_feature_uri": f"file://{feature_path}",
+                    "stimulus_feature_modalities": ["text", "audio", "video"],
+                    "stimulus_feature_hash": feature_hash,
+                    "stimulus_feature_status": "real_precomputed",
+                },
+            )
+
+        self.assertEqual(stimulus_evidence["status"], "real_stimulus_features")
+        self.assertTrue(stimulus_evidence["claim_eligible"])
+        self.assertTrue(stimulus_evidence["source_artifact_hash_verified"])
+
     def test_stimulus_verified_flag_with_hash_mismatch_is_not_claim_eligible(self):
         with tempfile.TemporaryDirectory() as tmp:
             feature_path = Path(tmp) / "stimulus_features.bin"

@@ -63,6 +63,9 @@ A100_CONFIG_PATH=${A100_CONFIG_PATH:-outputs/configs/moabb_a100.materialized.yam
 A100_REQUIRE_PAPER_MODE_GATE=${A100_REQUIRE_PAPER_MODE_GATE:-0}
 A100_RUN_PAPER_MODE_IN_FULL=${A100_RUN_PAPER_MODE_IN_FULL:-0}
 A100_PAPER_MODE_TRAIN_STEPS=${A100_PAPER_MODE_TRAIN_STEPS:-3}
+if [[ "$A100_CONFIG_PATH" != /* ]]; then
+  A100_CONFIG_PATH="$NEUROTWIN_DATA/$A100_CONFIG_PATH"
+fi
 if [[ ! -f "$A100_CONFIG_TEMPLATE" ]]; then
   echo "A100_CONFIG_TEMPLATE does not exist: $A100_CONFIG_TEMPLATE" >&2
   exit 2
@@ -72,7 +75,7 @@ if [[ ! "$A100_RUN_ID" =~ ^[A-Za-z0-9_.-]+$ ]]; then
   exit 2
 fi
 
-mkdir -p logs outputs/configs "$MOABB_DATA" "$BIDS_ROOT" "$RUN_ROOT" "$RUN_LOG_DIR" "$NEUROTWIN_DATA/prepared"
+mkdir -p logs outputs/configs "$(dirname "$A100_CONFIG_PATH")" "$MOABB_DATA" "$BIDS_ROOT" "$RUN_ROOT" "$RUN_LOG_DIR" "$NEUROTWIN_DATA/prepared"
 if [[ ! -w logs ]]; then
   echo "logs/ is not writable." >&2
   exit 2

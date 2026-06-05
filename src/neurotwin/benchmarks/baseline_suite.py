@@ -44,6 +44,13 @@ class BaselineFailure:
         return {"model_id": self.model_id, "task_id": self.task_id, "reason": self.reason}
 
 
+@dataclass(frozen=True)
+class BrainVistaStyleConfig:
+    stimulus_lag_steps: int = 1
+    include_current_stimulus: bool = False
+    hrf_lag_steps: int = 2
+
+
 class ScopePayload(TypedDict):
     status: str
     notes: list[str]
@@ -521,7 +528,7 @@ def _fit_neurotwin(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndar
     return output["prediction"].detach().cpu().numpy()
 
 
-def _fit_pair_operator(task: SupervisedWindowTask, seed: int, steps: int) -> np.ndarray:
+def _fit_pair_operator(task: SupervisedWindowTask, seed: int, steps: int, *, use_pair_state: bool = True) -> np.ndarray:
     torch.manual_seed(seed)
     model = NeuroTwinPairOperator(
         input_dims={task.source_modality: task.x_train.shape[-1]},
@@ -530,8 +537,10 @@ def _fit_pair_operator(task: SupervisedWindowTask, seed: int, steps: int) -> np.
             latent_dim=24,
             n_layers=1,
             pair_rank=4,
+            pair_top_k=0,
+            network_blocks=1,
             projection_dim=16,
-            use_pair_state=True,
+            use_pair_state=use_pair_state,
             use_uncertainty_head=True,
             refinement_steps=1,
         ),
@@ -575,23 +584,31 @@ def _fit_brainvista_style(task: SupervisedWindowTask) -> np.ndarray:
     if task.target_modality != "fmri":
         raise ValueError("brainvista_style is only available for fMRI target tasks")
     if _is_stimulus_fmri_task(task):
-        return _fit_causal_stimulus_ridge(task)
+        return _fit_causal_stimulus_ridge(task, config=BrainVistaStyleConfig())
     return _fit_autoregressive_ridge(task)
 
 
-def _fit_causal_stimulus_ridge(task: SupervisedWindowTask) -> np.ndarray:
+def _fit_causal_stimulus_ridge(task: SupervisedWindowTask, *, config: BrainVistaStyleConfig = BrainVistaStyleConfig()) -> np.ndarray:
     if task.x_train.ndim != 3 or task.y_train.ndim != 3 or task.x_test.ndim != 3 or task.y_test.ndim != 3:
         raise ValueError("brainvista_style requires [sample, time, feature] windows")
     model = NumpyRidgeBaseline(alpha=1e-2)
-    model.fit(_flatten_time(_causal_stimulus_features(task.x_train)), _flatten_time(task.y_train))
-    pred = model.predict(_flatten_time(_causal_stimulus_features(task.x_test)))
+    model.fit(_flatten_time(_causal_stimulus_features(task.x_train, config=config)), _flatten_time(task.y_train))
+    pred = model.predict(_flatten_time(_causal_stimulus_features(task.x_test, config=config)))
     return pred.reshape(task.x_test.shape[0], task.x_test.shape[1], task.y_train.shape[-1]).astype(np.float32)
 
 
-def _causal_stimulus_features(x: np.ndarray) -> np.ndarray:
+def _causal_stimulus_features(x: np.ndarray, *, config: BrainVistaStyleConfig = BrainVistaStyleConfig()) -> np.ndarray:
     x = np.asarray(x, dtype=np.float32)
-    lag = np.concatenate([x[:, :1, :], x[:, :-1, :]], axis=1)
-    return np.concatenate([lag, x], axis=-1)
+    if x.ndim != 3:
+        raise ValueError("brainvista_style stimulus features require [sample, time, feature] windows")
+    lag_steps = max(1, int(config.stimulus_lag_steps))
+    pieces = []
+    for lag in range(lag_steps, lag_steps + max(1, int(config.hrf_lag_steps))):
+        pad = np.repeat(x[:, :1, :], lag, axis=1)
+        pieces.append(np.concatenate([pad, x[:, :-lag, :]], axis=1))
+    if config.include_current_stimulus:
+        pieces.append(x)
+    return np.concatenate(pieces, axis=-1)
 
 
 def _is_stimulus_fmri_task(task: SupervisedWindowTask) -> bool:
@@ -661,6 +678,11 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
         available_for_task=_is_stimulus_fmri_task,
     ),
     ExecutableBaselineRunner(
+        "tribe_style_clean_room",
+        lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 16, steps=steps),
+        available_for_task=_is_stimulus_fmri_task,
+    ),
+    ExecutableBaselineRunner(
         "brainvista_style",
         lambda task, seed, steps: _fit_brainvista_style(task),
         available_for_task=_is_brainvista_style_task,
@@ -668,6 +690,11 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
     ExecutableBaselineRunner(
         "pair_operator",
         lambda task, seed, steps: _fit_pair_operator(task, seed=seed + 7, steps=steps),
+        available_for_task=_is_fmri_operator_task,
+    ),
+    ExecutableBaselineRunner(
+        "pair_operator_no_pair_state",
+        lambda task, seed, steps: _fit_pair_operator(task, seed=seed + 8, steps=steps, use_pair_state=False),
         available_for_task=_is_fmri_operator_task,
     ),
 )

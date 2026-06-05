@@ -345,6 +345,9 @@ def _pair_operator_ablation_csv(summary: dict[str, Any]) -> str:
                 model_config.get("use_pair_state", ""),
                 model_config.get("use_uncertainty_head", ""),
                 model_config.get("refinement_steps", ""),
+                model_config.get("pair_rank", ""),
+                model_config.get("pair_top_k", ""),
+                model_config.get("network_blocks", ""),
                 row.get("status", ""),
                 row.get("test_mse", ""),
                 row.get("test_pearsonr", ""),
@@ -352,9 +355,22 @@ def _pair_operator_ablation_csv(summary: dict[str, Any]) -> str:
             )
         )
     if not rows:
-        rows.append(("unavailable", "not_pair_operator_run", "", "", "", "not_applicable", "", "", ""))
+        rows.append(("unavailable", "not_pair_operator_run", "", "", "", "", "", "", "not_applicable", "", "", ""))
     return _csv_rows(
-        ("task_id", "ablation", "use_pair_state", "use_uncertainty_head", "refinement_steps", "status", "test_mse", "test_pearsonr", "test_r2"),
+        (
+            "task_id",
+            "ablation",
+            "use_pair_state",
+            "use_uncertainty_head",
+            "refinement_steps",
+            "pair_rank",
+            "pair_top_k",
+            "network_blocks",
+            "status",
+            "test_mse",
+            "test_pearsonr",
+            "test_r2",
+        ),
         rows,
     )
 
@@ -364,7 +380,12 @@ def _uncertainty_calibration_csv(summary: dict[str, Any]) -> str:
     for row in _task_result_rows(summary):
         model_config = row.get("model_config") if isinstance(row.get("model_config"), dict) else {}
         if str(model_config.get("type", "")) == "NeuroTwinPairOperator" and bool(model_config.get("use_uncertainty_head")):
-            rows.append((row.get("task_id", ""), "unavailable", "training command does not persist uncertainty predictions", "", ""))
+            mean_uncertainty = row.get("test_mean_uncertainty")
+            correlation = row.get("test_error_uncertainty_correlation")
+            if _finite_number(mean_uncertainty) and _finite_number(correlation):
+                rows.append((row.get("task_id", ""), "finite", "test split uncertainty calibration", mean_uncertainty, correlation))
+            else:
+                rows.append((row.get("task_id", ""), "unavailable", "uncertainty metrics were not finite", "", ""))
     if not rows:
         rows.append(("unavailable", "unavailable", "uncertainty head disabled or not a Pair-Operator run", "", ""))
     return _csv_rows(("task_id", "status", "reason", "mean_uncertainty", "error_uncertainty_correlation"), rows)
@@ -388,6 +409,15 @@ def _pair_operator_variant(model_config: dict[str, Any]) -> str:
     if refinement_steps <= 0:
         return "pair_operator_no_refinement"
     return "pair_operator_full"
+
+
+def _finite_number(value: Any) -> bool:
+    try:
+        import math
+
+        return value is not None and math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
 
 
 def _csv_rows(header: tuple[str, ...], rows: list[tuple[Any, ...]]) -> str:

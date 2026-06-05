@@ -503,7 +503,7 @@ def _stimulus_source_verified(window: NeuralEventBatch) -> bool:
     if not artifacts:
         return False
     for artifact in artifacts:
-        path = Path(artifact)
+        path = _local_stimulus_artifact_path(artifact)
         if path.is_file():
             return True
     return False
@@ -523,7 +523,7 @@ def _stimulus_source_artifact_hash_verified(window: NeuralEventBatch) -> bool:
 def _stimulus_artifact_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
     hashes: list[str] = []
     for artifact in _stimulus_source_artifacts(window.metadata):
-        path = Path(artifact)
+        path = _local_stimulus_artifact_path(artifact)
         if not path.is_file():
             continue
         try:
@@ -531,6 +531,13 @@ def _stimulus_artifact_hashes(window: NeuralEventBatch) -> tuple[str, ...]:
         except OSError:
             continue
     return tuple(hashes)
+
+
+def _local_stimulus_artifact_path(value: str) -> Path:
+    text = str(value)
+    if text.startswith("file://"):
+        return Path(text[len("file://") :])
+    return Path(text)
 
 
 def _stimulus_embedding_hashes(window: NeuralEventBatch) -> tuple[str, ...]:

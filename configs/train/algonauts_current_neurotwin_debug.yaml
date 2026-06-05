@@ -1,6 +1,6 @@
-experiment: algonauts_pair_operator_full
-run_id: algonauts_pair_operator_full
-description: Full fMRI-only NeuroTwin Pair-Operator run for Algonauts/CNeuroMod prepared windows after 1x A100 debug passes.
+experiment: algonauts_current_neurotwin_debug
+run_id: algonauts_current_neurotwin_debug
+description: Current NeuroTwin translator debug baseline for prepared Algonauts/CNeuroMod fMRI windows.
 dataset: prepared_manifest
 task: neural_translation_v1
 split: stimulus_run_group
@@ -8,16 +8,16 @@ data:
   event_manifest: /path/to/algonauts_prepared/event_manifest.json
   split_manifest: /path/to/algonauts_prepared/split_manifest.json
 seed: 0
-steps: 50000
-batch_size: 64
+steps: 2000
+batch_size: 32
 window_size: 128
 stride: 64
 precision: bf16
 bf16: true
 gradient_accumulation_steps: 2
 max_grad_norm: 1.0
-checkpoint_every_steps: 1000
-eval_every_steps: 1000
+checkpoint_every_steps: 200
+eval_every_steps: 200
 require_real_stimulus: true
 evidence_gate:
   require_real_stimulus: true
@@ -32,23 +32,18 @@ stimulus:
     - synthetic
     - self_attested_embedding
 model:
-  type: NeuroTwinPairOperator
+  type: NeuralStateSpaceTranslator
   input_dim: 1000
   output_dim: 1000
   latent_dim: 256
   n_layers: 4
-  backbone: gru
+  backbone: ssm_fallback
+  encoder: temporal_conv
   n_heads: 8
   projection_dim: 128
-  pair_rank: 16
-  pair_top_k: 128
-  network_blocks: 7
-  pair_confidence_max_parcels: 256
-  use_pair_state: true
-  use_uncertainty_head: true
-  use_pair_uncertainty: true
-  refinement_steps: 1
-  hrf_delay_steps: 1
+  use_pair_state: false
+  use_uncertainty_head: false
+  refinement_steps: 0
   modalities:
     - fmri
     - stimulus

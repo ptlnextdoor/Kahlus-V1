@@ -44,6 +44,51 @@ class EstimateConfigTests(unittest.TestCase):
         self.assertAlmostEqual(float(bf16["estimated_checkpoint_mb"]) * 2, float(fp32["estimated_checkpoint_mb"]), places=2)
         self.assertEqual(bf16["estimated_optimizer_mb"], fp32["estimated_optimizer_mb"])
 
+    def test_pair_operator_1000_parcel_estimate_reports_low_rank_a100_memory(self):
+        estimate = estimate_config(
+            {
+                "model": {
+                    "type": "NeuroTwinPairOperator",
+                    "latent_dim": 64,
+                    "n_layers": 2,
+                    "input_dim": 1000,
+                    "output_dim": 1000,
+                    "modalities": ["fmri"],
+                    "pair_rank": 16,
+                    "pair_top_k": 128,
+                    "network_blocks": 7,
+                },
+                "batch_size": 1,
+                "window_size": 128,
+                "precision": "bf16",
+            }
+        )
+
+        self.assertEqual(estimate["pair_state_representation"], "low_rank")
+        self.assertEqual(estimate["pair_state_enabled"], "True")
+        self.assertEqual(estimate["pair_rank"], 16)
+        self.assertEqual(estimate["pair_top_k"], 128)
+        self.assertEqual(estimate["network_blocks"], 7)
+        self.assertGreater(float(estimate["estimated_pair_state_mb"]), 0.0)
+        self.assertGreater(float(estimate["estimated_1xa100_runtime_mb"]), 0.0)
+        self.assertGreater(float(estimate["estimated_6xa100_ddp_per_gpu_mb"]), 0.0)
+
+    def test_pair_operator_no_pair_estimate_marks_update_path_disabled(self):
+        estimate = estimate_config(
+            {
+                "model": {
+                    "type": "NeuroTwinPairOperator",
+                    "input_dim": 1000,
+                    "output_dim": 1000,
+                    "use_pair_state": False,
+                    "pair_rank": 16,
+                }
+            }
+        )
+
+        self.assertEqual(estimate["pair_state_enabled"], "False")
+        self.assertEqual(estimate["pair_state_representation"], "disabled_low_rank_parameters_present")
+
     def test_nested_training_fallbacks_and_effective_batch_size(self):
         estimate = estimate_config(
             {

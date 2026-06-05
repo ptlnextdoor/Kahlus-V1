@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import json
 from pathlib import Path
 from typing import Any
@@ -98,9 +97,7 @@ def read_json_artifact(path: Path) -> Any:
 def _baseline_ranking_present(run_dir: Path | None) -> bool:
     if run_dir is None:
         return False
-    if _prepared_suite_has_rankings(read_json_artifact(run_dir / "prepared_baseline_suite.json")):
-        return True
-    return _baseline_csv_has_rankings(run_dir / "tables" / "baseline_ranking.csv")
+    return _prepared_suite_has_rankings(read_json_artifact(run_dir / "prepared_baseline_suite.json"))
 
 
 def _prepared_suite_has_rankings(payload: Any) -> bool:
@@ -112,20 +109,6 @@ def _prepared_suite_has_rankings(payload: Any) -> bool:
         if isinstance(ranking, list) and any(_real_ranking_row(row) for row in ranking):
             return True
     return False
-
-
-def _baseline_csv_has_rankings(path: Path) -> bool:
-    if not path.exists():
-        return False
-    try:
-        with path.open(newline="", encoding="utf-8") as handle:
-            rows = list(csv.DictReader(handle))
-    except (csv.Error, OSError):
-        return False
-    required = {"task_id", "model_id", "metric", "value", "rank"}
-    if not rows or not required.issubset(rows[0].keys()):
-        return False
-    return any(_real_ranking_row(row) for row in rows)
 
 
 def _real_ranking_row(row: Any) -> bool:

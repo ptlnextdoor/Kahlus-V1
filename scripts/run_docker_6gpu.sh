@@ -75,6 +75,10 @@ fi
 
 mkdir -p "$INPUT_ROOT"
 PERSISTENT_ROOT="$(cd "$INPUT_ROOT" && pwd)"
+if [[ "$A100_CONFIG_PATH" != /* ]]; then
+  A100_CONFIG_PATH="$PERSISTENT_ROOT/$A100_CONFIG_PATH"
+fi
+mkdir -p "$(dirname "$A100_CONFIG_PATH")"
 DOCKER_TTY=(-i)
 if [[ -t 0 && -t 1 ]]; then
   DOCKER_TTY=(-it)
