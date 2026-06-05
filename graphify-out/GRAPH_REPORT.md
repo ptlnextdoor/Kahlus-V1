@@ -1,12 +1,12 @@
-# Graph Report - /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1  (2026-06-03)
+# Graph Report - /Users/aayu/.codex/worktrees/66ca/Kahlus-V1  (2026-06-05)
 
 ## Corpus Check
-- 122 files · ~174,828 words
+- 139 files · ~182,094 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1236 nodes · 3156 edges · 67 communities detected
-- Extraction: 56% EXTRACTED · 44% INFERRED · 0% AMBIGUOUS · INFERRED: 1389 edges (avg confidence: 0.69)
+- 1350 nodes · 3404 edges · 67 communities detected
+- Extraction: 56% EXTRACTED · 44% INFERRED · 0% AMBIGUOUS · INFERRED: 1502 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -82,95 +82,95 @@
 1. `NeuralStateSpaceTranslator` - 53 edges
 2. `NeuralStateSpaceTranslatorConfig` - 41 edges
 3. `NumpyRidgeBaseline` - 39 edges
-4. `NeuralEventBatch` - 39 edges
-5. `build_split_manifest()` - 38 edges
-6. `NeuroTwinPairOperator` - 37 edges
-7. `SupervisedWindowTask` - 37 edges
-8. `TorchMLPBaseline` - 33 edges
-9. `TorchTCNBaseline` - 33 edges
-10. `TinyTransformerBaseline` - 33 edges
+4. `NeuroTwinPairOperator` - 39 edges
+5. `NeuralEventBatch` - 39 edges
+6. `Data schemas, split manifests, and leakage guards.` - 38 edges
+7. `build_split_manifest()` - 38 edges
+8. `SupervisedWindowTask` - 37 edges
+9. `TorchMLPBaseline` - 33 edges
+10. `TorchTCNBaseline` - 33 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `PaperModeEvidence` --uses--> `Validate the artifact contract required before paper-mode claims.      This is i`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1/src/neurotwin/eval/paper_contracts.py → src/neurotwin/eval/paper_gate.py
-- `Data schemas, split manifests, and leakage guards.` --uses--> `TribeStyleModel`  [INFERRED]
-  src/neurotwin/data/__init__.py → /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1/src/neurotwin/models/tribe_style.py
-- `Data schemas, split manifests, and leakage guards.` --uses--> `TribeStyleStimulusInput`  [INFERRED]
-  src/neurotwin/data/__init__.py → /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1/src/neurotwin/models/tribe_style.py
-- `Data schemas, split manifests, and leakage guards.` --uses--> `RankingRow`  [INFERRED]
-  src/neurotwin/data/__init__.py → /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1/src/neurotwin/scoring/metrics.py
-- `TaskResult` --uses--> `Run prepared baselines for multiple seeds and write paper-mode artifacts.`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v1/belgrade-v1/src/neurotwin/benchmarks/tasks.py → src/neurotwin/benchmarks/prepared_suite.py
+  /Users/aayu/.codex/worktrees/66ca/Kahlus-V1/src/neurotwin/eval/paper_contracts.py → src/neurotwin/eval/paper_gate.py
+- `Data schemas, split manifests, and leakage guards.` --uses--> `BaselineSpec`  [INFERRED]
+  src/neurotwin/data/__init__.py → /Users/aayu/.codex/worktrees/66ca/Kahlus-V1/src/neurotwin/models/baselines.py
+- `Data schemas, split manifests, and leakage guards.` --uses--> `NumpyRidgeBaseline`  [INFERRED]
+  src/neurotwin/data/__init__.py → /Users/aayu/.codex/worktrees/66ca/Kahlus-V1/src/neurotwin/models/baselines.py
+- `Data schemas, split manifests, and leakage guards.` --uses--> `TorchMLPBaseline`  [INFERRED]
+  src/neurotwin/data/__init__.py → /Users/aayu/.codex/worktrees/66ca/Kahlus-V1/src/neurotwin/models/baselines.py
+- `Data schemas, split manifests, and leakage guards.` --uses--> `TorchTCNBaseline`  [INFERRED]
+  src/neurotwin/data/__init__.py → /Users/aayu/.codex/worktrees/66ca/Kahlus-V1/src/neurotwin/models/baselines.py
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (121): audit_prepared_eval_inputs(), audit_split_manifest(), AuditReport, _forbidden_metadata(), _metadata_group_overlap(), PreparedEvalAuditReport, Audit prepared eval inputs before any benchmark score is trusted., Audit prepared eval inputs before any benchmark score is trusted. (+113 more)
+Cohesion: 0.05
+Nodes (93): ExecutableBaselineRunner, AggregatePayload, AggregateRankPayload, BaselineFailure, BaselineSuitePayload, _causal_stimulus_features(), _cross_modal_task(), _fit_autoregressive_ridge() (+85 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (85): ExecutableBaselineRunner, AggregatePayload, AggregateRankPayload, BaselineFailure, BaselineSuitePayload, _causal_stimulus_features(), _cross_modal_task(), _fit_autoregressive_ridge() (+77 more)
+Cohesion: 0.03
+Nodes (91): audit_prepared_eval_inputs(), audit_split_manifest(), AuditReport, _duplicate_metadata_value_violations(), _event_metadata_violations(), _forbidden_event_metadata_violations(), _forbidden_metadata(), _hidden_subject_metadata_violations() (+83 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.05
-Nodes (69): _mapping(), _optional_int(), _optional_nonnegative_float(), PreparedDataConfig, PreparedModelConfig, PreparedTrainingConfigInput, PreparedTrainingSectionConfig, _resolve_modalities() (+61 more)
+Nodes (64): _mapping(), _optional_int(), _optional_nonnegative_float(), PreparedDataConfig, PreparedModelConfig, PreparedTrainingConfigInput, PreparedTrainingSectionConfig, _resolve_modalities() (+56 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.04
-Nodes (52): _cmd_estimate(), _cmd_train(), _config_value(), _csv_cell(), _csv_rows(), _dry_run_result(), _has_prepared_training_inputs(), _pair_operator_ablation_csv() (+44 more)
+Nodes (42): _metrics(), _condition_at_step(), _subject_condition(), bandpower_error(), bootstrap_ci(), mae(), mse(), pearsonr() (+34 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.05
-Nodes (62): append_artifact_errors(), baseline_ranking_rows(), csv_cell(), csv_rows(), diagnostic_status(), first_json_artifact(), format_aggregate_rank(), is_artifact_error() (+54 more)
+Nodes (51): _cmd_estimate(), _cmd_train(), _config_value(), _csv_cell(), _csv_rows(), _dry_run_result(), _has_prepared_training_inputs(), _pair_operator_ablation_csv() (+43 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.07
-Nodes (61): format_prepared_eval_audit(), _cmd_run(), EvalCommandConfig, EvalCommandResult, _manifest_paths(), _paper_demo_config(), _paper_demo_error(), _paper_demo_exit_code() (+53 more)
+Cohesion: 0.04
+Nodes (29): BaseObservationOperator, Base class for latent-field-to-observation operators., BaseObservationOperator, BehaviorObservationOperator, Compile a latent neural field into behavior or task-label predictions., _expert_utilization(), NeuralFieldCompiler, NeuralFieldCompilerConfig (+21 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.07
-Nodes (31): _metrics(), bandpower_error(), bootstrap_ci(), mae(), mse(), pearsonr(), r2_score(), _rankdata() (+23 more)
+Cohesion: 0.06
+Nodes (55): append_artifact_errors(), baseline_ranking_rows(), csv_cell(), csv_rows(), diagnostic_status(), first_json_artifact(), format_aggregate_rank(), is_artifact_error() (+47 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.08
-Nodes (29): _bundle_rel_parts(), copy_bundle_file(), copy_current_docker_log(), copy_current_run_logs(), copy_source_file(), copy_tree_files(), current_docker_log_path(), current_slurm_job_id() (+21 more)
+Cohesion: 0.06
+Nodes (53): format_prepared_eval_audit(), bids_manifest_summary(), _events_for(), _infer_modality(), _is_bids_signal(), _listlike(), _load_timeseries_derivative(), _parse_entities() (+45 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.08
-Nodes (47): rank_models(), _aggregate_rank_from_payload(), _aggregate_rank_matches(), aggregate_seed_metrics(), aggregate_seed_ranks(), aggregated_seed_tasks(), AggregateRankRecord, _audit_payload() (+39 more)
+Cohesion: 0.06
+Nodes (34): _add_eval_audit_args(), _add_eval_demo_args(), _add_eval_manifest_args(), _add_eval_suite_args(), _add_eval_window_args(), _cmd_cluster_materialize_config(), _cmd_cluster_preflight(), _cmd_doctor() (+26 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.06
-Nodes (19): _build_moabb_paradigm(), _resolve_moabb_dataset(), _build_temporal_core(), _build_value_projector(), _check_sequence_tensor(), from_mapping(), _pair_key(), _resolve_pair_operator_config() (+11 more)
+Cohesion: 0.07
+Nodes (61): _cmd_run(), EvalCommandConfig, EvalCommandResult, _manifest_paths(), _paper_demo_config(), _paper_demo_error(), _paper_demo_exit_code(), _paper_demo_failures() (+53 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.08
-Nodes (20): baseline_catalog_rows(), BaselineCatalogEntry, _baseline_catalog(), run_supervised_window_tasks(), BaselineSuiteTests, _build_events(), _event_embedding(), from_checkpoint() (+12 more)
+Nodes (47): rank_models(), _aggregate_rank_from_payload(), _aggregate_rank_matches(), aggregate_seed_metrics(), aggregate_seed_ranks(), aggregated_seed_tasks(), AggregateRankRecord, _audit_payload() (+39 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.09
-Nodes (21): _add_eval_audit_args(), _add_eval_demo_args(), _add_eval_manifest_args(), _add_eval_suite_args(), _add_eval_window_args(), _cmd_doctor(), main(), _normalize_eval_argv() (+13 more)
+Cohesion: 0.08
+Nodes (29): _bundle_rel_parts(), copy_bundle_file(), copy_current_docker_log(), copy_current_run_logs(), copy_source_file(), copy_tree_files(), current_docker_log_path(), current_slurm_job_id() (+21 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.11
-Nodes (14): _baseline_csv_has_rankings(), _baseline_ranking_present(), build_prepared_evidence_gate(), _competitor_reproduction_status_present(), format_evidence_diagnostic_report(), _paper_mode_gate_present(), _prepared_suite_has_rankings(), read_json_artifact() (+6 more)
+Cohesion: 0.07
+Nodes (21): from_mapping(), cleanup_process_group(), maybe_init_process_group(), wrap_ddp_if_initialized(), _baseline_csv_has_rankings(), _baseline_ranking_present(), build_prepared_evidence_gate(), _competitor_reproduction_status_present() (+13 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.14
-Nodes (13): _cmd_cluster_materialize_config(), _cmd_cluster_preflight(), _parse_split_windows(), ClusterMaterializeConfigReport, ClusterPreflightReport, format_cluster_materialize_config(), format_cluster_preflight(), materialize_cluster_config() (+5 more)
+Cohesion: 0.07
+Nodes (23): baseline_catalog_rows(), BaselineCatalogEntry, _baseline_catalog(), run_supervised_window_tasks(), PaperModeGateError, Validate the artifact contract required before paper-mode claims.      This is i, validate_paper_mode_payload(), BaselineSuiteTests (+15 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.16
-Nodes (26): build_future_forecasting_task_from_windows(), build_prepared_window_tasks(), _cross_modal_task_from_windows(), _future_task_from_windows(), _future_xy(), _masked_task_from_windows(), _metadata_list(), _normalize_hash() (+18 more)
+Cohesion: 0.07
+Nodes (31): _align_prediction(), _criterion(), _falsification(), _fit_nfc(), _fit_pair_operator(), _fit_ridge(), _fit_sequence_baseline(), _format_falsification() (+23 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.18
-Nodes (2): ExpandedCliTests, _valid_paper_mode_gate()
+Cohesion: 0.16
+Nodes (27): build_future_forecasting_task_from_windows(), build_prepared_window_tasks(), _cross_modal_task_from_windows(), first_prepared_modality_with_splits(), _future_task_from_windows(), _future_xy(), _masked_task_from_windows(), _metadata_list() (+19 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.21
-Nodes (16): _events_for(), _infer_modality(), _is_bids_signal(), _listlike(), _load_timeseries_derivative(), _parse_entities(), _read_tsv(), _read_tsv_rows() (+8 more)
+Cohesion: 0.18
+Nodes (2): ExpandedCliTests, _valid_paper_mode_gate()
 
 ### Community 17 - "Community 17"
 Cohesion: 0.13
@@ -189,12 +189,12 @@ Cohesion: 0.24
 Nodes (4): assert_runner_archive(), copy_repo_to_temp_git(), HandoffZipArtifactTests, RunnerBundleArtifactTests
 
 ### Community 21 - "Community 21"
-Cohesion: 0.44
-Nodes (9): _duplicate_metadata_value_violations(), _event_metadata_violations(), _forbidden_event_metadata_violations(), _hidden_subject_metadata_violations(), _prepared_windows_by_split(), _record_id(), _stimulus_segment_key(), _stimulus_segment_violations() (+1 more)
-
-### Community 22 - "Community 22"
 Cohesion: 0.7
 Nodes (4): main(), _nccl_version(), _payload(), _positive_int()
+
+### Community 22 - "Community 22"
+Cohesion: 1.0
+Nodes (0):
 
 ### Community 23 - "Community 23"
 Cohesion: 1.0
@@ -238,15 +238,15 @@ Nodes (0):
 
 ### Community 33 - "Community 33"
 Cohesion: 1.0
-Nodes (0):
+Nodes (1): Load a local NeuroTwin TRIBE-style config or seeded defaults.          No pretra
 
 ### Community 34 - "Community 34"
 Cohesion: 1.0
-Nodes (1): Load a local NeuroTwin TRIBE-style config or seeded defaults.          No pretra
+Nodes (1): Compatibility shim for TRIBE-style callers.          Prefer :meth:`from_checkpoi
 
 ### Community 35 - "Community 35"
 Cohesion: 1.0
-Nodes (1): Compatibility shim for TRIBE-style callers.          Prefer :meth:`from_checkpoi
+Nodes (1): Narrow loaded YAML at the command boundary after load_config validation.
 
 ### Community 36 - "Community 36"
 Cohesion: 1.0
@@ -373,8 +373,10 @@ Cohesion: 1.0
 Nodes (1): Encode observed modalities into shared latent neural tokens.
 
 ## Knowledge Gaps
-- **62 isolated node(s):** `Allow direct script execution without mutating imports at module load.`, `Allow lazy sibling script imports from module-based test loaders.`, `Narrow loaded YAML at the command boundary after load_config validation.`, `Raised when an experiment config cannot be loaded or validated.`, `Resolve a source commit from git, falling back to COMMIT_HASH.txt.` (+57 more)
+- **69 isolated node(s):** `Allow direct script execution without mutating imports at module load.`, `Allow lazy sibling script imports from module-based test loaders.`, `Narrow loaded YAML at the command boundary after load_config validation.`, `Raised when an experiment config cannot be loaded or validated.`, `Resolve a source commit from git, falling back to COMMIT_HASH.txt.` (+64 more)
   These have ≤1 connection - possible missing edges or undocumented components.
+- **Thin community `Community 22`** (1 nodes): `__init__.py`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 23`** (1 nodes): `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 24`** (1 nodes): `__init__.py`
@@ -393,13 +395,13 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 31`** (1 nodes): `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 32`** (1 nodes): `__init__.py`
+- **Thin community `Community 32`** (1 nodes): `paper_mode.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 33`** (1 nodes): `paper_mode.py`
+- **Thin community `Community 33`** (1 nodes): `Load a local NeuroTwin TRIBE-style config or seeded defaults.          No pretra`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (1 nodes): `Load a local NeuroTwin TRIBE-style config or seeded defaults.          No pretra`
+- **Thin community `Community 34`** (1 nodes): `Compatibility shim for TRIBE-style callers.          Prefer :meth:`from_checkpoi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (1 nodes): `Compatibility shim for TRIBE-style callers.          Prefer :meth:`from_checkpoi`
+- **Thin community `Community 35`** (1 nodes): `Narrow loaded YAML at the command boundary after load_config validation.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 36`** (1 nodes): `Narrow loaded YAML at the command boundary after load_config validation.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -467,14 +469,14 @@ Nodes (1): Encode observed modalities into shared latent neural tokens.
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `_cmd_train()` connect `Community 3` to `Community 0`, `Community 1`, `Community 11`, `Community 12`?**
-  _High betweenness centrality (0.084) - this node is a cross-community bridge._
-- **Why does `run_prepared_training()` connect `Community 12` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 6`, `Community 9`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
-- **Why does `_require_bundle_rel()` connect `Community 7` to `Community 9`?**
-  _High betweenness centrality (0.073) - this node is a cross-community bridge._
-- **Are the 64 inferred relationships involving `ValueError` (e.g. with `_require_bundle_rel()` and `resolve_prepared_config()`) actually correct?**
-  _`ValueError` has 64 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `NeuralEventBatch` connect `Community 1` to `Community 0`, `Community 2`, `Community 7`, `Community 9`, `Community 18`?**
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+- **Why does `run_prepared_training()` connect `Community 12` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 7`?**
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+- **Why does `_require_bundle_rel()` connect `Community 11` to `Community 3`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Are the 85 inferred relationships involving `ValueError` (e.g. with `_require_bundle_rel()` and `resolve_prepared_config()`) actually correct?**
+  _`ValueError` has 85 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 46 inferred relationships involving `NeuralStateSpaceTranslator` (e.g. with `ModelMetadataGeometryTests` and `ModelShapeTests`) actually correct?**
   _`NeuralStateSpaceTranslator` has 46 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 38 inferred relationships involving `NeuralStateSpaceTranslatorConfig` (e.g. with `ModelMetadataGeometryTests` and `ModelShapeTests`) actually correct?**
