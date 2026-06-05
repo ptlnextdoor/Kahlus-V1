@@ -1,0 +1,46 @@
+experiment: synthetic_field_compiler_debug
+run_id: synthetic_field_compiler_debug
+description: Local CPU debug for NeuroTwin NFC on synthetic latent-field plumbing only.
+dataset: synthetic_field
+task: nfc_synthetic
+split: synthetic_subject
+seed: 0
+steps: 4
+batch_size: 8
+window_size: 8
+stride: 8
+precision: fp32
+max_grad_norm: 1.0
+require_real_stimulus: false
+model:
+  type: neurotwin_nfc
+  latent_dim: 32
+  n_layers: 1
+  backbone: gru
+  projection_dim: 16
+  pair_rank: 4
+  use_pair_kernel: true
+  use_observation_operator: true
+  use_uncertainty: true
+  stimulus_lag_steps: 1
+  hrf_delay_steps: 1
+  modalities:
+    - stimulus
+    - fmri
+    - eeg
+training:
+  dry_run_ok: true
+  internet_required: false
+  compile: false
+  max_grad_norm: 1.0
+  objective_weights:
+    synthetic_latent_field_recovery: 1.0
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    stimulus_to_fmri_response: 1.0
+evidence_gate:
+  synthetic_only: true
+  require_real_stimulus: false
+  scientific_claim_allowed: false
+  require_leakage_audit: true
+  require_baseline_ranking: true

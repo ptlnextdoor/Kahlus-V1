@@ -1,0 +1,48 @@
+experiment: algonauts_field_compiler_debug
+run_id: algonauts_field_compiler_debug
+description: Debug-only NeuroTwin NFC fMRI field-compiler run over prepared Algonauts/CNeuroMod windows.
+dataset: prepared_manifest
+task: stimulus_to_fmri_response
+split: stimulus_run_group
+data:
+  event_manifest: /path/to/algonauts_prepared/event_manifest.json
+  split_manifest: /path/to/algonauts_prepared/split_manifest.json
+seed: 0
+steps: 200
+batch_size: 16
+window_size: 128
+stride: 64
+precision: bf16
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 50
+eval_every_steps: 50
+require_real_stimulus: true
+model:
+  type: neurotwin_nfc
+  latent_dim: 128
+  n_layers: 2
+  backbone: gru
+  projection_dim: 64
+  pair_rank: 8
+  use_pair_kernel: true
+  use_observation_operator: true
+  use_uncertainty: true
+  stimulus_lag_steps: 1
+  hrf_delay_steps: 1
+  modalities:
+    - stimulus
+    - fmri
+training:
+  compile: false
+  internet_required: false
+  max_grad_norm: 1.0
+  objective_weights:
+    stimulus_to_fmri_response: 1.0
+evidence_gate:
+  synthetic_only: false
+  require_real_stimulus: true
+  scientific_claim_allowed: false
+  require_leakage_audit: true
+  require_verified_stimulus_hash: true
+  require_baseline_ranking: true

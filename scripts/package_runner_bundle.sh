@@ -43,6 +43,9 @@ ARCHIVE_PATHS=(
   configs/train/algonauts_pair_operator_debug.yaml
   configs/train/algonauts_pair_operator_full.yaml
   configs/train/algonauts_pair_operator_ablation_array.yaml
+  configs/train/synthetic_field_compiler_debug.yaml
+  configs/train/algonauts_field_compiler_debug.yaml
+  configs/train/moabb_field_compiler_debug.yaml
   scripts/run_smoke.sh
   scripts/run_docker_6gpu.sh
   scripts/docker_a100_inner.sh

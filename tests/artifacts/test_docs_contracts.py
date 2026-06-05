@@ -75,6 +75,9 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "configs/train/algonauts_pair_operator_debug.yaml",
             "configs/train/algonauts_pair_operator_full.yaml",
             "configs/train/algonauts_pair_operator_ablation_array.yaml",
+            "configs/train/synthetic_field_compiler_debug.yaml",
+            "configs/train/algonauts_field_compiler_debug.yaml",
+            "configs/train/moabb_field_compiler_debug.yaml",
             "configs/train/moabb_h100.yaml",
             "configs/train/bids_debug.yaml",
             "configs/train/neurotwin_v1_h100.yaml",
@@ -111,6 +114,11 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "requirements/cluster-a100.txt",
             "docs/CLAIMS.md",
             "docs/A100_RUNBOOK.md",
+            "docs/research/neurotwin_nfc_research_dossier.pdf",
+            "docs/research/neurotwin_nfc_research_dossier.tex",
+            "docs/research/nfc_implementation_plan.md",
+            "docs/research/nfc_architecture_decision_log.md",
+            "docs/research/nfc_falsification_criteria.md",
             "docs/CHAPMAN_A100_QUICKSTART.md",
             "docs/RUNPOD_A100_REHEARSAL.md",
             "docs/H100_RUNBOOK.md",
@@ -128,6 +136,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("Do not claim", claims)
         self.assertIn("clinical digital twin", claims)
         self.assertIn("Synthetic smoke tests validate plumbing only", claims)
+        self.assertIn("Neural Field Compiler", claims)
+        self.assertIn("Pair-Operator is an ablation", claims)
         self.assertIn("tribe_style", claims)
         self.assertIn("clean-room approximation", claims)
         self.assertIn("Do not describe it as exact TRIBE v2", claims)

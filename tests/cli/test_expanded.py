@@ -51,6 +51,29 @@ class ExpandedCliTests(unittest.TestCase):
         self.assertIn("dry_run=True", train.stdout)
         self.assertIn("backbone=ssm_fallback", a100.stdout)
 
+    def test_eval_nfc_synthetic_suite_writes_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.run_cli(
+                "eval",
+                "--suite",
+                "nfc_synthetic",
+                "--out-dir",
+                tmp,
+                "--train-steps",
+                "1",
+                "--seed",
+                "0",
+            )
+            out = Path(tmp)
+
+            self.assertTrue((out / "nfc_synthetic_results.json").exists())
+            self.assertTrue((out / "nfc_synthetic_results.csv").exists())
+            self.assertTrue((out / "nfc_ablation_table.csv").exists())
+            self.assertTrue((out / "nfc_falsification_report.md").exists())
+
+        self.assertIn("NeuroTwin NFC Synthetic Suite", result.stdout)
+        self.assertIn("Pair-Operator is a baseline/ablation", result.stdout)
+
     def test_data_and_split_audits(self):
         data = self.run_cli("data", "audit", "--dataset", "synthetic")
         split = self.run_cli("split", "audit", "--dataset", "synthetic", "--split", "subject")

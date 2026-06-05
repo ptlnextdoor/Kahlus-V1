@@ -61,6 +61,27 @@ class EstimateConfigTests(unittest.TestCase):
         self.assertEqual(estimate["precision"], "bfloat16")
         self.assertEqual(estimate["compile"], "True")
 
+    def test_nfc_estimate_surfaces_experimental_flags(self):
+        estimate = estimate_config(
+            {
+                "model": {
+                    "type": "neurotwin_nfc",
+                    "latent_dim": 16,
+                    "output_dim": 5,
+                    "pair_rank": 3,
+                    "use_pair_kernel": False,
+                    "use_observation_operator": False,
+                    "use_uncertainty": True,
+                }
+            }
+        )
+
+        self.assertEqual(estimate["model_type"], "neurotwin_nfc")
+        self.assertEqual(estimate["model_status"], "experimental_architecture")
+        self.assertEqual(estimate["use_pair_kernel"], "False")
+        self.assertEqual(estimate["use_observation_operator"], "False")
+        self.assertEqual(estimate["use_uncertainty"], "True")
+
     def test_invalid_modalities_fail_loudly(self):
         with self.assertRaisesRegex(ValueError, "unsupported model modality"):
             estimate_config({"model": {"modalities": ["eeg", "bogus"]}})

@@ -29,6 +29,22 @@ class CliReportTests(unittest.TestCase):
         self.assertIn("held-out subject/site/dataset", result.stdout)
         self.assertIn("missing-modality reconstruction", result.stdout)
 
+    def test_report_nfc_synthetic_suite(self):
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+
+        result = subprocess.run(
+            [sys.executable, "-m", "neurotwin.cli", "report", "--suite", "nfc_synthetic"],
+            cwd=os.getcwd(),
+            env=env,
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertIn("NeuroTwin NFC Synthetic Suite", result.stdout)
+        self.assertIn("Pair-Operator is a baseline/ablation", result.stdout)
+
     def test_run_report_does_not_reraise_artifact_read_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
