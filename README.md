@@ -8,6 +8,8 @@ The defensible v1 target is stricter:
 
 NFC treats fMRI, EEG, behavior, stimulus responses, and future modalities as partial observations of one latent neural field. Pair-Operator remains usable, but only as a baseline/ablation for low-rank relational field updates.
 
+For the current repo state and NFC pivot map, see `docs/research/neurotwin_project_state.md`. Track A is reproducibility and claim-gate evidence. Track B is the NFC model path. The next A100 step is strict 1x NFC synthetic diagnostic only, not Algonauts or 6x DDP.
+
 Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Brain-OF, BrainOmni, Brain Harmony, plus Transformer, SSM/Mamba, and modality-specialist baselines. Brain-OF is treated as the main benchmark opponent for generic multimodal neural foundation modeling.
 
 ## Current Scaffold
