@@ -24,6 +24,7 @@ from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
 from neurotwin.training.command import TrainingCommandConfig, run_training_command
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
+from neurotwin.training.prepared_loop import _normalize_model_type
 
 
 class PreparedTrainingTests(unittest.TestCase):
@@ -148,6 +149,29 @@ class PreparedTrainingTests(unittest.TestCase):
 
         self.assertEqual(config.eval_every_steps, 3)
         self.assertEqual(config.checkpoint_every_steps, 5)
+
+    def test_prepared_training_config_accepts_nfc_fields_and_aliases(self):
+        config = PreparedTrainingConfig.from_mapping(
+            {
+                "event_manifest": "event_manifest.json",
+                "split_manifest": "split_manifest.json",
+                "model": {
+                    "type": "nfc",
+                    "latent_dim": 16,
+                    "pair_rank": 3,
+                    "use_pair_kernel": False,
+                    "use_observation_operator": False,
+                    "use_uncertainty": True,
+                },
+            }
+        )
+
+        self.assertEqual(config.model.type, "nfc")
+        self.assertFalse(config.model.use_pair_kernel)
+        self.assertFalse(config.model.use_observation_operator)
+        self.assertTrue(config.model.use_uncertainty)
+        self.assertEqual(_normalize_model_type("nfc"), "NeuralFieldCompiler")
+        self.assertEqual(_normalize_model_type("neural_field_compiler"), "NeuralFieldCompiler")
 
     def test_prepared_training_cleans_up_distributed_group_on_failure(self):
         config = {

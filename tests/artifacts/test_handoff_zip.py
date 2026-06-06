@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import tempfile
@@ -9,6 +10,66 @@ from tests.artifacts.helpers import assert_runner_archive, copy_repo_to_temp_git
 
 
 class HandoffZipArtifactTests(unittest.TestCase):
+    def test_package_a100_nfc_docker_handoff_zip_contains_no_runner_or_source(self):
+        if shutil.which("shasum") is None:
+            self.skipTest("shasum is required for handoff bundle verification")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_repo = copy_repo_to_temp_git(tmp)
+            env = dict(os.environ)
+            env["NEUROTWIN_DOCKER_IMAGE_REF"] = "ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime@sha256:" + "a" * 64
+            result = subprocess.run(
+                ["bash", "scripts/package_a100_nfc_docker_handoff_zip.sh"],
+                cwd=tmp_repo,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            zips = sorted((tmp_repo / "outputs").glob("neurotwin-a100-nfc-docker-handoff-*.zip"))
+            self.assertEqual(len(zips), 1)
+
+            extract_root = Path(tmp) / "nfc-docker"
+            with zipfile.ZipFile(zips[0], "r") as archive:
+                names = set(archive.namelist())
+                archive.extractall(extract_root)
+
+            roots = {name.split("/", 1)[0] for name in names if name}
+            self.assertEqual(len(roots), 1)
+            root = roots.pop()
+            self.assertEqual(
+                names,
+                {
+                    f"{root}/COMMIT_HASH.txt",
+                    f"{root}/README_KRISH_AGENT.md",
+                    f"{root}/SHA256SUMS",
+                },
+            )
+            for name in names:
+                self.assertFalse(name.endswith((".py", ".pyc", ".whl", ".tar", ".tar.gz", ".pt", ".npz")), name)
+                self.assertNotIn("/src/", name)
+
+            handoff_root = extract_root / root
+            readme = (handoff_root / "README_KRISH_AGENT.md").read_text(encoding="utf-8")
+            self.assertIn("Docker runtime image", readme)
+            self.assertIn("NEUROTWIN_DOCKER_IMAGE", readme)
+            self.assertIn("ghcr.io/ptlnextdoor/kahlus-v1-a100-runtime@sha256:" + "a" * 64, readme)
+            self.assertIn("docker login ghcr.io", readme)
+            self.assertIn("docker pull \"$NEUROTWIN_DOCKER_IMAGE\"", readme)
+            self.assertIn("--suite nfc_synthetic", readme)
+            self.assertIn("--seeds 0 1 2", readme)
+            self.assertIn("uncertainty_calibration.csv", readme)
+            self.assertNotIn("runner tarball", readme.lower())
+
+            checksum = subprocess.run(
+                ["shasum", "-a", "256", "-c", "SHA256SUMS"],
+                cwd=handoff_root,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(checksum.returncode, 0, checksum.stderr + checksum.stdout)
+
     def test_package_a100_handoff_zip_smokes_real_archive(self):
         if shutil.which("shasum") is None:
             self.skipTest("shasum is required for handoff bundle verification")
@@ -41,6 +102,7 @@ class HandoffZipArtifactTests(unittest.TestCase):
             expected = {
                 f"{root}/COMMIT_HASH.txt",
                 f"{root}/README_HANDOFF.md",
+                f"{root}/run_krish_agent.sh",
                 f"{root}/SHA256SUMS",
                 f"{root}/{runner_name}.tar.gz",
             }
@@ -80,8 +142,31 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "Expected Outputs",
                 "Known Limitations",
                 "MOABB task labels are intentionally removed",
+                "./run_krish_agent.sh synthetic50",
+                "public PyTorch CUDA Docker image",
+                "NFC_AUTO_ESCALATE_100",
+                "--require-pass",
             ):
                 self.assertIn(required, readme)
+            script = (handoff_root / "run_krish_agent.sh").read_text(encoding="utf-8")
+            for required in (
+                "synthetic50",
+                "synthetic100",
+                "algonauts-debug",
+                "full6",
+                "docker pull \"$DOCKER_IMAGE\"",
+                "nfc_synthetic_gate",
+                "NFC_AUTO_ESCALATE_100",
+                "python -m neurotwin.cli eval",
+                "--suite nfc_synthetic",
+                "--seeds 0 1 2",
+                "scripts/run_docker_6gpu.sh",
+            ):
+                self.assertIn(required, script)
+            self.assertNotIn("ghp_", script)
+            self.assertNotIn("GHCR_TOKEN", readme)
+            self.assertNotIn("GHCR_TOKEN", script)
+            self.assertNotIn("docker login ghcr.io", script)
             self.assertNotIn("<timestamp>", readme)
             self.assertNotIn("docker run --rm -it", readme)
             self.assertNotIn("The helper runs this host command", readme)

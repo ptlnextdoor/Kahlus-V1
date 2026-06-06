@@ -1,5 +1,9 @@
 # NeuroTwin Technical Report
 
+Supersession note: the old Pair-Operator-centered plan is superseded by
+NeuroTwin NFC, the Neural Field Compiler. Pair-Operator remains one
+baseline/ablation for low-rank relational field updates inside NFC.
+
 Date: 2026-05-24
 
 ## 1. Executive Summary

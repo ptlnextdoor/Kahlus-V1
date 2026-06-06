@@ -1,14 +1,19 @@
-# NeuroTwin Pair-Operator Design
+# NeuroTwin Pair-Operator Historical Ablation Design
 
-Status: local hardening complete enough for 1x A100 debug rehearsal
-Scope: Algonauts/CNeuroMod fMRI-first architecture experiment
+Status: superseded architecture branch; retained as NFC baseline/ablation
+Scope: Algonauts/CNeuroMod fMRI-first historical architecture experiment
 Claim scope: no model superiority claim until real A100 evidence exists
+
+Pair-Operator is no longer the main NeuroTwin architecture. The main
+experimental architecture is NeuroTwin NFC, the Neural Field Compiler. This
+file is retained to document the historical Pair-Operator branch and to define
+the baseline/ablation role it plays inside NFC.
 
 ## Problem Statement
 
 Naturalistic brain activity is not a flat token stream. It is a time-evolving
 relational system over parcels, sensors, or regions, driven by stimulus streams
-and constrained by evidence quality. The Pair-Operator experiment tests whether
+and constrained by evidence quality. The historical Pair-Operator experiment tests whether
 explicit low-rank parcel-pair state improves fMRI tasks under leakage-audited
 splits.
 

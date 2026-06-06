@@ -8,8 +8,10 @@ from typing import Any
 import torch
 from torch import nn
 
-from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig
+from neurotwin.models.architecture_registry import build_architecture_model, normalize_architecture_type
+from neurotwin.models.pair_operator import NeuroTwinPairOperatorConfig
+from neurotwin.models.nfc import NeuralFieldCompilerConfig
+from neurotwin.models.torch_models import NeuralStateSpaceTranslatorConfig
 from neurotwin.repro import append_jsonl
 from neurotwin.runtime.distributed import unwrap_model, wrap_ddp_if_initialized
 from neurotwin.training.prepared_checkpoints import load_task_resume, save_task_checkpoint
@@ -414,6 +416,26 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
             "output_dims": {task.target_modality: task.y_train.shape[-1]},
             **asdict(architecture),
         }
+    if model_type == "NeuralFieldCompiler":
+        architecture = NeuralFieldCompilerConfig(
+            latent_dim=model_cfg.latent_dim,
+            n_layers=model_cfg.n_layers,
+            backbone=model_cfg.backbone,
+            projection_dim=model_cfg.projection_dim,
+            pair_rank=model_cfg.pair_rank,
+            use_pair_kernel=model_cfg.use_pair_kernel,
+            use_observation_operator=model_cfg.use_observation_operator,
+            use_uncertainty=model_cfg.use_uncertainty,
+            stimulus_lag_steps=model_cfg.stimulus_lag_steps,
+            hrf_delay_steps=model_cfg.hrf_delay_steps,
+            subject_state_dim=model_cfg.subject_state_dim,
+        )
+        return {
+            "type": model_type,
+            "input_dims": {task.source_modality: task.x_train.shape[-1]},
+            "output_dims": {task.target_modality: task.y_train.shape[-1]},
+            **asdict(architecture),
+        }
     architecture = NeuralStateSpaceTranslatorConfig(
         latent_dim=model_cfg.latent_dim,
         n_layers=model_cfg.n_layers,
@@ -438,27 +460,11 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
 
 
 def _translator_from_model_config(model_config: dict[str, Any]) -> nn.Module:
-    model_type = _normalize_model_type(str(model_config.get("type", "NeuralStateSpaceTranslator")))
-    if model_type == "NeuroTwinPairOperator":
-        return NeuroTwinPairOperator(
-            input_dims=dict(model_config["input_dims"]),
-            output_dims=dict(model_config["output_dims"]),
-            config=NeuroTwinPairOperatorConfig.from_mapping(model_config),
-        )
-    return NeuralStateSpaceTranslator(
-        input_dims=dict(model_config["input_dims"]),
-        output_dims=dict(model_config["output_dims"]),
-        config=NeuralStateSpaceTranslatorConfig.from_mapping(model_config),
-    )
+    return build_architecture_model(model_config)
 
 
 def _normalize_model_type(value: str) -> str:
-    normalized = value.strip().lower().replace("-", "_")
-    if normalized in {"neuralstatespacetranslator", "neural_state_space_translator", "translator"}:
-        return "NeuralStateSpaceTranslator"
-    if normalized in {"neurotwinpairoperator", "neurotwin_pair_operator", "pair_operator", "ntp_o"}:
-        return "NeuroTwinPairOperator"
-    raise ValueError(f"Unknown prepared model type {value!r}")
+    return normalize_architecture_type(value)
 
 
 def _append_task_metric(path: str | None, row: dict[str, Any]) -> None:

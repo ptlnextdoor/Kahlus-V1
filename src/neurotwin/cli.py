@@ -167,7 +167,9 @@ def _emit_command_result(result: CommandResult) -> None:
     if result.output:
         print(result.output)
     if result.exit_code:
-        raise SystemExit(result.error or result.exit_code)
+        if result.error:
+            print(result.error, file=sys.stderr)
+        raise SystemExit(result.exit_code)
 
 
 def _add_eval_manifest_args(parser: argparse.ArgumentParser) -> None:
@@ -191,6 +193,8 @@ def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--seeds", nargs="*", type=int, default=None)
     parser.add_argument("--require-windows", action="store_true")
     parser.add_argument("--paper-mode", action="store_true")
+    parser.add_argument("--require-pass", action="store_true")
+    parser.add_argument("--gate-mode", choices=("evidence", "strict"), default="evidence")
     parser.set_defaults(
         dataset="synthetic",
         eval_command=None,
@@ -210,6 +214,8 @@ def _add_eval_audit_args(parser: argparse.ArgumentParser) -> None:
         seed=0,
         seeds=None,
         paper_mode=False,
+        require_pass=False,
+        gate_mode="evidence",
     )
 
 
@@ -340,12 +346,16 @@ def _cmd_eval(args: argparse.Namespace) -> None:
             seeds=tuple(args.seeds) if getattr(args, "seeds", None) is not None else None,
             require_windows=getattr(args, "require_windows", False),
             paper_mode=getattr(args, "paper_mode", False),
+            require_pass=getattr(args, "require_pass", False),
+            gate_mode=getattr(args, "gate_mode", "evidence"),
         )
     )
     if result.output:
         print(result.output)
     if result.exit_code:
-            raise SystemExit(result.error or result.exit_code)
+        if result.error:
+            print(result.error, file=sys.stderr)
+        raise SystemExit(result.exit_code)
 
 
 def _cmd_run(args: argparse.Namespace) -> None:

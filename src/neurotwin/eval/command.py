@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from neurotwin.benchmarks.prepared_suite import format_prepared_baseline_report, run_prepared_baseline_suite
+from neurotwin.benchmarks.nfc_suite import format_nfc_synthetic_report, nfc_falsification_status, run_nfc_synthetic_suite
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.smoke import format_smoke_results, run_translation_smoke
 from neurotwin.benchmarks.suite import format_neural_translation_v1_report, run_neural_translation_v1_synthetic
@@ -43,6 +44,8 @@ class EvalCommandConfig:
     seeds: tuple[int, ...] | None = None
     require_windows: bool = False
     paper_mode: bool = False
+    require_pass: bool = False
+    gate_mode: str = "evidence"
 
 
 @dataclass(frozen=True)
@@ -62,11 +65,13 @@ def run_eval_command(config: EvalCommandConfig) -> EvalCommandResult:
         return _run_identity_probe_command(config)
     if config.suite == "neural_translation_v1":
         return _run_neural_translation_v1_command(config)
+    if config.suite == "nfc_synthetic":
+        return _run_nfc_synthetic_command(config)
     if config.suite != "translation_smoke":
         return EvalCommandResult(
             output="",
             exit_code=1,
-            error="Supported suites: translation_smoke, neural_translation_v1",
+            error="Supported suites: translation_smoke, neural_translation_v1, nfc_synthetic",
         )
     return _run_translation_smoke_command(config)
 
@@ -132,6 +137,22 @@ def _run_neural_translation_v1_command(config: EvalCommandConfig) -> EvalCommand
         return run_prepared_eval_command(config)
     payload = run_neural_translation_v1_synthetic(seed=config.seed, out_dir=config.out_dir)
     return EvalCommandResult(output=format_neural_translation_v1_report(payload), payload=payload)
+
+
+def _run_nfc_synthetic_command(config: EvalCommandConfig) -> EvalCommandResult:
+    if config.event_manifest or config.split_manifest:
+        return EvalCommandResult(output="", exit_code=1, error="nfc_synthetic is synthetic-only and does not accept prepared manifests")
+    payload = run_nfc_synthetic_suite(seed=config.seed, seeds=config.seeds, train_steps=config.train_steps, out_dir=config.out_dir)
+    status = nfc_falsification_status(payload)
+    if config.require_pass or config.gate_mode == "strict":
+        if status != "passed":
+            return EvalCommandResult(
+                output=format_nfc_synthetic_report(payload),
+                exit_code=2,
+                error=f"nfc_synthetic falsification status={status}",
+                payload=payload,
+            )
+    return EvalCommandResult(output=format_nfc_synthetic_report(payload), payload=payload)
 
 
 def run_prepared_eval_command(config: EvalCommandConfig) -> EvalCommandResult:

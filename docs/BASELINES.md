@@ -8,6 +8,8 @@ Local implemented baselines:
 - Transformer baseline.
 - SSM fallback baseline.
 - NeuroTwin translator.
+- NeuroTwin NFC synthetic suite baselines and ablations.
+- Pair-Operator baseline/ablation for low-rank relational updates inside the NFC question.
 
 Prepared benchmark coverage:
 
@@ -31,6 +33,8 @@ Competitor references:
 - Braindecode and CEBRA: optional wrapper slots. Status remains unavailable unless dependencies and compatible protocols are installed.
 
 Prepared reports distinguish `exact`, `local_baseline`, `clean_room_approximation`, `approximation`, and `unavailable`. Approximation rows are lanes for fair comparison, not claims of exact reproduction.
+
+Pair-Operator is no longer the main architecture. It remains a local baseline and ablation lane for testing whether low-rank pair state helps the Neural Field Compiler.
 
 The `TribeStyleModel.from_pretrained` and `get_events_dataframe` names are temporary public compatibility aliases for baseline-plumbing smoke tests only. Prefer `get_event_rows` or `build_events` for row-returning local event fixtures so callers do not infer a pandas DataFrame contract. Do not extend the TRIBE-shaped shim surface; sunset those aliases when exact upstream TRIBE reproduction is integrated or before a stable v1 model API is declared.
 

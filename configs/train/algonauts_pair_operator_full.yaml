@@ -1,6 +1,6 @@
 experiment: algonauts_pair_operator_full
 run_id: algonauts_pair_operator_full
-description: Full fMRI-only NeuroTwin Pair-Operator run for Algonauts/CNeuroMod prepared windows after 1x A100 debug passes.
+description: Historical fMRI-only NeuroTwin Pair-Operator ablation run for Algonauts/CNeuroMod prepared windows after 1x A100 debug passes.
 dataset: prepared_manifest
 task: neural_translation_v1
 split: stimulus_run_group
