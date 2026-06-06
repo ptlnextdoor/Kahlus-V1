@@ -73,6 +73,8 @@ class ExpandedCliTests(unittest.TestCase):
             self.assertTrue((out / "nfc_ablation_table.csv").exists())
             self.assertTrue((out / "nfc_falsification_report.md").exists())
             self.assertTrue((out / "uncertainty_calibration.csv").exists())
+            self.assertTrue((out / "evidence_gate.json").exists())
+            self.assertTrue((out / "diagnostic_report.md").exists())
 
         self.assertIn("NeuroTwin NFC Synthetic Suite", result.stdout)
         self.assertIn("Pair-Operator is a baseline/ablation", result.stdout)
@@ -94,6 +96,7 @@ class ExpandedCliTests(unittest.TestCase):
             payload = json.loads((Path(tmp) / "nfc_synthetic_results.json").read_text(encoding="utf-8"))
 
         self.assertEqual(payload["seeds"], [0, 1])
+        self.assertIn("synthetic_latent_field_recovery", payload["tasks"])
         self.assertIn("seeds=0,1", result.stdout)
 
     def test_eval_nfc_synthetic_require_pass_fails_needs_evidence(self):

@@ -25,14 +25,21 @@ class NFCSyntheticSuiteTests(unittest.TestCase):
             self.assertTrue((out / "nfc_ablation_table.csv").exists())
             self.assertTrue((out / "nfc_falsification_report.md").exists())
             self.assertTrue((out / "uncertainty_calibration.csv").exists())
+            self.assertTrue((out / "evidence_gate.json").exists())
+            self.assertTrue((out / "diagnostic_report.md").exists())
 
         self.assertEqual(payload["scope"]["status"], "synthetic-only")
         self.assertIn("nfc_full", payload["models"])
         self.assertIn("pair_operator", payload["models"])
+        self.assertIn("direct_linear", payload["models"])
+        self.assertIn("direct_mlp", payload["models"])
         self.assertEqual(payload["models"]["pair_operator"]["role"], "baseline_ablation")
+        self.assertIn("synthetic_latent_field_recovery", payload["tasks"])
         self.assertIn("synthetic_latent_observation_recovery", payload["tasks"])
-        self.assertNotIn("synthetic_latent_field_recovery", payload["tasks"])
+        self.assertIn("synthetic_eeg_to_fmri", payload["tasks"])
+        self.assertIn("synthetic_fmri_to_eeg", payload["tasks"])
         self.assertIn("falsification", payload)
+        self.assertEqual(payload["task_contracts"]["synthetic_latent_field_recovery"]["target_kind"], "latent_field")
 
     def test_nfc_synthetic_suite_aggregates_multiple_seeds(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -73,12 +80,34 @@ class NFCSyntheticSuiteTests(unittest.TestCase):
         target_a = np.zeros((2, 5, 3), dtype=np.float32)
         target_b = np.full((2, 5, 3), 1000.0, dtype=np.float32)
         base = {
-            "task_id": "future_state_forecasting",
+            "task_id": "synthetic_fmri_forecasting",
             "train_inputs": {"fmri_history": history},
             "train_targets": target_a,
             "test_inputs": {"fmri_history": history},
             "target_kind": "future_fmri_observation",
             "expected_prediction_shape": history.shape,
+        }
+        spec_a = NfcSyntheticTaskSpec(test_targets=target_a, **base)
+        spec_b = NfcSyntheticTaskSpec(test_targets=target_b, **base)
+
+        pred_a = _predict_autoregressive_baseline(spec_a)
+        pred_b = _predict_autoregressive_baseline(spec_b)
+
+        self.assertTrue(np.array_equal(pred_a, history))
+        self.assertTrue(np.array_equal(pred_a, pred_b))
+
+    def test_eeg_autoregressive_baseline_does_not_read_test_targets(self):
+        history = np.arange(24, dtype=np.float32).reshape(2, 4, 3)
+        target_a = np.zeros((2, 4, 3), dtype=np.float32)
+        target_b = np.full((2, 4, 3), -1000.0, dtype=np.float32)
+        base = {
+            "task_id": "synthetic_eeg_forecasting",
+            "train_inputs": {"eeg_history": history},
+            "train_targets": target_a,
+            "test_inputs": {"eeg_history": history},
+            "target_kind": "future_eeg_observation",
+            "expected_prediction_shape": history.shape,
+            "target_modality": "eeg",
         }
         spec_a = NfcSyntheticTaskSpec(test_targets=target_a, **base)
         spec_b = NfcSyntheticTaskSpec(test_targets=target_b, **base)
