@@ -727,16 +727,7 @@ _REQUIRED_SYNTHETIC_TASKS = (
 )
 
 
-_REQUIRED_SYNTHETIC_MODELS = (
-    "direct_linear",
-    "autoregressive_ridge",
-    "direct_mlp",
-    "current_neurotwin",
-    "pair_operator",
-    "nfc_no_observation_operator",
-    "nfc_no_pair_kernel",
-    "nfc_full",
-)
+_REQUIRED_SYNTHETIC_MODELS = tuple(_model_catalog().keys())
 
 
 def _required_tasks_present(tasks: dict[str, Any]) -> bool:

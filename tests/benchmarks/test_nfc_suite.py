@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,6 +28,7 @@ class NFCSyntheticSuiteTests(unittest.TestCase):
             self.assertTrue((out / "uncertainty_calibration.csv").exists())
             self.assertTrue((out / "evidence_gate.json").exists())
             self.assertTrue((out / "diagnostic_report.md").exists())
+            evidence_gate = json.loads((out / "evidence_gate.json").read_text(encoding="utf-8"))
 
         self.assertEqual(payload["scope"]["status"], "synthetic-only")
         self.assertIn("nfc_full", payload["models"])
@@ -40,6 +42,9 @@ class NFCSyntheticSuiteTests(unittest.TestCase):
         self.assertIn("synthetic_fmri_to_eeg", payload["tasks"])
         self.assertIn("falsification", payload)
         self.assertEqual(payload["task_contracts"]["synthetic_latent_field_recovery"]["target_kind"], "latent_field")
+        self.assertEqual(set(payload["models"]), set(evidence_gate["required_models"]))
+        for task in payload["tasks"].values():
+            self.assertEqual(set(payload["models"]), set(task["metrics_by_model"]))
 
     def test_nfc_synthetic_suite_aggregates_multiple_seeds(self):
         with tempfile.TemporaryDirectory() as tmp:
