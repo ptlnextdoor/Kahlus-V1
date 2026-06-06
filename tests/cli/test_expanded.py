@@ -142,6 +142,46 @@ class ExpandedCliTests(unittest.TestCase):
         self.assertIn("observed_seeds=0,1,2", result.stdout)
         self.assertIn("representative_split_result=", result.stdout)
 
+    def test_eval_classification_leakage_demo_writes_paper_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.run_cli(
+                "eval",
+                "leakage-demo",
+                "--task",
+                "motor_imagery_classification",
+                "--seeds",
+                "0",
+                "1",
+                "2",
+                "--out-dir",
+                tmp,
+            )
+            out_dir = Path(tmp)
+            payload = json.loads((out_dir / "classification_leakage_demo.json").read_text(encoding="utf-8"))
+            expected_files = (
+                "classification_leakage_demo.csv",
+                "classification_leakage_demo.md",
+                "classification_leakage_figure.json",
+                "classification_leakage_claim_gate.json",
+                "split_comparison.csv",
+                "leakage_demo.json",
+            )
+            present = {name: (out_dir / name).exists() for name in expected_files}
+
+        self.assertIn("eval_classification_leakage_demo=True", result.stdout)
+        self.assertIn("claim_gate_bad_split_allowed=False", result.stdout)
+        self.assertEqual(payload["task"], "motor_imagery_classification")
+        self.assertEqual(payload["observed_seeds"], [0, 1, 2])
+        self.assertFalse(payload["claim_gate"]["bad_split_claim_allowed"])
+        self.assertTrue(all(present.values()), present)
+
+    def test_eval_classification_leakage_demo_warns_on_deprecated_typo_alias(self):
+        result = self.run_cli("eval", "leakage-demo", "--task", "motor_imery_classification", "--seeds", "0")
+
+        self.assertIn("eval_classification_leakage_demo=True", result.stdout)
+        self.assertIn("task=motor_imagery_classification", result.stdout)
+        self.assertIn("deprecation_warning=motor_imery_classification is deprecated", result.stdout)
+
     def test_eval_rejects_options_before_real_subcommand(self):
         env = dict(os.environ)
         env["PYTHONPATH"] = "src"

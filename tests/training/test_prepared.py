@@ -1,5 +1,6 @@
 import json
 import hashlib
+import math
 import os
 import subprocess
 import sys
@@ -21,6 +22,7 @@ from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
+from neurotwin.training.command import TrainingCommandConfig, run_training_command
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 from neurotwin.training.prepared_loop import _normalize_model_type
 
@@ -442,6 +444,50 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue(result.stimulus_evidence["hash_verified"])
             self.assertFalse(result.quarantined_tasks)
 
+    def test_pair_operator_command_writes_finite_uncertainty_calibration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._multimodal_prepared_dir(root)
+            config_path = root / "pair_operator_uncertainty.yaml"
+            run_root = root / "runs"
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "experiment": "pair_operator_uncertainty",
+                        "data": {
+                            "event_manifest": str(prepared / "event_manifest.json"),
+                            "split_manifest": str(prepared / "split_manifest.json"),
+                        },
+                        "task": "stimulus_to_fmri_response",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 1,
+                        "batch_size": 4,
+                        "model": {
+                            "type": "NeuroTwinPairOperator",
+                            "latent_dim": 16,
+                            "n_layers": 1,
+                            "pair_rank": 3,
+                            "projection_dim": 8,
+                            "use_uncertainty_head": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            command = run_training_command(TrainingCommandConfig(str(config_path), run_root=str(run_root)))
+
+            self.assertEqual(command.exit_code, 0, command.error)
+            rows = (run_root / "pair_operator_uncertainty" / "uncertainty_calibration.csv").read_text(encoding="utf-8").splitlines()
+
+        header = rows[0].split(",")
+        values = rows[1].split(",")
+        row = dict(zip(header, values))
+        self.assertEqual(row["status"], "finite")
+        self.assertTrue(math.isfinite(float(row["mean_uncertainty"])))
+        self.assertTrue(math.isfinite(float(row["error_uncertainty_correlation"])))
+
     def test_nonfinite_task_metrics_are_quarantined_and_best_checkpoint_skips_them(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -506,6 +552,33 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertTrue(result.quarantined_tasks)
             self.assertIsNone(result.task_results[0]["final_loss"])
             self.assertTrue(any(row.get("phase") == "nonfinite_loss" and row.get("optimizer_step_skipped") for row in rows))
+
+    def test_nonfinite_gradient_skips_optimizer_step_and_quarantines_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prepared = self._prepared_dir(root)
+            metrics_jsonl = root / "metrics.jsonl"
+
+            with mock.patch("neurotwin.training.prepared_loop._clip_or_measure_grad_norm", return_value=float("nan")):
+                result = run_prepared_training(
+                    {
+                        "event_manifest": str(prepared / "event_manifest.json"),
+                        "split_manifest": str(prepared / "split_manifest.json"),
+                        "task": "future_state_forecasting",
+                        "window_size": 8,
+                        "stride": 8,
+                        "steps": 2,
+                        "batch_size": 4,
+                        "model": {"latent_dim": 16, "n_layers": 1},
+                    },
+                    metrics_jsonl_path=metrics_jsonl,
+                )
+
+            rows = [json.loads(line) for line in metrics_jsonl.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(result.task_results[0]["status"], "quarantined_nonfinite")
+            self.assertTrue(result.quarantined_tasks)
+            self.assertIsNone(result.task_results[0]["final_loss"])
+            self.assertTrue(any(row.get("phase") == "nonfinite_gradient" and row.get("optimizer_step_skipped") for row in rows))
 
     def test_prepared_evidence_gate_fails_quarantined_required_task(self):
         gate = build_prepared_evidence_gate(
@@ -594,7 +667,7 @@ class PreparedTrainingTests(unittest.TestCase):
         self.assertFalse(unavailable_gate["checks"]["baseline_ranking_present"])
         self.assertFalse(malformed_gate["checks"]["baseline_ranking_present"])
 
-    def test_final_evidence_gate_csv_real_ranking_row_counts(self):
+    def test_final_evidence_gate_ignores_csv_real_ranking_without_structured_suite(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             self._write_minimal_final_gate_inputs(run_dir)
@@ -607,8 +680,9 @@ class PreparedTrainingTests(unittest.TestCase):
 
             gate = write_final_prepared_evidence_gate(run_dir)
 
-        self.assertTrue(gate["checks"]["baseline_ranking_present"])
-        self.assertTrue(gate["passed"])
+        self.assertFalse(gate["checks"]["baseline_ranking_present"])
+        self.assertFalse(gate["passed"])
+        self.assertIn("baseline ranking artifact missing or unavailable", gate["failures"])
 
     def _write_minimal_final_gate_inputs(self, run_dir: Path) -> None:
         (run_dir / "summary.json").write_text(

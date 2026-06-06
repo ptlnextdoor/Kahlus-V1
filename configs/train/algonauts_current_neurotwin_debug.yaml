@@ -1,8 +1,8 @@
-experiment: algonauts_pair_operator_debug
-run_id: algonauts_pair_operator_debug
-description: fMRI-only NeuroTwin Pair-Operator ablation over prepared Algonauts/CNeuroMod windows.
+experiment: algonauts_current_neurotwin_debug
+run_id: algonauts_current_neurotwin_debug
+description: Current NeuroTwin translator debug baseline for prepared Algonauts/CNeuroMod fMRI windows.
 dataset: prepared_manifest
-task: stimulus_to_fmri_response
+task: neural_translation_v1
 split: stimulus_run_group
 data:
   event_manifest: /path/to/algonauts_prepared/event_manifest.json
@@ -32,28 +32,25 @@ stimulus:
     - synthetic
     - self_attested_embedding
 model:
-  type: NeuroTwinPairOperator
-  input_dim: 1024
+  type: NeuralStateSpaceTranslator
+  input_dim: 1000
   output_dim: 1000
   latent_dim: 256
   n_layers: 4
-  backbone: gru
+  backbone: ssm_fallback
+  encoder: temporal_conv
   n_heads: 8
   projection_dim: 128
-  pair_rank: 16
-  pair_top_k: 128
-  network_blocks: 7
-  pair_confidence_max_parcels: 256
-  use_pair_state: true
-  use_uncertainty_head: true
-  use_pair_uncertainty: true
-  refinement_steps: 1
-  hrf_delay_steps: 1
+  use_pair_state: false
+  use_uncertainty_head: false
+  refinement_steps: 0
   modalities:
-    - stimulus
     - fmri
+    - stimulus
 training:
   compile: false
   internet_required: false
   objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
     stimulus_to_fmri_response: 1.0

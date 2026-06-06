@@ -41,7 +41,7 @@ def _tribe_style_catalog_status(task_ids: set[str], modalities: set[str]) -> str
 
 
 def _brainvista_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
-    return "approximation" if "future_state_forecasting" in task_ids and "fmri" in modalities else "unavailable"
+    return "local_approximation" if "future_state_forecasting" in task_ids and "fmri" in modalities else "unavailable"
 
 
 def _brain_of_catalog_status(task_ids: set[str], modalities: set[str]) -> str:
@@ -120,6 +120,12 @@ BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
         notes="fMRI-first pairwise neural operator ablation; clean-room NeuroTwin architecture, not an upstream reproduction.",
     ),
     BaselineCatalogEntry(
+        model_id="pair_operator_no_pair_state",
+        display_name="NeuroTwin Pair-Operator No Pair State",
+        status="local_baseline",
+        notes="Pair-Operator ablation with node/temporal path intact and pair-state update disabled.",
+    ),
+    BaselineCatalogEntry(
         model_id="tribe_style",
         display_name="TRIBE-Style",
         status=_tribe_style_catalog_status,
@@ -130,10 +136,20 @@ BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
         uses_upstream_weights=False,
     ),
     BaselineCatalogEntry(
+        model_id="tribe_style_clean_room",
+        display_name="TRIBE-Style Clean Room",
+        status=_tribe_style_catalog_status,
+        notes="NeuroTwin-native clean-room stimulus-to-fMRI approximation; not exact TRIBE v2 and uses no TRIBE code or weights.",
+        upstream_reference="TRIBE v2",
+        exact_reproduction=False,
+        uses_upstream_code=False,
+        uses_upstream_weights=False,
+    ),
+    BaselineCatalogEntry(
         model_id="brainvista_style",
         display_name="BrainVista-Style",
         status=_brainvista_catalog_status,
-        notes="Approximate autoregressive fMRI rollout lane; not an exact BrainVista reproduction.",
+        notes="Local approximation: causal history-only fMRI rollout plus optional lagged stimulus features; not an exact BrainVista reproduction.",
         upstream_reference="BrainVista",
     ),
     BaselineCatalogEntry(

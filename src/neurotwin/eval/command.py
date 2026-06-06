@@ -32,6 +32,7 @@ class EvalCommandConfig:
     eval_command: str | None = None
     suite: str = "translation_smoke"
     dataset: str = "synthetic"
+    task: str = "future_state_forecasting"
     run: str | None = None
     out_dir: str | Path | None = None
     event_manifest: str | Path | None = None
@@ -294,6 +295,7 @@ def _prepared_suite_config(
 def _paper_demo_config(config: EvalCommandConfig) -> PaperDemoConfig:
     return PaperDemoConfig(
         dataset=config.dataset,
+        task=config.task,
         event_manifest=config.event_manifest,
         split_manifest=config.split_manifest,
         out_dir=config.out_dir,

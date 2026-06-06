@@ -45,11 +45,15 @@ class PreparedModelConfig(TypedDict, total=False):
     adapter_mode: str
     gradient_checkpointing: bool
     pair_rank: int
+    pair_top_k: int
+    network_blocks: int
+    pair_confidence_max_parcels: int
     use_pair_state: bool
     use_pair_kernel: bool
     use_observation_operator: bool
     use_uncertainty: bool
     use_uncertainty_head: bool
+    use_pair_uncertainty: bool
     refinement_steps: int
     hrf_delay_steps: int
     stimulus_lag_steps: int
@@ -128,11 +132,15 @@ class ResolvedPreparedModelConfig:
     adapter_mode: str
     gradient_checkpointing: bool
     pair_rank: int
+    pair_top_k: int
+    network_blocks: int
+    pair_confidence_max_parcels: int
     use_pair_state: bool
     use_pair_kernel: bool
     use_observation_operator: bool
     use_uncertainty: bool
     use_uncertainty_head: bool
+    use_pair_uncertainty: bool
     refinement_steps: int
     hrf_delay_steps: int
     stimulus_lag_steps: int
@@ -218,11 +226,15 @@ def resolve_prepared_config(
             )
         ),
         pair_rank=int(model_config.get("pair_rank", 8)),
+        pair_top_k=max(0, int(model_config.get("pair_top_k", 0))),
+        network_blocks=max(1, int(model_config.get("network_blocks", 1))),
+        pair_confidence_max_parcels=max(0, int(model_config.get("pair_confidence_max_parcels", 256))),
         use_pair_state=bool(model_config.get("use_pair_state", True)),
         use_pair_kernel=bool(model_config.get("use_pair_kernel", model_config.get("use_pair_state", True))),
         use_observation_operator=bool(model_config.get("use_observation_operator", True)),
         use_uncertainty=bool(model_config.get("use_uncertainty", model_config.get("use_uncertainty_head", True))),
         use_uncertainty_head=bool(model_config.get("use_uncertainty_head", True)),
+        use_pair_uncertainty=bool(model_config.get("use_pair_uncertainty", False)),
         refinement_steps=max(0, int(model_config.get("refinement_steps", 1))),
         hrf_delay_steps=max(0, int(model_config.get("hrf_delay_steps", 1))),
         stimulus_lag_steps=max(0, int(model_config.get("stimulus_lag_steps", model_config.get("hrf_delay_steps", 1)))),

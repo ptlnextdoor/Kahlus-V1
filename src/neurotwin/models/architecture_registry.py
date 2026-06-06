@@ -99,7 +99,9 @@ def _no_extra_parameters(model_config: Any) -> int:
 
 
 def _pair_operator_extra_parameters(model_config: Any) -> int:
-    return int(model_config.output_dim * model_config.pair_rank * 2 + model_config.latent_dim * model_config.latent_dim)
+    pair_state_factor_values = model_config.output_dim * model_config.pair_rank * 2
+    network_block_values = getattr(model_config, "network_blocks", 1) * model_config.pair_rank
+    return int(pair_state_factor_values + network_block_values + model_config.latent_dim * model_config.latent_dim)
 
 
 def _nfc_extra_parameters(model_config: Any) -> int:

@@ -13,15 +13,19 @@ from neurotwin.scoring.metrics import bandpower_error, mae, mse, pearsonr, r2_sc
 from neurotwin.training.prepared_types import PreparedTrainingResult
 
 
-def predict(model: nn.Module, task: Any, x: torch.Tensor, precision: str = "fp32") -> torch.Tensor:
+def predict_output(model: nn.Module, task: Any, x: torch.Tensor, precision: str = "fp32") -> dict[str, torch.Tensor]:
     enabled = precision == "bf16" and x.device.type in {"cuda", "cpu"}
     task_model = unwrap_model(model)
     with torch.autocast(device_type=x.device.type, dtype=torch.bfloat16, enabled=enabled):
-        output = task_model.forward_task(
+        return task_model.forward_task(
             {task.source_modality: x},
             target_modality=task.target_modality,
             task="forecast" if task.task_id == "future_state_forecasting" else "reconstruction",
         )
+
+
+def predict(model: nn.Module, task: Any, x: torch.Tensor, precision: str = "fp32") -> torch.Tensor:
+    output = predict_output(model, task, x, precision=precision)
     return output["prediction"]
 
 
@@ -69,6 +73,30 @@ def predict_numpy_batches(
     return np.concatenate(predictions, axis=0) if predictions else np.empty((0,), dtype=np.float32)
 
 
+def predict_numpy_outputs(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    precision: str,
+    batch_size: int,
+) -> tuple[np.ndarray, np.ndarray | None]:
+    predictions: list[np.ndarray] = []
+    uncertainties: list[np.ndarray] = []
+    model.eval()
+    with torch.no_grad():
+        for start in range(0, x.shape[0], batch_size):
+            end = min(start + batch_size, x.shape[0])
+            output = predict_output(model, task, x[start:end], precision=precision)
+            predictions.append(output["prediction"].detach().float().cpu().numpy())
+            uncertainty = output.get("uncertainty")
+            if uncertainty is not None:
+                uncertainties.append(uncertainty.detach().float().cpu().numpy())
+    model.train()
+    prediction = np.concatenate(predictions, axis=0) if predictions else np.empty((0,), dtype=np.float32)
+    uncertainty = np.concatenate(uncertainties, axis=0) if uncertainties else None
+    return prediction, uncertainty
+
+
 def evaluate_task(
     model: nn.Module,
     task: Any,
@@ -79,7 +107,7 @@ def evaluate_task(
     batch_size: int,
 ) -> dict[str, float]:
     y_true_np = y_test.detach().cpu().numpy()
-    y_pred_np = predict_numpy_batches(model, task, x_test, precision=precision, batch_size=batch_size)
+    y_pred_np, uncertainty_np = predict_numpy_outputs(model, task, x_test, precision=precision, batch_size=batch_size)
     eval_loss = mse(y_true_np, y_pred_np)
     metrics = {
         f"{prefix}_mse": eval_loss,
@@ -92,6 +120,14 @@ def evaluate_task(
         metrics[f"{prefix}_bandpower_error"] = bandpower_error(y_true_np, y_pred_np)
     if task.target_modality == "fmri":
         metrics[f"{prefix}_regionwise_pearsonr"] = regionwise_pearsonr(y_true_np, y_pred_np)
+    if uncertainty_np is not None and uncertainty_np.shape == y_pred_np.shape:
+        abs_error = np.abs(np.asarray(y_true_np, dtype=np.float64) - np.asarray(y_pred_np, dtype=np.float64)).ravel()
+        uncertainty = np.asarray(uncertainty_np, dtype=np.float64).ravel()
+        finite = np.isfinite(abs_error) & np.isfinite(uncertainty)
+        if finite.any():
+            metrics[f"{prefix}_mean_uncertainty"] = float(np.mean(uncertainty[finite]))
+            if int(np.sum(finite)) >= 2:
+                metrics[f"{prefix}_error_uncertainty_correlation"] = pearsonr(abs_error[finite], uncertainty[finite])
     return metrics
 
 

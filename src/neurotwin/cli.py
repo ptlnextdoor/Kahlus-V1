@@ -221,6 +221,7 @@ def _add_eval_audit_args(parser: argparse.ArgumentParser) -> None:
 
 def _add_eval_demo_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dataset", default="synthetic")
+    parser.add_argument("--task", default="future_state_forecasting")
     parser.add_argument("--out-dir", default=None)
     _add_eval_manifest_args(parser)
     _add_eval_window_args(parser)
@@ -333,6 +334,7 @@ def _cmd_eval(args: argparse.Namespace) -> None:
             eval_command=eval_command,
             suite=getattr(args, "suite", "translation_smoke"),
             dataset=getattr(args, "dataset", "synthetic"),
+            task=getattr(args, "task", "future_state_forecasting"),
             run=getattr(args, "run", None),
             out_dir=getattr(args, "out_dir", None),
             event_manifest=getattr(args, "event_manifest", None),

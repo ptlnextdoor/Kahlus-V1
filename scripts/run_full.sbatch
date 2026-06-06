@@ -19,6 +19,10 @@ fi
 CONFIG=$1
 RUN_ROOT=$2
 REPO_ROOT="${REPO_ROOT:-${SLURM_SUBMIT_DIR:-}}"
+if [[ "$CONFIG" != /* ]]; then
+  echo "CONFIG must be a materialized absolute path, got: $CONFIG" >&2
+  exit 2
+fi
 if [[ -z "$REPO_ROOT" ]]; then
   echo "REPO_ROOT or SLURM_SUBMIT_DIR must be set so the Slurm job can find the checkout." >&2
   exit 2

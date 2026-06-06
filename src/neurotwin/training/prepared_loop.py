@@ -165,6 +165,18 @@ def _run_task_training_loop(
             "target_modality": task.target_modality,
         },
     )
+    if not math.isfinite(float(initial_loss)):
+        _append_task_metric(
+            runtime.paths.metrics_jsonl_path,
+            {
+                "task_id": task.task_id,
+                "step": runtime.start_step,
+                "phase": "nonfinite_loss",
+                "loss": initial_loss,
+                "optimizer_step_skipped": True,
+            },
+        )
+        return initial_loss, float("nan")
 
     model.train()
     final_loss = initial_loss
@@ -389,8 +401,12 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
             n_heads=model_cfg.n_heads,
             projection_dim=model_cfg.projection_dim,
             pair_rank=model_cfg.pair_rank,
+            pair_top_k=model_cfg.pair_top_k,
+            network_blocks=model_cfg.network_blocks,
+            pair_confidence_max_parcels=model_cfg.pair_confidence_max_parcels,
             use_pair_state=model_cfg.use_pair_state,
             use_uncertainty_head=model_cfg.use_uncertainty_head,
+            use_pair_uncertainty=model_cfg.use_pair_uncertainty,
             refinement_steps=model_cfg.refinement_steps,
             hrf_delay_steps=model_cfg.hrf_delay_steps,
         )

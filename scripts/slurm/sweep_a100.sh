@@ -27,5 +27,9 @@ fi
 CONFIGS=("$@")
 
 for CONFIG in "${CONFIGS[@]}"; do
+  if [[ "$CONFIG" != /* ]]; then
+    echo "Every sweep config must be a materialized absolute path, got: $CONFIG" >&2
+    exit 2
+  fi
   sbatch --export=ALL,RUN_ROOT="$RUN_ROOT" scripts/slurm/train_a100.sh "$CONFIG"
 done
