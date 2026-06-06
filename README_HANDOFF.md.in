@@ -3,17 +3,30 @@
 Commit: `${FULL_SHA}`
 Branch: `ptlnextdoor/a100-current-rerun`
 
-This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access.
+This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access, private GHCR access, raw data, or a dirty local checkout.
 
 This is minimal practical code visibility, not cryptographic source secrecy. The runner excludes git history, tests, research notes, paper drafts, raw data, prepared arrays, checkpoints, caches, local outputs, and secrets, but the Python runtime source needed to execute the job is present inside the runner tarball.
 
 ## Purpose
 
-This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root.
+The immediate next run is a strict 1x A100 NFC synthetic diagnostic. Do not start Algonauts, and do not start the 6-GPU DDP lane, until `./run_krish_agent.sh synthetic50` exits successfully. Old short-step NFC synthetic signals from before the corrected falsification gate are invalidated as evidence.
+
+The broader handoff can also prove that the codeless A100 runner can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root. That broader path is later in the run ladder, not the first action.
 
 ## Chapman Queue Order
 
-Run the handoff in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+Run order:
+
+```text
+1. verify SHA256
+2. extract handoff
+3. run ./run_krish_agent.sh synthetic50
+4. if needs_evidence and auto-escalation is enabled, run synthetic100
+5. only after pass, proceed to Algonauts 1x debug later
+6. only after Algonauts debug, consider 6x A100 DDP
+```
+
+The legacy MOABB/Phase 1 evidence lane remains available after the strict synthetic gate is understood. Queue those one-GPU evidence jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
 
 Phase 1 one-GPU evidence lane:
 
@@ -102,6 +115,17 @@ PYTHONPATH=src python3 -m neurotwin.cli eval \
   --train-steps 50 \
   --seeds 0 1 2 \
   --require-pass
+```
+
+Artifacts to inspect before any real-data run:
+
+```text
+nfc_falsification_report.md
+nfc_ablation_table.csv
+nfc_synthetic_results.json
+uncertainty_calibration.csv
+evidence_gate.json
+diagnostic_report.md
 ```
 
 Extract and verify the runner:

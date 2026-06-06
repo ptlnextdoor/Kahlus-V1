@@ -160,6 +160,9 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "python -m neurotwin.cli eval",
                 "--suite nfc_synthetic",
                 "--seeds 0 1 2",
+                "--require-pass",
+                "evidence_gate.json",
+                "diagnostic_report.md",
                 "scripts/run_docker_6gpu.sh",
             ):
                 self.assertIn(required, script)
