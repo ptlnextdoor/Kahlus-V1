@@ -9,7 +9,7 @@ from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.task_specs import default_translation_tasks
 from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
-from neurotwin.reports.model_card import generate_model_card_report
+from neurotwin.reports.model_card import generate_model_card_report as generate_model_card_report
 
 COMPARE_FIELDS = (
     "run",

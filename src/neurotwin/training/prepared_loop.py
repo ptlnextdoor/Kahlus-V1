@@ -394,7 +394,7 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
     use_subject_embeddings = model_cfg.use_subject_embeddings and adapter_mode in {"few_shot", "enabled", "subject"}
     model_type = _normalize_model_type(model_cfg.type)
     if model_type == "NeuroTwinPairOperator":
-        architecture = NeuroTwinPairOperatorConfig(
+        pair_config = NeuroTwinPairOperatorConfig(
             latent_dim=model_cfg.latent_dim,
             n_layers=model_cfg.n_layers,
             backbone=model_cfg.backbone,
@@ -414,10 +414,10 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
             "type": model_type,
             "input_dims": {task.source_modality: task.x_train.shape[-1]},
             "output_dims": {task.target_modality: task.y_train.shape[-1]},
-            **asdict(architecture),
+            **asdict(pair_config),
         }
     if model_type == "NeuralFieldCompiler":
-        architecture = NeuralFieldCompilerConfig(
+        nfc_config = NeuralFieldCompilerConfig(
             latent_dim=model_cfg.latent_dim,
             n_layers=model_cfg.n_layers,
             backbone=model_cfg.backbone,
@@ -434,9 +434,9 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
             "type": model_type,
             "input_dims": {task.source_modality: task.x_train.shape[-1]},
             "output_dims": {task.target_modality: task.y_train.shape[-1]},
-            **asdict(architecture),
+            **asdict(nfc_config),
         }
-    architecture = NeuralStateSpaceTranslatorConfig(
+    translator_config = NeuralStateSpaceTranslatorConfig(
         latent_dim=model_cfg.latent_dim,
         n_layers=model_cfg.n_layers,
         subject_adapter_dim=model_cfg.subject_adapter_dim,
@@ -455,7 +455,7 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
         "type": model_type,
         "input_dims": {task.source_modality: task.x_train.shape[-1]},
         "output_dims": {task.target_modality: task.y_train.shape[-1]},
-        **asdict(architecture),
+        **asdict(translator_config),
     }
 
 

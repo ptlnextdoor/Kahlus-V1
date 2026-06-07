@@ -123,7 +123,7 @@ class TribeStyleModel:
             "hidden_dim": 32,
             "seed": 0,
         }
-        if checkpoint_dir not in (None, "", "local", "neurotwin/tribe-style"):
+        if checkpoint_dir is not None and checkpoint_dir not in ("", "local", "neurotwin/tribe-style"):
             config.update(_load_local_config(checkpoint_dir, checkpoint_name))
         if config_update is not None:
             config.update(config_update)
@@ -315,6 +315,7 @@ def _normal_stimulus_modality(modality: str) -> str:
 
 def _load_local_config(checkpoint_dir: str | Path, checkpoint_name: str) -> dict[str, Any]:
     root = Path(checkpoint_dir)
+    config_path: Path | None
     if root.is_file():
         config_path = root
     elif root.is_dir():

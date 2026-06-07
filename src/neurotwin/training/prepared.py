@@ -20,7 +20,7 @@ from neurotwin.training.prepared_loop import train_single_task
 from neurotwin.training.prepared_metrics import aggregate_task_results, write_metrics_csv
 from neurotwin.training.prepared_runtime import build_prepared_runtime_context
 from neurotwin.training.prepared_types import (
-    PreparedBatchSampler,
+    PreparedBatchSampler as PreparedBatchSampler,
     PreparedRuntimeContext,
     PreparedTaskSelection,
     PreparedTaskTrainingState,

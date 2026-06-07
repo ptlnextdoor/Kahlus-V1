@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from neurotwin.benchmarks.baseline_catalog import BASELINE_CATALOG, baseline_catalog_rows
+from neurotwin.benchmarks.baseline_catalog import BASELINE_CATALOG as BASELINE_CATALOG, baseline_catalog_rows
 from neurotwin.benchmarks.baseline_runners import ExecutableBaselineRunner
 from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
 from neurotwin.data.prepared_tasks import SupervisedWindowTask

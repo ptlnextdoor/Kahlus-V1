@@ -395,8 +395,8 @@ def _model_predictions_for_task(
 
 
 def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, alpha: float = 1e-2) -> np.ndarray:
-    x = x_train.reshape(-1, x_train.shape[-1]).astype(np.float64)
-    y = y_train.reshape(-1, y_train.shape[-1]).astype(np.float64)
+    x: np.ndarray = x_train.reshape(-1, x_train.shape[-1]).astype(np.float64)
+    y: np.ndarray = y_train.reshape(-1, y_train.shape[-1]).astype(np.float64)
     xtx = x.T @ x + alpha * np.eye(x.shape[1])
     weights = np.linalg.solve(xtx, x.T @ y)
     pred = x_test.reshape(-1, x_test.shape[-1]).astype(np.float64) @ weights

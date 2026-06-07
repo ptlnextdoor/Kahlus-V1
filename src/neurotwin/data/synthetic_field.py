@@ -38,7 +38,7 @@ def generate_synthetic_latent_field(
     coupling_left = rng.normal(scale=0.12, size=(n_nodes, 2)).astype(np.float32)
     coupling = coupling_left @ coupling_left.T
     coupling = coupling / max(float(np.max(np.abs(coupling))), 1.0)
-    field = np.zeros((n_samples, time_steps, n_nodes, latent_dim), dtype=np.float32)
+    field: np.ndarray = np.zeros((n_samples, time_steps, n_nodes, latent_dim), dtype=np.float32)
     field[:, 0] = rng.normal(scale=0.2, size=(n_samples, n_nodes, latent_dim)).astype(np.float32) + node_bias
     for step in range(1, time_steps):
         previous = field[:, step - 1]
