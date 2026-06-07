@@ -11,6 +11,14 @@ Purpose: prove that this exact commit can run the codeless A100 path end to end 
 
 Non-purpose: this package does not prove model superiority, paper readiness, clinical utility, or a 3-seed scientific result. It also does not hide source cryptographically; it is a practical runner bundle with the Python source required for execution.
 
+## Krish Cluster Contract
+
+Krish's partner requirements target a Chapman node with up to 8x A100 80GB GPUs. This runner uses at most 6 GPUs: use exactly 6x A100 80GB GPUs for the heavy lane, leave the seventh/eighth GPUs unused, and expose them inside Docker as `cuda:0` through `cuda:5`.
+
+The deep lane target is 2 days: request `48:00:00` wall time, set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, set `A100_RUN_ID=moabb_a100`, and run the long `moabb_a100` config with `steps: 50000` (50,000 configured steps). The short smoke/synthetic/debug jobs are expected to finish much sooner. Short diagnostic runs ending in a few hours are normal and do not mean the 48-hour deep lane was exercised.
+
+Docker does not control Chapman queue duration. Run Docker inside a 48-hour scheduler allocation when using the full lane, or use the Slurm heavy follow-up with `--time=48:00:00`. There is no artificial per-GPU VRAM cap in the runner; allocate 6x A100 80GB GPUs and let PyTorch use the available VRAM.
+
 ## Chapman Queue Order
 
 Use the cluster in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full six-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
@@ -29,12 +37,16 @@ Do not reserve six GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs
 Phase 2 full model lane:
 
 ```text
-exactly 6 A100 GPUs
+exactly 6x A100 80GB GPUs
+use 6 of the available 8x A100 80GB GPUs
 world_size=6
 GPU_COUNT=6
 NPROC_PER_NODE=6
 HOST_GPU_IDS=<six comma-separated host GPU ids>
 CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+wall_time=48:00:00
+config=configs/train/moabb_a100.yaml
+steps=50000
 bf16 precision
 selected-best checkpoint semantics included
 torchrun --standalone --nproc_per_node=6
@@ -201,6 +213,67 @@ bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 
 In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Use this lane for Phase 1 paper evidence diagnostics only. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
 
+Exact single-GPU Docker fallback sequence, useful when an operator needs to debug the inside-container steps manually:
+
+```bash
+export HOST_GPU_IDS=<host_gpu_id>
+export GPU_COUNT=1
+export NPROC_PER_NODE=1
+export CONTAINER_CUDA_VISIBLE_DEVICES=0
+export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
+export A100_CONFIG_TEMPLATE=configs/train/moabb_a100_smoke.yaml
+export A100_RUN_ID=moabb_a100_smoke
+export A100_CONFIG_PATH="$PERSISTENT_ROOT/outputs/configs/moabb_a100.materialized.yaml"
+
+docker run --rm --gpus "\"device=${HOST_GPU_IDS}\"" \
+  --ipc=host --shm-size=64g \
+  --ulimit memlock=-1 --ulimit stack=67108864 \
+  -e CUDA_VISIBLE_DEVICES="$CONTAINER_CUDA_VISIBLE_DEVICES" \
+  -e GPU_COUNT="$GPU_COUNT" \
+  -e HOST_GPU_IDS="$HOST_GPU_IDS" \
+  -e NPROC_PER_NODE="$NPROC_PER_NODE" \
+  -e PERSISTENT_ROOT="$PERSISTENT_ROOT" \
+  -e NEUROTWIN_DATA="$PERSISTENT_ROOT" \
+  -e MOABB_DATA="$PERSISTENT_ROOT/moabb" \
+  -e BIDS_ROOT="$PERSISTENT_ROOT/bids" \
+  -e RUN_ROOT="$PERSISTENT_ROOT/runs" \
+  -e A100_CONFIG_TEMPLATE="$A100_CONFIG_TEMPLATE" \
+  -e A100_RUN_ID="$A100_RUN_ID" \
+  -e A100_CONFIG_PATH="$A100_CONFIG_PATH" \
+  -v "$PWD":/workspace/repo \
+  -v "$PERSISTENT_ROOT":"$PERSISTENT_ROOT" \
+  -w /workspace/repo \
+  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+  bash -lc 'set -euo pipefail
+python -m pip install -e ".[moabb,cluster]"
+python scripts/docker_gpu_preflight.py "$PERSISTENT_ROOT/gpu_preflight.json"
+bash scripts/run_smoke.sh outputs/smoke
+bash scripts/prepare_moabb_benchmark.sh "$PERSISTENT_ROOT/prepared/moabb_benchmark"
+python -m neurotwin.cli eval audit \
+  --suite neural_translation_v1 \
+  --event-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/event_manifest.json" \
+  --split-manifest "$PERSISTENT_ROOT/prepared/moabb_benchmark/split_manifest.json" \
+  --window-length 128 \
+  --stride 128 \
+  --out-dir "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --require-windows
+python -m neurotwin.cli cluster materialize-config \
+  --template "$A100_CONFIG_TEMPLATE" \
+  --prepared-root "$PERSISTENT_ROOT/prepared/moabb_benchmark" \
+  --out "$A100_CONFIG_PATH"
+python -m neurotwin.cli cluster preflight \
+  --config "$A100_CONFIG_PATH" \
+  --run-root "$PERSISTENT_ROOT/runs" \
+  --require-cuda \
+  --require-prepared-windows \
+  --expect-window-count 18144 \
+  --expect-split-windows train:12096,val:2016,test:4032
+torchrun --standalone --nproc_per_node=1 -m neurotwin.cli train \
+  --config "$A100_CONFIG_PATH" \
+  --run-root "$PERSISTENT_ROOT/runs"
+python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/$A100_RUN_ID"'
+```
+
 For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_6gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
 
 The helper delegates the inside-container install, preflight, audit, materialization, training, reporting, and evidence packaging steps to `scripts/docker_a100_inner.sh`. Use `README_AGENT_DEPLOY.md` for the detailed deployment-agent contract; do not copy a raw `docker run` full-run command from this README.
@@ -231,10 +304,10 @@ Smoke succeeds when the script prints `smoke_status=completed`.
 Required resources:
 
 ```text
-GPU: 1x A100 80GB for the first Slurm validation, or 6x A100 80GB for the Docker/helper heavy lane
+GPU: 1x A100 80GB for the first Slurm validation, or exactly 6x A100 80GB for the Docker/helper heavy lane
 CPU: 16 cores
 RAM: 128G
-Wall time: 02:00:00 for the first infrastructure validation
+Wall time: 02:00:00 for the first infrastructure validation, 48:00:00 for the deep 6-GPU lane
 ```
 
 Use a persistent shared root:
@@ -300,7 +373,7 @@ The scripts pass these values to `sbatch` as command-line flags. They are not em
 
 ## Heavy 6-GPU Slurm Follow-Up
 
-Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms six A100s are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
+Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms six A100 80GB GPUs are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
 
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
@@ -313,9 +386,11 @@ PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
   --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
   --out outputs/configs/moabb_a100.materialized.yaml
 RUN_ROOT="$RUN_ROOT" \
-sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
+
+The Slurm script also carries `#SBATCH --time=48:00:00` and `#SBATCH --mem=0`. Keep the command-line `--time=48:00:00` when submitting manually so site defaults do not shorten the deep lane.
 
 ## Data And Internet
 
@@ -360,12 +435,18 @@ $NEUROTWIN_DATA/runs/moabb_a100_smoke/metrics.jsonl
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/summary.json
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/tables/metrics_flat.csv
 $NEUROTWIN_DATA/runs/moabb_a100_smoke/figures/metric_summary.json
+$NEUROTWIN_DATA/runs/moabb_a100/config.yaml
+$NEUROTWIN_DATA/runs/moabb_a100/environment.json
+$NEUROTWIN_DATA/runs/moabb_a100/checkpoint.pt
+$NEUROTWIN_DATA/runs/moabb_a100/checkpoint_best.pt
+$NEUROTWIN_DATA/runs/moabb_a100/metrics.json
+$NEUROTWIN_DATA/runs/moabb_a100/summary.json
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.out
 $NEUROTWIN_DATA/logs/neurotwin-a100-full-<jobid>.err
 $NEUROTWIN_DATA/logs/neurotwin-a100-docker-<generated>.log
 ```
 
-If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` directory first.
+If the run directory already exists, NeuroTwin reuses the same run id. For a clean rerun, move or archive the previous `$NEUROTWIN_DATA/runs/moabb_a100_smoke` or `$NEUROTWIN_DATA/runs/moabb_a100` directory first.
 
 ## Send Back Evidence
 
@@ -382,7 +463,8 @@ For full non-smoke runs, the zip also includes paper-mode baseline artifacts und
 
 - Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_6gpu.sh`.
 - MOABB data preparation may need internet or a populated MOABB cache.
-- The default guarded run is configured for 50 smoke steps and `scientific_claim_allowed=false`; the long 6-GPU lane requires `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`.
+- The default guarded run is configured for 50 smoke steps and `scientific_claim_allowed=false`; the long 6-GPU lane requires `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, 6x A100 80GB GPUs, and a `48:00:00` scheduler allocation.
+- Short diagnostic runs ending in a few hours are normal for smoke/synthetic/debug configs. They are not the deep 50,000-step lane.
 - `summary.json` is the source of truth for `scientific_claim_allowed`; paper-mode gate status is reported separately.
 - Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates. This handoff evaluates evidence quality and infrastructure, not model superiority.
 
@@ -408,7 +490,7 @@ export RUN_ROOT=/path/to/shared/persistent/neurotwin/runs
 PYTHONPATH=src python3 -m neurotwin.cli train \
   --config outputs/configs/moabb_a100.materialized.yaml \
   --run-root "$RUN_ROOT" \
-  --resume "$RUN_ROOT/moabb_a100_smoke/checkpoint.pt"
+  --resume "$RUN_ROOT/moabb_a100/checkpoint.pt"
 ```
 
 To safely rerun the full infrastructure validation, keep the prepared data and archive the previous run directory:
@@ -416,5 +498,7 @@ To safely rerun the full infrastructure validation, keep the prepared data and a
 ```bash
 mv /path/to/shared/persistent/neurotwin/runs/moabb_a100_smoke \
    /path/to/shared/persistent/neurotwin/runs/moabb_a100_smoke.previous
+mv /path/to/shared/persistent/neurotwin/runs/moabb_a100 \
+   /path/to/shared/persistent/neurotwin/runs/moabb_a100.previous
 bash scripts/run_full.sh /path/to/shared/persistent/neurotwin
 ```

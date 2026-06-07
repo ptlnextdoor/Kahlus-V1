@@ -2,6 +2,8 @@
 
 These instructions are for an automated deployment agent running on the A100 cluster. The goal is to run the single-node 6x A100 Docker path when six GPUs are allocated, and to stop rather than silently falling back to one GPU.
 
+Krish's partner cluster may expose up to 8x A100 80GB GPUs. Use exactly 6x A100 80GB GPUs for the full lane, leave the seventh/eighth GPUs unused, and run inside a `48:00:00` allocation for the deep job. Docker does not extend queue wall time; the scheduler allocation must already be long enough. There is no artificial per-GPU VRAM cap in this runner.
+
 Before the full 6-GPU run, submit the Phase 1 evidence lane as separate one-GPU jobs. Queue the paper-mode MOABB seeds 0/1/2 job, leakage-demo seeds 0/1/2 job, identity-probe seeds 0/1/2 job, and model-card/artifact job at the same time when Chapman scheduling allows. If the scheduler serializes them, they must still be independent one-GPU jobs and must finish before the full DDP job starts. Do not reserve six GPUs for Phase 1.
 
 ## Inputs
@@ -11,6 +13,7 @@ Before the full 6-GPU run, submit the Phase 1 evidence lane as separate one-GPU 
 - `GPU_COUNT=6`.
 - `HOST_GPU_IDS=0,1,2,3,4,5` unless the scheduler assigns different host GPU ids.
 - `CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5` inside the container.
+- Allocation: exactly 6 of the available 8x A100 80GB GPUs, `48:00:00` wall time for the deep lane.
 - Docker image: `pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel`.
 
 ## Verify The Runner
@@ -56,7 +59,7 @@ export DOCKER_IMAGE=neurotwin-a100-runner:local
 
 ## Full 6-GPU Run
 
-The default handoff command runs the short infrastructure smoke template. For the full MOABB A100 training lane, select the canonical long template before launch:
+The default handoff command runs the short infrastructure smoke template. Short diagnostic runs ending in a few hours are normal for smoke/synthetic/debug configs. For the full MOABB A100 training lane, select the canonical long template before launch:
 
 ```bash
 export HOST_GPU_IDS=0,1,2,3,4,5
@@ -68,6 +71,14 @@ export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
+
+Run the command inside an existing 48-hour allocation. If Chapman supports interactive Slurm allocations, the shape is:
+
+```bash
+salloc --nodes=1 --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 --mem=0
+```
+
+If using `sbatch` instead, keep `--time=48:00:00`. The long template uses `configs/train/moabb_a100.yaml` with `steps: 50000` (50,000 configured steps).
 
 The launcher uses:
 

@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:a100:6
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=0
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=logs/%x-%j.out
 
 set -euo pipefail

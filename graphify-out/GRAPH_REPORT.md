@@ -1,7 +1,7 @@
 # Graph Report - /Users/aayu/conductor/workspaces/kahlus-v2/dubai-v1  (2026-06-06)
 
 ## Corpus Check
-- 143 files · ~210,131 words
+- 143 files · ~210,852 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -276,11 +276,11 @@ Nodes (1): Compatibility shim for TRIBE-style callers.          Prefer :meth:`fr
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `build_split_manifest()` connect `Community 1` to `Community 2`, `Community 4`, `Community 7`, `Community 16`, `Community 18`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
-- **Why does `NeuralEventBatch` connect `Community 1` to `Community 0`, `Community 2`, `Community 3`, `Community 19`, `Community 22`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+  _High betweenness centrality (0.079) - this node is a cross-community bridge._
 - **Why does `_require_bundle_rel()` connect `Community 8` to `Community 2`?**
-  _High betweenness centrality (0.071) - this node is a cross-community bridge._
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Why does `run_training_command()` connect `Community 4` to `Community 1`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Are the 87 inferred relationships involving `ValueError` (e.g. with `_require_bundle_rel()` and `resolve_prepared_config()`) actually correct?**
   _`ValueError` has 87 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 43 inferred relationships involving `NeuralStateSpaceTranslator` (e.g. with `ModelMetadataGeometryTests` and `ModelShapeTests`) actually correct?**

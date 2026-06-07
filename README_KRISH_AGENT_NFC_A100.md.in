@@ -7,6 +7,8 @@ This handoff is for an AI agent running on Krish's A100 cluster account. It cont
 
 The first run is strict 1x A100 NFC synthetic diagnostic only. Old short-step synthetic signals from before the corrected falsification gate are invalidated as evidence. Do not run Algonauts or 6x A100 DDP until the synthetic gate passes.
 
+Cluster contract: Krish's Chapman node may expose up to 8x A100 80GB GPUs. Use exactly 6x A100 80GB GPUs for the final DDP lane, leave the seventh/eighth GPUs unused, and request a `48:00:00` allocation for deep runs. Short synthetic/debug jobs can finish in minutes or a few hours; that is normal and is not the 2-day deep lane.
+
 ## Runtime Artifact
 
 This zip is the operator runbook and checksum package. The executable artifact is the Docker image. Before running, set:
@@ -202,6 +204,8 @@ docker run --rm --gpus "\"device=${HOST_GPU_ID}\"" \
 If `python -m neurotwin.cli doctor` fails inside the image, stop and ask Aayu for the matching Docker runtime image.
 
 ## Only After Algonauts Debug Passes: 6x A100 DDP
+
+Run this inside a scheduler allocation with 6 of the available 8x A100 80GB GPUs and `48:00:00` wall time. Docker cannot extend the queue allocation by itself. There is no artificial per-GPU VRAM cap in the runner.
 
 ```bash
 export HOST_GPU_IDS=0,1,2,3,4,5

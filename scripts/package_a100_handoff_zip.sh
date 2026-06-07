@@ -41,25 +41,6 @@ python3 scripts/render_a100_handoff_readme.py \
   --short-sha "$SHORT_SHA" \
   --runner-name "$RUNNER_NAME"
 
-python3 - "$FULL_SHA" "$SHORT_SHA" "$RUNNER_NAME" "$RUNNER_NAME.tar.gz" "$IMAGE_REF" \
-  scripts/a100_krish_agent_autorun.sh.in "$HANDOFF_ROOT/run_krish_agent.sh" <<'PY'
-from pathlib import Path
-import sys
-
-full_sha, short_sha, runner_name, runner_tarball, image_ref, template_path, output_path = sys.argv[1:8]
-rendered = (
-    Path(template_path)
-    .read_text(encoding="utf-8")
-    .replace("__FULL_SHA__", full_sha)
-    .replace("__SHORT_SHA__", short_sha)
-    .replace("__RUNNER_NAME__", runner_name)
-    .replace("__RUNNER_TARBALL__", runner_tarball)
-    .replace("__IMAGE_REF__", image_ref)
-)
-Path(output_path).write_text(rendered, encoding="utf-8")
-Path(output_path).chmod(0o755)
-PY
-
 python3 - "$HANDOFF_ROOT/README_HANDOFF.md" "$RUNNER_TARBALL" "$RUNNER_NAME" <<'PY'
 from pathlib import Path
 import sys
@@ -108,7 +89,6 @@ with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive
 expected = {
     f"{handoff_name}/COMMIT_HASH.txt",
     f"{handoff_name}/README_HANDOFF.md",
-    f"{handoff_name}/run_krish_agent.sh",
     f"{handoff_name}/SHA256SUMS",
     f"{handoff_name}/{handoff_name.replace('handoff', 'runner')}.tar.gz",
 }
