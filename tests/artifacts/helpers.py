@@ -68,6 +68,7 @@ def assert_runner_archive(testcase: unittest.TestCase, archive: Path, extract_ro
         "configs/train/algonauts_field_compiler_debug.yaml",
         "configs/train/moabb_field_compiler_debug.yaml",
         "configs/train/prepared_synthetic_debug.yaml",
+        "docs/research/math_implementation_coverage.md",
         "environment-a100.yml",
         "pyproject.toml",
         "requirements/cluster-a100.txt",
@@ -114,7 +115,8 @@ def assert_runner_archive(testcase: unittest.TestCase, archive: Path, extract_ro
         testcase.assertFalse(any(part.lower().startswith(".env.") for part in parts), name)
         testcase.assertFalse(forbidden_names.intersection(parts), name)
         testcase.assertFalse(rel.startswith("docs/paper/"), name)
-        testcase.assertFalse(rel.startswith("docs/research/"), name)
+        if rel != "docs/research/math_implementation_coverage.md":
+            testcase.assertFalse(rel.startswith("docs/research/"), name)
         testcase.assertFalse(rel.endswith(forbidden_suffixes), name)
 
     bundle_root = extract_root / root
