@@ -359,14 +359,27 @@ def _load_matching_stimulus_features(root: Path, source: _ResponseRecord) -> _St
     embedded = _embedded_stimulus_features(source)
     if embedded is not None:
         return embedded
-    candidates = sorted(_candidate_feature_files(root, source.stimulus_id))
+    candidates = sorted(_candidate_feature_files(root, source.stimulus_id), key=_feature_candidate_sort_key)
+    rejected: list[str] = []
     for path in candidates:
         for key, arr in _feature_arrays(path):
+            if arr.ndim != 2 or arr.shape[0] != source.signal.shape[0]:
+                continue
+            if not np.isfinite(arr).all():
+                rejected.append(f"{path}:{key}:nonfinite")
+                continue
+            if float(np.abs(arr).sum()) == 0.0:
+                rejected.append(f"{path}:{key}:all_zero")
+                continue
+            if arr.shape[1] == ALGONAUTS_PARCELS:
+                rejected.append(f"{path}:{key}:looks_like_response")
+                continue
             if arr.ndim == 2 and arr.shape[0] == source.signal.shape[0]:
                 return _StimulusFeature(path=path, key=key, array=arr, modalities=_feature_modalities(path))
     raise ValueError(
         f"No stimulus feature array with {source.signal.shape[0]} rows found for "
-        f"{source.stimulus_id} ({source.path}); tried aliases={sorted(_stimulus_id_aliases(source.stimulus_id))}"
+        f"{source.stimulus_id} ({source.path}); tried aliases={sorted(_stimulus_id_aliases(source.stimulus_id))}; "
+        f"rejected={rejected[:20]}"
     )
 
 
@@ -399,6 +412,24 @@ def _candidate_feature_files(root: Path, stimulus_id: str) -> Iterable[Path]:
             continue
         if any(token in text for token in ("feature", "embedding", "stimulus", "bert", "slowfast", "mfcc", "vjepa", "llama")):
             yield path
+
+
+def _feature_candidate_sort_key(path: Path) -> tuple[int, int, str]:
+    text = path.as_posix().lower()
+    stem = path.stem.lower()
+    priority = 50
+    if "/features-v2/reduced/" in text and path.suffix.lower() == ".npy":
+        priority = 0
+    elif "/reduced/" in text and path.suffix.lower() == ".npy":
+        priority = 1
+    elif path.suffix.lower() == ".npz":
+        priority = 10
+    elif "/raw_official/" in text:
+        priority = 40
+    elif path.suffix.lower() in {".h5", ".hdf5"}:
+        priority = 45
+    exact_bonus = 0 if stem.endswith("_features") else 1
+    return (priority, exact_bonus, text)
 
 
 def _feature_arrays(path: Path) -> list[tuple[str, np.ndarray]]:

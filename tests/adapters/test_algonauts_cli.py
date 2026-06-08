@@ -12,8 +12,11 @@ from neurotwin.data.event_io import load_event_batches
 from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.prepared_tasks import build_prepared_window_tasks
 from neurotwin.adapters.algonauts import (
+    _ResponseRecord,
     _canonical_stimulus_id,
     _candidate_feature_files,
+    _feature_candidate_sort_key,
+    _load_matching_stimulus_features,
     _split_assignment,
 )
 
@@ -136,6 +139,34 @@ class AlgonautsCliTests(unittest.TestCase):
             self.assertEqual(_split_assignment("ses-006_task-s06e20b", root / "fmri" / "sub-01" / "func"), "val")
             self.assertEqual(_split_assignment("ses-001_task-bourne01", root / "fmri" / "sub-01" / "func"), "test")
             self.assertEqual(list(_candidate_feature_files(root, key)), [feature_path])
+
+    def test_reduced_feature_candidate_wins_over_nonfinite_raw_feature(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reduced_dir = root / "features-v2" / "reduced"
+            raw_dir = root / "features-v2" / "raw_official" / "language"
+            reduced_dir.mkdir(parents=True)
+            raw_dir.mkdir(parents=True)
+            reduced_path = reduced_dir / "friends_s01e03a_features.npy"
+            raw_path = raw_dir / "friends_s01e03a_features_language.npy"
+            np.save(reduced_path, np.ones((472, 8), dtype=np.float32))
+            raw = np.ones((472, 8), dtype=np.float32)
+            raw[0, 0] = np.nan
+            np.save(raw_path, raw)
+
+            source = _ResponseRecord(
+                path=root / "fmri" / "sub-01" / "func" / "sub-01_task-friends_bold.h5",
+                key="ses-001_task-s01e03a",
+                signal=np.ones((472, 1000), dtype=np.float32),
+                stimulus_id="ses-001_task-s01e03a",
+                session_id="friends_s01e03a",
+            )
+
+            candidates = sorted(_candidate_feature_files(root, source.stimulus_id), key=_feature_candidate_sort_key)
+            self.assertEqual(candidates[0], reduced_path)
+            stimulus = _load_matching_stimulus_features(root, source)
+            self.assertEqual(stimulus.path, reduced_path)
+            self.assertTrue(np.isfinite(stimulus.array).all())
 
 
 def _write_tiny_algonauts_fixture(root: Path) -> list[Path]:
