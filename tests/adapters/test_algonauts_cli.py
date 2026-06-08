@@ -11,6 +11,11 @@ import numpy as np
 from neurotwin.data.event_io import load_event_batches
 from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.prepared_tasks import build_prepared_window_tasks
+from neurotwin.adapters.algonauts import (
+    _canonical_stimulus_id,
+    _candidate_feature_files,
+    _split_assignment,
+)
 
 
 class AlgonautsCliTests(unittest.TestCase):
@@ -117,6 +122,20 @@ class AlgonautsCliTests(unittest.TestCase):
 
             self.assertFalse(evidence["claim_eligible"])
             self.assertIn("stimulus_feature_hash is not verified", evidence["failure_reasons"])
+
+    def test_hdf5_style_task_key_matches_canonical_feature_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            feature_dir = root / "features-v2" / "reduced"
+            feature_dir.mkdir(parents=True)
+            feature_path = feature_dir / "friends_s01e02a_features.npy"
+            np.save(feature_path, np.ones((482, 8), dtype=np.float32))
+
+            key = "ses-001_task-s01e02a"
+            self.assertEqual(_canonical_stimulus_id(key), "friends_s01e02a")
+            self.assertEqual(_split_assignment("ses-006_task-s06e20b", root / "fmri" / "sub-01" / "func"), "val")
+            self.assertEqual(_split_assignment("ses-001_task-bourne01", root / "fmri" / "sub-01" / "func"), "test")
+            self.assertEqual(list(_candidate_feature_files(root, key)), [feature_path])
 
 
 def _write_tiny_algonauts_fixture(root: Path) -> list[Path]:

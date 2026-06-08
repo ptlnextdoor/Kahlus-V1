@@ -61,17 +61,19 @@ def prepare_algonauts2025(
     batches: list[NeuralEventBatch] = []
     feature_rows: list[dict[str, Any]] = []
     stimulus_rows: list[dict[str, Any]] = []
+    digest_cache: dict[Path, str] = {}
     for source in response_records:
         subject_id = _subject_from_path(source.path)
         if subject_id not in ALGONAUTS_SUBJECTS:
             continue
-        split_assignment = _split_assignment(source.stimulus_id, source.path)
+        canonical_stimulus_id = _canonical_stimulus_id(source.stimulus_id)
+        split_assignment = _split_assignment(canonical_stimulus_id, source.path)
         stimulus = _load_matching_stimulus_features(root_path, source)
         _validate_response_and_stimulus(source.signal, stimulus.array, source.path, stimulus.path)
         record_id = _record_id(source, subject_id)
         time = np.arange(source.signal.shape[0], dtype=np.float32) * ALGONAUTS_TR_SECONDS
-        source_digest = hash_file(source.path)
-        feature_digest = hash_file(stimulus.path)
+        source_digest = _cached_hash(source.path, digest_cache)
+        feature_digest = _cached_hash(stimulus.path, digest_cache)
         metadata = {
             "dataset_id": ALGONAUTS_DATASET_ID,
             "record_id": record_id,
@@ -83,8 +85,9 @@ def prepare_algonauts2025(
             "sampling_rate": 1.0 / ALGONAUTS_TR_SECONDS,
             "time_start": float(time[0]) if time.size else 0.0,
             "time_end": float(time[-1]) if time.size else 0.0,
-            "run_id": source.stimulus_id,
-            "stimulus_id": source.stimulus_id,
+            "run_id": canonical_stimulus_id,
+            "stimulus_id": canonical_stimulus_id,
+            "raw_stimulus_id": source.stimulus_id,
             "stimulus_segment_id": record_id,
             "source_hash": source_digest,
             "source_file_hash": source_digest,
@@ -126,7 +129,7 @@ def prepare_algonauts2025(
                 site_id="cneuromod",
                 start_time=float(time[0]) if time.size else 0.0,
                 end_time=float(time[-1]) if time.size else 0.0,
-                stimulus_id=source.stimulus_id,
+                stimulus_id=canonical_stimulus_id,
                 path=str(source.path),
                 metadata={key: value for key, value in metadata.items() if key != "task_id"},
             )
@@ -158,7 +161,8 @@ def prepare_algonauts2025(
         feature_rows.append(
             {
                 "record_id": record_id,
-                "stimulus_id": source.stimulus_id,
+                "stimulus_id": canonical_stimulus_id,
+                "raw_stimulus_id": source.stimulus_id,
                 "path": str(stimulus.path),
                 "key": stimulus.key,
                 "sha256": feature_digest,
@@ -171,7 +175,8 @@ def prepare_algonauts2025(
         stimulus_rows.append(
             {
                 "record_id": record_id,
-                "stimulus_id": source.stimulus_id,
+                "stimulus_id": canonical_stimulus_id,
+                "raw_stimulus_id": source.stimulus_id,
                 "response_file": str(source.path),
                 "response_sha256": source_digest,
                 "stimulus_feature_file": str(stimulus.path),
@@ -361,7 +366,7 @@ def _load_matching_stimulus_features(root: Path, source: _ResponseRecord) -> _St
                 return _StimulusFeature(path=path, key=key, array=arr, modalities=_feature_modalities(path))
     raise ValueError(
         f"No stimulus feature array with {source.signal.shape[0]} rows found for "
-        f"{source.stimulus_id} ({source.path})"
+        f"{source.stimulus_id} ({source.path}); tried aliases={sorted(_stimulus_id_aliases(source.stimulus_id))}"
     )
 
 
@@ -384,13 +389,13 @@ def _embedded_stimulus_features(source: _ResponseRecord) -> _StimulusFeature | N
 
 def _candidate_feature_files(root: Path, stimulus_id: str) -> Iterable[Path]:
     suffixes = {".npz", ".npy", ".h5", ".hdf5"}
-    normalized = _normalize_id(stimulus_id)
+    aliases = _stimulus_id_aliases(stimulus_id)
     for path in root.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in suffixes:
             continue
         text = path.as_posix().lower()
-        stem = _normalize_id(path.stem)
-        if normalized not in stem and stem not in normalized:
+        stem_aliases = _stimulus_id_aliases(path.stem)
+        if not aliases.intersection(stem_aliases):
             continue
         if any(token in text for token in ("feature", "embedding", "stimulus", "bert", "slowfast", "mfcc", "vjepa", "llama")):
             yield path
@@ -464,8 +469,13 @@ def _split_assignment(stimulus_id: str, path: Path) -> str:
         return "test"
     if "movie10" in text or "movie_10" in text:
         return "test"
+    aliases = _stimulus_id_aliases(stimulus_id)
+    if any(alias.startswith("friends_s06") for alias in aliases):
+        return "val"
     if any(token in text for token in ("val", "valid", "friends_s06", "friends-s06", "season6", "season_6")):
         return "val"
+    if any(_is_movie10_id(alias) for alias in aliases):
+        return "test"
     if "train" in text or "friends_s0" in text or "season" in text or "friends" in text:
         return "train"
     return "train"
@@ -479,7 +489,7 @@ def _validate_subjects(records: list[RecordingRecord]) -> None:
 
 
 def _record_id(source: _ResponseRecord, subject_id: str) -> str:
-    return f"algonauts2025_{subject_id}_{_normalize_id(source.stimulus_id)}"
+    return f"algonauts2025_{subject_id}_{_canonical_stimulus_id(source.stimulus_id)}"
 
 
 def _record_manifest_row(record: RecordingRecord) -> dict[str, Any]:
@@ -517,7 +527,8 @@ def _stimulus_id(path: Path, key: str) -> str:
 
 
 def _session_id(stimulus_id: str, path: Path) -> str:
-    text = f"{stimulus_id} {path.as_posix()}".lower()
+    canonical = _canonical_stimulus_id(stimulus_id)
+    text = f"{canonical} {stimulus_id} {path.as_posix()}".lower()
     match = re.search(r"(friends[_-]?s[0-9]{1,2}e[0-9]{1,2}[a-z]?)", text)
     if match:
         return match.group(1).replace("-", "_")
@@ -527,7 +538,7 @@ def _session_id(stimulus_id: str, path: Path) -> str:
     match = re.search(r"(ood[_-]?[a-z0-9_\\-]+)", text)
     if match:
         return match.group(1).replace("-", "_")
-    return _normalize_id(stimulus_id)[:80] or "ses-algonauts"
+    return canonical[:80] or "ses-algonauts"
 
 
 def _feature_modalities(path: Path) -> tuple[str, ...]:
@@ -547,3 +558,59 @@ def _normalize_id(value: str) -> str:
     text = str(value).lower()
     text = re.sub(r"[^a-z0-9]+", "_", text)
     return text.strip("_")
+
+
+def _cached_hash(path: Path, cache: dict[Path, str]) -> str:
+    resolved = path.resolve()
+    if resolved not in cache:
+        cache[resolved] = hash_file(resolved)
+    return cache[resolved]
+
+
+def _canonical_stimulus_id(value: str) -> str:
+    aliases = _stimulus_id_aliases(value)
+    friends = sorted(alias for alias in aliases if alias.startswith("friends_s"))
+    if friends:
+        return friends[0]
+    movie10 = sorted(alias for alias in aliases if _is_movie10_id(alias))
+    if movie10:
+        return movie10[0]
+    stripped = _strip_feature_suffix(_strip_session_task_prefix(_normalize_id(value)))
+    return stripped or _normalize_id(value)
+
+
+def _stimulus_id_aliases(value: str) -> set[str]:
+    normalized = _normalize_id(value)
+    aliases = {normalized}
+    stripped = _strip_feature_suffix(_strip_session_task_prefix(normalized))
+    if stripped:
+        aliases.add(stripped)
+    runless = re.sub(r"_run_[0-9]+$", "", stripped)
+    if runless:
+        aliases.add(runless)
+    match = re.fullmatch(r"s([0-9]{1,2})e([0-9]{1,2}[a-z]?)", runless)
+    if match:
+        aliases.add(f"friends_s{int(match.group(1)):02d}e{match.group(2)}")
+    match = re.search(r"s([0-9]{1,2})e([0-9]{1,2}[a-z]?)", runless)
+    if match:
+        aliases.add(f"friends_s{int(match.group(1)):02d}e{match.group(2)}")
+    return {alias for alias in aliases if alias}
+
+
+def _strip_session_task_prefix(value: str) -> str:
+    text = re.sub(r"^ses_[0-9]+_", "", value)
+    text = re.sub(r"^task_", "", text)
+    return text
+
+
+def _strip_feature_suffix(value: str) -> str:
+    text = value
+    for suffix in ("_stimulus_features", "_features", "_feature", "_embedding", "_embeddings"):
+        if text.endswith(suffix):
+            text = text[: -len(suffix)]
+            break
+    return text
+
+
+def _is_movie10_id(value: str) -> bool:
+    return bool(re.match(r"^(bourne|figures|life|wolf)[0-9]{2}$", value))
