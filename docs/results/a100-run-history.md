@@ -24,6 +24,8 @@ The ledger intentionally records only lightweight metadata, hashes, configuratio
 | `822a80e` | `neurotwin-a100-results-822a80e-failure-evidence.zip` | `64c0568c16dcbba9ecb3fa98ae434694a2c46bf4efb9ca4be3d06b73d9c9b7ae` |
 | `6621642-ddpfix` | `neurotwin-6621642-ddpfix-resume-handoff.zip` | `196ee135ea1b5f7595b886ed64862a51e156ff84c229b5e625452e1751006b47` |
 
+Release artifact for `6621642-ddpfix`: <https://github.com/ptlnextdoor/Kahlus-V1/releases/tag/evidence-6621642-ddpfix-resume>
+
 ## Interpretation Notes
 
 - These completed runs are MOABB A100 infrastructure smoke runs, not scientific evidence of model superiority.
