@@ -57,6 +57,8 @@ discover_algonauts_root() {
   fi
   local candidate
   for candidate in \
+    "$PERSISTENT_ROOT/raw/algonauts2025_parent" \
+    "/raid/scratch/$USER/neurotwin-algonauts2025" \
     "$PERSISTENT_ROOT/raw/algonauts2025" \
     "$PERSISTENT_ROOT/data/algonauts2025" \
     "/raid/scratch/$USER/neurotwin-algonauts2025/data" \
