@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     data_subparsers = data_parser.add_subparsers(dest="data_command", required=True)
     prepare = data_subparsers.add_parser("prepare", help="Prepare manifests and leakage-proof splits")
     prepare.add_argument("--dataset", required=True)
-    prepare.add_argument("--split", required=True, choices=("subject", "session", "site", "dataset", "time"))
+    prepare.add_argument("--split", required=True, choices=("subject", "session", "site", "dataset", "time", "official"))
     prepare.add_argument("--root", default=None)
     prepare.add_argument("--out-dir", default=None)
     prepare.add_argument("--moabb-dataset", default="BNCI2014_001")
@@ -50,6 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     prepare.add_argument("--subjects", nargs="*", type=int, default=None)
     prepare.add_argument("--max-trials", type=int, default=None)
     prepare.add_argument("--sampling-rate", type=float, default=None)
+    prepare.add_argument("--window-length", type=int, default=128)
+    prepare.add_argument("--stride", type=int, default=128)
     prepare.set_defaults(func=_cmd_data_prepare)
     smoke = data_subparsers.add_parser("smoke", help="Run a lightweight MOABB smoke pipeline")
     smoke.add_argument("--dataset", default="moabb", choices=("moabb",))
@@ -249,6 +251,8 @@ def _cmd_data_prepare(args: argparse.Namespace) -> None:
                 subjects=args.subjects,
                 max_trials=args.max_trials,
                 sampling_rate=args.sampling_rate,
+                window_length=args.window_length,
+                stride=args.stride,
             )
         )
     )

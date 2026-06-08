@@ -20,8 +20,13 @@ moabb = [
   "mne>=1.6",
 ]
 bids = []
+algonauts = [
+  "h5py>=3.10",
+]
 h100 = []
-cluster = []
+cluster = [
+  "h5py>=3.10",
+]
 dev = [
   "pytest>=8",
 ]
