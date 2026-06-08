@@ -12,6 +12,7 @@ dependencies = [
   "numpy>=1.24",
   "PyYAML>=6.0",
   "torch>=2.2",
+  "typing_extensions>=4.5",
 ]
 
 [project.optional-dependencies]
