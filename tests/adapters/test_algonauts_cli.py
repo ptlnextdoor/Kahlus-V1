@@ -13,6 +13,7 @@ from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.prepared_tasks import build_prepared_window_tasks
 from neurotwin.adapters.algonauts import (
     _ResponseRecord,
+    _align_response_and_stimulus,
     _canonical_stimulus_id,
     _candidate_feature_files,
     _feature_candidate_sort_key,
@@ -167,6 +168,27 @@ class AlgonautsCliTests(unittest.TestCase):
             stimulus = _load_matching_stimulus_features(root, source)
             self.assertEqual(stimulus.path, reduced_path)
             self.assertTrue(np.isfinite(stimulus.array).all())
+
+    def test_small_algonauts_time_mismatch_is_trimmed_with_metadata(self):
+        signal = np.ones((472, 1000), dtype=np.float32)
+        stimulus = np.ones((471, 8), dtype=np.float32)
+
+        aligned_signal, aligned_stimulus, alignment = _align_response_and_stimulus(signal, stimulus)
+
+        self.assertEqual(aligned_signal.shape, (471, 1000))
+        self.assertEqual(aligned_stimulus.shape, (471, 8))
+        self.assertEqual(alignment["policy"], "start_aligned_trim_to_shorter_series")
+        self.assertEqual(alignment["raw_signal_rows"], 472)
+        self.assertEqual(alignment["raw_stimulus_rows"], 471)
+        self.assertEqual(alignment["trimmed_signal_rows"], 1)
+        self.assertEqual(alignment["trimmed_stimulus_rows"], 0)
+
+    def test_large_algonauts_time_mismatch_is_rejected(self):
+        signal = np.ones((472, 1000), dtype=np.float32)
+        stimulus = np.ones((450, 8), dtype=np.float32)
+
+        with self.assertRaisesRegex(ValueError, "more than"):
+            _align_response_and_stimulus(signal, stimulus)
 
 
 def _write_tiny_algonauts_fixture(root: Path) -> list[Path]:

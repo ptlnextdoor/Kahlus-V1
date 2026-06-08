@@ -16,6 +16,7 @@ ALGONAUTS_DATASET_ID = "algonauts2025"
 ALGONAUTS_SUBJECTS = ("sub-01", "sub-02", "sub-03", "sub-05")
 ALGONAUTS_TR_SECONDS = 1.49
 ALGONAUTS_PARCELS = 1000
+MAX_TR_ALIGNMENT_TRIM = 8
 FEATURE_KEYS = ("stimulus_embedding", "stimulus_features", "features", "embedding", "x", "data")
 RESPONSE_KEYS = ("signal", "fmri", "responses", "response", "bold", "y", "data")
 
@@ -69,9 +70,10 @@ def prepare_algonauts2025(
         canonical_stimulus_id = _canonical_stimulus_id(source.stimulus_id)
         split_assignment = _split_assignment(canonical_stimulus_id, source.path)
         stimulus = _load_matching_stimulus_features(root_path, source)
-        _validate_response_and_stimulus(source.signal, stimulus.array, source.path, stimulus.path)
+        signal, stimulus_array, alignment = _align_response_and_stimulus(source.signal, stimulus.array)
+        _validate_response_and_stimulus(signal, stimulus_array, source.path, stimulus.path)
         record_id = _record_id(source, subject_id)
-        time = np.arange(source.signal.shape[0], dtype=np.float32) * ALGONAUTS_TR_SECONDS
+        time = np.arange(signal.shape[0], dtype=np.float32) * ALGONAUTS_TR_SECONDS
         source_digest = _cached_hash(source.path, digest_cache)
         feature_digest = _cached_hash(stimulus.path, digest_cache)
         metadata = {
@@ -97,8 +99,10 @@ def prepare_algonauts2025(
                     "record_id": record_id,
                     "source_hash": source_digest,
                     "feature_hash": feature_digest,
-                    "time": int(source.signal.shape[0]),
-                    "parcels": int(source.signal.shape[1]),
+                    "time": int(signal.shape[0]),
+                    "parcels": int(signal.shape[1]),
+                    "raw_signal_time": int(source.signal.shape[0]),
+                    "raw_feature_time": int(stimulus.array.shape[0]),
                 }
             ),
             "stimulus_feature_source": "algonauts2025_real_precomputed_features",
@@ -111,9 +115,10 @@ def prepare_algonauts2025(
             "require_real_stimulus": True,
             "stimulus_alignment": {
                 "tr_seconds": ALGONAUTS_TR_SECONDS,
-                "grid": "one stimulus feature row per fMRI TR",
+                "grid": "one stimulus feature row per fMRI TR after start-aligned overlap trimming",
                 "time_axis_verified": True,
                 "future_lookahead_allowed": False,
+                **alignment,
             },
             "atlas": "Schaefer1000",
             "n_parcels": ALGONAUTS_PARCELS,
@@ -142,9 +147,9 @@ def prepare_algonauts2025(
                 session_id=source.session_id,
                 site_id="cneuromod",
                 time=time,
-                signal=source.signal.astype(np.float32, copy=False),
-                mask=np.ones_like(source.signal, dtype=bool),
-                stimulus_embedding=stimulus.array.astype(np.float32, copy=False),
+                signal=signal.astype(np.float32, copy=False),
+                mask=np.ones_like(signal, dtype=bool),
+                stimulus_embedding=stimulus_array.astype(np.float32, copy=False),
                 behavior={},
                 space_index=np.arange(ALGONAUTS_PARCELS, dtype=np.int64),
                 uncertainty=None,
@@ -166,10 +171,12 @@ def prepare_algonauts2025(
                 "path": str(stimulus.path),
                 "key": stimulus.key,
                 "sha256": feature_digest,
-                "shape": list(stimulus.array.shape),
+                "shape": list(stimulus_array.shape),
+                "raw_shape": list(stimulus.array.shape),
                 "modalities": list(stimulus.modalities),
                 "source": "algonauts2025_real_precomputed_features",
                 "claim_eligible": True,
+                "alignment": alignment,
             }
         )
         stimulus_rows.append(
@@ -184,6 +191,7 @@ def prepare_algonauts2025(
                 "split": split_assignment,
                 "subject_id": subject_id,
                 "tr_seconds": ALGONAUTS_TR_SECONDS,
+                "alignment": alignment,
             }
         )
 
@@ -363,7 +371,10 @@ def _load_matching_stimulus_features(root: Path, source: _ResponseRecord) -> _St
     rejected: list[str] = []
     for path in candidates:
         for key, arr in _feature_arrays(path):
-            if arr.ndim != 2 or arr.shape[0] != source.signal.shape[0]:
+            if arr.ndim != 2:
+                continue
+            if not _compatible_time_length(source.signal.shape[0], arr.shape[0]):
+                rejected.append(f"{path}:{key}:length_{arr.shape[0]}_vs_{source.signal.shape[0]}")
                 continue
             if not np.isfinite(arr).all():
                 rejected.append(f"{path}:{key}:nonfinite")
@@ -374,8 +385,7 @@ def _load_matching_stimulus_features(root: Path, source: _ResponseRecord) -> _St
             if arr.shape[1] == ALGONAUTS_PARCELS:
                 rejected.append(f"{path}:{key}:looks_like_response")
                 continue
-            if arr.ndim == 2 and arr.shape[0] == source.signal.shape[0]:
-                return _StimulusFeature(path=path, key=key, array=arr, modalities=_feature_modalities(path))
+            return _StimulusFeature(path=path, key=key, array=arr, modalities=_feature_modalities(path))
     raise ValueError(
         f"No stimulus feature array with {source.signal.shape[0]} rows found for "
         f"{source.stimulus_id} ({source.path}); tried aliases={sorted(_stimulus_id_aliases(source.stimulus_id))}; "
@@ -465,6 +475,34 @@ def _validate_response_and_stimulus(signal: np.ndarray, stimulus: np.ndarray, re
         raise ValueError(f"Non-finite stimulus feature values in {stimulus_path}")
     if float(np.abs(stimulus).sum()) == 0.0:
         raise ValueError(f"All-zero stimulus features in {stimulus_path}")
+
+
+def _compatible_time_length(signal_rows: int, stimulus_rows: int) -> bool:
+    return abs(int(signal_rows) - int(stimulus_rows)) <= MAX_TR_ALIGNMENT_TRIM
+
+
+def _align_response_and_stimulus(signal: np.ndarray, stimulus: np.ndarray) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    signal_rows = int(signal.shape[0])
+    stimulus_rows = int(stimulus.shape[0])
+    if not _compatible_time_length(signal_rows, stimulus_rows):
+        raise ValueError(
+            f"Algonauts response/stimulus time lengths differ by more than {MAX_TR_ALIGNMENT_TRIM} TRs: "
+            f"signal={signal_rows} stimulus={stimulus_rows}"
+        )
+    aligned_rows = min(signal_rows, stimulus_rows)
+    return (
+        signal[:aligned_rows],
+        stimulus[:aligned_rows],
+        {
+            "policy": "start_aligned_trim_to_shorter_series",
+            "raw_signal_rows": signal_rows,
+            "raw_stimulus_rows": stimulus_rows,
+            "aligned_rows": aligned_rows,
+            "trimmed_signal_rows": signal_rows - aligned_rows,
+            "trimmed_stimulus_rows": stimulus_rows - aligned_rows,
+            "max_allowed_trim_rows": MAX_TR_ALIGNMENT_TRIM,
+        },
+    )
 
 
 def _official_split_manifest(records: list[RecordingRecord]) -> SplitManifest:
