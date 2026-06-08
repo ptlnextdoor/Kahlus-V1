@@ -18,6 +18,7 @@ from neurotwin.adapters.algonauts import (
     _candidate_feature_files,
     _feature_candidate_sort_key,
     _load_matching_stimulus_features,
+    _record_id,
     _split_assignment,
 )
 
@@ -189,6 +190,28 @@ class AlgonautsCliTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "more than"):
             _align_response_and_stimulus(signal, stimulus)
+
+    def test_repeated_movie_runs_have_unique_record_ids(self):
+        path = Path("fmri/sub-01/func/sub-01_task-movie10_bold.h5")
+        signal = np.ones((406, 1000), dtype=np.float32)
+        run_1 = _ResponseRecord(
+            path=path,
+            key="ses-001_task-life01_run-1",
+            signal=signal,
+            stimulus_id="ses-001_task-life01_run-1",
+            session_id="life01",
+        )
+        run_2 = _ResponseRecord(
+            path=path,
+            key="ses-009_task-life01_run-2",
+            signal=signal,
+            stimulus_id="ses-009_task-life01_run-2",
+            session_id="life01",
+        )
+
+        self.assertEqual(_record_id(run_1, "sub-01"), "algonauts2025_sub-01_life01_ses_001_task_life01_run_1")
+        self.assertEqual(_record_id(run_2, "sub-01"), "algonauts2025_sub-01_life01_ses_009_task_life01_run_2")
+        self.assertNotEqual(_record_id(run_1, "sub-01"), _record_id(run_2, "sub-01"))
 
 
 def _write_tiny_algonauts_fixture(root: Path) -> list[Path]:

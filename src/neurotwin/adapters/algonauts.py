@@ -558,7 +558,11 @@ def _validate_subjects(records: list[RecordingRecord]) -> None:
 
 
 def _record_id(source: _ResponseRecord, subject_id: str) -> str:
-    return f"algonauts2025_{subject_id}_{_canonical_stimulus_id(source.stimulus_id)}"
+    raw_id = _normalize_id(source.stimulus_id)
+    canonical_id = _canonical_stimulus_id(source.stimulus_id)
+    if raw_id and raw_id != canonical_id:
+        return f"algonauts2025_{subject_id}_{canonical_id}_{raw_id}"
+    return f"algonauts2025_{subject_id}_{canonical_id}"
 
 
 def _record_manifest_row(record: RecordingRecord) -> dict[str, Any]:
