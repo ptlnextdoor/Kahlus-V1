@@ -273,7 +273,19 @@ def _candidate_response_files(root: Path) -> Iterable[Path]:
         if not path.is_file() or path.suffix.lower() not in suffixes:
             continue
         text = path.as_posix().lower()
-        if any(token in text for token in ("/events/", "/features/", "/feature_", "/stimulus_features/", "/precomputed_features/")):
+        if any(
+            token in text
+            for token in (
+                "/events/",
+                "/features/",
+                "/features-",
+                "/feature_",
+                "/stimulus_features/",
+                "/precomputed_features/",
+                "/target_sample_number/",
+                "/atlas/",
+            )
+        ):
             continue
         if _looks_like_response_path(path):
             yield path
@@ -281,7 +293,9 @@ def _candidate_response_files(root: Path) -> Iterable[Path]:
 
 def _looks_like_response_path(path: Path) -> bool:
     text = path.as_posix().lower()
-    return any(token in text for token in ("fmri", "response", "responses", "bold", "sub-0"))
+    if "/target_sample_number/" in text or "/atlas/" in text:
+        return False
+    return "/func/" in text and any(token in text for token in ("fmri", "response", "responses", "bold"))
 
 
 def _response_arrays(path: Path) -> list[tuple[str, np.ndarray]]:
