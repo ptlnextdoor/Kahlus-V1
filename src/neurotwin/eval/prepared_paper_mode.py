@@ -43,6 +43,7 @@ def run_prepared_baseline_suite_multi_seed(
                 seed=seed,
                 train_steps=config.train_steps,
                 require_ci=config.require_ci,
+                max_windows_per_split=config.max_windows_per_split,
             ),
             out_dir=None,
         )
@@ -114,6 +115,7 @@ def _merge_seed_payloads(
                     "event_summary": event_manifest_summary(config.event_manifest),
                     "window_length": config.window_length,
                     "stride": config.stride,
+                    "max_windows_per_split": config.max_windows_per_split,
                     "skipped_tasks": [],
                 },
             ),

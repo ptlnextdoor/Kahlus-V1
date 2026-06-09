@@ -30,6 +30,7 @@ WINDOW_LENGTH="${WINDOW_LENGTH:-128}"
 STRIDE="${STRIDE:-64}"
 DEBUG_STEPS="${DEBUG_STEPS:-500}"
 DEBUG_BASELINE_STEPS="${DEBUG_BASELINE_STEPS:-3}"
+DEBUG_MAX_WINDOWS_PER_SPLIT="${DEBUG_MAX_WINDOWS_PER_SPLIT:-256}"
 SWEEP_STEPS="${SWEEP_STEPS:-10000}"
 LONG_STEPS="${LONG_STEPS:-50000}"
 SESSION_PREFIX="${SESSION_PREFIX:-kahlus-algonauts}"
@@ -106,6 +107,7 @@ docker_run_one_gpu() {
     -e STRIDE="$STRIDE" \
     -e DEBUG_STEPS="$DEBUG_STEPS" \
     -e DEBUG_BASELINE_STEPS="$DEBUG_BASELINE_STEPS" \
+    -e DEBUG_MAX_WINDOWS_PER_SPLIT="$DEBUG_MAX_WINDOWS_PER_SPLIT" \
     -e SWEEP_STEPS="$SWEEP_STEPS" \
     -e LONG_STEPS="$LONG_STEPS" \
     "$DOCKER_IMAGE" bash -lc "$command"
@@ -217,6 +219,7 @@ debug_inner() {
     --split-manifest "$PREPARED_ROOT/split_manifest.json" \
     --window-length "$WINDOW_LENGTH" \
     --stride "$STRIDE" \
+    --max-windows-per-split "$DEBUG_MAX_WINDOWS_PER_SPLIT" \
     --train-steps "$DEBUG_BASELINE_STEPS" \
     --out-dir "$PERSISTENT_ROOT/eval/algonauts_debug_paper_mode"
   python -m neurotwin.cli cluster materialize-config \

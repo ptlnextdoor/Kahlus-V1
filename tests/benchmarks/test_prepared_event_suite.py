@@ -22,6 +22,7 @@ from neurotwin.benchmarks.prepared_suite import (
     format_prepared_baseline_report,
     run_prepared_baseline_suite,
 )
+from neurotwin.data.prepared_tasks import prepared_windows_by_split
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import build_split_manifest
@@ -100,6 +101,43 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertFalse([row for row in skipped if row["task_id"] == "all"])
         self.assertIn("future_state_forecasting", {task.task_id for task in tasks})
         self.assertIn("cross_modal_translation", {task.task_id for task in tasks})
+
+    def test_prepared_windows_can_be_capped_per_split(self):
+        records = make_synthetic_recordings(n_subjects=9, sessions_per_subject=2, modalities=("fmri",))
+        batches = make_synthetic_event_batches(n_subjects=9, sessions_per_subject=2, modalities=("fmri",), n_time=80)
+        split = build_split_manifest(records, policy="subject", seed=0)
+
+        windows = prepared_windows_by_split(
+            batches,
+            split,
+            window_length=8,
+            stride=4,
+            max_windows_per_split=3,
+        )
+
+        self.assertEqual({key: len(value) for key, value in windows.items()}, {"train": 3, "val": 3, "test": 3})
+
+    def test_prepared_baseline_suite_reports_window_cap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_recordings(n_subjects=9, sessions_per_subject=2, modalities=("fmri",))
+            batches = make_synthetic_event_batches(n_subjects=9, sessions_per_subject=2, modalities=("fmri",), n_time=80)
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                    max_windows_per_split=3,
+                ),
+            )
+
+        self.assertEqual(payload["prepared_data"]["max_windows_per_split"], 3)
+        report = format_prepared_baseline_report(payload)
+        self.assertIn("max_windows_per_split=3", report)
 
     def test_synthetic_multimodal_smoke_builds_cross_modal_task(self):
         records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)

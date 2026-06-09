@@ -182,6 +182,7 @@ def _add_eval_manifest_args(parser: argparse.ArgumentParser) -> None:
 def _add_eval_window_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--window-length", type=int, default=8)
     parser.add_argument("--stride", type=int, default=8)
+    parser.add_argument("--max-windows-per-split", type=int, default=None)
 
 
 def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
@@ -234,6 +235,7 @@ def _add_eval_demo_args(parser: argparse.ArgumentParser) -> None:
         suite="translation_smoke",
         run=None,
         require_windows=False,
+        max_windows_per_split=None,
         paper_mode=False,
     )
 
@@ -348,6 +350,7 @@ def _cmd_eval(args: argparse.Namespace) -> None:
             train_steps=getattr(args, "train_steps", 5),
             seed=getattr(args, "seed", 0),
             seeds=tuple(args.seeds) if getattr(args, "seeds", None) is not None else None,
+            max_windows_per_split=getattr(args, "max_windows_per_split", None),
             require_windows=getattr(args, "require_windows", False),
             paper_mode=getattr(args, "paper_mode", False),
             require_pass=getattr(args, "require_pass", False),

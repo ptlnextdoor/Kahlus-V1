@@ -21,6 +21,7 @@ class PreparedSuiteConfig:
     seed: int = 0
     train_steps: int = 5
     require_ci: bool = True
+    max_windows_per_split: int | None = None
 
 
 @dataclass(frozen=True)
@@ -46,9 +47,16 @@ def build_prepared_window_tasks(
     window_length: int,
     stride: int,
     seed: int = 0,
+    max_windows_per_split: int | None = None,
 ) -> tuple[tuple[SupervisedWindowTask, ...], list[dict[str, str]]]:
     skipped: list[dict[str, str]] = []
-    windows_by_split = prepared_windows_by_split(batches, split, window_length=window_length, stride=stride)
+    windows_by_split = prepared_windows_by_split(
+        batches,
+        split,
+        window_length=window_length,
+        stride=stride,
+        max_windows_per_split=max_windows_per_split,
+    )
     split_keys = _split_record_keys(split)
     for batch in batches:
         if _record_id(batch) not in split_keys:
@@ -86,7 +94,11 @@ def prepared_windows_by_split(
     split: SplitManifest,
     window_length: int,
     stride: int,
+    max_windows_per_split: int | None = None,
 ) -> dict[str, list[NeuralEventBatch]]:
+    if max_windows_per_split is not None and int(max_windows_per_split) <= 0:
+        raise ValueError("max_windows_per_split must be positive when provided")
+    max_windows = int(max_windows_per_split) if max_windows_per_split is not None else None
     spec = WindowSpec(length=window_length, stride=stride)
     split_keys = _split_record_keys(split)
     windows_by_split: dict[str, list[NeuralEventBatch]] = {"train": [], "val": [], "test": []}
@@ -94,7 +106,13 @@ def prepared_windows_by_split(
         split_name = split_keys.get(_record_id(batch))
         if split_name is None:
             continue
-        windows_by_split[split_name].extend(batch_to_windows(batch, spec))
+        if max_windows is not None:
+            remaining = max_windows - len(windows_by_split[split_name])
+            if remaining <= 0:
+                continue
+            windows_by_split[split_name].extend(batch_to_windows(batch, spec)[:remaining])
+        else:
+            windows_by_split[split_name].extend(batch_to_windows(batch, spec))
     return windows_by_split
 
 
