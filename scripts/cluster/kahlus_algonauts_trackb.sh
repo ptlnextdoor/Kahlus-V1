@@ -458,6 +458,13 @@ case "$MODE" in
       --root "$PERSISTENT_ROOT" \
       --out "$PERSISTENT_ROOT/strict_gate.json"
     ;;
+  debug-gate)
+    python "$REPO_ROOT/scripts/cluster/kahlus_algonauts_trackb_debug_gate.py" \
+      --root "$PERSISTENT_ROOT" \
+      --run-dir "$RUN_ROOT/algonauts_pair_operator_debug_gate" \
+      --prepared-root "$PREPARED_ROOT" \
+      --out "$PERSISTENT_ROOT/debug_gate.json"
+    ;;
   long)
     raw_root="$(discover_algonauts_root)" || {
       echo "No Algonauts raw root found. Set ALGONAUTS_RAW_ROOT before launching long run." >&2
