@@ -173,8 +173,41 @@ prepare_inner() {
     --stride "$STRIDE"
 }
 
-debug_inner() {
+prepared_ready() {
+  [[ -f "$PREPARED_ROOT/event_manifest.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/split_manifest.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/data_manifest.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/feature_manifest.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/stimulus_manifest.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/leakage_report.json" ]] || return 1
+  [[ -f "$PREPARED_ROOT/eval_audit.json" ]] || return 1
+  python - "$PREPARED_ROOT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+audit = json.loads((root / "eval_audit.json").read_text(encoding="utf-8"))
+features = json.loads((root / "feature_manifest.json").read_text(encoding="utf-8"))
+if audit.get("passed") is not True:
+    raise SystemExit(1)
+if int(audit.get("window_count") or 0) <= 0:
+    raise SystemExit(1)
+if features.get("claim_eligible") is not True or features.get("hash_verified") is not True:
+    raise SystemExit(1)
+PY
+}
+
+ensure_prepared_inner() {
+  if prepared_ready; then
+    echo "Using existing prepared Algonauts root: $PREPARED_ROOT"
+    return 0
+  fi
   prepare_inner
+}
+
+debug_inner() {
+  ensure_prepared_inner
   mkdir -p "$PERSISTENT_ROOT/eval/algonauts_debug_paper_mode" "$CONFIG_ROOT"
   python -m neurotwin.cli eval suite \
     --suite neural_translation_v1 \
@@ -214,7 +247,7 @@ sweep_materialize_inner() {
     echo "sweep-materialize-inner requires seed argument" >&2
     exit 2
   fi
-  prepare_inner
+  ensure_prepared_inner
   local ablation_config_dir="$CONFIG_ROOT/sweep_seed$SEED"
   mkdir -p "$ablation_config_dir"
   python /workspace/repo/scripts/materialize_pair_operator_ablation_configs.py \
@@ -263,7 +296,7 @@ sweep_arm_inner() {
 }
 
 long_inner() {
-  prepare_inner
+  ensure_prepared_inner
   mkdir -p "$CONFIG_ROOT"
   python -m neurotwin.cli cluster materialize-config \
     --template /workspace/repo/configs/train/algonauts_pair_operator_full.yaml \

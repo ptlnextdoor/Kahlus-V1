@@ -19,6 +19,7 @@ from neurotwin.adapters.algonauts import (
     _feature_candidate_sort_key,
     _load_matching_stimulus_features,
     _record_id,
+    _record_source_hash,
     _split_assignment,
 )
 
@@ -77,6 +78,8 @@ class AlgonautsCliTests(unittest.TestCase):
             self.assertTrue(all(event.signal.shape[1] == 1000 for event in events))
             self.assertTrue(all(event.stimulus_embedding is not None for event in events))
             self.assertTrue(all(event.stimulus_embedding.shape[0] == event.signal.shape[0] for event in events))
+            self.assertTrue(all(event.metadata["source_hash"] != event.metadata["source_file_hash"] for event in events))
+            self.assertTrue(all("source_key" in event.metadata for event in events))
 
             split = load_split_manifest(out_dir / "split_manifest.json")
             tasks, skipped = build_prepared_window_tasks(events, split, window_length=16, stride=16, seed=0)
@@ -212,6 +215,28 @@ class AlgonautsCliTests(unittest.TestCase):
         self.assertEqual(_record_id(run_1, "sub-01"), "algonauts2025_sub-01_life01_ses_001_task_life01_run_1")
         self.assertEqual(_record_id(run_2, "sub-01"), "algonauts2025_sub-01_life01_ses_009_task_life01_run_2")
         self.assertNotEqual(_record_id(run_1, "sub-01"), _record_id(run_2, "sub-01"))
+
+    def test_hdf5_records_in_same_file_have_record_level_source_hashes(self):
+        path = Path("fmri/sub-01/func/sub-01_task-friends_bold.h5")
+        file_hash = "whole-hdf5-container"
+        signal = np.ones((406, 1000), dtype=np.float32)
+        first = _ResponseRecord(
+            path=path,
+            key="ses-001_task-s01e01a",
+            signal=signal,
+            stimulus_id="ses-001_task-s01e01a",
+            session_id="friends_s01e01a",
+        )
+        second = _ResponseRecord(
+            path=path,
+            key="ses-001_task-s01e01b",
+            signal=signal,
+            stimulus_id="ses-001_task-s01e01b",
+            session_id="friends_s01e01b",
+        )
+
+        self.assertNotEqual(_record_source_hash(first, file_hash), file_hash)
+        self.assertNotEqual(_record_source_hash(first, file_hash), _record_source_hash(second, file_hash))
 
 
 def _write_tiny_algonauts_fixture(root: Path) -> list[Path]:

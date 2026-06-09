@@ -74,7 +74,8 @@ def prepare_algonauts2025(
         _validate_response_and_stimulus(signal, stimulus_array, source.path, stimulus.path)
         record_id = _record_id(source, subject_id)
         time = np.arange(signal.shape[0], dtype=np.float32) * ALGONAUTS_TR_SECONDS
-        source_digest = _cached_hash(source.path, digest_cache)
+        source_file_digest = _cached_hash(source.path, digest_cache)
+        source_digest = _record_source_hash(source, source_file_digest)
         feature_digest = _cached_hash(stimulus.path, digest_cache)
         metadata = {
             "dataset_id": ALGONAUTS_DATASET_ID,
@@ -92,7 +93,8 @@ def prepare_algonauts2025(
             "raw_stimulus_id": source.stimulus_id,
             "stimulus_segment_id": record_id,
             "source_hash": source_digest,
-            "source_file_hash": source_digest,
+            "source_file_hash": source_file_digest,
+            "source_key": source.key,
             "preprocessing_hash": stable_hash(
                 {
                     "adapter": "algonauts2025",
@@ -185,7 +187,9 @@ def prepare_algonauts2025(
                 "stimulus_id": canonical_stimulus_id,
                 "raw_stimulus_id": source.stimulus_id,
                 "response_file": str(source.path),
-                "response_sha256": source_digest,
+                "response_sha256": source_file_digest,
+                "response_record_sha256": source_digest,
+                "response_key": source.key,
                 "stimulus_feature_file": str(stimulus.path),
                 "stimulus_feature_sha256": feature_digest,
                 "split": split_assignment,
@@ -563,6 +567,18 @@ def _record_id(source: _ResponseRecord, subject_id: str) -> str:
     if raw_id and raw_id != canonical_id:
         return f"algonauts2025_{subject_id}_{canonical_id}_{raw_id}"
     return f"algonauts2025_{subject_id}_{canonical_id}"
+
+
+def _record_source_hash(source: _ResponseRecord, source_file_digest: str) -> str:
+    return stable_hash(
+        {
+            "source_file_hash": source_file_digest,
+            "source_key": source.key,
+            "stimulus_id": source.stimulus_id,
+            "shape": list(source.signal.shape),
+            "sum": float(np.asarray(source.signal, dtype=np.float64).sum()),
+        }
+    )
 
 
 def _record_manifest_row(record: RecordingRecord) -> dict[str, Any]:
