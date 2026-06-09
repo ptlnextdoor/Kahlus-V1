@@ -194,6 +194,7 @@ def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--train-steps", type=int, default=5)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--seeds", nargs="*", type=int, default=None)
+    parser.add_argument("--baseline-models", nargs="*", default=None)
     parser.add_argument("--require-windows", action="store_true")
     parser.add_argument("--paper-mode", action="store_true")
     parser.add_argument("--require-pass", action="store_true")
@@ -350,6 +351,7 @@ def _cmd_eval(args: argparse.Namespace) -> None:
             train_steps=getattr(args, "train_steps", 5),
             seed=getattr(args, "seed", 0),
             seeds=tuple(args.seeds) if getattr(args, "seeds", None) is not None else None,
+            baseline_model_ids=tuple(args.baseline_models) if getattr(args, "baseline_models", None) is not None else None,
             max_windows_per_split=getattr(args, "max_windows_per_split", None),
             require_windows=getattr(args, "require_windows", False),
             paper_mode=getattr(args, "paper_mode", False),

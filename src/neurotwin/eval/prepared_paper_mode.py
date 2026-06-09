@@ -44,6 +44,7 @@ def run_prepared_baseline_suite_multi_seed(
                 train_steps=config.train_steps,
                 require_ci=config.require_ci,
                 max_windows_per_split=config.max_windows_per_split,
+                model_ids=config.model_ids,
             ),
             out_dir=None,
         )

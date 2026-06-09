@@ -52,6 +52,7 @@ def run_prepared_baseline_suite(
                 tasks,
                 seed=config.seed,
                 train_steps=config.train_steps,
+                model_ids=config.model_ids,
                 scope_status=_scope_status(batches),
                 scope_notes=(
                     "Uses prepared event batches and a recording-level split manifest.",

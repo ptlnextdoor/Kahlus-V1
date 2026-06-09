@@ -28,9 +28,10 @@ DOCKER_IMAGE="${DOCKER_IMAGE:-pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel}"
 ALGONAUTS_RAW_ROOT="${ALGONAUTS_RAW_ROOT:-}"
 WINDOW_LENGTH="${WINDOW_LENGTH:-128}"
 STRIDE="${STRIDE:-64}"
-DEBUG_STEPS="${DEBUG_STEPS:-500}"
-DEBUG_BASELINE_STEPS="${DEBUG_BASELINE_STEPS:-3}"
-DEBUG_MAX_WINDOWS_PER_SPLIT="${DEBUG_MAX_WINDOWS_PER_SPLIT:-256}"
+DEBUG_STEPS="${DEBUG_STEPS:-100}"
+DEBUG_BASELINE_STEPS="${DEBUG_BASELINE_STEPS:-1}"
+DEBUG_MAX_WINDOWS_PER_SPLIT="${DEBUG_MAX_WINDOWS_PER_SPLIT:-32}"
+DEBUG_BASELINE_MODELS="${DEBUG_BASELINE_MODELS:-train_mean linear_ridge}"
 SWEEP_STEPS="${SWEEP_STEPS:-10000}"
 LONG_STEPS="${LONG_STEPS:-50000}"
 SESSION_PREFIX="${SESSION_PREFIX:-kahlus-algonauts}"
@@ -108,6 +109,7 @@ docker_run_one_gpu() {
     -e DEBUG_STEPS="$DEBUG_STEPS" \
     -e DEBUG_BASELINE_STEPS="$DEBUG_BASELINE_STEPS" \
     -e DEBUG_MAX_WINDOWS_PER_SPLIT="$DEBUG_MAX_WINDOWS_PER_SPLIT" \
+    -e DEBUG_BASELINE_MODELS="$DEBUG_BASELINE_MODELS" \
     -e SWEEP_STEPS="$SWEEP_STEPS" \
     -e LONG_STEPS="$LONG_STEPS" \
     "$DOCKER_IMAGE" bash -lc "$command"
@@ -215,6 +217,7 @@ debug_inner() {
     --suite neural_translation_v1 \
     --paper-mode \
     --seeds 0 1 2 \
+    --baseline-models $DEBUG_BASELINE_MODELS \
     --event-manifest "$PREPARED_ROOT/event_manifest.json" \
     --split-manifest "$PREPARED_ROOT/split_manifest.json" \
     --window-length "$WINDOW_LENGTH" \

@@ -22,6 +22,7 @@ class PreparedSuiteConfig:
     train_steps: int = 5
     require_ci: bool = True
     max_windows_per_split: int | None = None
+    model_ids: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)

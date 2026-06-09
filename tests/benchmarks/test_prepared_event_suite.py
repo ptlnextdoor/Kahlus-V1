@@ -139,6 +139,65 @@ class PreparedEventSuiteTests(unittest.TestCase):
         report = format_prepared_baseline_report(payload)
         self.assertIn("max_windows_per_split=3", report)
 
+    def test_prepared_baseline_suite_can_filter_models_for_debug_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_recordings(n_subjects=9, sessions_per_subject=2, modalities=("fmri",))
+            batches = make_synthetic_event_batches(n_subjects=9, sessions_per_subject=2, modalities=("fmri",), n_time=80)
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                    max_windows_per_split=3,
+                    model_ids=("train_mean", "linear_ridge"),
+                ),
+            )
+
+        ranked_models = {
+            row["model_id"]
+            for task in payload["tasks"].values()
+            for row in task.get("ranking", [])
+        }
+        self.assertEqual(ranked_models, {"train_mean", "linear_ridge"})
+        self.assertNotIn("mlp", ranked_models)
+        self.assertNotIn("pair_operator", ranked_models)
+
+    def test_eval_suite_cli_config_passes_filtered_debug_models(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            out_dir = Path(tmp) / "out"
+            records = make_synthetic_recordings(n_subjects=9, sessions_per_subject=2, modalities=("fmri",))
+            batches = make_synthetic_event_batches(n_subjects=9, sessions_per_subject=2, modalities=("fmri",), n_time=80)
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            result = run_eval_command(
+                EvalCommandConfig(
+                    suite="neural_translation_v1",
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    out_dir=out_dir,
+                    train_steps=1,
+                    max_windows_per_split=3,
+                    baseline_model_ids=("train_mean", "linear_ridge"),
+                )
+            )
+
+            self.assertEqual(result.exit_code, 0)
+            payload = json.loads((out_dir / "prepared_baseline_suite.json").read_text(encoding="utf-8"))
+        ranked_models = {
+            row["model_id"]
+            for task in payload["tasks"].values()
+            for row in task.get("ranking", [])
+        }
+        self.assertEqual(ranked_models, {"train_mean", "linear_ridge"})
+
     def test_synthetic_multimodal_smoke_builds_cross_modal_task(self):
         records = make_synthetic_multimodal_recordings(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
         batches = make_synthetic_multimodal_event_batches(n_subjects=6, sessions_per_subject=1, include_unpaired=True)
