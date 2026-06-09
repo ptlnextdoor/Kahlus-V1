@@ -350,7 +350,7 @@ case "$MODE" in
     fi
     write_status "debug_launched"
     launch_detached "$SESSION_PREFIX-debug" \
-      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_ID='$HOST_GPU_ID' bash scripts/cluster/kahlus_algonauts_trackb.sh debug-docker 2>&1 | tee '$LOG_ROOT/debug.log'"
+      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' PREPARED_ROOT='$PREPARED_ROOT' CONFIG_ROOT='$CONFIG_ROOT' RUN_ROOT='$RUN_ROOT' LOG_ROOT='$LOG_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_ID='$HOST_GPU_ID' bash scripts/cluster/kahlus_algonauts_trackb.sh debug-docker 2>&1 | tee '$LOG_ROOT/debug.log'"
     ;;
   debug-docker)
     raw_root="$(discover_algonauts_root)"
@@ -374,7 +374,7 @@ case "$MODE" in
     fi
     write_status "sweep_seed${SEED}_launched"
     launch_detached "$SESSION_PREFIX-sweep-seed$SEED" \
-      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_IDS='$HOST_GPU_IDS' SEED='$SEED' bash scripts/cluster/kahlus_algonauts_trackb.sh sweep-seed-docker '$SEED' 2>&1 | tee '$LOG_ROOT/sweep_seed${SEED}.log'"
+      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' PREPARED_ROOT='$PREPARED_ROOT' CONFIG_ROOT='$CONFIG_ROOT' RUN_ROOT='$RUN_ROOT' LOG_ROOT='$LOG_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_IDS='$HOST_GPU_IDS' SEED='$SEED' bash scripts/cluster/kahlus_algonauts_trackb.sh sweep-seed-docker '$SEED' 2>&1 | tee '$LOG_ROOT/sweep_seed${SEED}.log'"
     ;;
   sweep-seed-docker)
     raw_root="$(discover_algonauts_root)"
@@ -442,7 +442,7 @@ case "$MODE" in
     fi
     write_status "long_launched"
     launch_detached "$SESSION_PREFIX-long" \
-      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_IDS='$HOST_GPU_IDS' bash scripts/cluster/kahlus_algonauts_trackb.sh long-docker 2>&1 | tee '$LOG_ROOT/long.log'"
+      "cd '$REPO_ROOT' && PERSISTENT_ROOT='$PERSISTENT_ROOT' PREPARED_ROOT='$PREPARED_ROOT' CONFIG_ROOT='$CONFIG_ROOT' RUN_ROOT='$RUN_ROOT' LOG_ROOT='$LOG_ROOT' ALGONAUTS_RAW_ROOT='$raw_root' HOST_GPU_IDS='$HOST_GPU_IDS' bash scripts/cluster/kahlus_algonauts_trackb.sh long-docker 2>&1 | tee '$LOG_ROOT/long.log'"
     ;;
   long-docker)
     raw_root="$(discover_algonauts_root)"
