@@ -459,7 +459,7 @@ case "$MODE" in
       --out "$PERSISTENT_ROOT/strict_gate.json"
     ;;
   debug-gate)
-    python "$REPO_ROOT/scripts/cluster/kahlus_algonauts_trackb_debug_gate.py" \
+    "${PYTHON_BIN:-python3}" "$REPO_ROOT/scripts/cluster/kahlus_algonauts_trackb_debug_gate.py" \
       --root "$PERSISTENT_ROOT" \
       --run-dir "$RUN_ROOT/algonauts_pair_operator_debug_gate" \
       --prepared-root "$PREPARED_ROOT" \
