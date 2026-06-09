@@ -28,10 +28,14 @@ DOCKER_IMAGE="${DOCKER_IMAGE:-pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel}"
 ALGONAUTS_RAW_ROOT="${ALGONAUTS_RAW_ROOT:-}"
 WINDOW_LENGTH="${WINDOW_LENGTH:-128}"
 STRIDE="${STRIDE:-64}"
-DEBUG_STEPS="${DEBUG_STEPS:-100}"
+DEBUG_STEPS="${DEBUG_STEPS:-20}"
 DEBUG_BASELINE_STEPS="${DEBUG_BASELINE_STEPS:-1}"
 DEBUG_MAX_WINDOWS_PER_SPLIT="${DEBUG_MAX_WINDOWS_PER_SPLIT:-32}"
 DEBUG_BASELINE_MODELS="${DEBUG_BASELINE_MODELS:-train_mean linear_ridge}"
+DEBUG_TRAIN_WINDOW_SIZE="${DEBUG_TRAIN_WINDOW_SIZE:-16}"
+DEBUG_TRAIN_STRIDE="${DEBUG_TRAIN_STRIDE:-16}"
+DEBUG_TRAIN_BATCH_SIZE="${DEBUG_TRAIN_BATCH_SIZE:-1}"
+DEBUG_TRAIN_EVAL_BATCH_SIZE="${DEBUG_TRAIN_EVAL_BATCH_SIZE:-1}"
 SWEEP_STEPS="${SWEEP_STEPS:-10000}"
 LONG_STEPS="${LONG_STEPS:-50000}"
 SESSION_PREFIX="${SESSION_PREFIX:-kahlus-algonauts}"
@@ -110,6 +114,10 @@ docker_run_one_gpu() {
     -e DEBUG_BASELINE_STEPS="$DEBUG_BASELINE_STEPS" \
     -e DEBUG_MAX_WINDOWS_PER_SPLIT="$DEBUG_MAX_WINDOWS_PER_SPLIT" \
     -e DEBUG_BASELINE_MODELS="$DEBUG_BASELINE_MODELS" \
+    -e DEBUG_TRAIN_WINDOW_SIZE="$DEBUG_TRAIN_WINDOW_SIZE" \
+    -e DEBUG_TRAIN_STRIDE="$DEBUG_TRAIN_STRIDE" \
+    -e DEBUG_TRAIN_BATCH_SIZE="$DEBUG_TRAIN_BATCH_SIZE" \
+    -e DEBUG_TRAIN_EVAL_BATCH_SIZE="$DEBUG_TRAIN_EVAL_BATCH_SIZE" \
     -e SWEEP_STEPS="$SWEEP_STEPS" \
     -e LONG_STEPS="$LONG_STEPS" \
     "$DOCKER_IMAGE" bash -lc "$command"
@@ -236,8 +244,26 @@ import yaml
 
 path = Path(os.environ["CONFIG_ROOT"]) / "algonauts_pair_operator_debug.materialized.yaml"
 cfg = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-cfg["steps"] = int(os.environ.get("DEBUG_STEPS", "500"))
+cfg["steps"] = int(os.environ.get("DEBUG_STEPS", "20"))
 cfg["run_id"] = cfg["experiment"] = "algonauts_pair_operator_debug_gate"
+cfg["window_size"] = int(os.environ.get("DEBUG_TRAIN_WINDOW_SIZE", "16"))
+cfg["stride"] = int(os.environ.get("DEBUG_TRAIN_STRIDE", "16"))
+cfg["batch_size"] = int(os.environ.get("DEBUG_TRAIN_BATCH_SIZE", "1"))
+cfg["eval_batch_size"] = int(os.environ.get("DEBUG_TRAIN_EVAL_BATCH_SIZE", "1"))
+cfg["gradient_accumulation_steps"] = 1
+cfg["checkpoint_every_steps"] = 0
+cfg["eval_every_steps"] = 0
+model = cfg.setdefault("model", {})
+model["latent_dim"] = 32
+model["n_layers"] = 1
+model["n_heads"] = 4
+model["projection_dim"] = 16
+model["pair_rank"] = 4
+model["pair_top_k"] = 0
+model["network_blocks"] = 1
+model["pair_confidence_max_parcels"] = 0
+model["use_pair_uncertainty"] = False
+model["refinement_steps"] = 0
 path.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
 PY
   A100_PAPER_MODE_EVAL_DIR="$PERSISTENT_ROOT/eval/algonauts_debug_paper_mode" \
