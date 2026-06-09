@@ -49,6 +49,11 @@ path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="
 PY
 }
 
+tmux_session_exists_exact() {
+  local session="$1"
+  tmux list-sessions -F '#S' 2>/dev/null | grep -Fx -- "$session" >/dev/null
+}
+
 debug_gate_passed() {
   python3 - "$PERSISTENT_ROOT/debug_gate.json" <<'PY'
 from __future__ import annotations
@@ -105,7 +110,7 @@ poll_count=0
 write_status "waiting_for_gpus" "waiting for exactly six idle A100 GPUs"
 
 while true; do
-  if tmux has-session -t "$SWEEP_SESSION" 2>/dev/null; then
+  if tmux_session_exists_exact "$SWEEP_SESSION"; then
     write_status "existing_sweep_session" "sweep session already exists; refusing duplicate launch"
     exit 0
   fi
