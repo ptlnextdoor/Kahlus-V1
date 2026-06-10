@@ -356,7 +356,7 @@ PY
 launch_detached() {
   local session=$1
   shift
-  if tmux has-session -t "$session" 2>/dev/null; then
+  if tmux list-sessions -F '#S' 2>/dev/null | grep -Fx -- "$session" >/dev/null; then
     echo "tmux session already exists: $session" >&2
     exit 4
   fi
@@ -454,7 +454,7 @@ case "$MODE" in
     sweep_arm_inner
     ;;
   gate)
-    python "$REPO_ROOT/scripts/cluster/kahlus_algonauts_trackb_gate.py" \
+    "${PYTHON_BIN:-python3}" "$REPO_ROOT/scripts/cluster/kahlus_algonauts_trackb_gate.py" \
       --root "$PERSISTENT_ROOT" \
       --out "$PERSISTENT_ROOT/strict_gate.json"
     ;;
