@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from neurotwin.runtime.distributed import get_distributed_info, maybe_init_process_group
+from neurotwin.runtime.distributed import cleanup_process_group, get_distributed_info, maybe_init_process_group
 
 
 class DistributedTrainingRuntimeTests(unittest.TestCase):
@@ -40,6 +40,21 @@ class DistributedTrainingRuntimeTests(unittest.TestCase):
 
         self.assertFalse(initialized)
         self.assertIsNone(backend)
+
+    def test_cleanup_process_group_logs_and_swallows_cleanup_failures(self):
+        with (
+            mock.patch("neurotwin.runtime.distributed.torch.distributed.is_available", return_value=True),
+            mock.patch("neurotwin.runtime.distributed.torch.distributed.is_initialized", return_value=True),
+            mock.patch(
+                "neurotwin.runtime.distributed.torch.distributed.destroy_process_group",
+                side_effect=RuntimeError("nccl cleanup failed"),
+            ),
+            mock.patch("sys.stderr") as stderr,
+        ):
+            cleanup_process_group()
+
+        stderr.write.assert_called()
+        self.assertIn("distributed_cleanup_failed", str(stderr.write.call_args_list))
 
     def test_train_resume_and_metrics_jsonl(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -11,6 +11,7 @@ from neurotwin.data.event_io import event_manifest_summary, load_event_batches
 from neurotwin.data.manifest_io import load_split_manifest
 from neurotwin.data.prepared_tasks import build_prepared_window_tasks
 from neurotwin.runtime.distributed import (
+    barrier_if_distributed,
     cleanup_process_group,
     get_distributed_info,
     maybe_init_process_group,
@@ -89,6 +90,8 @@ def _run_prepared_training_body(
         distributed_backend=distributed_backend,
     )
     _persist_prepared_training_artifacts(runtime.paths, result, training_state)
+    if distributed_initialized:
+        barrier_if_distributed()
     return result
 
 
@@ -129,6 +132,8 @@ def _train_selected_prepared_tasks(
     first_model_state: dict[str, Any] | None = None
     first_optimizer_state: dict[str, Any] | None = None
     for task_index, task in enumerate(selected_tasks):
+        if runtime.dist_info.is_distributed:
+            barrier_if_distributed()
         artifact = train_single_task(
             task,
             config=config,
@@ -160,6 +165,8 @@ def _train_selected_prepared_tasks(
                     model_state=best_model_state,
                     optimizer_state=best_optimizer_state,
                 )
+        if runtime.dist_info.is_distributed:
+            barrier_if_distributed()
 
     return PreparedTaskTrainingState(
         task_results=tuple(task_results),

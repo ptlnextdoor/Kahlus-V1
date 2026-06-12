@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import sys
 
 import torch
 
@@ -62,7 +63,10 @@ def barrier_if_distributed() -> None:
 
 def cleanup_process_group() -> None:
     if torch.distributed.is_available() and torch.distributed.is_initialized():
-        torch.distributed.destroy_process_group()
+        try:
+            torch.distributed.destroy_process_group()
+        except Exception as exc:  # noqa: BLE001 - cleanup must not mask completed training artifacts.
+            print(f"warning=distributed_cleanup_failed detail={exc}", file=sys.stderr)
 
 
 def wrap_ddp_if_initialized(model: torch.nn.Module, local_rank: int = 0) -> torch.nn.Module:

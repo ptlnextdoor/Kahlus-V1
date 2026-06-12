@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, NotRequired, TypedDict, cast
+from typing import Any, Mapping, TypedDict, cast
+
+try:
+    from typing import NotRequired
+except ImportError:  # pragma: no cover - Python 3.10 compatibility path.
+    from typing_extensions import NotRequired
 
 
 ConfigPath = str | Path

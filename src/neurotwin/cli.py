@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     data_subparsers = data_parser.add_subparsers(dest="data_command", required=True)
     prepare = data_subparsers.add_parser("prepare", help="Prepare manifests and leakage-proof splits")
     prepare.add_argument("--dataset", required=True)
-    prepare.add_argument("--split", required=True, choices=("subject", "session", "site", "dataset", "time"))
+    prepare.add_argument("--split", required=True, choices=("subject", "session", "site", "dataset", "time", "official"))
     prepare.add_argument("--root", default=None)
     prepare.add_argument("--out-dir", default=None)
     prepare.add_argument("--moabb-dataset", default="BNCI2014_001")
@@ -50,6 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     prepare.add_argument("--subjects", nargs="*", type=int, default=None)
     prepare.add_argument("--max-trials", type=int, default=None)
     prepare.add_argument("--sampling-rate", type=float, default=None)
+    prepare.add_argument("--window-length", type=int, default=128)
+    prepare.add_argument("--stride", type=int, default=128)
     prepare.set_defaults(func=_cmd_data_prepare)
     smoke = data_subparsers.add_parser("smoke", help="Run a lightweight MOABB smoke pipeline")
     smoke.add_argument("--dataset", default="moabb", choices=("moabb",))
@@ -180,6 +182,7 @@ def _add_eval_manifest_args(parser: argparse.ArgumentParser) -> None:
 def _add_eval_window_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--window-length", type=int, default=8)
     parser.add_argument("--stride", type=int, default=8)
+    parser.add_argument("--max-windows-per-split", type=int, default=None)
 
 
 def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
@@ -191,6 +194,7 @@ def _add_eval_suite_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--train-steps", type=int, default=5)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--seeds", nargs="*", type=int, default=None)
+    parser.add_argument("--baseline-models", nargs="*", default=None)
     parser.add_argument("--require-windows", action="store_true")
     parser.add_argument("--paper-mode", action="store_true")
     parser.add_argument("--require-pass", action="store_true")
@@ -232,6 +236,7 @@ def _add_eval_demo_args(parser: argparse.ArgumentParser) -> None:
         suite="translation_smoke",
         run=None,
         require_windows=False,
+        max_windows_per_split=None,
         paper_mode=False,
     )
 
@@ -249,6 +254,8 @@ def _cmd_data_prepare(args: argparse.Namespace) -> None:
                 subjects=args.subjects,
                 max_trials=args.max_trials,
                 sampling_rate=args.sampling_rate,
+                window_length=args.window_length,
+                stride=args.stride,
             )
         )
     )
@@ -344,6 +351,8 @@ def _cmd_eval(args: argparse.Namespace) -> None:
             train_steps=getattr(args, "train_steps", 5),
             seed=getattr(args, "seed", 0),
             seeds=tuple(args.seeds) if getattr(args, "seeds", None) is not None else None,
+            baseline_model_ids=tuple(args.baseline_models) if getattr(args, "baseline_models", None) is not None else None,
+            max_windows_per_split=getattr(args, "max_windows_per_split", None),
             require_windows=getattr(args, "require_windows", False),
             paper_mode=getattr(args, "paper_mode", False),
             require_pass=getattr(args, "require_pass", False),

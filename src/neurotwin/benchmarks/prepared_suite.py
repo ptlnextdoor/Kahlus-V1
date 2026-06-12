@@ -42,6 +42,7 @@ def run_prepared_baseline_suite(
         window_length=config.window_length,
         stride=config.stride,
         seed=config.seed,
+        max_windows_per_split=config.max_windows_per_split,
     )
     payload: PreparedBaselineSuitePayload
     if tasks:
@@ -51,6 +52,7 @@ def run_prepared_baseline_suite(
                 tasks,
                 seed=config.seed,
                 train_steps=config.train_steps,
+                model_ids=config.model_ids,
                 scope_status=_scope_status(batches),
                 scope_notes=(
                     "Uses prepared event batches and a recording-level split manifest.",
@@ -84,6 +86,7 @@ def run_prepared_baseline_suite(
         split,
         window_length=config.window_length,
         stride=config.stride,
+        max_windows_per_split=config.max_windows_per_split,
     )
     task_payloads = payload.get("tasks")
     if isinstance(task_payloads, dict):
@@ -97,6 +100,7 @@ def run_prepared_baseline_suite(
         "event_summary": event_manifest_summary(config.event_manifest),
         "window_length": config.window_length,
         "stride": config.stride,
+        "max_windows_per_split": config.max_windows_per_split,
         "skipped_tasks": skipped,
         "stimulus_evidence": _stimulus_evidence_from_tasks(tasks),
     }
@@ -130,6 +134,7 @@ def format_prepared_baseline_report(payload: PreparedBaselineSuitePayload | Prep
                 f"split_manifest={prepared.get('split_manifest')}",
                 f"window_length={prepared.get('window_length')}",
                 f"stride={prepared.get('stride')}",
+                f"max_windows_per_split={prepared.get('max_windows_per_split')}",
                 f"stimulus_evidence={_format_stimulus_evidence(prepared.get('stimulus_evidence'))}",
                 "",
             ]
@@ -211,8 +216,15 @@ def run_prepared_auxiliary_tasks(
     split: SplitManifest,
     window_length: int,
     stride: int,
+    max_windows_per_split: int | None = None,
 ) -> tuple[dict[str, PreparedTaskPayload], list[dict[str, str]]]:
-    windows_by_split = prepared_windows_by_split(batches, split, window_length=window_length, stride=stride)
+    windows_by_split = prepared_windows_by_split(
+        batches,
+        split,
+        window_length=window_length,
+        stride=stride,
+        max_windows_per_split=max_windows_per_split,
+    )
     results: dict[str, PreparedTaskPayload] = {}
     skipped: list[dict[str, str]] = []
     adaptation = _subject_adaptation_from_windows(windows_by_split)

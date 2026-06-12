@@ -12,6 +12,7 @@ dependencies = [
   "numpy>=1.24",
   "PyYAML>=6.0",
   "torch>=2.2",
+  "typing_extensions>=4.5",
 ]
 
 [project.optional-dependencies]
@@ -20,8 +21,13 @@ moabb = [
   "mne>=1.6",
 ]
 bids = []
+algonauts = [
+  "h5py>=3.10",
+]
 h100 = []
-cluster = []
+cluster = [
+  "h5py>=3.10",
+]
 dev = [
   "pytest>=8",
 ]

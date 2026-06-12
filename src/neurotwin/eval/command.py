@@ -42,6 +42,8 @@ class EvalCommandConfig:
     train_steps: int = 5
     seed: int = 0
     seeds: tuple[int, ...] | None = None
+    max_windows_per_split: int | None = None
+    baseline_model_ids: tuple[str, ...] | None = None
     require_windows: bool = False
     paper_mode: bool = False
     require_pass: bool = False
@@ -289,6 +291,8 @@ def _prepared_suite_config(
         stride=config.stride,
         seed=seed,
         train_steps=config.train_steps,
+        max_windows_per_split=config.max_windows_per_split,
+        model_ids=config.baseline_model_ids,
     )
 
 

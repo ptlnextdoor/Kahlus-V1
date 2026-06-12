@@ -14,6 +14,9 @@ def main() -> int:
     parser.add_argument("--template", required=True)
     parser.add_argument("--prepared-root", required=True)
     parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--steps", type=int, default=None)
+    parser.add_argument("--include", nargs="*", default=None, help="Optional allowlist of ablation variant names.")
     args = parser.parse_args()
 
     template = Path(args.template)
@@ -39,6 +42,7 @@ def main() -> int:
     variants = payload.get("ablation_variants")
     if not isinstance(variants, list) or not variants:
         raise SystemExit("template must define non-empty ablation_variants")
+    include = set(args.include or [])
 
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
@@ -48,10 +52,18 @@ def main() -> int:
         name = str(variant.get("name", "")).strip()
         if not name or not all(char.isalnum() or char in "._-" for char in name):
             raise SystemExit(f"invalid ablation variant name: {name!r}")
+        if include and name not in include:
+            continue
         rendered = deepcopy(payload)
         rendered.pop("ablation_variants", None)
         rendered["experiment"] = name
         rendered["run_id"] = name
+        if args.seed is not None:
+            rendered["seed"] = int(args.seed)
+            rendered["experiment"] = f"{name}_seed{args.seed}"
+            rendered["run_id"] = f"{name}_seed{args.seed}"
+        if args.steps is not None:
+            rendered["steps"] = int(args.steps)
         data = rendered.get("data") if isinstance(rendered.get("data"), dict) else {}
         rendered["data"] = data
         data["event_manifest"] = str(event_manifest)
@@ -62,9 +74,13 @@ def main() -> int:
         if "/path/to/" in text:
             raise SystemExit(f"materialized config for {name} still contains placeholder path")
         path = out_dir / f"{name}.materialized.yaml"
+        if args.seed is not None:
+            path = out_dir / f"{name}.seed{args.seed}.materialized.yaml"
         path.write_text(text, encoding="utf-8")
         written.append(path)
 
+    if not written:
+        raise SystemExit("no ablation configs were written; check --include names")
     for path in written:
         print(path)
     return 0
