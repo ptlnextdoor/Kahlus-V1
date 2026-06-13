@@ -93,10 +93,26 @@ same smoke verdicts. See `docs/research/falsification_core.md`.
 
 - One PR per sprint, single-purpose. Refactors get their own PR (do not fold into a feature PR).
 - Pattern: build on a fresh branch off updated `main` → open PR → human review → merge commit
-  (never squash; the sprint commit is a research checkpoint) → tag the merge commit
+  (never squash; the sprint commits are research checkpoints) → tag the merge commit
   `kahlus-sprint<N>-<slug>`.
 - Create branches with an explicit upstream (`git push -u origin <branch>`); branches made via
   `git checkout -b <b> origin/main` track `origin/main`, so a bare `git push` would target main.
+
+## Commit granularity (Sprint 1C onward)
+
+Sprints 0–1B.5 landed as one fat code commit each (e.g. Sprint 0 = 56 files in `dbb05be`). That
+is hard to review and bisect. **From Sprint 1C on, split each sprint into small logical commits.**
+
+- **One commit per logical unit** — a module/concern + its test together, not a sprint-wide blob.
+  Target ~5–8 commits per sprint.
+- **Conventional-commit prefixes**: `em:`, `v3:`, `v2:`, `gates:`, `tests:`, `docs:`, `chore:`.
+  Example Sprint 1C: `em: artifact severity score` · `em: channel/frequency contamination map` ·
+  `em: html/markdown report generator` · `em: wire report into stage 0 script` ·
+  `tests: em report generator` · `docs: em report notes`.
+- **Merge-commit, never squash** — so the small commits survive on `main`.
+- The `graphify-out/` refresh is always its own separate `chore:` commit (never mixed with code).
+- **Do not rewrite merged history** to re-split old fat commits — that breaks tags + merged-PR
+  refs. Granularity applies forward only.
 
 ## Graphify discipline
 
