@@ -31,6 +31,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--train-steps", type=int, default=40)
     parser.add_argument("--n-episodes", type=int, default=48)
+    parser.add_argument("--no-benchmark", action="store_true", help="Skip the v3 operator-recovery benchmark")
     args = parser.parse_args()
 
     cfg = SyntheticWorldConfig(seed=args.seed, n_episodes=args.n_episodes)
@@ -46,6 +47,22 @@ def main() -> int:
     print(f"failure_reasons={result.failure_reasons}")
     print(f"scientific_claim_allowed={result.evidence_gate['scientific_claim_allowed']}")
     print(f"data_card={data_card_path}")
+
+    if not args.no_benchmark:
+        from neurotwin.transition_gym import run_v3_benchmark, write_v3_report
+
+        # Use an adequate episode budget for operator recovery (the CLI default is small).
+        bench = run_v3_benchmark(seed=args.seed)
+        bench_paths = write_v3_report(args.out_dir, bench)
+        print("--- v3 operator-recovery benchmark ---")
+        for outcome in bench.outcomes:
+            print(f"  {'PASS' if outcome.passed else 'FAIL'} {outcome.name}")
+        leaders = sorted(bench.leaderboard.items(), key=lambda kv: kv[1]["mse"])
+        print("  leaderboard(mse):", {m: round(v["mse"], 4) for m, v in leaders})
+        print(f"falsification_passed={bench.passed} scientific_claim_allowed={bench.gate['scientific_claim_allowed']}")
+        print(f"ktm_beats_baselines={bench.ktm_beats_baselines} (untrained KTM scaffold; reported honestly)")
+        print(f"v3_failure_reasons={bench.failure_reasons}")
+        print(f"v3_report={bench_paths['report']} v3_evidence_gate={bench_paths['evidence_gate']}")
     return 0
 
 
