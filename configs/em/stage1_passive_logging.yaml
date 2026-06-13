@@ -1,0 +1,30 @@
+experiment: em_stage1_passive_logging
+branch: em
+description: >-
+  Kahlus-EM Stage 1 (passive logging analysis). NO-HUMAN. Describes the room/device/environment
+  logging schema and an offline geomagnetic context source. The logger only records values the
+  operator supplies; it accesses no hardware. The fetcher is OFFLINE ONLY (no network). No claim.
+claim_scope: em_artifact_audit_no_human
+seed: 0
+
+logging:
+  fields:
+    - timestamp
+    - room_id
+    - device_id
+    - temperature_c
+    - humidity_pct
+    - mains_freq_hz
+    - line_noise_uv
+    - nearby_devices
+    - geomagnetic_index
+  example_entries: 6
+
+geomagnetic:
+  # Offline only. Provide a path to a previously-downloaded JSON file, or leave null.
+  local_source: null
+
+boundaries:
+  involves_human: false
+  network_access: false
+  stimulation: false
