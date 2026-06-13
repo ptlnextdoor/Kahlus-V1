@@ -20,4 +20,14 @@ __all__ = [
     "DualFieldCompiler",
     "DualFieldRollout",
     "simulate_dual_field",
+    "run_v2_benchmark",
+    "write_v2_report",
 ]
+
+
+def __getattr__(name):  # lazy to avoid importing torch-free benchmark deps at package load
+    if name in {"run_v2_benchmark", "write_v2_report"}:
+        from neurotwin.models.dual_field import benchmark
+
+        return getattr(benchmark, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -45,6 +45,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--train-steps", type=int, default=60)
     parser.add_argument("--window", type=int, default=4)
+    parser.add_argument("--no-benchmark", action="store_true", help="Skip the v2 falsification benchmark")
     args = parser.parse_args()
 
     if args.config:
@@ -63,6 +64,20 @@ def main() -> int:
     print(f"failure_reasons={result.failure_reasons}")
     print(f"scientific_claim_allowed={result.evidence_gate['scientific_claim_allowed']}")
     print(f"evidence_gate={paths['evidence_gate']}")
+
+    if not args.no_benchmark:
+        from neurotwin.models.dual_field.benchmark import run_v2_benchmark, write_v2_report
+
+        # Use the YAML config when provided; otherwise let the benchmark use its adequate
+        # default data budget (the CLI default config is the tiny baseline-sweep size).
+        bench = run_v2_benchmark(config if args.config else None, seed=seed)
+        bench_paths = write_v2_report(args.out_dir, bench)
+        print("--- v2 falsification benchmark ---")
+        for outcome in bench.outcomes:
+            print(f"  {'PASS' if outcome.passed else 'FAIL'} {outcome.name}")
+        print(f"falsification_passed={bench.passed}")
+        print(f"v2_failure_reasons={bench.failure_reasons}")
+        print(f"v2_report={bench_paths['report']} v2_evidence_gate={bench_paths['evidence_gate']}")
     return 0
 
 

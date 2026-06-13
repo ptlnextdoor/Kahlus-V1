@@ -8,7 +8,7 @@ falsification scaffolding only** — no scientific victory, no A100 jobs.
 | Lane | State | This sprint |
 |------|-------|-------------|
 | **v1** | **built / evidenced — FREEZE** | Untouched. Current evidence-gated EEG forecasting result lane is preserved. Do not mix v2/v3/EM into the v1 paper or result path. |
-| **v2** | **proposed bridge — synthetic only** | Local synthetic dual-field scaffold + tests + baseline sweep. No real data, no claim. |
+| **v2** | **proposed bridge — synthetic falsifier PASSED** | Sprint 0 scaffold + Sprint 1A falsification benchmark. On the synthetic system the dual-field split is recoverable and meaningful (fast/slow latent recovery, EEG↦N / BOLD↦H dependence, lagged neural→hemo path, two-field beats one-field, stable long rollout). Narrow synthetic claim (`synthetic_dual_field_recovery`) passes its gate with adequate data; degenerate/tiny data correctly fails. Still synthetic only, no real data. |
 | **v3** | **proposed moonshot — synthetic Transition Gym first** | Synthetic Transition Gym + minimal KTM scaffolding for local tests. No real data, no claim. |
 | **EM** | **v3 side module — artifact audit first** | Stage 0 no-human artifact-audit + passive-logging scaffolds only. |
 
