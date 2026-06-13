@@ -1,0 +1,31 @@
+experiment: em_stage0_artifact_audit
+branch: em
+description: >-
+  Kahlus-EM Stage 0. NO-HUMAN, SYNTHETIC artifact audit. Asks whether environment/device
+  changes affect EEG hardware even without a brain, using phantom/dummy recordings. NO
+  stimulation, NO high voltage, NO plasma/coils, NO clinical claim. The evidence gate blocks
+  any scientific claim.
+claim_scope: em_artifact_audit_no_human
+seed: 0
+
+recording:
+  fs_hz: 256.0
+  n_channels: 8
+  n_samples: 2048
+  line_freq_hz: 60.0
+
+conditions:
+  baseline:
+    condition_label: baseline
+    em_source: none
+    field_strength_arb: 0.0
+  perturbed:
+    condition_label: perturbed_environment
+    em_source: synthetic_field
+    field_strength_arb: 0.4
+
+boundaries:
+  involves_human: false
+  stimulation: false
+  high_voltage: false
+  clinical_claim: false

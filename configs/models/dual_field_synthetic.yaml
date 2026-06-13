@@ -1,0 +1,44 @@
+experiment: dual_field_synthetic
+branch: v2
+description: >-
+  PROPOSED / SYNTHETIC ONLY. Local dual-field falsification scaffold (fast neural field N
+  with EEG-like readout, slow hemodynamic field H with BOLD/fNIRS-like readout). Used for
+  shape/stability/reproducibility checks and baseline comparison. No A100. No scientific claim.
+claim_scope: synthetic_dual_field_recovery
+seed: 0
+
+dual_field:
+  n_samples: 64
+  time_steps: 32
+  neural_dim: 8
+  hemo_dim: 6
+  eeg_channels: 5
+  bold_channels: 4
+  stimulus_dim: 3
+  dt: 0.1
+  decay_low: 0.6
+  decay_high: 1.4
+  coupling_rank: 2
+  coupling_radius: 0.9
+  residual_scale: 0.05
+  stimulus_scale: 0.3
+  rho: 0.9
+  hemo_lag: 4
+  state_clip: 50.0
+  noise_scale: 0.02
+
+task:
+  # Next-step forecasting of the EEG-like observation from the current EEG + stimulus window.
+  name: dual_field_eeg_forecasting
+  target: eeg
+
+baselines:
+  models:
+    - ridge
+    - autoregressive_ridge
+    - mlp
+    - transformer
+    - ssm_fallback
+    - nfc
+  train_steps: 60
+  test_fraction: 0.25
