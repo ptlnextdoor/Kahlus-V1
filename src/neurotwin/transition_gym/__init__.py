@@ -44,7 +44,17 @@ __all__ = [
     "build_data_card",
     "trajectory_metrics",
     "mean_commutator_gap",
+    "run_v3_benchmark",
+    "write_v3_report",
 ]
+
+
+def __getattr__(name):  # lazy to avoid a circular import with the benchmark module
+    if name in {"run_v3_benchmark", "write_v3_report"}:
+        from neurotwin.transition_gym import benchmark
+
+        return getattr(benchmark, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 @dataclass(frozen=True)
