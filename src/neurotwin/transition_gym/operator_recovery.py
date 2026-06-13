@@ -10,24 +10,18 @@ real brain-state recovery or control is implied.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from itertools import permutations
-from typing import Any
 
 import numpy as np
 
+from neurotwin.falsification import Outcome
 from neurotwin.numerics import ignore_spurious_matmul_warnings
 from neurotwin.scoring.metrics import r2_score
 from neurotwin.transition_gym import TransitionGymBundle
 from neurotwin.transition_gym.metrics import mean_commutator_gap
 
-
-@dataclass(frozen=True)
-class V3Outcome:
-    name: str
-    passed: bool
-    detail: dict[str, Any]
-    reason: str = ""
+# Outcome type lives in the shared falsification core; alias kept for local readability.
+V3Outcome = Outcome
 
 
 def _pre_states(bundle: TransitionGymBundle) -> np.ndarray:
