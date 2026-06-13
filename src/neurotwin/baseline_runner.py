@@ -15,11 +15,15 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 import torch
 from torch import nn
+
+if TYPE_CHECKING:
+    from neurotwin.models.dual_field import DualFieldConfig
+    from neurotwin.transition_gym import SyntheticWorldConfig
 
 from neurotwin.gates import evaluate_gate, write_evidence_gate
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline
@@ -84,13 +88,26 @@ def _last_step(x: np.ndarray) -> np.ndarray:
     return x[:, -1, :]
 
 
-def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+    """Canonical metric bundle (mse/mae/r2/pearson_r) for a regression prediction."""
+
     return {
         "mse": mse(y_true, y_pred),
         "mae": mae(y_true, y_pred),
         "r2": r2_score(y_true, y_pred),
         "pearson_r": pearsonr(np.asarray(y_true).ravel(), np.asarray(y_pred).ravel()),
     }
+
+
+def retrieval_knn_predict(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, k: int = 5) -> np.ndarray:
+    """Dependency-free retrieval baseline: mean target of the k nearest train rows by L2."""
+
+    xt = np.asarray(x_train, dtype=np.float64).reshape(x_train.shape[0], -1)
+    xe = np.asarray(x_test, dtype=np.float64).reshape(x_test.shape[0], -1)
+    y_train = np.asarray(y_train, dtype=np.float64)
+    k = max(1, min(int(k), xt.shape[0]))
+    preds = [y_train[np.argsort(np.linalg.norm(xt - q, axis=1))[:k]].mean(axis=0) for q in xe]
+    return np.asarray(preds, dtype=np.float64)
 
 
 def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, alpha: float = 1.0) -> np.ndarray:
@@ -125,6 +142,8 @@ def _run_single_model(model_id: str, task: RegressionTask, train_steps: int, see
     channels_in = task.x_train.shape[-1]
     channels_out = task.y_train.shape[-1]
 
+    if model_id == "retrieval_knn":
+        return retrieval_knn_predict(task.x_train, task.y_train, task.x_test)
     if model_id == "ridge":
         return _fit_ridge(_last_step(task.x_train), task.y_train, _last_step(task.x_test), alpha=1.0)
     if model_id == "autoregressive_ridge":
@@ -160,7 +179,7 @@ def _run_single_model(model_id: str, task: RegressionTask, train_steps: int, see
     raise RuntimeError(f"unknown baseline model_id: {model_id!r}")
 
 
-def dual_field_regression_task(config: Any = None, *, window: int = 4) -> RegressionTask:
+def dual_field_regression_task(config: "DualFieldConfig | None" = None, *, window: int = 4) -> RegressionTask:
     """Build a leakage-safe next-step EEG forecasting task from the v2 dual-field system.
 
     Windows from a given sequence stay within a single train/test split (split by sequence
@@ -202,7 +221,7 @@ def dual_field_regression_task(config: Any = None, *, window: int = 4) -> Regres
     )
 
 
-def transition_gym_regression_task(config: Any = None) -> RegressionTask:
+def transition_gym_regression_task(config: "SyntheticWorldConfig | None" = None) -> RegressionTask:
     """Build a response-profile forecasting task from the v3 Transition Gym.
 
     Inputs are history EEG windows; targets are the flattened response profile. Train/test
@@ -255,7 +274,7 @@ def run_baselines(
                 pred = _run_single_model(model_id, task, train_steps, seed)
                 if pred.shape != task.y_test.shape:
                     raise ValueError(f"prediction shape {pred.shape} != target {task.y_test.shape}")
-                model_metrics = _metrics(task.y_test, pred)
+                model_metrics = regression_metrics(task.y_test, pred)
                 if not all(np.isfinite(v) for v in model_metrics.values()):
                     raise ValueError("non-finite metric produced")
                 metrics_by_model[model_id] = model_metrics

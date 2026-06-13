@@ -8,10 +8,9 @@ uses a linear (ridge) decoder under a leakage-safe sequence split, and reports h
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import numpy as np
 
+from neurotwin.falsification import Outcome
 from neurotwin.models.baselines import NumpyRidgeBaseline
 from neurotwin.models.dual_field.config import DualFieldConfig
 from neurotwin.models.dual_field.coupling import hrf_lag_weights
@@ -67,12 +66,8 @@ def _ridge_eval(x_train, y_train, x_test, y_test, alpha: float = 1.0) -> dict[st
     }
 
 
-@dataclass(frozen=True)
-class DiagnosticOutcome:
-    name: str
-    passed: bool
-    detail: dict[str, float]
-    reason: str = ""
+# Outcome type lives in the shared falsification core; alias kept for local readability.
+DiagnosticOutcome = Outcome
 
 
 def fast_latent_recovery(rollout: DualFieldRollout, window: int = 4, threshold: float = 0.5) -> DiagnosticOutcome:

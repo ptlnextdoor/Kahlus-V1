@@ -20,15 +20,13 @@ from typing import Any
 
 import numpy as np
 
-from neurotwin.baseline_runner import run_baselines, transition_gym_regression_task
-from neurotwin.gates import evaluate_gate, write_evidence_gate
+from neurotwin.baseline_runner import regression_metrics, run_baselines, transition_gym_regression_task
+from neurotwin.falsification import Outcome, assemble_gate, build_report, write_report
 from neurotwin.models.ktm import KTM, KTMConfig
 from neurotwin.numerics import ignore_spurious_matmul_warnings
-from neurotwin.repro import write_json
-from neurotwin.scoring.metrics import mae, mse, pearsonr, r2_score, rank_models
+from neurotwin.scoring.metrics import rank_models
 from neurotwin.transition_gym import SyntheticWorldConfig, build_transition_gym
 from neurotwin.transition_gym.operator_recovery import (
-    V3Outcome,
     heldout_composition_recovery,
     non_commutativity_score,
     operator_recovery,
@@ -36,7 +34,9 @@ from neurotwin.transition_gym.operator_recovery import (
 )
 
 CLAIM_SCOPE = "synthetic_transition_operator_recovery"
-LEADERBOARD_BASELINES = ("ridge", "autoregressive_ridge", "mlp", "transformer", "ssm_fallback")
+# retrieval_knn is a registered baseline in the shared runner, so the leaderboard is one call.
+LEADERBOARD_BASELINES = ("ridge", "autoregressive_ridge", "mlp", "transformer", "ssm_fallback", "retrieval_knn")
+REQUIRED_DIAGNOSTICS = ("operator_recovery", "heldout_composition_recovery", "non_commutativity")
 
 # Adequate episode budget so operator recovery is well-posed (train split > state_dim+1).
 DEFAULT_V3_BENCHMARK_CONFIG = SyntheticWorldConfig(n_episodes=96)
@@ -46,7 +46,7 @@ DEFAULT_V3_BENCHMARK_CONFIG = SyntheticWorldConfig(n_episodes=96)
 class V3BenchmarkResult:
     config: SyntheticWorldConfig
     seed: int
-    outcomes: list[V3Outcome]
+    outcomes: list[Outcome]
     leaderboard: dict[str, dict[str, float]]
     ranking: list[dict[str, Any]]
     ktm_beats_baselines: bool
@@ -55,20 +55,15 @@ class V3BenchmarkResult:
     failure_reasons: list[str]
 
 
-def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
-    return {"mse": mse(y_true, y_pred), "mae": mae(y_true, y_pred),
-            "r2": r2_score(y_true, y_pred), "pearson_r": pearsonr(y_true.ravel(), y_pred.ravel())}
+def _score_ktm(bundle, cfg, task) -> dict[str, float]:
+    """Score the untrained KTM scaffold on the same response-profile task (informational)."""
 
-
-def _retrieval_knn(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, k: int = 5) -> np.ndarray:
-    xt = np.asarray(x_train, dtype=np.float64).reshape(x_train.shape[0], -1)
-    xe = np.asarray(x_test, dtype=np.float64).reshape(x_test.shape[0], -1)
-    k = max(1, min(k, xt.shape[0]))
-    preds = []
-    for q in xe:
-        idx = np.argsort(np.linalg.norm(xt - q, axis=1))[:k]
-        preds.append(np.asarray(y_train, dtype=np.float64)[idx].mean(axis=0))
-    return np.asarray(preds, dtype=np.float64)
+    with ignore_spurious_matmul_warnings():
+        ktm = KTM(KTMConfig(seed=int(cfg.seed), history_len=cfg.history_len, eeg_channels=cfg.eeg_channels,
+                            n_perturbations=cfg.n_perturbations, horizon=cfg.horizon))
+        test_idx = np.asarray(bundle.splits.test_episodes, dtype=int)
+        pred = ktm.predict_response_profile(np.asarray(bundle.history_eeg)[test_idx])
+        return regression_metrics(task.y_test, pred.reshape(pred.shape[0], -1))
 
 
 def run_v3_benchmark(
@@ -83,61 +78,40 @@ def run_v3_benchmark(
     cfg = cfg.validate()
     bundle = build_transition_gym(cfg)
 
-    # Leaderboard: shared baselines + retrieval-kNN + (untrained) KTM, scored on the same task.
+    # Leaderboard: shared baselines (incl. retrieval_knn) in one runner call, plus the untrained KTM.
     task = transition_gym_regression_task(cfg)
     base = run_baselines(task, models=LEADERBOARD_BASELINES, train_steps=train_steps, seed=int(cfg.seed))
     leaderboard: dict[str, dict[str, float]] = dict(base.metrics_by_model)
-
-    with ignore_spurious_matmul_warnings():
-        retrieval_pred = _retrieval_knn(task.x_train, task.y_train, task.x_test)
-        leaderboard["retrieval_knn"] = _metrics(task.y_test, retrieval_pred)
-
-        ktm = KTM(KTMConfig(seed=int(cfg.seed), history_len=cfg.history_len, eeg_channels=cfg.eeg_channels,
-                            n_perturbations=cfg.n_perturbations, horizon=cfg.horizon))
-        test_idx = np.asarray(bundle.splits.test_episodes, dtype=int)
-        ktm_pred = ktm.predict_response_profile(np.asarray(bundle.history_eeg)[test_idx])
-        ktm_pred = ktm_pred.reshape(ktm_pred.shape[0], -1)
-        leaderboard["ktm"] = _metrics(task.y_test, ktm_pred)
+    leaderboard["ktm"] = _score_ktm(bundle, cfg, task)
 
     ranking_rows = rank_models(leaderboard, metric="mse", higher_is_better=False)
     ranking = [{"model_id": r.model_id, "metric": r.metric, "value": r.value, "rank": r.rank} for r in ranking_rows]
     best_baseline_mse = min(leaderboard[m]["mse"] for m in leaderboard if m != "ktm")
     ktm_beats_baselines = bool(leaderboard["ktm"]["mse"] < best_baseline_mse)
 
-    # Diagnostics.
-    outcomes = [
+    outcomes: list[Outcome] = [
         operator_recovery(bundle),
         heldout_composition_recovery(bundle),
         non_commutativity_score(bundle),
-        response_profile_distances(bundle),  # informational
+        response_profile_distances(bundle),  # informational, not gate-critical
     ]
-    by_name = {o.name: o for o in outcomes}
-    required = ("operator_recovery", "heldout_composition_recovery", "non_commutativity")
-    required_pass = all(by_name[n].passed for n in required)
-    diagnostic_reasons = [f"{by_name[n].name}: {by_name[n].reason}" for n in required
-                          if not by_name[n].passed and by_name[n].reason]
-
     try:
         bundle.splits.assert_no_episode_leakage()
         bundle.splits.assert_no_composition_leakage()
         split_audit_passed = True
     except ValueError:
         split_audit_passed = False
-        diagnostic_reasons.append("split audit failed")
 
     leaderboard_finite = all(np.isfinite(list(m.values())).all() for m in leaderboard.values())
-    diag_finite = all(_outcome_finite(o) for o in outcomes)
-    finite = bool(leaderboard_finite and diag_finite)
-
-    gate = evaluate_gate(
+    gate = assemble_gate(
         branch="v3",
         dataset="transition_gym_synthetic",
+        claim_scope=CLAIM_SCOPE,
+        outcomes=outcomes,
+        required=REQUIRED_DIAGNOSTICS,
         split_audit_passed=split_audit_passed,
         baseline_table_present=bool(leaderboard),
-        finite_metrics=finite,
-        calibration_checked=required_pass,
-        claim_scope=CLAIM_SCOPE,
-        extra_failure_reasons=diagnostic_reasons,
+        extra_finite=leaderboard_finite,
     )
     return V3BenchmarkResult(
         config=cfg, seed=int(cfg.seed), outcomes=outcomes, leaderboard=leaderboard,
@@ -146,43 +120,26 @@ def run_v3_benchmark(
     )
 
 
-def _outcome_finite(outcome: V3Outcome) -> bool:
-    flat: list[float] = []
-    for value in outcome.detail.values():
-        if isinstance(value, dict):
-            flat.extend(float(v) for v in value.values())
-        elif isinstance(value, (int, float)):
-            flat.append(float(value))
-    return bool(np.isfinite(flat).all()) if flat else True
-
-
 def benchmark_report(result: V3BenchmarkResult) -> dict[str, Any]:
     by_name = {o.name: o for o in result.outcomes}
-    return {
-        "schema": "kahlus.v3_transition_gym_benchmark.v1",
-        "branch": "v3",
-        "claim_status": "synthetic_scaffold_only",
-        "claim_scope": CLAIM_SCOPE,
-        "seed": result.seed,
-        "config": result.config.__dict__,
-        "diagnostics": [{"name": o.name, "passed": o.passed, "detail": o.detail, "reason": o.reason}
-                        for o in result.outcomes],
-        "baseline_leaderboard": result.leaderboard,
-        "ranking": result.ranking,
-        "operator_recovery_scores": by_name["operator_recovery"].detail,
-        "heldout_composition_scores": by_name["heldout_composition_recovery"].detail,
-        "non_commutativity_gap": by_name["non_commutativity"].detail,
-        "ktm_beats_baselines": result.ktm_beats_baselines,
-        "falsification_passed": result.passed,
-        "scientific_claim_allowed": bool(result.gate["scientific_claim_allowed"]),
-        "failure_reasons": result.failure_reasons,
-        "evidence_gate": result.gate,
-    }
+    return build_report(
+        schema="kahlus.v3_transition_gym_benchmark.v1",
+        branch="v3",
+        claim_scope=CLAIM_SCOPE,
+        seed=result.seed,
+        config=result.config.__dict__,
+        outcomes=result.outcomes,
+        gate=result.gate,
+        extra={
+            "baseline_leaderboard": result.leaderboard,
+            "ranking": result.ranking,
+            "operator_recovery_scores": by_name["operator_recovery"].detail,
+            "heldout_composition_scores": by_name["heldout_composition_recovery"].detail,
+            "non_commutativity_gap": by_name["non_commutativity"].detail,
+            "ktm_beats_baselines": result.ktm_beats_baselines,
+        },
+    )
 
 
 def write_v3_report(out_dir: str | Path, result: V3BenchmarkResult) -> dict[str, Path]:
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    report_path = write_json(out / "v3_benchmark_report.json", benchmark_report(result))
-    gate_path = write_evidence_gate(out / "v3_evidence_gate.json", result.gate)
-    return {"report": report_path, "evidence_gate": gate_path}
+    return write_report(out_dir, report=benchmark_report(result), gate=result.gate, prefix="v3")
