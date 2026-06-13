@@ -44,6 +44,7 @@ NARROW_CLAIM_SCOPES: frozenset[str] = frozenset(
         "synthetic_transition_operator_recovery",
         "synthetic_ktm_recovery",
         "em_artifact_audit_no_human",
+        "em_stage0_artifact_audit",
     }
 )
 
