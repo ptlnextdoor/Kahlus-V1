@@ -1,0 +1,125 @@
+# Kahlus v2/v3/EM Sprint Ledger
+
+Canonical, durable record of the v2/v3/EM synthetic-falsification program. Read this first when
+picking up a fresh branch — it is the context capsule that survives branch deletion. Lives on
+`main`, kept current as sprints land.
+
+> **Locked wording.** A sprint "falsifier passed" means a *synthetic* benchmark survived honest
+> tests on synthetic data. It does **NOT** mean Kahlus v2/v3 is validated on real brain data, nor
+> any clinical/control/consciousness claim. "v2/v3 deserves life" = the synthetic branch earns
+> further synthetic work, nothing more.
+
+## Lane map
+
+| Lane | Meaning | State |
+|------|---------|-------|
+| **v1** | built, evidence-gated EEG/fMRI stack (NFC, pair-operator, leakage splits) | **FROZEN** — never modified by v2/v3/EM work |
+| **v2** | dual-field bridge (fast neural field N + slow hemodynamic field H) | proposed; **synthetic falsifier PASSED** (Sprint 1A) |
+| **v3** | Transition Gym + KTM (hidden operators, perturbation algebra) | proposed; **synthetic operator-recovery falsifier PASSED** (Sprint 1B) |
+| **EM** | Kahlus-EM no-human artifact audit (v3 side module) | Stage 0 scaffold only; report generator = Sprint 1C (next) |
+| **v2.5** | Orch-OR / quantum-biology substrate motivation | **doc-only, parked** (Issue #15); gated behind v2 usefulness |
+
+## Sprint trail (all merged to `main`)
+
+| Sprint | PR | Tag | Sprint commit | Merge commit | Tests | Result |
+|--------|----|-----|---------------|--------------|-------|--------|
+| **0 — scaffolds** | #13 | `kahlus-sprint0-scaffolds` | `dbb05be` | `a0d2eaa` | 337 OK | infra only, all gates block claims |
+| **1A — v2 falsifier** | #16 | `kahlus-sprint1a-v2-dual-field` | `70f246f` | `a538f29` | 348 OK | v2 falsifier **PASSED** |
+| **1B — v3 falsifier** | #17 | `kahlus-sprint1b-v3-operator-recovery` | `c8f9917` | `4156778` | 361 OK | v3 falsifier **PASSED**; KTM loses to baselines (honest) |
+| **1B.5 — falsification core** | #18 | `kahlus-sprint1b5-falsification-core` | `354f5a3` | `1eaca2f` | 369 OK | behavior-preserving dedup |
+
+### Sprint 0 — v2/v3/EM synthetic scaffolds + unified evidence gate
+Delivered the skeleton (infrastructure only, every gate blocks claims by default):
+- `src/neurotwin/gates/` — branch-aware unified evidence gate (dossier JSON schema), separate
+  from v1 `reports/evidence_gate.py`.
+- `src/neurotwin/models/dual_field/` — v2 synthetic fast/slow dual-field system.
+- `src/neurotwin/transition_gym/` + `src/neurotwin/models/ktm/` — v3 gym + KTM scaffold.
+- `src/neurotwin/baseline_runner.py` — shared baseline sweep (reuses existing baselines/metrics).
+- `src/neurotwin/em/` — Kahlus-EM Stage 0 no-human artifact audit + passive logging.
+- `src/neurotwin/numerics.py` — suppress spurious Apple-Accelerate matmul FP warnings (values unchanged).
+- scripts `run_*.py`, configs `configs/{models,em}/`, `docs/roadmap/`, deterministic seeded tests.
+- Filed Issue #14 (Sprint 1 hardening) + Issue #15 (Orch-OR v2.5, doc-only).
+
+### Sprint 1A — harden v2 dual-field into a falsifier
+`src/neurotwin/models/dual_field/diagnostics.py` + `benchmark.py`. Seven diagnostics, all PASS
+(seed-robust, adequate data budget): fast latent recovery (N), slow latent recovery (H),
+EEG↦fast-field dependence, BOLD↦slow-field dependence, lag recovery (BOLD is delayed not
+instantaneous), one-field vs two-field forecast (structure beats single-timescale without
+regressing the slow channel), long-rollout stability. Gate allows narrow scope
+`synthetic_dual_field_recovery`. Degenerate/tiny data correctly FAILS (no forced win).
+
+### Sprint 1B — harden v3 Transition Gym operator recovery
+`src/neurotwin/transition_gym/operator_recovery.py` + `benchmark.py`. Falsifier PASSED:
+hidden-operator recovery (recover `M_k` from latent transitions vs known truth), held-out AB/BA
+composition recovery (single-op estimates compose to unseen pairs), explicit non-commutativity
+score, response-profile distances (trajectory / operator-induced separability / subject-transfer).
+Baseline leaderboard incl. `retrieval_knn` + untrained KTM; **KTM loses to ridge** —
+`ktm_beats_baselines=false`, reported honestly. This validates the **benchmark / operator-recovery
+machinery, NOT v3 model superiority**. Gate scope `synthetic_transition_operator_recovery`.
+No-cheat property verified: hidden operators used only for grading, never as model input.
+
+### Sprint 1B.5 — extract shared falsification core (behavior-preserving)
+Thermo-nuclear review of #17 found v2+v3 hand-copied the same harness. Extracted neutral
+`src/neurotwin/falsification.py` (`Outcome`, `outcomes_finite`, `assemble_gate`, `build_report`,
+`write_report`). v2+v3 migrated; duplicate Outcome types aliased; two divergent finite walkers
+collapsed to one; canonical `regression_metrics` replaces a duplicate `_metrics`; `retrieval_knn`
+registered in `baseline_runner`; task-config `Any` hints tightened. Same tests, same gate JSON,
+same smoke verdicts. See `docs/research/falsification_core.md`.
+
+## Roadmap ahead (not yet built)
+
+- **Sprint 1C — EM Stage 0 report generator.** Prettier artifact report, artifact severity score,
+  channel/frequency contamination map, HTML/Markdown report from phantom/no-human data. Reuse the
+  falsification core (`src/neurotwin/falsification.py`) — do NOT invent a fourth harness. Still no
+  humans, no stimulation.
+- **Sprint 1D — baseline leaderboard + gate report polish** (per Issue #14).
+- **v2.5 (Issue #15) — Orch-OR / quantum-biology appendix.** Doc-only, speculative substrate note
+  (`Q_t` latent layer documented, never coded). Gated behind v2 proving useful.
+- Real-data (MOABB/Algonauts) or A100 work: gated behind passing local synthetic falsifiers.
+
+## Hard constraints (every sprint)
+
+- **v1 is frozen.** Never modify load-bearing v1 paths: `training/prepared.py`,
+  `benchmarks/suite.py`, `data/split_manifest.py`, `reports/evidence_gate.py`, eval command
+  routing, `models/__init__.py`.
+- No A100/cluster jobs until local synthetic falsifiers pass. No fake/placeholder "wins".
+- No `do(a)`/causal wording unless intervention is actually randomized/assigned.
+- EM = no-human only: no stimulation, high voltage, plasma/coils/gas, God Helmet, clinical claims.
+  Geomagnetic fetch stays offline (no network).
+- No new heavy deps (numpy/torch/PyYAML + stdlib only; no scikit-learn — cluster-only).
+- Narrow synthetic claim scopes only; the gate blocks anything broader.
+
+## PR / branch discipline
+
+- One PR per sprint, single-purpose. Refactors get their own PR (do not fold into a feature PR).
+- Pattern: build on a fresh branch off updated `main` → open PR → human review → merge commit
+  (never squash; the sprint commit is a research checkpoint) → tag the merge commit
+  `kahlus-sprint<N>-<slug>`.
+- Create branches with an explicit upstream (`git push -u origin <branch>`); branches made via
+  `git checkout -b <b> origin/main` track `origin/main`, so a bare `git push` would target main.
+
+## Graphify discipline
+
+- AGENTS.md: after editing code, run `graphify update .` (AST-only, no API cost) to refresh the
+  knowledge graph in `graphify-out/`.
+- `graphify-out/` is generated. **Exclude it from feature/refactor commits** (its trailing
+  whitespace fails `git diff --check` and its churn bloats review). Stage source paths explicitly,
+  never `git add -A`.
+- When asked to "commit all changes", land the `graphify-out/` refresh as a separate
+  `chore: refresh graphify knowledge graph after Sprint <N>` commit.
+
+## Verification (run before every PR)
+
+```
+PYTHONPATH=src python3 -m unittest discover -s tests -v      # full suite, must stay green
+PYTHONPATH=src python3 -m neurotwin.cli doctor               # v1 sanity unchanged
+PYTHONPATH=src python3 scripts/run_dual_field_synthetic.py --out-dir /tmp/v2     # v2 falsifier
+PYTHONPATH=src python3 scripts/run_transition_gym_baselines.py --out-dir /tmp/v3 # v3 falsifier
+PYTHONPATH=src python3 scripts/run_ktm_synthetic.py --out-dir /tmp/ktm
+PYTHONPATH=src python3 scripts/run_em_artifact_audit.py --out-dir /tmp/em0
+PYTHONPATH=src python3 scripts/run_em_passive_logging_analysis.py --out-dir /tmp/em1
+git diff --check -- ':!graphify-out'                         # source clean
+```
+Acceptance: full suite green; every written gate JSON has the exact dossier fields and
+`scientific_claim_allowed=false` unless a narrow synthetic claim's required checks all pass; no v1
+load-bearing file modified.

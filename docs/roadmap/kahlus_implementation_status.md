@@ -9,8 +9,13 @@ falsification scaffolding only** — no scientific victory, no A100 jobs.
 |------|-------|-------------|
 | **v1** | **built / evidenced — FREEZE** | Untouched. Current evidence-gated EEG forecasting result lane is preserved. Do not mix v2/v3/EM into the v1 paper or result path. |
 | **v2** | **proposed bridge — synthetic falsifier PASSED** | Sprint 0 scaffold + Sprint 1A falsification benchmark. On the synthetic system the dual-field split is recoverable and meaningful (fast/slow latent recovery, EEG↦N / BOLD↦H dependence, lagged neural→hemo path, two-field beats one-field, stable long rollout). Narrow synthetic claim (`synthetic_dual_field_recovery`) passes its gate with adequate data; degenerate/tiny data correctly fails. Still synthetic only, no real data. |
-| **v3** | **proposed moonshot — synthetic Transition Gym first** | Synthetic Transition Gym + minimal KTM scaffolding for local tests. No real data, no claim. |
-| **EM** | **v3 side module — artifact audit first** | Stage 0 no-human artifact-audit + passive-logging scaffolds only. |
+| **v3** | **proposed moonshot — synthetic operator-recovery falsifier PASSED** | Sprint 0 Transition Gym + KTM scaffold, hardened in Sprint 1B. On the synthetic gym the hidden operators are recoverable, held-out AB/BA compositions are predicted, the battery is non-commutative, and response profiles are separable. Baseline leaderboard incl. retrieval_knn + KTM; the **untrained KTM scaffold loses to ridge** (reported honestly) — this validates the benchmark/operator-recovery machinery, **not** v3 model superiority. Narrow scope `synthetic_transition_operator_recovery` passes its gate. Still synthetic only. |
+| **EM** | **v3 side module — artifact audit first** | Stage 0 no-human artifact-audit + passive-logging scaffolds only. Report generator (severity score, contamination map, HTML/MD) is Sprint 1C (not yet built). |
+
+Sprint 1B.5 extracted a shared, lane-neutral falsification core (`src/neurotwin/falsification.py`)
+that v2 and v3 benchmarks both use; future lanes (EM Sprint 1C) reuse it. See
+`docs/roadmap/sprint_ledger.md` for the full trail (tags, PRs, verdicts) and
+`docs/research/falsification_core.md` for the core API.
 
 ```
 v1 = built/evidenced, freeze current result lane
