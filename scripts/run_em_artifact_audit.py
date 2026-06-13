@@ -19,9 +19,11 @@ from neurotwin.config import load_config  # noqa: E402
 from neurotwin.em import (  # noqa: E402
     EMContext,
     build_em_artifact_audit_gate,
+    build_stage0_report,
     format_artifact_report_md,
     run_artifact_audit,
     synthesize_idle_recording,
+    write_stage0_report,
 )
 from neurotwin.gates import write_evidence_gate  # noqa: E402
 from neurotwin.repro import write_json  # noqa: E402
@@ -74,10 +76,33 @@ def main() -> int:
     (out / "artifact_report.md").write_text(format_artifact_report_md(report), encoding="utf-8")
     gate_path = write_evidence_gate(out / "evidence_gate.json", gate)
 
+    bundle = build_stage0_report(
+        audit_report=report,
+        conditions={"baseline": baseline_signal, "perturbed_environment": condition_signal},
+        fs_hz=fs_hz,
+        line_freq_hz=line_freq,
+        seed=seed,
+        config={
+            "recording": {"fs_hz": fs_hz, "n_channels": n_channels, "n_samples": n_samples, "line_freq_hz": line_freq},
+            "conditions": {"baseline": baseline_strength, "perturbed_environment": perturbed_strength},
+        },
+    )
+    stage0_paths = write_stage0_report(out, bundle)
+    severity = bundle["severity"]
+    stage0_gate = bundle["gate"]
+
     print(f"branch=em stage=0 out_dir={out.resolve()}")
     print(f"environment_effect_detected={report['response']['environment_effect_detected']}")
-    print(f"finite={report['response']['finite']} scientific_claim_allowed={gate['scientific_claim_allowed']}")
+    print(f"finite={report['response']['finite']} legacy_scientific_claim_allowed={gate['scientific_claim_allowed']}")
+    print(
+        f"severity_overall={severity['overall_artifact_severity']:.4f} verdict={severity['verdict']} "
+        f"stage0_scientific_claim_allowed={stage0_gate['scientific_claim_allowed']} scope={stage0_gate['claim_scope']}"
+    )
     print(f"report={report_path} evidence_gate={gate_path}")
+    print(
+        f"stage0_report_md={stage0_paths['stage0_report_md']} "
+        f"stage0_report_json={stage0_paths['report']} stage0_evidence_gate={stage0_paths['evidence_gate']}"
+    )
     return 0
 
 
