@@ -177,6 +177,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("Fast Iteration Lane", runbook)
         self.assertIn("Heavy 6-GPU Lane", runbook)
         self.assertIn("--ntasks-per-node=6 --gres=gpu:a100:6", runbook)
+        self.assertIn("8x A100 80GB", runbook)
+        self.assertIn("48:00:00", runbook)
+        self.assertIn("50,000 configured steps", runbook)
+        self.assertIn("Short diagnostic runs ending in a few hours are normal", runbook)
         self.assertIn("MOABB EEG is expected to skip `tribe_style`", runbook)
         self.assertIn("Do not retry failed multi-GPU runs blindly", runbook)
 
@@ -205,6 +209,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("_train_a100_inner.sh", train)
         self.assertIn("#SBATCH --ntasks-per-node=6", train)
         self.assertIn("#SBATCH --gres=gpu:a100:6", train)
+        self.assertIn("#SBATCH --time=48:00:00", train)
         self.assertIn("cluster preflight", inner)
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
@@ -320,6 +325,13 @@ class ArtifactDocsContractsTests(unittest.TestCase):
 
         for required in (
             "automated deployment agent",
+            "8x A100 80GB",
+            "6x A100 80GB",
+            "48:00:00",
+            "50,000 configured steps",
+            "Short diagnostic runs ending in a few hours are normal",
+            "There is no artificial per-GPU VRAM cap",
+            "salloc --nodes=1 --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 --mem=0",
             'docker run --rm --gpus "\\"device=${HOST_GPU_IDS}\\""',
             "device_count",
             "not exactly `6`, stop",
@@ -382,13 +394,26 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scp /tmp/neurotwin-a100-runner-<short_sha>.tar.gz",
             "tar -xzf ~/neurotwin-a100-runner-<short_sha>.tar.gz",
             "bash scripts/run_smoke.sh",
+            "bash scripts/prepare_moabb_benchmark.sh",
+            "python -m neurotwin.cli eval audit",
+            "python -m neurotwin.cli cluster materialize-config",
+            "python -m neurotwin.cli cluster preflight",
             "bash scripts/run_full.sh",
             "torchrun --standalone --nproc_per_node=1",
+            "python -m neurotwin.cli report",
+            "Exact single-GPU Docker fallback sequence",
             "bash scripts/package_a100_evidence_bundle.sh",
             "$NEUROTWIN_DATA/gpu_preflight.json",
             "$NEUROTWIN_DATA/docker_run.env",
             "neurotwin-a100-docker-<generated>.log",
             "MOABB task labels are intentionally not persisted",
+            "Krish Cluster Contract",
+            "8x A100 80GB",
+            "exactly 6x A100 80GB",
+            "48:00:00",
+            "50,000 configured steps",
+            "Short diagnostic runs ending in a few hours are normal",
+            "There is no artificial per-GPU VRAM cap",
             "1x A100 80GB",
             "6x A100 80GB",
             "128G",
@@ -403,10 +428,6 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("The expanded Docker host command is", readme)
         self.assertNotIn("docker run --rm -it", readme)
         self.assertNotIn("bash scripts/docker_a100_inner.sh", readme)
-        self.assertNotIn("python -m neurotwin.cli eval audit", readme)
-        self.assertNotIn("python -m neurotwin.cli cluster materialize-config", readme)
-        self.assertNotIn("python -m neurotwin.cli cluster preflight", readme)
-        self.assertNotIn("python -m neurotwin.cli report", readme)
         for developer_only in (
             "bash scripts/package_runner_bundle.sh",
             "bash scripts/package_run_bundle.sh",
@@ -439,6 +460,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
         self.assertNotIn("\nsbatch ", run_full_sbatch)
         self.assertIn("scripts/train_a100_inner.sh", run_full_sbatch)
+        self.assertIn("#SBATCH --time=02:00:00", run_full_sbatch)
         for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne", "scikit-learn"):
             self.assertIn(dependency, environment)
 

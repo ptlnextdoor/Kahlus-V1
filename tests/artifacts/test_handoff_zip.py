@@ -102,7 +102,6 @@ class HandoffZipArtifactTests(unittest.TestCase):
             expected = {
                 f"{root}/COMMIT_HASH.txt",
                 f"{root}/README_HANDOFF.md",
-                f"{root}/run_krish_agent.sh",
                 f"{root}/SHA256SUMS",
                 f"{root}/{runner_name}.tar.gz",
             }
@@ -142,31 +141,25 @@ class HandoffZipArtifactTests(unittest.TestCase):
                 "Expected Outputs",
                 "Known Limitations",
                 "MOABB task labels are intentionally removed",
-                "./run_krish_agent.sh synthetic50",
-                "public PyTorch CUDA Docker image",
-                "NFC_AUTO_ESCALATE_100",
+                "exactly these four files",
+                "No top-level helper script is included",
+                "8x A100 80GB",
+                "6x A100 80GB",
+                "48:00:00",
+                "50,000 configured steps",
+                "Short diagnostic runs ending in a few hours are normal",
+                "use 6 of the available 8x A100 80GB GPUs",
+                "configs/train/moabb_a100.yaml",
+                "steps=50000",
+                "python -m pip install -e '.[moabb,cluster]'",
+                "--train-steps 100",
                 "--require-pass",
             ):
                 self.assertIn(required, readme)
-            script = (handoff_root / "run_krish_agent.sh").read_text(encoding="utf-8")
-            for required in (
-                "synthetic50",
-                "synthetic100",
-                "algonauts-debug",
-                "full6",
-                "docker pull \"$DOCKER_IMAGE\"",
-                "nfc_synthetic_gate",
-                "NFC_AUTO_ESCALATE_100",
-                "python -m neurotwin.cli eval",
-                "--suite nfc_synthetic",
-                "--seeds 0 1 2",
-                "scripts/run_docker_6gpu.sh",
-            ):
-                self.assertIn(required, script)
-            self.assertNotIn("ghp_", script)
+            for name in names:
+                self.assertNotIn("run_krish_agent.sh", name)
             self.assertNotIn("GHCR_TOKEN", readme)
-            self.assertNotIn("GHCR_TOKEN", script)
-            self.assertNotIn("docker login ghcr.io", script)
+            self.assertNotIn("docker login ghcr.io", readme)
             self.assertNotIn("<timestamp>", readme)
             self.assertNotIn("docker run --rm -it", readme)
             self.assertNotIn("The helper runs this host command", readme)

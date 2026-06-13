@@ -34,6 +34,7 @@ ARCHIVE_PATHS=(
   Dockerfile.a100
   pyproject.toml
   environment-a100.yml
+  docs/research/math_implementation_coverage.md
   requirements/cluster-a100.txt
   configs/train/moabb_a100.yaml
   configs/train/prepared_synthetic_debug.yaml
@@ -103,6 +104,12 @@ forbidden_prefixes = (
     ("docs", "paper"),
     ("docs", "research"),
 )
+allowed_research_docs = {
+    ("docs", "research", "math_implementation_coverage.md"),
+}
+allowed_research_dirs = {
+    ("docs", "research"),
+}
 forbidden_suffixes = {
     ".ckpt",
     ".npy",
@@ -121,7 +128,11 @@ for path in sorted(root.rglob("*")):
     if any(part in forbidden_parts for part in parts):
         violations.append(rel.as_posix())
         continue
-    if any(parts[: len(prefix)] == prefix for prefix in forbidden_prefixes):
+    if (
+        tuple(parts) not in allowed_research_docs
+        and not (path.is_dir() and tuple(parts) in allowed_research_dirs)
+        and any(parts[: len(prefix)] == prefix for prefix in forbidden_prefixes)
+    ):
         violations.append(rel.as_posix())
         continue
     if path.is_file() and path.suffix in forbidden_suffixes:

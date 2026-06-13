@@ -108,6 +108,8 @@ print_synthetic_inspection_commands() {
   echo "  cat $run_root/nfc_falsification_report.md"
   echo "  head -40 $run_root/nfc_ablation_table.csv"
   echo "  head -40 $run_root/uncertainty_calibration.csv"
+  echo "  cat $run_root/diagnostic_report.md"
+  echo "  python3 -m json.tool $run_root/evidence_gate.json | head -80"
   echo "  python3 -m json.tool $run_root/nfc_synthetic_results.json | head -80"
 }
 
@@ -116,6 +118,8 @@ docker_eval_synthetic_once() {
   local run_root=$2
   HOST_GPU_ID="${HOST_GPU_ID:-0}"
   mkdir -p "$run_root"
+  local exit_code=0
+  set +e
   docker run --rm --gpus "\"device=${HOST_GPU_ID}\"" \
     --ipc=host --shm-size=64g \
     -e CUDA_VISIBLE_DEVICES=0 \
@@ -130,14 +134,23 @@ docker_eval_synthetic_once() {
         --suite nfc_synthetic \
         --out-dir "$RUN_ROOT" \
         --train-steps '"$steps"' \
-        --seeds 0 1 2'
+        --seeds 0 1 2 \
+        --require-pass'
+  exit_code=$?
+  set -e
   print_synthetic_inspection_commands "$run_root"
+  return "$exit_code"
 }
 
 docker_eval_synthetic_gate() {
   local steps=$1
   local run_root="${RUN_ROOT:-/raid/scratch/$USER/neurotwin-nfc-synthetic-$SHORT_SHA-$steps}"
-  docker_eval_synthetic_once "$steps" "$run_root"
+  if docker_eval_synthetic_once "$steps" "$run_root"; then
+    :
+  else
+    local eval_exit=$?
+    echo "nfc_synthetic_eval_exit=$eval_exit"
+  fi
   local status
   status="$(synthetic_status "$run_root")"
   echo "nfc_synthetic_status=$status"
@@ -148,7 +161,12 @@ docker_eval_synthetic_gate() {
   if [[ "$steps" == "50" && "${NFC_AUTO_ESCALATE_100:-1}" == "1" ]]; then
     local escalated="${RUN_ROOT_100:-/raid/scratch/$USER/neurotwin-nfc-synthetic-$SHORT_SHA-100}"
     echo "nfc_synthetic_gate=$status; escalating_to_train_steps=100"
-    docker_eval_synthetic_once 100 "$escalated"
+    if docker_eval_synthetic_once 100 "$escalated"; then
+      :
+    else
+      local eval_exit=$?
+      echo "nfc_synthetic_eval_exit=$eval_exit"
+    fi
     status="$(synthetic_status "$escalated")"
     echo "nfc_synthetic_status=$status"
     if [[ "$status" == "passed" ]]; then

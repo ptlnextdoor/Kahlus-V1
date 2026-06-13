@@ -50,7 +50,7 @@ MOABB EEG is expected to skip `tribe_style`; this gate validates leakage audits,
 
 ## Heavy 6-GPU Lane
 
-Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Do not assume a seventh GPU is available unless Slurm confirms it.
+Start one 6x A100 80GB run only after local tests, the 1-GPU smoke, and the 3-seed MOABB gate pass for the exact committed artifact. Krish's partner cluster may expose up to 8x A100 80GB GPUs, but this handoff uses exactly 6 and leaves the seventh/eighth GPUs unused. Request `48:00:00` wall time for the deep lane and use `configs/train/moabb_a100.yaml` with `steps: 50000` (50,000 configured steps). Short diagnostic runs ending in a few hours are normal for smoke/synthetic/debug configs and are not the deep 2-day lane.
 For the heavy lane, the guarded Docker and Slurm helpers consume existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when `paper_mode_gate.json` passed. If Phase 1 artifacts are missing, they write a `paper_mode_artifacts_unavailable` marker and do not silently run paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation. After training both lanes call `python -m neurotwin.cli run finalize`, which copies the small paper-mode artifacts into the run directory, writes the run report, runs leakage-demo and identity-probe diagnostics, finalizes `evidence_gate.json`, and generates `EEG_MODEL_CARD.md`.
 
 ```bash
@@ -63,7 +63,7 @@ PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
   --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
   --out outputs/configs/moabb_a100.materialized.yaml
 RUN_ROOT="$RUN_ROOT" \
-sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
 

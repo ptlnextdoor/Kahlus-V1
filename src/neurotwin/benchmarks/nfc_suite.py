@@ -11,8 +11,10 @@ import torch
 from torch import nn
 
 from neurotwin.data.synthetic_field import generate_synthetic_latent_field
+from neurotwin.models.baselines import TorchMLPBaseline, TorchTCNBaseline
 from neurotwin.models.nfc import NeuralFieldCompiler, NeuralFieldCompilerConfig
 from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
+from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig, TinySSMBaseline, TinyTransformerBaseline
 from neurotwin.scoring.metrics import mse, pearsonr
 
 
@@ -26,6 +28,7 @@ class NfcSyntheticTaskSpec:
     target_kind: str
     expected_prediction_shape: tuple[int, ...]
     metric_mask: np.ndarray | None = None
+    target_modality: str = "fmri"
 
 
 class NfcPredictionShapeError(ValueError):
@@ -243,8 +246,12 @@ def _task_specs(sample: Any, *, split: int) -> tuple[NfcSyntheticTaskSpec, ...]:
     test = slice(split, None)
     fmri_train = sample.fmri[train].astype(np.float32)
     fmri_test = sample.fmri[test].astype(np.float32)
+    eeg_train = sample.eeg[train].astype(np.float32)
+    eeg_test = sample.eeg[test].astype(np.float32)
     stimulus_train = sample.stimulus[train].astype(np.float32)
     stimulus_test = sample.stimulus[test].astype(np.float32)
+    latent_field_train = sample.latent_field[train].reshape(sample.latent_field[train].shape[0], sample.latent_field[train].shape[1], -1).astype(np.float32)
+    latent_field_test = sample.latent_field[test].reshape(sample.latent_field[test].shape[0], sample.latent_field[test].shape[1], -1).astype(np.float32)
     latent_observation_train = sample.latent_field[train].mean(axis=-1).astype(np.float32)
     latent_observation_test = sample.latent_field[test].mean(axis=-1).astype(np.float32)
     hidden_nodes = np.arange(fmri_train.shape[-1]) % 2 == 0
@@ -253,15 +260,22 @@ def _task_specs(sample: Any, *, split: int) -> tuple[NfcSyntheticTaskSpec, ...]:
     masked_train[..., hidden_nodes] = 0.0
     masked_test[..., hidden_nodes] = 0.0
     hidden_metric_mask = np.broadcast_to(hidden_nodes.reshape(1, 1, -1), fmri_test.shape)
+    hidden_eeg = np.arange(eeg_train.shape[-1]) % 2 == 0
+    masked_eeg_train = eeg_train.copy()
+    masked_eeg_test = eeg_test.copy()
+    masked_eeg_train[..., hidden_eeg] = 0.0
+    masked_eeg_test[..., hidden_eeg] = 0.0
+    hidden_eeg_metric_mask = np.broadcast_to(hidden_eeg.reshape(1, 1, -1), eeg_test.shape)
     return (
         NfcSyntheticTaskSpec(
-            task_id="stimulus_to_fmri_response",
+            task_id="synthetic_latent_field_recovery",
             train_inputs={"stimulus": stimulus_train},
-            train_targets=fmri_train,
+            train_targets=latent_field_train,
             test_inputs={"stimulus": stimulus_test},
-            test_targets=fmri_test,
-            target_kind="fmri_observation",
-            expected_prediction_shape=tuple(fmri_test.shape),
+            test_targets=latent_field_test,
+            target_kind="latent_field",
+            expected_prediction_shape=tuple(latent_field_test.shape),
+            target_modality="latent_field",
         ),
         NfcSyntheticTaskSpec(
             task_id="synthetic_latent_observation_recovery",
@@ -271,9 +285,10 @@ def _task_specs(sample: Any, *, split: int) -> tuple[NfcSyntheticTaskSpec, ...]:
             test_targets=latent_observation_test,
             target_kind="latent_observation",
             expected_prediction_shape=tuple(latent_observation_test.shape),
+            target_modality="latent_observation",
         ),
         NfcSyntheticTaskSpec(
-            task_id="future_state_forecasting",
+            task_id="synthetic_fmri_forecasting",
             train_inputs={"fmri_history": fmri_train[:, :-1]},
             train_targets=fmri_train[:, 1:],
             test_inputs={"fmri_history": fmri_test[:, :-1]},
@@ -282,7 +297,17 @@ def _task_specs(sample: Any, *, split: int) -> tuple[NfcSyntheticTaskSpec, ...]:
             expected_prediction_shape=tuple(fmri_test[:, 1:].shape),
         ),
         NfcSyntheticTaskSpec(
-            task_id="masked_neural_reconstruction",
+            task_id="synthetic_eeg_forecasting",
+            train_inputs={"eeg_history": eeg_train[:, :-1]},
+            train_targets=eeg_train[:, 1:],
+            test_inputs={"eeg_history": eeg_test[:, :-1]},
+            test_targets=eeg_test[:, 1:],
+            target_kind="future_eeg_observation",
+            expected_prediction_shape=tuple(eeg_test[:, 1:].shape),
+            target_modality="eeg",
+        ),
+        NfcSyntheticTaskSpec(
+            task_id="masked_fmri_reconstruction",
             train_inputs={"observed_fmri": masked_train},
             train_targets=fmri_train,
             test_inputs={"observed_fmri": masked_test},
@@ -291,16 +316,47 @@ def _task_specs(sample: Any, *, split: int) -> tuple[NfcSyntheticTaskSpec, ...]:
             expected_prediction_shape=tuple(fmri_test.shape),
             metric_mask=hidden_metric_mask,
         ),
+        NfcSyntheticTaskSpec(
+            task_id="masked_eeg_reconstruction",
+            train_inputs={"observed_eeg": masked_eeg_train},
+            train_targets=eeg_train,
+            test_inputs={"observed_eeg": masked_eeg_test},
+            test_targets=eeg_test,
+            target_kind="masked_eeg_observation",
+            expected_prediction_shape=tuple(eeg_test.shape),
+            metric_mask=hidden_eeg_metric_mask,
+            target_modality="eeg",
+        ),
+        NfcSyntheticTaskSpec(
+            task_id="synthetic_eeg_to_fmri",
+            train_inputs={"eeg": eeg_train},
+            train_targets=fmri_train,
+            test_inputs={"eeg": eeg_test},
+            test_targets=fmri_test,
+            target_kind="cross_modal_eeg_to_fmri",
+            expected_prediction_shape=tuple(fmri_test.shape),
+        ),
+        NfcSyntheticTaskSpec(
+            task_id="synthetic_fmri_to_eeg",
+            train_inputs={"fmri": fmri_train},
+            train_targets=eeg_train,
+            test_inputs={"fmri": fmri_test},
+            test_targets=eeg_test,
+            target_kind="cross_modal_fmri_to_eeg",
+            expected_prediction_shape=tuple(eeg_test.shape),
+            target_modality="eeg",
+        ),
     )
 
 
 def _model_catalog() -> dict[str, dict[str, str]]:
     return {
-        "linear_ridge": {"role": "direct_baseline", "status": "local_baseline"},
+        "direct_linear": {"role": "direct_baseline", "status": "local_baseline"},
         "autoregressive_ridge": {"role": "direct_baseline", "status": "local_baseline"},
-        "mlp": {"role": "direct_baseline", "status": "local_baseline"},
+        "direct_mlp": {"role": "direct_baseline", "status": "local_baseline"},
         "tcn": {"role": "direct_baseline", "status": "local_baseline"},
         "transformer": {"role": "direct_baseline", "status": "local_baseline"},
+        "ssm_fallback": {"role": "direct_baseline", "status": "local_baseline"},
         "current_neurotwin": {"role": "current_neurotwin_baseline", "status": "local_baseline"},
         "pair_operator": {"role": "baseline_ablation", "status": "local_baseline"},
         "nfc_no_observation_operator": {"role": "nfc_ablation", "status": "experimental_architecture"},
@@ -318,11 +374,12 @@ def _model_predictions_for_task(
     input_modality, x_train = _single_input(spec.train_inputs)
     _, x_test = _single_input(spec.test_inputs)
     y_train = spec.train_targets
+    task_mode = "forecast" if "forecasting" in spec.task_id else "reconstruction"
     return {
-        "linear_ridge": _fit_ridge(x_train, y_train, x_test),
+        "direct_linear": _fit_ridge(x_train, y_train, x_test),
         "autoregressive_ridge": _predict_autoregressive_baseline(spec),
-        "mlp": _fit_sequence_baseline(
-            lambda: _TinySequenceModel(x_train.shape[-1], y_train.shape[-1]),
+        "direct_mlp": _fit_sequence_baseline(
+            lambda: TorchMLPBaseline(x_train.shape[-1], y_train.shape[-1], hidden_dim=16),
             x_train,
             y_train,
             x_test,
@@ -330,7 +387,7 @@ def _model_predictions_for_task(
             train_steps,
         ),
         "tcn": _fit_sequence_baseline(
-            lambda: _TinySequenceModel(x_train.shape[-1], y_train.shape[-1]),
+            lambda: TorchTCNBaseline(x_train.shape[-1], y_train.shape[-1], hidden_dim=16),
             x_train,
             y_train,
             x_test,
@@ -338,55 +395,73 @@ def _model_predictions_for_task(
             train_steps,
         ),
         "transformer": _fit_sequence_baseline(
-            lambda: _TinySequenceModel(x_train.shape[-1], y_train.shape[-1]),
+            lambda: TinyTransformerBaseline(x_train.shape[-1], y_train.shape[-1], latent_dim=16, n_heads=4, n_layers=1),
             x_train,
             y_train,
             x_test,
             seed + 3,
             train_steps,
         ),
-        "current_neurotwin": _fit_sequence_baseline(
-            lambda: _TinySequenceModel(x_train.shape[-1], y_train.shape[-1]),
+        "ssm_fallback": _fit_sequence_baseline(
+            lambda: TinySSMBaseline(x_train.shape[-1], y_train.shape[-1], latent_dim=16, n_layers=1),
             x_train,
             y_train,
             x_test,
             seed + 4,
             train_steps,
         ),
-        "pair_operator": _fit_pair_operator(
+        "current_neurotwin": _fit_current_neurotwin(
             input_modality,
+            spec.target_modality,
+            task_mode,
             x_train,
             y_train,
             x_test,
             seed + 5,
             train_steps,
         ),
-        "nfc_no_observation_operator": _fit_nfc(
+        "pair_operator": _fit_pair_operator(
             input_modality,
+            spec.target_modality,
+            task_mode,
             x_train,
             y_train,
             x_test,
             seed + 6,
+            train_steps,
+        ),
+        "nfc_no_observation_operator": _fit_nfc(
+            input_modality,
+            spec.target_modality,
+            task_mode,
+            x_train,
+            y_train,
+            x_test,
+            seed + 7,
             train_steps,
             use_pair_kernel=True,
             use_observation_operator=False,
         ),
         "nfc_no_pair_kernel": _fit_nfc(
             input_modality,
+            spec.target_modality,
+            task_mode,
             x_train,
             y_train,
             x_test,
-            seed + 7,
+            seed + 8,
             train_steps,
             use_pair_kernel=False,
             use_observation_operator=True,
         ),
         "nfc_full": _fit_nfc(
             input_modality,
+            spec.target_modality,
+            task_mode,
             x_train,
             y_train,
             x_test,
-            seed + 8,
+            seed + 9,
             train_steps,
             use_pair_kernel=True,
             use_observation_operator=True,
@@ -406,8 +481,12 @@ def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, alp
 def _predict_autoregressive_baseline(spec: NfcSyntheticTaskSpec) -> np.ndarray:
     if "fmri_history" in spec.test_inputs:
         return spec.test_inputs["fmri_history"].astype(np.float32)
+    if "eeg_history" in spec.test_inputs:
+        return spec.test_inputs["eeg_history"].astype(np.float32)
     if "observed_fmri" in spec.test_inputs:
         return spec.test_inputs["observed_fmri"].astype(np.float32)
+    if "observed_eeg" in spec.test_inputs:
+        return spec.test_inputs["observed_eeg"].astype(np.float32)
     return _predict_training_target_mean(spec.train_targets, spec.expected_prediction_shape)
 
 
@@ -429,8 +508,29 @@ def _fit_sequence_baseline(
     return _train_model_prediction(model, x_train, y_train, x_test, train_steps)
 
 
+def _fit_current_neurotwin(
+    input_modality: str,
+    target_modality: str,
+    task_mode: str,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    seed: int,
+    train_steps: int,
+) -> np.ndarray:
+    torch.manual_seed(seed)
+    model = NeuralStateSpaceTranslator(
+        input_dims={input_modality: x_train.shape[-1]},
+        output_dims={target_modality: y_train.shape[-1]},
+        config=NeuralStateSpaceTranslatorConfig(latent_dim=16, n_layers=1, projection_dim=8),
+    )
+    return _train_task_model_prediction(model, input_modality, target_modality, task_mode, x_train, y_train, x_test, train_steps)
+
+
 def _fit_pair_operator(
     input_modality: str,
+    target_modality: str,
+    task_mode: str,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
@@ -440,14 +540,16 @@ def _fit_pair_operator(
     torch.manual_seed(seed)
     model = NeuroTwinPairOperator(
         input_dims={input_modality: x_train.shape[-1]},
-        output_dims={"fmri": y_train.shape[-1]},
+        output_dims={target_modality: y_train.shape[-1]},
         config=NeuroTwinPairOperatorConfig(latent_dim=12, n_layers=1, pair_rank=3, projection_dim=8),
     )
-    return _train_task_model_prediction(model, input_modality, x_train, y_train, x_test, train_steps)
+    return _train_task_model_prediction(model, input_modality, target_modality, task_mode, x_train, y_train, x_test, train_steps)
 
 
 def _fit_nfc(
     input_modality: str,
+    target_modality: str,
+    task_mode: str,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
@@ -460,7 +562,7 @@ def _fit_nfc(
     torch.manual_seed(seed)
     model = NeuralFieldCompiler(
         input_dims={input_modality: x_train.shape[-1]},
-        output_dims={"fmri": y_train.shape[-1]},
+        output_dims={target_modality: y_train.shape[-1]},
         config=NeuralFieldCompilerConfig(
             latent_dim=12,
             pair_rank=3,
@@ -470,7 +572,7 @@ def _fit_nfc(
             use_uncertainty=True,
         ),
     )
-    return _train_task_model_prediction(model, input_modality, x_train, y_train, x_test, train_steps)
+    return _train_task_model_prediction(model, input_modality, target_modality, task_mode, x_train, y_train, x_test, train_steps)
 
 
 def _train_model_prediction(
@@ -496,6 +598,8 @@ def _train_model_prediction(
 def _train_task_model_prediction(
     model: nn.Module,
     input_modality: str,
+    target_modality: str,
+    task_mode: str,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
@@ -507,26 +611,17 @@ def _train_task_model_prediction(
     y = torch.as_tensor(y_train, dtype=torch.float32)
     for _ in range(train_steps):
         optimizer.zero_grad(set_to_none=True)
-        output = model.forward_task({input_modality: x}, target_modality="fmri", task="reconstruction")
+        output = model.forward_task({input_modality: x}, target_modality=target_modality, task=task_mode)
         loss = loss_fn(output["prediction"], y)
         loss.backward()
         optimizer.step()
     with torch.no_grad():
         output = model.forward_task(
             {input_modality: torch.as_tensor(x_test, dtype=torch.float32)},
-            target_modality="fmri",
-            task="reconstruction",
+            target_modality=target_modality,
+            task=task_mode,
         )
     return output["prediction"].detach().cpu().numpy().astype(np.float32)
-
-
-class _TinySequenceModel(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int) -> None:
-        super().__init__()
-        self.net = nn.Sequential(nn.Linear(input_dim, 16), nn.GELU(), nn.Linear(16, output_dim))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
 
 
 def _validate_prediction_shape(
@@ -583,37 +678,104 @@ def _task_contract(spec: NfcSyntheticTaskSpec) -> dict[str, Any]:
 
 
 def _falsification(tasks: dict[str, Any]) -> dict[str, Any]:
-    criteria = []
-    recovery = tasks["synthetic_latent_observation_recovery"]["metrics_by_model"]
-    fmri_response = tasks["stimulus_to_fmri_response"]["metrics_by_model"]
+    criteria = [
+        _criterion("required_tasks_present", _required_tasks_present(tasks)),
+        _criterion("required_models_present", _required_models_present(tasks)),
+        _criterion("valid_ablation_table_present", _valid_ablation_table(tasks)),
+    ]
+    field = _task_metrics(tasks, "synthetic_latent_field_recovery")
+    recovery = _task_metrics(tasks, "synthetic_latent_observation_recovery")
     criteria.append(
         _criterion(
-            "nfc_beats_direct_on_synthetic_latent_observation_recovery",
-            recovery["nfc_full"]["mse"] < recovery["linear_ridge"]["mse"],
+            "nfc_beats_direct_on_synthetic_latent_field_recovery",
+            _less_than(_metric(field, "nfc_full"), _metric(field, "direct_linear")),
         )
     )
     criteria.append(
         _criterion(
             "nfc_beats_no_observation_operator_on_synthetic_recovery",
-            recovery["nfc_full"]["mse"] < recovery["nfc_no_observation_operator"]["mse"],
+            _less_than(_metric(recovery, "nfc_full"), _metric(recovery, "nfc_no_observation_operator")),
         )
     )
     criteria.append(
         _criterion(
             "pair_kernel_not_decorative",
-            fmri_response["nfc_full"]["mse"] != fmri_response["nfc_no_pair_kernel"]["mse"],
+            _meaningfully_different(_metric(field, "nfc_full"), _metric(field, "nfc_no_pair_kernel")),
         )
     )
     criteria.append(
         _criterion(
             "observation_operator_not_decorative",
-            fmri_response["nfc_full"]["mse"] != fmri_response["nfc_no_observation_operator"]["mse"],
+            _meaningfully_different(_metric(field, "nfc_full"), _metric(field, "nfc_no_observation_operator")),
         )
     )
     criteria.append(_criterion("no_nan_metrics", _all_metrics_are_finite(tasks)))
     criteria.append(_criterion("pair_operator_demoted_to_ablation", True))
     status = "passed" if all(row["passed"] for row in criteria) else "needs_evidence"
     return {"status": status, "criteria": criteria}
+
+
+_REQUIRED_SYNTHETIC_TASKS = (
+    "synthetic_latent_field_recovery",
+    "synthetic_latent_observation_recovery",
+    "synthetic_fmri_forecasting",
+    "synthetic_eeg_forecasting",
+    "masked_fmri_reconstruction",
+    "masked_eeg_reconstruction",
+    "synthetic_eeg_to_fmri",
+    "synthetic_fmri_to_eeg",
+)
+
+
+_REQUIRED_SYNTHETIC_MODELS = tuple(_model_catalog().keys())
+
+
+def _required_tasks_present(tasks: dict[str, Any]) -> bool:
+    return all(task_id in tasks for task_id in _REQUIRED_SYNTHETIC_TASKS)
+
+
+def _required_models_present(tasks: dict[str, Any]) -> bool:
+    for task_id in _REQUIRED_SYNTHETIC_TASKS:
+        metrics = _task_metrics(tasks, task_id)
+        if not all(model_id in metrics for model_id in _REQUIRED_SYNTHETIC_MODELS):
+            return False
+    return True
+
+
+def _valid_ablation_table(tasks: dict[str, Any]) -> bool:
+    for task_id in _REQUIRED_SYNTHETIC_TASKS:
+        metrics = _task_metrics(tasks, task_id)
+        if not {"pair_operator", "nfc_no_observation_operator", "nfc_no_pair_kernel", "nfc_full"}.issubset(metrics):
+            return False
+    return True
+
+
+def _task_metrics(tasks: dict[str, Any], task_id: str) -> dict[str, Any]:
+    task = tasks.get(task_id)
+    if not isinstance(task, dict):
+        return {}
+    metrics = task.get("metrics_by_model", {})
+    return metrics if isinstance(metrics, dict) else {}
+
+
+def _metric(metrics_by_model: dict[str, Any], model_id: str, metric: str = "mse") -> float | None:
+    row = metrics_by_model.get(model_id)
+    if not isinstance(row, dict) or metric not in row:
+        return None
+    value = float(row[metric])
+    return value if np.isfinite(value) else None
+
+
+def _less_than(left: float | None, right: float | None, *, min_delta: float = 1e-9) -> bool:
+    if left is None or right is None:
+        return False
+    return left + min_delta < right
+
+
+def _meaningfully_different(left: float | None, right: float | None, *, min_delta: float = 1e-9) -> bool:
+    if left is None or right is None:
+        return False
+    return abs(left - right) > min_delta
 
 
 def _all_metrics_are_finite(tasks: dict[str, Any]) -> bool:
@@ -637,6 +799,8 @@ def _write_artifacts(payload: dict[str, Any], out_dir: str | Path) -> None:
     _write_ablation_csv(out / "nfc_ablation_table.csv", payload)
     _write_uncertainty_calibration_csv(out / "uncertainty_calibration.csv", payload)
     (out / "nfc_falsification_report.md").write_text(_format_falsification(payload), encoding="utf-8")
+    (out / "evidence_gate.json").write_text(json.dumps(_evidence_gate(payload), indent=2, sort_keys=True), encoding="utf-8")
+    (out / "diagnostic_report.md").write_text(_format_diagnostic_report(payload), encoding="utf-8")
 
 
 def _write_results_csv(path: Path, payload: dict[str, Any]) -> None:
@@ -670,7 +834,7 @@ def _write_ablation_csv(path: Path, payload: dict[str, Any]) -> None:
 def _write_uncertainty_calibration_csv(path: Path, payload: dict[str, Any]) -> None:
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["task_id", "model_id", "expected_error", "uncertainty_proxy", "calibration_gap", "finite"])
+        writer.writerow(["task_id", "model_id", "expected_error", "uncertainty_proxy", "calibration_gap", "finite", "proxy_source"])
         for task_id, task in payload["tasks"].items():
             task_errors = [
                 float(np.sqrt(max(float(row["mse"]), 0.0)))
@@ -683,7 +847,7 @@ def _write_uncertainty_calibration_csv(path: Path, payload: dict[str, Any]) -> N
                 uncertainty_proxy = task_proxy
                 calibration_gap = abs(expected_error - uncertainty_proxy)
                 finite = np.isfinite(expected_error) and np.isfinite(uncertainty_proxy) and np.isfinite(calibration_gap)
-                writer.writerow([task_id, model_id, expected_error, uncertainty_proxy, calibration_gap, bool(finite)])
+                writer.writerow([task_id, model_id, expected_error, uncertainty_proxy, calibration_gap, bool(finite), "mse_derived_suite_proxy"])
 
 
 def _format_falsification(payload: dict[str, Any]) -> str:
@@ -699,4 +863,47 @@ def _format_falsification(payload: dict[str, Any]) -> str:
         lines.append(f"- {row['criterion']}: {row['status']}")
     lines.append("")
     lines.append("No model-superiority claim is allowed from this synthetic report.")
+    lines.append("Old short-step synthetic signals before the corrected gate are invalidated as evidence.")
+    return "\n".join(lines)
+
+
+def _evidence_gate(payload: dict[str, Any]) -> dict[str, Any]:
+    status = nfc_falsification_status(payload)
+    return {
+        "gate": "nfc_synthetic",
+        "status": status,
+        "scientific_claim_allowed": False,
+        "claim_source": "synthetic_plumbing_only",
+        "required_tasks": list(_REQUIRED_SYNTHETIC_TASKS),
+        "required_models": list(_REQUIRED_SYNTHETIC_MODELS),
+        "notes": [
+            "Synthetic NFC results are a falsification/plumbing gate only.",
+            "A pass allows the next diagnostic step; it does not establish model superiority.",
+        ],
+    }
+
+
+def _format_diagnostic_report(payload: dict[str, Any]) -> str:
+    lines = [
+        "# NFC Synthetic Diagnostic Report",
+        "",
+        f"status={nfc_falsification_status(payload)}",
+        "scope=synthetic-only",
+        "scientific_claim_allowed=false",
+        "",
+        "## Required Tasks",
+    ]
+    tasks = payload.get("tasks", {})
+    for task_id in _REQUIRED_SYNTHETIC_TASKS:
+        status = tasks.get(task_id, {}).get("status") if isinstance(tasks, dict) else None
+        lines.append(f"- {task_id}: {status or 'missing'}")
+    lines.extend(
+        [
+            "",
+            "## Notes",
+            "- Strict A100 handoff must stop unless falsification status is passed.",
+            "- Old short-step synthetic signals before the corrected gate are invalidated as evidence.",
+            "- Inspect `nfc_falsification_report.md`, `nfc_ablation_table.csv`, and `nfc_synthetic_results.json` before any real-data run.",
+        ]
+    )
     return "\n".join(lines)

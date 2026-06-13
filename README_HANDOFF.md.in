@@ -3,17 +3,39 @@
 Commit: `${FULL_SHA}`
 Branch: `ptlnextdoor/a100-current-rerun`
 
-This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access.
+This handoff contains a runnable NeuroTwin A100 runner tarball for the Chapman preliminary infrastructure validation. It does not require private GitHub access, private GHCR access, raw data, or a dirty local checkout.
 
 This is minimal practical code visibility, not cryptographic source secrecy. The runner excludes git history, tests, research notes, paper drafts, raw data, prepared arrays, checkpoints, caches, local outputs, and secrets, but the Python runtime source needed to execute the job is present inside the runner tarball.
 
 ## Purpose
 
-This run is meant to prove that the codeless A100 handoff can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root.
+The immediate next run is a strict 1x A100 NFC synthetic diagnostic from the extracted runner. Do not start Algonauts, and do not start the 6-GPU DDP lane, until the direct `nfc_synthetic` CLI gate exits successfully. Old short-step NFC synthetic signals from before the corrected falsification gate are invalidated as evidence.
+
+The broader handoff can also prove that the codeless A100 runner can be unpacked, verified, installed, smoke-tested, prepared on MOABB, audited for leakage/window counts, trained through the Docker 6-GPU cluster path, and reported from a persistent Chapman root. That broader path is later in the run ladder, not the first action.
+
+## Krish Cluster Contract
+
+Krish's partner requirements target a Chapman node with up to 8x A100 80GB GPUs. This handoff deliberately uses at most 6 GPUs: use exactly 6x A100 80GB GPUs for the heavy lane and leave the seventh/eighth GPUs unused unless Krish explicitly changes the contract. There is no artificial per-GPU VRAM cap in the runner; the operator should allocate A100 80GB GPUs and let PyTorch use the available VRAM.
+
+The deep heavy lane is a 2-day allocation target: request `48:00:00` wall time, set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, and run the `moabb_a100` configuration with `steps: 50000` (50,000 configured steps). Docker itself does not extend scheduler wall time; request the 48-hour allocation before running Docker, or pass `--time=48:00:00` on the Slurm heavy job.
+
+Short diagnostic runs ending in a few hours are normal when they use smoke/synthetic/debug configs, hit a configured early gate, or were submitted under a short scheduler wall time. A short completion is not the 48-hour deep lane.
 
 ## Chapman Queue Order
 
-Run the handoff in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+Run order:
+
+```text
+1. verify SHA256
+2. extract handoff
+3. extract and verify runner
+4. run direct 1x A100 nfc_synthetic 50-step CLI gate from the runner
+5. if needs_evidence, run the direct 100-step CLI gate from the runner
+6. only after pass, proceed to Algonauts 1x debug later
+7. only after Algonauts debug, consider 6x A100 DDP
+```
+
+The legacy MOABB/Phase 1 evidence lane remains available after the strict synthetic gate is understood. Queue those one-GPU evidence jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full 6-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
 
 Phase 1 one-GPU evidence lane:
 
@@ -29,12 +51,16 @@ Do not reserve six GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs
 Phase 2 full model lane:
 
 ```text
-exactly 6 A100 GPUs
+exactly 6x A100 80GB GPUs
+use 6 of the available 8x A100 80GB GPUs
 world_size=6
 GPU_COUNT=6
 NPROC_PER_NODE=6
 HOST_GPU_IDS=<six comma-separated host GPU ids>
 CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+wall_time=48:00:00
+config=configs/train/moabb_a100.yaml
+steps=50000
 bf16 precision
 selected-best checkpoint semantics included
 torchrun --standalone --nproc_per_node=6
@@ -50,7 +76,10 @@ This is not a scientific result, not a model-superiority claim, and not a clinic
 
 - `${RUNNER_TARBALL}`: runner bundle to transfer to Chapman.
 - `COMMIT_HASH.txt`: private repo commit used to build the runner.
+- `README_HANDOFF.md`: this operator handoff.
 - `SHA256SUMS`: checksums for this handoff folder.
+
+The zip contains exactly one top-level folder and exactly these four files: `COMMIT_HASH.txt`, `README_HANDOFF.md`, `SHA256SUMS`, and `${RUNNER_TARBALL}`. No top-level helper script is included; operational commands live in this file and `README_RUN.md` inside the extracted runner.
 
 ## Verify This Handoff
 
@@ -83,19 +112,23 @@ The Pi is a transfer bridge only. Do not run Python training or submit Slurm job
 
 ## Run On Chapman
 
-For an automated agent, use the helper script in this handoff directory after unzipping:
+Extract and verify the runner first:
 
 ```bash
-./run_krish_agent.sh synthetic50
+mkdir -p ~/neurotwin-a100
+tar -xzf ~/${RUNNER_TARBALL} -C ~/neurotwin-a100
+cd ~/neurotwin-a100/${RUNNER_NAME}
+cat COMMIT_HASH.txt
+sha256sum -c SHA256SUMS
+python -m pip install -e '.[moabb,cluster]'
+bash scripts/run_smoke.sh outputs/smoke
 ```
 
-The helper verifies this handoff, extracts the runner tarball, pulls the public PyTorch CUDA Docker image, and runs the 1x A100 NFC synthetic diagnostic. It never needs private GitHub repo access or GHCR credentials. Do not paste tokens into files or commit them.
-
-The synthetic helper is a gate, not a loose smoke test. `synthetic50` runs seeds 0/1/2 for 50 steps and reads `nfc_synthetic_results.json`. If the falsification status is `needs_evidence` and `NFC_AUTO_ESCALATE_100=1` (the default), it automatically runs a 100-step diagnostic. The helper exits nonzero unless the final status is `passed`; do not run `algonauts-debug` or `full6` after a nonzero synthetic gate.
-
-The same gate is available directly from the CLI:
+Then run the 1x A100 NFC synthetic gate directly from the runner:
 
 ```bash
+export RUN_ROOT=/raid/scratch/$USER/neurotwin-nfc-synthetic-${SHORT_SHA}
+mkdir -p "$RUN_ROOT"
 PYTHONPATH=src python3 -m neurotwin.cli eval \
   --suite nfc_synthetic \
   --out-dir "$RUN_ROOT" \
@@ -104,14 +137,17 @@ PYTHONPATH=src python3 -m neurotwin.cli eval \
   --require-pass
 ```
 
-Extract and verify the runner:
+If the falsification status is `needs_evidence`, repeat the same command with `--train-steps 100` before proceeding. Do not run `algonauts-debug` or `full6` after a nonzero synthetic gate.
 
-```bash
-mkdir -p ~/neurotwin-a100
-tar -xzf ~/${RUNNER_TARBALL} -C ~/neurotwin-a100
-cd ~/neurotwin-a100/${RUNNER_NAME}
-cat COMMIT_HASH.txt
-sha256sum -c SHA256SUMS
+Artifacts to inspect before any real-data run:
+
+```text
+nfc_falsification_report.md
+nfc_ablation_table.csv
+nfc_synthetic_results.json
+uncertainty_calibration.csv
+evidence_gate.json
+diagnostic_report.md
 ```
 
 Primary Docker 6-GPU path:
@@ -127,7 +163,7 @@ export PERSISTENT_ROOT=${PERSISTENT_ROOT_EXAMPLE}
 bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
 ```
 
-The helper launches Docker with the runner mounted at `/workspace/repo`, persistent outputs under `${PERSISTENT_ROOT_EXAMPLE}`, host GPUs selected by `HOST_GPU_IDS`, and container-local devices exposed as `cuda:0` through `cuda:5`. It refuses to train unless exactly six CUDA devices are visible. Do not change this to seven or eight GPUs. An automated deployment agent should follow `README_AGENT_DEPLOY.md` for exact Docker flags, environment variables, and agent deployment behavior. `Dockerfile.a100` is a dependency/runtime image helper and does not hide source code. The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
+Run this inside a scheduler allocation that gives the job 6 of the available 8x A100 80GB GPUs and enough wall time for the deep lane, ideally `48:00:00`. The helper launches Docker with the runner mounted at `/workspace/repo`, persistent outputs under `${PERSISTENT_ROOT_EXAMPLE}`, host GPUs selected by `HOST_GPU_IDS`, and container-local devices exposed as `cuda:0` through `cuda:5`. It refuses to train unless exactly six CUDA devices are visible. Do not change this to seven or eight GPUs. An automated deployment agent should follow `README_AGENT_DEPLOY.md` for exact Docker flags, environment variables, and agent deployment behavior. `Dockerfile.a100` is a dependency/runtime image helper and does not hide source code. The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`.
 
 Six-GPU Docker preflight:
 
@@ -175,7 +211,7 @@ For a 6-GPU Slurm follow-up after the materialized config exists:
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
 export RUN_ROOT="$NEUROTWIN_DATA/runs"
 RUN_ROOT="$RUN_ROOT" \
-sbatch --ntasks-per-node=6 --gres=gpu:a100:6 \
+sbatch --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
 
@@ -237,6 +273,12 @@ $PERSISTENT_ROOT/runs/moabb_a100_smoke/metrics.jsonl
 $PERSISTENT_ROOT/runs/moabb_a100_smoke/summary.json
 $PERSISTENT_ROOT/runs/moabb_a100_smoke/tables/
 $PERSISTENT_ROOT/runs/moabb_a100_smoke/figures/
+$PERSISTENT_ROOT/runs/moabb_a100/config.yaml
+$PERSISTENT_ROOT/runs/moabb_a100/environment.json
+$PERSISTENT_ROOT/runs/moabb_a100/checkpoint.pt
+$PERSISTENT_ROOT/runs/moabb_a100/checkpoint_best.pt
+$PERSISTENT_ROOT/runs/moabb_a100/metrics.json
+$PERSISTENT_ROOT/runs/moabb_a100/summary.json
 $PERSISTENT_ROOT/logs/neurotwin-a100-docker-<generated>.log
 ```
 
@@ -253,6 +295,7 @@ Expected training/report status:
 ```text
 training_status=completed_prepared_training
 status=completed_prepared_training
+completed_steps=50000 for the deep moabb_a100 lane
 real_data_smoke=True
 scientific_claim_allowed=False
 ```
@@ -270,7 +313,8 @@ The evidence zip should include small reviewable files only: summaries, metrics,
 ## Known Limitations
 
 - This validates infrastructure and codeless handoff mechanics only.
-- This run is intentionally short and is not a final scientific training run.
+- Smoke, synthetic, and debug runs are intentionally short and are not final scientific training runs.
+- The deep lane is intentionally longer: use 6 of the 8x A100 80GB GPUs, request `48:00:00`, and run `configs/train/moabb_a100.yaml` for 50,000 configured steps.
 - MOABB task labels are intentionally removed from prepared event metadata so target-like labels are not model-visible in the neural translation path.
 - If Docker sees fewer or more than six CUDA devices in the primary path, stop and report `gpu_preflight.json`; do not silently downgrade to one GPU.
 - The fallback conda/Slurm path is useful when Docker is unavailable, but the Docker helper is the canonical 6-GPU deployment-agent path for this handoff.
