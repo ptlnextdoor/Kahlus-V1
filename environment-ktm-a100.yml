@@ -1,0 +1,17 @@
+name: kahlus-ktm-a100
+# Lean conda env for the Kahlus v3 KTM SYNTHETIC A100 micro-sweep. No MOABB/MNE: this runner does
+# not touch real EEG data or the v1 MOABB prepare/audit path. numpy + torch + pyyaml is the whole
+# closure for the synthetic Transition Gym + TorchKTM harness.
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch>=2.2
+  - pytorch-cuda=12.1
+  - numpy>=1.24
+  - pyyaml>=6.0
+  - pip
+  - pip:
+      - -e .
