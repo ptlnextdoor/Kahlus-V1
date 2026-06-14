@@ -10,6 +10,7 @@ here; ``build_torchrun_command`` only *builds* the future micro-sweep command.
 from __future__ import annotations
 
 from contextlib import nullcontext
+from dataclasses import dataclass, field
 import math
 from pathlib import Path
 from typing import Any, Iterator
@@ -39,6 +40,29 @@ from neurotwin.training_v3.objective import LossExplosionGuard, is_finite_loss, 
 from neurotwin.transition_gym import build_transition_gym
 
 DEFAULT_TRAIN_SCRIPT = "scripts/run_ktm_train.py"
+
+
+@dataclass(frozen=True)
+class TrainingArtifacts:
+    """Explicit result of :func:`train_ktm`, consumed by the bundle writer / script / tests."""
+
+    model: TorchKTM
+    bundle: Any  # TransitionGymBundle
+    device: str
+    mode: str
+    dist_info: DistributedInfo
+    ddp_initialized: bool
+    backend: str | None
+    val_before: float
+    val_after: float
+    best_val: float
+    loss_decreased: bool
+    aborted: bool
+    config_hash: str
+    step_losses: list[dict[str, float]] = field(default_factory=list)
+    failure_reasons: list[str] = field(default_factory=list)
+    best_checkpoint: Path | None = None
+    last_checkpoint: Path | None = None
 
 
 def resolve_device(mode: str, dist_info: DistributedInfo) -> torch.device:
@@ -98,10 +122,8 @@ def train_ktm(
     *,
     out_dir: str | Path | None = None,
     dist_info: DistributedInfo | None = None,
-    debug_force_nan_steps: frozenset[int] = frozenset(),
-    debug_force_explode: bool = False,
-) -> dict[str, Any]:
-    """Train a TorchKTM on a synthetic Transition Gym; return an artifacts dict (no claim)."""
+) -> TrainingArtifacts:
+    """Train a TorchKTM on a synthetic Transition Gym; return artifacts (no claim)."""
 
     cfg = cfg.validate()
     dist_info = dist_info or get_distributed_info()
@@ -156,10 +178,6 @@ def train_ktm(
             with autocast_ctx():
                 pred, log_var = ddp_model(history, k)
                 loss, _components = ktm_loss(pred, log_var, target, cfg)
-            if step in debug_force_nan_steps:
-                loss = loss * torch.tensor(float("nan"), device=device)
-            if debug_force_explode and step >= guard.warmup:
-                loss = loss * 1e6
             loss_value = float(loss.detach())
             if not is_finite_loss(loss_value):
                 failure_reasons.append(f"non-finite loss at step {step}; micro-batch skipped")
@@ -208,22 +226,22 @@ def train_ktm(
     barrier_if_distributed()
     cleanup_process_group()
 
-    return {
-        "model": model,
-        "bundle": bundle,
-        "device": str(device),
-        "mode": cfg.mode,
-        "dist_info": dist_info,
-        "ddp_initialized": bool(ddp_initialized),
-        "backend": backend,
-        "val_before": val_before,
-        "val_after": val_after,
-        "best_val": float(best_val),
-        "loss_decreased": bool(val_after < val_before),
-        "step_losses": step_losses,
-        "failure_reasons": failure_reasons,
-        "aborted": aborted,
-        "config_hash": config_hash,
-        "best_checkpoint": best_ckpt_path,
-        "last_checkpoint": last_ckpt_path,
-    }
+    return TrainingArtifacts(
+        model=model,
+        bundle=bundle,
+        device=str(device),
+        mode=cfg.mode,
+        dist_info=dist_info,
+        ddp_initialized=bool(ddp_initialized),
+        backend=backend,
+        val_before=val_before,
+        val_after=val_after,
+        best_val=float(best_val),
+        loss_decreased=bool(val_after < val_before),
+        aborted=aborted,
+        config_hash=config_hash,
+        step_losses=step_losses,
+        failure_reasons=failure_reasons,
+        best_checkpoint=best_ckpt_path,
+        last_checkpoint=last_ckpt_path,
+    )

@@ -314,6 +314,47 @@ def run_baselines(
     )
 
 
+BASELINE_TABLE_FIELDS: tuple[str, ...] = ("model_id", "mse", "mae", "r2", "pearson_r", "status")
+
+
+def baseline_table_rows(metrics_by_model: dict[str, dict[str, float]]) -> list[dict[str, Any]]:
+    """Canonical baseline-table rows from a per-model metric mapping."""
+
+    return [
+        {"model_id": model_id, "mse": m["mse"], "mae": m["mae"], "r2": m["r2"],
+         "pearson_r": m["pearson_r"], "status": "completed"}
+        for model_id, m in metrics_by_model.items()
+    ]
+
+
+def write_baseline_table(
+    out_dir: str | Path,
+    rows: Sequence[dict[str, Any]],
+    ranking: Sequence[dict[str, Any]],
+    *,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Path]:
+    """Write the canonical baseline_table.{json,csv}; the single owner of that schema.
+
+    ``extra`` merges extra keys into the JSON payload only (the CSV stays the flat table), so
+    callers can annotate the JSON without forking the schema.
+    """
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    payload: dict[str, Any] = {"rows": list(rows), "ranking": list(ranking)}
+    if extra:
+        payload.update(extra)
+    json_path = write_json(out / "baseline_table.json", payload)
+    csv_path = out / "baseline_table.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(BASELINE_TABLE_FIELDS))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row[key] for key in BASELINE_TABLE_FIELDS})
+    return {"baseline_table_json": json_path, "baseline_table_csv": csv_path}
+
+
 def write_run_artifacts(
     out_dir: str | Path,
     task: RegressionTask,
@@ -340,25 +381,11 @@ def write_run_artifacts(
         },
     )
 
-    table_rows = [
-        {
-            "model_id": model_id,
-            "mse": m["mse"],
-            "mae": m["mae"],
-            "r2": m["r2"],
-            "pearson_r": m["pearson_r"],
-            "status": "completed",
-        }
-        for model_id, m in result.metrics_by_model.items()
-    ]
-    table_json_path = write_json(out / "baseline_table.json", {"rows": table_rows, "ranking": result.ranking})
-    table_csv_path = out / "baseline_table.csv"
-    fieldnames = ["model_id", "mse", "mae", "r2", "pearson_r", "status"]
-    with table_csv_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in table_rows:
-            writer.writerow(row)
+    table_paths = write_baseline_table(
+        out, baseline_table_rows(result.metrics_by_model), result.ranking
+    )
+    table_json_path = table_paths["baseline_table_json"]
+    table_csv_path = table_paths["baseline_table_csv"]
 
     gate_path = write_evidence_gate(out / "evidence_gate.json", result.evidence_gate)
 

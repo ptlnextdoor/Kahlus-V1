@@ -10,19 +10,23 @@ unless the trained KTM actually wins. Only rank-0 should call :func:`write_train
 
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
 
-from neurotwin.baseline_runner import run_baselines, transition_gym_regression_task
+from neurotwin.baseline_runner import (
+    baseline_table_rows,
+    run_baselines,
+    transition_gym_regression_task,
+    write_baseline_table,
+)
 from neurotwin.gates import evaluate_gate
 from neurotwin.repro import capture_environment, write_json
 from neurotwin.training_v3.config import KTMTrainConfig
 from neurotwin.training_v3.metrics_eval import evaluate_ktm, ktm_vs_baselines
-from neurotwin.training_v3.trainer import build_torchrun_command
+from neurotwin.training_v3.trainer import TrainingArtifacts, build_torchrun_command
 
 BRANCH = "v3"
 DATASET = "ktm_training_synthetic"
@@ -53,14 +57,14 @@ def write_training_bundle(
     out_dir: str | Path,
     *,
     cfg: KTMTrainConfig,
-    artifacts: dict[str, Any],
+    artifacts: TrainingArtifacts,
     config_path: str | Path | None = None,
 ) -> dict[str, Path]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    model = artifacts["model"]
-    bundle = artifacts["bundle"]
-    device = torch.device(artifacts["device"])
+    model = artifacts.model
+    bundle = artifacts.bundle
+    device = torch.device(artifacts.device)
 
     # Honest baseline sweep on the same synthetic gym (shared runner).
     task = transition_gym_regression_task(cfg.to_world_config())
@@ -75,26 +79,30 @@ def write_training_bundle(
         _all_finite(ktm_test["trajectory"], ktm_test["calibration"], ktm_val["trajectory"])
         and bool(baseline_metrics)
         and all(_all_finite(m) for m in baseline_metrics.values())
-        and _all_finite(artifacts["val_before"], artifacts["val_after"])
+        and _all_finite(artifacts.val_before, artifacts.val_after)
     )
     calibration_checked = bool(ktm_test["calibration"]["finite"])
 
+    # Both scopes share every check except claim scope + blocker reasons.
+    def _gate(scope: str, blockers: list[str]) -> dict[str, Any]:
+        return evaluate_gate(
+            branch=BRANCH,
+            dataset=DATASET,
+            split_audit_passed=True,
+            baseline_table_present=bool(baseline_metrics),
+            finite_metrics=all_finite,
+            calibration_checked=calibration_checked,
+            claim_scope=scope,
+            extra_failure_reasons=blockers,
+        )
+
     # Primary scope: harness readiness. Block honestly if training aborted or loss did not drop.
     harness_blockers: list[str] = []
-    if artifacts["aborted"]:
+    if artifacts.aborted:
         harness_blockers.append("training aborted before completion")
-    if not artifacts["loss_decreased"]:
+    if not artifacts.loss_decreased:
         harness_blockers.append("training loss did not decrease over the run")
-    harness_gate = evaluate_gate(
-        branch=BRANCH,
-        dataset=DATASET,
-        split_audit_passed=True,
-        baseline_table_present=bool(baseline_metrics),
-        finite_metrics=all_finite,
-        calibration_checked=calibration_checked,
-        claim_scope=HARNESS_SCOPE,
-        extra_failure_reasons=harness_blockers,
-    )
+    harness_gate = _gate(HARNESS_SCOPE, harness_blockers)
 
     # Stronger scope: recovery. Blocked unless the trained KTM truly beats baselines.
     recovery_blockers = list(harness_blockers)
@@ -102,18 +110,9 @@ def write_training_bundle(
         recovery_blockers.append(
             "KTM did not beat baselines on locked held-out metrics; recovery claim not earned"
         )
-    recovery_gate = evaluate_gate(
-        branch=BRANCH,
-        dataset=DATASET,
-        split_audit_passed=True,
-        baseline_table_present=bool(baseline_metrics),
-        finite_metrics=all_finite,
-        calibration_checked=calibration_checked,
-        claim_scope=RECOVERY_SCOPE,
-        extra_failure_reasons=recovery_blockers,
-    )
+    recovery_gate = _gate(RECOVERY_SCOPE, recovery_blockers)
 
-    training_failures = list(artifacts["failure_reasons"]) + list(baseline_result.failure_reasons)
+    training_failures = list(artifacts.failure_reasons) + list(baseline_result.failure_reasons)
 
     paths: dict[str, Path] = {}
 
@@ -124,43 +123,30 @@ def write_training_bundle(
             "branch": BRANCH,
             "claim_status": "synthetic_training_harness_only",
             "seed": cfg.seed,
-            "val_mse_before": artifacts["val_before"],
-            "val_mse_after": artifacts["val_after"],
-            "best_val_mse": artifacts["best_val"],
-            "loss_decreased": artifacts["loss_decreased"],
+            "val_mse_before": artifacts.val_before,
+            "val_mse_after": artifacts.val_after,
+            "best_val_mse": artifacts.best_val,
+            "loss_decreased": artifacts.loss_decreased,
             "ktm_val": ktm_val,
             "ktm_test": ktm_test,
             "ktm_vs_baselines": comparison,
             "baseline_metrics": baseline_metrics,
             "baseline_ranking": baseline_result.ranking,
             "recovery_claim_allowed": recovery_gate["scientific_claim_allowed"],
-            "step_losses": artifacts["step_losses"],
+            "step_losses": artifacts.step_losses,
             "failure_reasons": training_failures,
         },
     )
 
-    table_rows = [
-        {"model_id": model_id, "mse": m["mse"], "mae": m["mae"], "r2": m["r2"],
-         "pearson_r": m["pearson_r"], "status": "completed"}
-        for model_id, m in baseline_metrics.items()
-    ]
-    table_rows.append(
+    # Canonical baseline table (shared writer), with the trained KTM appended as one more row.
+    rows = baseline_table_rows(baseline_metrics) + [
         {"model_id": "ktm_torch", "mse": ktm_test["trajectory"]["mse"],
          "mae": ktm_test["trajectory"]["mae"], "r2": ktm_test["trajectory"]["r2"],
          "pearson_r": ktm_test["trajectory"]["pearson_r"], "status": "completed"}
-    )
-    paths["baseline_table_json"] = write_json(
-        out / "baseline_table.json",
-        {"rows": table_rows, "ranking": baseline_result.ranking,
-         "ktm_vs_baselines": comparison},
-    )
-    table_csv = out / "baseline_table.csv"
-    with table_csv.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["model_id", "mse", "mae", "r2", "pearson_r", "status"])
-        writer.writeheader()
-        for row in table_rows:
-            writer.writerow(row)
-    paths["baseline_table_csv"] = table_csv
+    ]
+    paths.update(write_baseline_table(
+        out, rows, baseline_result.ranking, extra={"ktm_vs_baselines": comparison}
+    ))
 
     paths["evidence_gate"] = write_json(out / "evidence_gate.json", harness_gate)
 
@@ -201,12 +187,12 @@ def write_training_bundle(
             "dataset": DATASET,
             "claim_scope": HARNESS_SCOPE,
             "config": cfg.as_dict(),
-            "config_hash": artifacts["config_hash"],
+            "config_hash": artifacts.config_hash,
             "config_path": str(config_path) if config_path else None,
-            "mode": artifacts["mode"],
-            "device": artifacts["device"],
-            "ddp_initialized": artifacts["ddp_initialized"],
-            "ddp_backend": artifacts["backend"],
+            "mode": artifacts.mode,
+            "device": artifacts.device,
+            "ddp_initialized": artifacts.ddp_initialized,
+            "ddp_backend": artifacts.backend,
             "ddp_micro_sweep_command": build_torchrun_command(
                 config_path=config_path or "configs/train/ktm_a100_micro.yaml",
                 out_dir="$RUN_ROOT/ktm_micro_sweep",
@@ -218,9 +204,9 @@ def write_training_bundle(
     paths["failure_reasons"] = write_json(
         out / "failure_reasons.json",
         {
-            "training": list(artifacts["failure_reasons"]),
+            "training": list(artifacts.failure_reasons),
             "baselines": list(baseline_result.failure_reasons),
-            "aborted": artifacts["aborted"],
+            "aborted": artifacts.aborted,
             "recovery_blocked_reasons": recovery_blockers,
         },
     )

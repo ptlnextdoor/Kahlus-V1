@@ -62,12 +62,12 @@ def main() -> int:
         from neurotwin.gates import read_evidence_gate
 
         gate = read_evidence_gate(gate_path)
-        print(f"branch=v3 model=TorchKTM mode={cfg.mode} device={artifacts['device']} out_dir={out.resolve()}")
-        print(f"val_mse_before={artifacts['val_before']:.6g} val_mse_after={artifacts['val_after']:.6g} "
-              f"best_val_mse={artifacts['best_val']:.6g} loss_decreased={artifacts['loss_decreased']}")
+        print(f"branch=v3 model=TorchKTM mode={cfg.mode} device={artifacts.device} out_dir={out.resolve()}")
+        print(f"val_mse_before={artifacts.val_before:.6g} val_mse_after={artifacts.val_after:.6g} "
+              f"best_val_mse={artifacts.best_val:.6g} loss_decreased={artifacts.loss_decreased}")
         print(f"claim_scope={gate['claim_scope']} scientific_claim_allowed={gate['scientific_claim_allowed']}")
-        print(f"aborted={artifacts['aborted']} failure_reasons={artifacts['failure_reasons']}")
-        print(f"checkpoints best={artifacts['best_checkpoint']} last={artifacts['last_checkpoint']}")
+        print(f"aborted={artifacts.aborted} failure_reasons={artifacts.failure_reasons}")
+        print(f"checkpoints best={artifacts.best_checkpoint} last={artifacts.last_checkpoint}")
         print("bundle=" + ", ".join(f"{key}={value}" for key, value in paths.items()))
         print("future_micro_sweep_cmd=" + " ".join(build_torchrun_command(
             config_path="configs/train/ktm_a100_micro.yaml", out_dir="$RUN_ROOT/ktm_micro_sweep")))

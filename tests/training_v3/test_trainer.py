@@ -20,10 +20,10 @@ def _cfg(**overrides):
 class TrainerSmokeTests(unittest.TestCase):
     def test_cpu_smoke_decreases_val_loss(self):
         artifacts = train_ktm(_cfg(), dist_info=_INFO)
-        self.assertLess(artifacts["val_after"], artifacts["val_before"])
-        self.assertTrue(artifacts["loss_decreased"])
-        self.assertFalse(artifacts["aborted"])
-        self.assertEqual(artifacts["failure_reasons"], [])
+        self.assertLess(artifacts.val_after, artifacts.val_before)
+        self.assertTrue(artifacts.loss_decreased)
+        self.assertFalse(artifacts.aborted)
+        self.assertEqual(artifacts.failure_reasons, [])
 
     def test_checkpoint_save_resume_reproduces(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -35,8 +35,8 @@ class TrainerSmokeTests(unittest.TestCase):
             self.assertTrue((out / "checkpoints" / "best.pt").exists())
 
             original = evaluate_ktm(
-                artifacts["model"], artifacts["bundle"],
-                artifacts["bundle"].splits.test_episodes, "cpu",
+                artifacts.model, artifacts.bundle,
+                artifacts.bundle.splits.test_episodes, "cpu",
             )["trajectory"]["mse"]
 
             checkpoint = load_resume(last, "cpu")
@@ -44,19 +44,19 @@ class TrainerSmokeTests(unittest.TestCase):
             fresh = TorchKTM(cfg.to_model_config())
             apply_resume(checkpoint, model=fresh)
             restored = evaluate_ktm(
-                fresh, artifacts["bundle"], artifacts["bundle"].splits.test_episodes, "cpu"
+                fresh, artifacts.bundle, artifacts.bundle.splits.test_episodes, "cpu"
             )["trajectory"]["mse"]
             self.assertAlmostEqual(original, restored, places=6)
 
-    def test_finite_guard_skips_nan_step(self):
-        artifacts = train_ktm(_cfg(steps=20), dist_info=_INFO, debug_force_nan_steps=frozenset({3}))
-        self.assertFalse(artifacts["aborted"])
-        self.assertTrue(any("non-finite loss at step 3" in r for r in artifacts["failure_reasons"]))
-
-    def test_loss_explosion_guard_aborts(self):
-        artifacts = train_ktm(_cfg(steps=20), dist_info=_INFO, debug_force_explode=True)
-        self.assertTrue(artifacts["aborted"])
-        self.assertTrue(any("loss explosion" in r for r in artifacts["failure_reasons"]))
+    def test_loss_explosion_guard_aborts_via_real_config(self):
+        # No debug flags: a tight explosion factor + small noisy minibatches makes a real
+        # spike trip the guard, exercising the production abort path.
+        artifacts = train_ktm(
+            _cfg(steps=120, batch_size=4, loss_explosion_factor=1.0001),
+            dist_info=_INFO,
+        )
+        self.assertTrue(artifacts.aborted)
+        self.assertTrue(any("loss explosion" in r for r in artifacts.failure_reasons))
 
 
 if __name__ == "__main__":

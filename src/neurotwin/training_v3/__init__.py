@@ -14,7 +14,12 @@ from neurotwin.training_v3.config import KTMTrainConfig
 from neurotwin.training_v3.dataset import TransitionGymDataset, make_dataloaders
 from neurotwin.training_v3.metrics_eval import evaluate_ktm, ktm_vs_baselines
 from neurotwin.training_v3.objective import LossExplosionGuard, is_finite_loss, ktm_loss
-from neurotwin.training_v3.trainer import build_torchrun_command, resolve_device, train_ktm
+from neurotwin.training_v3.trainer import (
+    TrainingArtifacts,
+    build_torchrun_command,
+    resolve_device,
+    train_ktm,
+)
 
 __all__ = [
     "KTMTrainConfig",
@@ -26,6 +31,7 @@ __all__ = [
     "evaluate_ktm",
     "ktm_vs_baselines",
     "train_ktm",
+    "TrainingArtifacts",
     "resolve_device",
     "build_torchrun_command",
     "write_training_bundle",
