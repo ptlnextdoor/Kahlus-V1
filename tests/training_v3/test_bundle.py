@@ -57,6 +57,18 @@ class TrainingBundleTests(unittest.TestCase):
             self.assertIn("recovery_claim_allowed", metrics)
             self.assertIn("ktm_vs_baselines", metrics)
 
+            # The comparison must be locked under a matched baseline budget and carry full
+            # budget provenance, so a recovery claim can never flip on a budget artifact.
+            comparison = metrics["ktm_vs_baselines"]
+            for key in ("budget_matched", "comparison_locked", "relative_improvement", "margin"):
+                self.assertIn(key, comparison)
+            self.assertTrue(comparison["budget_matched"])
+            budget = comparison["budget"]
+            self.assertEqual(budget["baseline_budget_policy"], "matched_optimizer_steps")
+            # Smoke leaves baseline_train_steps unset → auto-matches the KTM step budget (120).
+            self.assertEqual(budget["baseline_train_steps"], 120)
+            self.assertEqual(budget["ktm_train_steps"], 120)
+
     def test_baseline_table_includes_ktm_row(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)

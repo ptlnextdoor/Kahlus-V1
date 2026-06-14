@@ -24,6 +24,12 @@ w_profile: 0.5
 w_nll: 0.1
 loss_explosion_factor: 8.0
 
+# Fairness: baselines train to the SAME optimizer-step budget as the KTM (matched, not the runner's
+# short default), and the trained KTM must beat the strongest baseline by >= recovery_margin
+# (relative MSE) under that matched budget before the synthetic_ktm_recovery scope can be earned.
+baseline_train_steps: 400
+recovery_margin: 0.05
+
 # Synthetic-world knobs (still synthetic; modestly larger than the CPU smoke).
 n_episodes: 256
 n_subjects: 8

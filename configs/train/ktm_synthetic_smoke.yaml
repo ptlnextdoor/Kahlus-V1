@@ -23,6 +23,11 @@ w_profile: 0.5
 w_nll: 0.1
 loss_explosion_factor: 8.0
 
+# Fairness: leave baseline_train_steps unset (0 = auto-match the KTM step budget above); the
+# trained KTM must beat the strongest baseline by >= recovery_margin under that matched budget
+# before the synthetic_ktm_recovery scope can be earned.
+recovery_margin: 0.05
+
 # Synthetic-world knobs (kept tiny so the CPU smoke is fast + deterministic).
 n_episodes: 48
 n_subjects: 4

@@ -38,6 +38,13 @@ class KTMTrainConfig:
     loss_explosion_factor: float = 8.0
     resume_path: str | None = None
 
+    # Fairness knobs for the KTM-vs-baselines recovery comparison. ``baseline_train_steps == 0``
+    # means "match the KTM optimizer-step budget" (resolved against ``steps`` at use time), so the
+    # baselines are not handed an unfairly short schedule. ``recovery_margin`` is the relative MSE
+    # improvement the trained KTM must clear over the strongest baseline to earn the recovery scope.
+    baseline_train_steps: int = 0
+    recovery_margin: float = 0.05
+
     # Synthetic-world knobs (kept tiny by default so the CPU smoke is fast + deterministic).
     n_episodes: int = 48
     n_subjects: int = 4
@@ -65,6 +72,10 @@ class KTMTrainConfig:
                 raise ValueError(f"{name} must be >= 1, got {getattr(self, name)}")
         if self.loss_explosion_factor <= 1.0:
             raise ValueError("loss_explosion_factor must be > 1.0")
+        if int(self.baseline_train_steps) < 0:
+            raise ValueError(f"baseline_train_steps must be >= 0, got {self.baseline_train_steps}")
+        if not 0.0 <= float(self.recovery_margin) < 1.0:
+            raise ValueError(f"recovery_margin must be in [0.0, 1.0), got {self.recovery_margin}")
         # Constructing the sub-configs validates the world/model knobs.
         self.to_world_config()
         self.to_model_config()
