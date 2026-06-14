@@ -122,12 +122,15 @@ def main() -> int:
             print(f"branch=v3 model=TorchKTM mode={cfg.mode} device={artifacts.device} out_dir={out.resolve()}")
             print(f"val_mse_before={artifacts.val_before:.6g} val_mse_after={artifacts.val_after:.6g} "
                   f"best_val_mse={artifacts.best_val:.6g} loss_decreased={artifacts.loss_decreased}")
+            print(f"selected_checkpoint={artifacts.selected_checkpoint} "
+                  f"selected_checkpoint_step={artifacts.selected_checkpoint_step}")
             print(f"claim_scope={gate['claim_scope']} scientific_claim_allowed={gate['scientific_claim_allowed']}")
             print(f"aborted={artifacts.aborted} failure_reasons={artifacts.failure_reasons}")
             print(f"checkpoints best={artifacts.best_checkpoint} last={artifacts.last_checkpoint}")
             print("bundle=" + ", ".join(f"{key}={value}" for key, value in paths.items()))
             print("future_micro_sweep_cmd=" + " ".join(build_torchrun_command(
-                config_path="configs/train/ktm_a100_micro.yaml", out_dir="$RUN_ROOT/ktm_micro_sweep")))
+                config_path=args.config or "configs/train/ktm_a100_recovery_micro.yaml",
+                out_dir="$RUN_ROOT/ktm_micro_sweep")))
     except Exception as exc:  # noqa: BLE001 - capture partial progress + failure, then fail loudly.
         if dist_info.is_rank_zero:
             _write_failure_report(out, exc)

@@ -10,6 +10,7 @@ here; ``build_torchrun_command`` only *builds* the future micro-sweep command.
 from __future__ import annotations
 
 from contextlib import nullcontext
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import math
@@ -64,6 +65,8 @@ class TrainingArtifacts:
     failure_reasons: list[str] = field(default_factory=list)
     best_checkpoint: Path | None = None
     last_checkpoint: Path | None = None
+    selected_checkpoint: str = "last"
+    selected_checkpoint_step: int = 0
 
 
 def resolve_device(mode: str, dist_info: DistributedInfo) -> torch.device:
@@ -140,6 +143,10 @@ def _write_status(out: Path | None, dist_info: DistributedInfo, **fields: Any) -
     write_json(out / "run_status.json", fields)
 
 
+def _clone_state_dict(model: torch.nn.Module) -> dict[str, torch.Tensor]:
+    return {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
+
+
 def train_ktm(
     cfg: KTMTrainConfig,
     *,
@@ -196,11 +203,25 @@ def train_ktm(
         step_losses: list[dict[str, float]] = []
         best_ckpt_path: Path | None = None
         last_ckpt_path: Path | None = None
+        best_state_dict: dict[str, torch.Tensor] | None = None
+        best_step = int(start_step)
+        selected_checkpoint = "last"
+        selected_checkpoint_step = int(start_step)
         aborted = False
         completed_steps = start_step
 
         phase = "train"
         val_before = _val_mse(model, bundle, bundle.splits.val_episodes, device)
+        if not math.isfinite(best_val) or val_before < best_val:
+            best_val = float(val_before)
+            best_step = int(start_step)
+            best_state_dict = _clone_state_dict(model)
+            if ckpt_dir is not None and dist_info.is_rank_zero:
+                best_ckpt_path = save_ktm_checkpoint(
+                    ckpt_dir / "best.pt", step=start_step, model=model, optimizer=optimizer,
+                    best_val=best_val, rng_state={"torch": torch.get_rng_state()},
+                    config_hash=config_hash,
+                )
         _write_status(out, dist_info, status="running", phase=phase, device=str(device),
                       completed_steps=start_step, total_steps=cfg.steps, val_before=val_before)
         _progress(out, dist_info, event="val_before", val_mse=val_before, device=str(device))
@@ -213,13 +234,27 @@ def train_ktm(
             accum_loss = 0.0
             skipped = False
             for _micro in range(accum):
-                history, k, target = next(train_iter)
+                batch = next(train_iter)
+                if len(batch) == 4:
+                    history, k, target, profile_target = batch
+                else:
+                    history, k, target = batch
+                    profile_target = None
                 history = history.to(device)
                 k = k.to(device)
                 target = target.to(device)
+                if profile_target is not None:
+                    profile_target = profile_target.to(device)
                 with autocast_ctx():
-                    pred, log_var = ddp_model(history, k)
-                    loss, _components = ktm_loss(pred, log_var, target, cfg)
+                    if profile_target is not None:
+                        pred, log_var, profile_pred = ddp_model(history, k, return_profile=True)
+                        loss, _components = ktm_loss(
+                            pred, log_var, target, cfg,
+                            profile_pred=profile_pred, profile_target=profile_target,
+                        )
+                    else:
+                        pred, log_var = ddp_model(history, k)
+                        loss, _components = ktm_loss(pred, log_var, target, cfg)
                 loss_value = float(loss.detach())
                 if not is_finite_loss(loss_value):
                     failure_reasons.append(f"non-finite loss at step {step}; micro-batch skipped")
@@ -259,6 +294,8 @@ def train_ktm(
                               val_before=val_before, best_val=min(best_val, val_mse))
                 if val_mse < best_val:
                     best_val = val_mse
+                    best_step = step + 1
+                    best_state_dict = _clone_state_dict(model)
                     if ckpt_dir is not None and dist_info.is_rank_zero:
                         best_ckpt_path = save_ktm_checkpoint(
                             ckpt_dir / "best.pt", step=step + 1, model=model, optimizer=optimizer,
@@ -277,11 +314,19 @@ def train_ktm(
                 )
                 _progress(out, dist_info, event="checkpoint", kind="last", step=step + 1)
 
+        if best_state_dict is not None:
+            model.load_state_dict(deepcopy(best_state_dict))
+            selected_checkpoint = "best_val"
+            selected_checkpoint_step = int(best_step)
+            _progress(out, dist_info, event="selected_checkpoint", kind=selected_checkpoint,
+                      step=selected_checkpoint_step, best_val=float(best_val))
         val_after = _val_mse(model, bundle, bundle.splits.val_episodes, device)
         _progress(out, dist_info, event="val_after", val_mse=val_after, aborted=aborted)
         _write_status(out, dist_info, status="training_complete", phase="train",
                       completed_steps=completed_steps, total_steps=cfg.steps,
                       val_before=val_before, val_after=val_after, best_val=float(best_val),
+                      selected_checkpoint=selected_checkpoint,
+                      selected_checkpoint_step=selected_checkpoint_step,
                       aborted=aborted)
     except Exception as exc:  # noqa: BLE001 - persist where/why training died, then re-raise.
         _progress(out, dist_info, event="training_error", phase=phase,
@@ -312,4 +357,6 @@ def train_ktm(
         failure_reasons=failure_reasons,
         best_checkpoint=best_ckpt_path,
         last_checkpoint=last_ckpt_path,
+        selected_checkpoint=selected_checkpoint,
+        selected_checkpoint_step=selected_checkpoint_step,
     )

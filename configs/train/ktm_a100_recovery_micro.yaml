@@ -1,0 +1,50 @@
+experiment: ktm_a100_recovery_micro
+branch: v3
+description: >-
+  PROPOSED / SYNTHETIC ONLY. Recovery-targeted A100 micro-sweep for the v3 KTM training
+  harness. Uses the trainable perturbation-operator TorchKTM path and a validation-selected
+  checkpoint. This is still synthetic data only: no real EEG, no clinical/control claims.
+  The synthetic_ktm_recovery scope is allowed only if the locked matched-budget gate is earned.
+claim_scope: synthetic_ktm_training_harness
+
+seed: 0
+mode: ddp
+steps: 400
+batch_size: 1024
+lr: 0.002
+weight_decay: 0.0001
+precision: fp32
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 100
+eval_every_steps: 100
+w_traj: 1.0
+w_profile: 0.5
+w_nll: 0.01
+loss_explosion_factor: 8.0
+
+# Fairness: baselines train to the SAME optimizer-step budget as KTM and KTM must beat the
+# strongest baseline by >= recovery_margin relative MSE before synthetic_ktm_recovery is earned.
+baseline_train_steps: 400
+recovery_margin: 0.05
+
+# Synthetic-world knobs (same task family as the original A100 micro-sweep).
+n_episodes: 256
+n_subjects: 8
+state_dim: 8
+n_perturbations: 4
+horizon: 6
+history_len: 8
+eeg_channels: 8
+behavior_dim: 2
+
+# Model dims and recovery-targeted operator path.
+embed_dim: 128
+memory_dim: 96
+memory_rho: 0.0
+uncertainty_floor: 0.001
+use_operator_path: true
+operator_init_scale: 0.01
+decoder_hidden_dim: 256
+use_sequence_encoder: true
+use_profile_decoder: true

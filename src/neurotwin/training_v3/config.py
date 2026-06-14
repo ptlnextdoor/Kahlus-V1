@@ -54,12 +54,20 @@ class KTMTrainConfig:
     history_len: int = 6
     eeg_channels: int = 5
     behavior_dim: int = 2
+    # Generator family of the hidden dynamics (architecture-affinity falsifier knob).
+    dynamics_family: str = "linear"
+    nonlinearity_scale: float = 0.5
 
     # Model dims.
     embed_dim: int = 16
     memory_dim: int = 12
     memory_rho: float = 0.8
     uncertainty_floor: float = 1e-3
+    use_operator_path: bool = True
+    operator_init_scale: float = 0.02
+    decoder_hidden_dim: int = 128
+    use_sequence_encoder: bool = True
+    use_profile_decoder: bool = True
 
     def validate(self) -> "KTMTrainConfig":
         if self.mode not in VALID_MODES:
@@ -76,6 +84,10 @@ class KTMTrainConfig:
             raise ValueError(f"baseline_train_steps must be >= 0, got {self.baseline_train_steps}")
         if not 0.0 <= float(self.recovery_margin) < 1.0:
             raise ValueError(f"recovery_margin must be in [0.0, 1.0), got {self.recovery_margin}")
+        if float(self.operator_init_scale) < 0.0:
+            raise ValueError(f"operator_init_scale must be >= 0, got {self.operator_init_scale}")
+        if int(self.decoder_hidden_dim) < 1:
+            raise ValueError(f"decoder_hidden_dim must be >= 1, got {self.decoder_hidden_dim}")
         # Constructing the sub-configs validates the world/model knobs.
         self.to_world_config()
         self.to_model_config()
@@ -102,6 +114,8 @@ class KTMTrainConfig:
             history_len=self.history_len,
             eeg_channels=self.eeg_channels,
             behavior_dim=self.behavior_dim,
+            dynamics_family=self.dynamics_family,
+            nonlinearity_scale=self.nonlinearity_scale,
         ).validate()
 
     def to_model_config(self) -> TorchKTMConfig:
@@ -115,6 +129,11 @@ class KTMTrainConfig:
             memory_dim=self.memory_dim,
             memory_rho=self.memory_rho,
             uncertainty_floor=self.uncertainty_floor,
+            use_operator_path=bool(self.use_operator_path),
+            operator_init_scale=self.operator_init_scale,
+            decoder_hidden_dim=self.decoder_hidden_dim,
+            use_sequence_encoder=bool(self.use_sequence_encoder),
+            use_profile_decoder=bool(self.use_profile_decoder),
         ).validate()
 
     def as_dict(self) -> dict[str, Any]:

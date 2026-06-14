@@ -17,6 +17,9 @@ from dataclasses import dataclass
 import numpy as np
 
 
+VALID_DYNAMICS_FAMILIES: frozenset[str] = frozenset({"linear", "nonlinear", "quadratic"})
+
+
 @dataclass(frozen=True)
 class SyntheticWorldConfig:
     seed: int = 0
@@ -32,6 +35,12 @@ class SyntheticWorldConfig:
     adapter_scale: float = 0.1
     base_radius: float = 0.9
     noise_scale: float = 0.02
+    # Generator family for the hidden dynamics. ``linear`` is the original gym whose operator
+    # structure the KTM's operator path may be aligned to; ``nonlinear``/``quadratic`` bend the
+    # generator away from that structure so architecture-affinity can be falsified. ``nonlinear``
+    # squashes each step (tanh); ``quadratic`` adds a mild element-wise quadratic coupling.
+    dynamics_family: str = "linear"
+    nonlinearity_scale: float = 0.5
 
     def validate(self) -> "SyntheticWorldConfig":
         positives = {
@@ -52,6 +61,11 @@ class SyntheticWorldConfig:
             raise ValueError("n_episodes must be >= n_subjects")
         if not 0.0 < self.base_radius < 1.0:
             raise ValueError("base_radius must be in (0, 1)")
+        if self.dynamics_family not in VALID_DYNAMICS_FAMILIES:
+            raise ValueError(
+                f"dynamics_family must be one of {sorted(VALID_DYNAMICS_FAMILIES)}, "
+                f"got {self.dynamics_family!r}"
+            )
         return self
 
 
@@ -100,6 +114,26 @@ def generate_world(config: SyntheticWorldConfig) -> SyntheticWorld:
     )
 
 
+def _dynamics_step(z: np.ndarray, base: np.ndarray, cfg: SyntheticWorldConfig) -> np.ndarray:
+    """One hidden-dynamics step under the world's generator family.
+
+    ``linear`` is ``z A^T`` (the original gym). ``nonlinear`` squashes that step with ``tanh``;
+    ``quadratic`` adds a mild element-wise quadratic coupling. The non-linear families keep the
+    base operator but bend the trajectory away from pure linear-operator structure, so a model
+    whose inductive bias is exactly linear operators cannot trivially match them.
+    """
+
+    linear = z @ base.T
+    family = cfg.dynamics_family
+    if family == "linear":
+        return linear
+    scale = float(cfg.nonlinearity_scale)
+    if family == "nonlinear":
+        return linear + scale * (np.tanh(linear) - linear)
+    # quadratic: a small odd-free element-wise term, kept bounded by the spectral radius.
+    return linear + scale * np.tanh(linear * linear) * np.sign(linear)
+
+
 def roll_history(world: SyntheticWorld) -> np.ndarray:
     """Roll the autonomous base dynamics to produce per-episode history states.
 
@@ -111,7 +145,7 @@ def roll_history(world: SyntheticWorld) -> np.ndarray:
     z = world.init_states.copy()
     for t in range(cfg.history_len):
         states[:, t] = z
-        z = z @ world.base_dynamics.T
+        z = _dynamics_step(z, world.base_dynamics, cfg)
     return states
 
 
@@ -125,6 +159,6 @@ def roll_future(world: SyntheticWorld, perturbed_state: np.ndarray) -> np.ndarra
     future = np.zeros((cfg.n_episodes, cfg.horizon, cfg.state_dim), dtype=np.float64)
     z = np.asarray(perturbed_state, dtype=np.float64).copy()
     for t in range(cfg.horizon):
-        z = z @ world.base_dynamics.T
+        z = _dynamics_step(z, world.base_dynamics, cfg)
         future[:, t] = z
     return future

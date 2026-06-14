@@ -1,8 +1,10 @@
 """Torch Dataset / DataLoaders over a synthetic Transition Gym bundle.
 
 PROPOSED / SYNTHETIC ONLY. Wraps a :class:`TransitionGymBundle` (numpy float32 arrays) as a
-``torch.utils.data.Dataset`` indexed by ``(episode, perturbation)``. Honors the gym's own
-leakage-checked episode splits and uses a ``DistributedSampler`` under DDP. No real data.
+``torch.utils.data.Dataset`` indexed by ``(episode, perturbation)``. Each item includes the selected
+perturbation target and the full response-profile target for the same episode, so KTM can train its
+finite response profile under the same synthetic target surface used by the baselines. Honors the
+gym's own leakage-checked episode splits and uses a ``DistributedSampler`` under DDP. No real data.
 """
 
 from __future__ import annotations
@@ -18,7 +20,10 @@ from neurotwin.transition_gym import TransitionGymBundle
 
 
 class TransitionGymDataset(Dataset):
-    """One sample per ``(episode, perturbation)``: ``(history_eeg, k, response_eeg)``."""
+    """One sample per ``(episode, perturbation)``.
+
+    Returns ``(history_eeg, k, response_eeg_for_k, full_response_profile)``.
+    """
 
     def __init__(self, bundle: TransitionGymBundle, episodes: Sequence[int]) -> None:
         self.history = np.asarray(bundle.history_eeg, dtype=np.float32)  # (E, L, C)
@@ -32,11 +37,12 @@ class TransitionGymDataset(Dataset):
     def __len__(self) -> int:
         return len(self._index)
 
-    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, i: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         episode, k = self._index[i]
         history = torch.from_numpy(self.history[episode])  # (L, C)
         target = torch.from_numpy(self.response[episode, k])  # (H, C)
-        return history, torch.tensor(k, dtype=torch.long), target
+        profile = torch.from_numpy(self.response[episode])  # (K, H, C)
+        return history, torch.tensor(k, dtype=torch.long), target, profile
 
 
 def make_dataloaders(
