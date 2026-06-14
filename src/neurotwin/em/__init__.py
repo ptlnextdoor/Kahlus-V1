@@ -17,6 +17,15 @@ from neurotwin.em.artifact_audit import (
     run_artifact_audit,
     synthesize_idle_recording,
 )
+from neurotwin.em.artifact_severity import (
+    EEG_BANDS,
+    artifact_severity_summary,
+    band_contamination_score,
+    channel_contamination_score,
+    contamination_map,
+    overall_artifact_severity,
+    severity_verdict,
+)
 from neurotwin.em.eeg_artifact_features import channel_artifact_features, compute_psd
 from neurotwin.em.em_context_schema import (
     EMContext,
@@ -28,6 +37,12 @@ from neurotwin.em.em_gates import build_em_artifact_audit_gate
 from neurotwin.em.em_response_metrics import ARTIFACT_MODEL, summarize_em_response
 from neurotwin.em.geomagnetic_fetcher import fetch_geomagnetic
 from neurotwin.em.room_emf_logger import RoomEMFLogger
+from neurotwin.em.stage0_report import (
+    build_stage0_report,
+    format_stage0_report_md,
+    recommendation,
+    write_stage0_report,
+)
 
 __all__ = [
     "EMContext",
@@ -44,4 +59,15 @@ __all__ = [
     "format_artifact_report_md",
     "build_em_artifact_audit_gate",
     "fetch_geomagnetic",
+    "EEG_BANDS",
+    "contamination_map",
+    "channel_contamination_score",
+    "band_contamination_score",
+    "overall_artifact_severity",
+    "severity_verdict",
+    "artifact_severity_summary",
+    "build_stage0_report",
+    "format_stage0_report_md",
+    "recommendation",
+    "write_stage0_report",
 ]
