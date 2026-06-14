@@ -12,11 +12,13 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from _bootstrap import ensure_src_import_path
 
 ensure_src_import_path(__file__)
 
+from neurotwin.repro import capture_environment, write_json  # noqa: E402
 from neurotwin.runtime.distributed import get_distributed_info  # noqa: E402
 from neurotwin.training_v3 import (  # noqa: E402
     KTMTrainConfig,
@@ -58,6 +60,9 @@ def main() -> int:
 
     if dist_info.is_rank_zero:
         paths = write_training_bundle(out, cfg=cfg, artifacts=artifacts, config_path=args.config)
+        # Standalone environment.json for the handoff/evidence contract (torch/cuda/nccl, visible
+        # GPU count+names, CUDA_VISIBLE_DEVICES, WORLD_SIZE, docker image, git commit).
+        paths["environment"] = write_json(out / "environment.json", capture_environment(argv=sys.argv))
         gate_path = paths["evidence_gate"]
         from neurotwin.gates import read_evidence_gate
 
