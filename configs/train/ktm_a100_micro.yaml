@@ -1,0 +1,41 @@
+experiment: ktm_a100_micro
+branch: v3
+description: >-
+  PROPOSED / SYNTHETIC ONLY. 8xA100 micro-sweep config for the v3 KTM training harness. DO NOT RUN
+  until local CPU smoke + at least 3 local seeds pass and the output bundle is complete. This is a
+  tiny, short, gated micro-sweep (no full beast run): synthetic data only, no real data, no
+  clinical/control claims. Earns only the narrow synthetic_ktm_training_harness scope. Launch only
+  via torchrun --nproc_per_node=8 (or the slurm wrapper) with an absolute materialized path.
+claim_scope: synthetic_ktm_training_harness
+
+seed: 0
+mode: ddp
+steps: 400
+batch_size: 64
+lr: 0.005
+weight_decay: 0.0001
+precision: bf16
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 100
+eval_every_steps: 100
+w_traj: 1.0
+w_profile: 0.5
+w_nll: 0.1
+loss_explosion_factor: 8.0
+
+# Synthetic-world knobs (still synthetic; modestly larger than the CPU smoke).
+n_episodes: 256
+n_subjects: 8
+state_dim: 8
+n_perturbations: 4
+horizon: 6
+history_len: 8
+eeg_channels: 8
+behavior_dim: 2
+
+# Model dims.
+embed_dim: 64
+memory_dim: 48
+memory_rho: 0.8
+uncertainty_floor: 0.001

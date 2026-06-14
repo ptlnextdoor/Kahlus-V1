@@ -66,6 +66,32 @@ collapsed to one; canonical `regression_metrics` replaces a duplicate `_metrics`
 registered in `baseline_runner`; task-config `Any` hints tightened. Same tests, same gate JSON,
 same smoke verdicts. See `docs/research/falsification_core.md`.
 
+### Sprint 2A — cluster-native trainable KTM harness (implemented; NOT yet merged)
+The v3 "launchpad": a trainable KTM + standalone training harness so the gym task can move from
+*untrained scaffold* to *trained model*, cluster-ready but run locally first. Landed code:
+- `src/neurotwin/models/ktm/torch_ktm.py` — `TorchKTM` (trainable `nn.Module`) + `TorchKTMConfig`,
+  a torch sibling of the numpy scaffold (scaffold left intact; still the operator-recovery grader).
+- `src/neurotwin/training_v3/` — standalone harness (`config`, `dataset`, `objective`, `checkpoint`,
+  `metrics_eval`, `trainer`, `bundle`). Isolated from the frozen v1 `training/` package; reuses
+  `runtime/distributed.py` (DDP), `repro.py`, `falsification`/`gates`, and `baseline_runner.py`.
+  Modes: `cpu_smoke` / `single_gpu` / `ddp`. Guards: finite/NaN micro-batch skip + loss-explosion
+  abort. Checkpoint save/resume via `torch.save` / `torch.load(weights_only=True)` (+ fallback).
+- `scripts/run_ktm_train.py`, `configs/train/ktm_synthetic_smoke.yaml`, `configs/train/ktm_a100_micro.yaml`.
+- `gates/unified_gate.py` — added narrow scope `synthetic_ktm_training_harness` (additive).
+
+**Two-tier claim discipline.** Primary scope `synthetic_ktm_training_harness` = infrastructure
+readiness only (training runs, loss decreases, checkpoint/resume, bundle writes, DDP command exists,
+gates block broad claims). The stronger `synthetic_ktm_recovery` stays **blocked** until a trained
+KTM beats strong baselines on locked held-out metrics — a decreasing loss never flips it. CPU smoke:
+val MSE 0.218 → 0.012, harness scope allowed, KTM honestly loses to the `mlp` baseline so recovery
+stays blocked. Full suite 398 OK. No commit/PR/A100 in the implementing run (pending human review).
+
+**A100 gate (unchanged, restated).** No cluster run until: synthetic task locked → baselines →
+evidence gates → CPU smoke + ≥3 local seeds pass → complete output bundle (cards/metrics/failure
+logs). The first cluster job is a tiny 8×A100 micro-sweep (short steps, 3 seeds, full bundle, no
+claims beyond the gate), launched via the printed `torchrun --nproc_per_node=8` command (or the
+slurm wrapper) — never a full beast run. 2A builds the launchpad; the rocket waits on the pad.
+
 ## Roadmap ahead (not yet built)
 
 - **Sprint 1C — EM Stage 0 report generator.** Prettier artifact report, artifact severity score,
