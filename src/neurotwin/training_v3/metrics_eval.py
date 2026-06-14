@@ -13,8 +13,14 @@ from typing import Any, Sequence
 import numpy as np
 import torch
 
-from neurotwin.baseline_runner import regression_metrics
+from neurotwin.baseline_runner import (
+    BaselineRunResult,
+    regression_metrics,
+    run_baselines,
+    transition_gym_regression_task,
+)
 from neurotwin.models.ktm import TorchKTM
+from neurotwin.training_v3.config import KTMTrainConfig
 from neurotwin.transition_gym import TransitionGymBundle
 
 
@@ -139,3 +145,39 @@ def ktm_vs_baselines(
         "budget": budget,
         "ktm_beats_baselines": earned,
     }
+
+
+def fair_ktm_vs_baselines(
+    model: TorchKTM,
+    bundle: TransitionGymBundle,
+    cfg: KTMTrainConfig,
+    *,
+    device: torch.device | str,
+    world_size: int = 1,
+    seed: int | None = None,
+) -> tuple[BaselineRunResult, dict[str, Any], dict[str, Any], int]:
+    """Run the symmetric-baseline fair comparison once: ``(baseline_result, ktm_test, comparison, steps)``.
+
+    Trains the *best-val* baselines on the same synthetic gym, evaluates the KTM on the held-out test
+    split, and locks the matched optimizer-step comparison. This is the single source for the fair
+    KTM-vs-baselines comparison shared by the training bundle and the red-team runner, so the two
+    cannot drift on baseline selection, budget, or margin.
+    """
+
+    seed = cfg.seed if seed is None else int(seed)
+    baseline_steps = cfg.baseline_train_steps or cfg.steps
+    task = transition_gym_regression_task(cfg.to_world_config())
+    baseline_result = run_baselines(
+        task, seed=seed, train_steps=baseline_steps, select_best_val=True
+    )
+    ktm_test = evaluate_ktm(model, bundle, bundle.splits.test_episodes, device)
+    comparison = ktm_vs_baselines(
+        ktm_test["trajectory"]["mse"],
+        baseline_result.metrics_by_model,
+        ktm_train_steps=cfg.steps,
+        baseline_train_steps=baseline_steps,
+        ktm_world_size=int(world_size),
+        ktm_global_batch_size=cfg.batch_size * int(world_size),
+        margin=cfg.recovery_margin,
+    )
+    return baseline_result, ktm_test, comparison, baseline_steps

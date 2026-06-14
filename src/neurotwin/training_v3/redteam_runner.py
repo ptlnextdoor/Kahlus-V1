@@ -21,11 +21,10 @@ from typing import Any, Sequence
 import numpy as np
 import torch
 
-from neurotwin.baseline_runner import run_baselines, transition_gym_regression_task
 from neurotwin.repro import write_json
 from neurotwin.runtime.distributed import DistributedInfo
 from neurotwin.training_v3.config import KTMTrainConfig
-from neurotwin.training_v3.metrics_eval import evaluate_ktm, ktm_vs_baselines
+from neurotwin.training_v3.metrics_eval import fair_ktm_vs_baselines
 from neurotwin.training_v3.redteam import (
     MIN_SEEDS,
     GeneratorFamilyOutcome,
@@ -71,22 +70,8 @@ def _one_comparison(cfg: KTMTrainConfig) -> dict[str, Any]:
     cfg = cfg.validate()
     artifacts = train_ktm(cfg, out_dir=None, dist_info=_INFO)
     device = torch.device(artifacts.device)
-    baseline_steps = cfg.baseline_train_steps or cfg.steps
-    task = transition_gym_regression_task(cfg.to_world_config())
-    baseline_result = run_baselines(
-        task, seed=cfg.seed, train_steps=baseline_steps, select_best_val=True
-    )
-    ktm_test = evaluate_ktm(
-        artifacts.model, artifacts.bundle, artifacts.bundle.splits.test_episodes, device
-    )
-    comparison = ktm_vs_baselines(
-        ktm_test["trajectory"]["mse"],
-        baseline_result.metrics_by_model,
-        ktm_train_steps=cfg.steps,
-        baseline_train_steps=baseline_steps,
-        ktm_world_size=1,
-        ktm_global_batch_size=cfg.batch_size,
-        margin=cfg.recovery_margin,
+    baseline_result, ktm_test, comparison, _ = fair_ktm_vs_baselines(
+        artifacts.model, artifacts.bundle, cfg, device=device, world_size=1
     )
     return {
         "comparison": comparison,

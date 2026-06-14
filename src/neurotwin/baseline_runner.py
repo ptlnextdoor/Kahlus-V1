@@ -212,70 +212,40 @@ def _predict_state(model: nn.Module, state: dict[str, torch.Tensor], x: torch.Te
     return _predict_torch(model, x, sequence)
 
 
+def _f32(arr: np.ndarray) -> torch.Tensor:
+    return torch.tensor(np.asarray(arr, dtype=np.float64), dtype=torch.float32)
+
+
+def _asarray64(arr: np.ndarray) -> np.ndarray:
+    return np.asarray(arr, dtype=np.float64)
+
+
 _NON_ITERATIVE = frozenset({"ridge", "autoregressive_ridge", "retrieval_knn"})
+_TORCH_BASELINES = frozenset({"mlp", "transformer", "ssm_fallback"})
 
 
-def _run_single_model_selected(
-    model_id: str, task: RegressionTask, train_steps: int, seed: int, eval_every: int = 10
-) -> dict[str, Any]:
-    """Best-val variant: returns best-val + final-step test predictions and the checkpoint policy.
+def _build_torch_baseline(model_id: str, task: RegressionTask, seed: int):
+    """Single source for a learned baseline: ``(model, x_preprocessor, sequence_flag)``.
 
-    Non-iterative baselines (ridge / retrieval) have no checkpoints, so both predictions are their
-    single fitted result and the policy is ``fitted``.
+    Both the final-step (:func:`_run_single_model`) and best-val (:func:`_run_single_model_selected`)
+    paths construct their model + tensors through this factory, so each baseline's architecture and
+    hyperparameters live in exactly one place. ``mlp`` flattens the window; the sequence models keep it.
     """
 
+    set_global_seed(seed)
     channels_in = task.x_train.shape[-1]
     channels_out = task.y_train.shape[-1]
-
-    if model_id in _NON_ITERATIVE:
-        pred = _run_single_model(model_id, task, train_steps, seed)
-        return {"pred_best_val": pred, "pred_final": pred, "checkpoint_policy": "fitted", "best_step": 0}
-    if model_id == "nfc":
-        # Same honest skip as the final-step path (raises so the caller records the failure).
-        _run_single_model(model_id, task, train_steps, seed)
-
     if model_id == "mlp":
-        set_global_seed(seed)
-        model: nn.Module = TorchMLPBaseline(task.x_train.shape[1] * channels_in, channels_out)
-        xt = torch.tensor(_flatten_window(task.x_train), dtype=torch.float32)
-        yt = torch.tensor(np.asarray(task.y_train, dtype=np.float64), dtype=torch.float32)
-        xv = torch.tensor(_flatten_window(task.x_val), dtype=torch.float32)
-        yv = torch.tensor(np.asarray(task.y_val, dtype=np.float64), dtype=torch.float32)
-        xe = torch.tensor(_flatten_window(task.x_test), dtype=torch.float32)
-        sequence = False
-    elif model_id in {"transformer", "ssm_fallback"}:
-        set_global_seed(seed)
-        if model_id == "transformer":
-            model = TinyTransformerBaseline(channels_in, channels_out, latent_dim=32, n_heads=4, n_layers=1)
-        else:
-            model = TinySSMBaseline(channels_in, channels_out, latent_dim=32, n_layers=1)
-        xt = torch.tensor(np.asarray(task.x_train, dtype=np.float64), dtype=torch.float32)
-        yt = torch.tensor(np.asarray(task.y_train, dtype=np.float64), dtype=torch.float32)
-        xv = torch.tensor(np.asarray(task.x_val, dtype=np.float64), dtype=torch.float32)
-        yv = torch.tensor(np.asarray(task.y_val, dtype=np.float64), dtype=torch.float32)
-        xe = torch.tensor(np.asarray(task.x_test, dtype=np.float64), dtype=torch.float32)
-        sequence = True
-    else:
-        raise RuntimeError(f"unknown baseline model_id: {model_id!r}")
-
-    best_state, final_state, best_step = _train_torch_select(
-        model, xt, yt, xv, yv, train_steps, sequence=sequence, eval_every=eval_every
-    )
-    pred_best = _predict_state(model, best_state, xe, sequence)
-    pred_final = _predict_state(model, final_state, xe, sequence)
-    return {
-        "pred_best_val": pred_best,
-        "pred_final": pred_final,
-        "checkpoint_policy": "best_val",
-        "best_step": int(best_step),
-    }
+        return TorchMLPBaseline(task.x_train.shape[1] * channels_in, channels_out), _flatten_window, False
+    if model_id == "transformer":
+        return TinyTransformerBaseline(channels_in, channels_out, latent_dim=32, n_heads=4, n_layers=1), _asarray64, True
+    if model_id == "ssm_fallback":
+        return TinySSMBaseline(channels_in, channels_out, latent_dim=32, n_layers=1), _asarray64, True
+    raise RuntimeError(f"unknown torch baseline model_id: {model_id!r}")
 
 
 def _run_single_model(model_id: str, task: RegressionTask, train_steps: int, seed: int) -> np.ndarray:
-    """Return a prediction array for ``model_id`` on ``task.x_test`` or raise on skip."""
-
-    channels_in = task.x_train.shape[-1]
-    channels_out = task.y_train.shape[-1]
+    """Return a final-step prediction array for ``model_id`` on ``task.x_test`` or raise on skip."""
 
     if model_id == "retrieval_knn":
         return retrieval_knn_predict(task.x_train, task.y_train, task.x_test)
@@ -283,23 +253,10 @@ def _run_single_model(model_id: str, task: RegressionTask, train_steps: int, see
         return _fit_ridge(_last_step(task.x_train), task.y_train, _last_step(task.x_test), alpha=1.0)
     if model_id == "autoregressive_ridge":
         return _fit_ridge(_flatten_window(task.x_train), task.y_train, _flatten_window(task.x_test), alpha=1.0)
-    if model_id == "mlp":
-        set_global_seed(seed)
-        model = TorchMLPBaseline(task.x_train.shape[1] * channels_in, channels_out)
-        xt = torch.tensor(_flatten_window(task.x_train), dtype=torch.float32)
-        yt = torch.tensor(np.asarray(task.y_train, dtype=np.float64), dtype=torch.float32)
-        _train_torch(model, xt, yt, train_steps, sequence=False)
-        return _predict_torch(model, torch.tensor(_flatten_window(task.x_test), dtype=torch.float32), sequence=False)
-    if model_id in {"transformer", "ssm_fallback"}:
-        set_global_seed(seed)
-        if model_id == "transformer":
-            model = TinyTransformerBaseline(channels_in, channels_out, latent_dim=32, n_heads=4, n_layers=1)
-        else:
-            model = TinySSMBaseline(channels_in, channels_out, latent_dim=32, n_layers=1)
-        xt = torch.tensor(np.asarray(task.x_train, dtype=np.float64), dtype=torch.float32)
-        yt = torch.tensor(np.asarray(task.y_train, dtype=np.float64), dtype=torch.float32)
-        _train_torch(model, xt, yt, train_steps, sequence=True)
-        return _predict_torch(model, torch.tensor(np.asarray(task.x_test, dtype=np.float64), dtype=torch.float32), sequence=True)
+    if model_id in _TORCH_BASELINES:
+        model, xprep, sequence = _build_torch_baseline(model_id, task, seed)
+        _train_torch(model, _f32(xprep(task.x_train)), _f32(task.y_train), train_steps, sequence=sequence)
+        return _predict_torch(model, _f32(xprep(task.x_test)), sequence=sequence)
     if model_id == "nfc":
         # The Neural Field Compiler has a bespoke train/eval path and is intentionally not
         # run as a flat-regression baseline here. We confirm importability and skip honestly.
@@ -312,6 +269,38 @@ def _run_single_model(model_id: str, task: RegressionTask, train_steps: int, see
             "train/eval path and is not wired into the shared flat-regression runner"
         )
     raise RuntimeError(f"unknown baseline model_id: {model_id!r}")
+
+
+def _run_single_model_selected(
+    model_id: str, task: RegressionTask, train_steps: int, seed: int, eval_every: int = 10
+) -> dict[str, Any]:
+    """Best-val variant: returns best-val + final-step test predictions and the checkpoint policy.
+
+    Non-iterative baselines (ridge / retrieval) have no checkpoints, so both predictions are their
+    single fitted result and the policy is ``fitted``. Learned baselines reuse the same factory and
+    are reported at their lowest-val-MSE checkpoint — symmetric with the KTM.
+    """
+
+    if model_id in _NON_ITERATIVE:
+        pred = _run_single_model(model_id, task, train_steps, seed)
+        return {"pred_best_val": pred, "pred_final": pred, "checkpoint_policy": "fitted", "best_step": 0}
+    if model_id not in _TORCH_BASELINES:
+        # nfc (or anything unknown) takes the same honest skip/raise as the final-step path.
+        _run_single_model(model_id, task, train_steps, seed)
+        raise RuntimeError(f"unknown baseline model_id: {model_id!r}")  # pragma: no cover
+
+    model, xprep, sequence = _build_torch_baseline(model_id, task, seed)
+    best_state, final_state, best_step = _train_torch_select(
+        model, _f32(xprep(task.x_train)), _f32(task.y_train),
+        _f32(xprep(task.x_val)), _f32(task.y_val), train_steps, sequence=sequence, eval_every=eval_every,
+    )
+    xe = _f32(xprep(task.x_test))
+    return {
+        "pred_best_val": _predict_state(model, best_state, xe, sequence),
+        "pred_final": _predict_state(model, final_state, xe, sequence),
+        "checkpoint_policy": "best_val",
+        "best_step": int(best_step),
+    }
 
 
 def dual_field_regression_task(config: "DualFieldConfig | None" = None, *, window: int = 4) -> RegressionTask:
