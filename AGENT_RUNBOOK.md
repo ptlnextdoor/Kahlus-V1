@@ -32,13 +32,20 @@ Inside the extracted runner folder `kahlus-ktm-a100-runner-<sha>/`:
 
 1. **Preflights before training.** Run the single-GPU and 8-GPU GPU-visibility preflights first. If
    **either** fails, STOP, collect logs, report, and **do not train**.
+   - **GPU-count honesty.** 8 GPUs is the target. If some are busy you MAY run fewer (N ≥ 2), but you
+     MUST predeclare the count (`GPU_COUNT=N`, `HOST_GPU_IDS=...`, record `selected_gpu_count`) and
+     **label every output and report as N×A100** — never claim 8×A100 when you ran 7. The evidence
+     bundle records the true `world_size` / visible GPU count; do not contradict it.
 2. **No full sweep.** Only the tiny micro-sweep with `configs/train/ktm_a100_micro.yaml`.
 3. **No code changes on the cluster.** Run the scripts as shipped. If something does not work, report
    the error and logs — do not patch source.
 4. **Claim discipline.** `synthetic_ktm_training_harness` may pass. `synthetic_ktm_recovery` must stay
-   **blocked** unless the trained KTM actually beats baselines under the locked held-out metrics
-   (the runner enforces this — do not override it). No clinical / real-data / consciousness / Orch-OR /
-   model-superiority claims.
+   **blocked** unless the comparison is *locked*: baselines train to a **matched optimizer-step
+   budget** (the runner sets baseline steps = the KTM's `steps`, not its short default) **and** the
+   trained KTM beats the strongest baseline by at least `recovery_margin` (relative MSE) on the
+   locked held-out metrics. A lower KTM MSE under an unmatched budget is a budget artifact, not a
+   recovery — the runner enforces this; do not override it. No clinical / real-data / consciousness /
+   Orch-OR / model-superiority claims.
 5. **No secrets in any output.** The evidence bundle excludes checkpoints, keys, `.env*`, tokens.
 6. **Persistent root** must be an absolute cluster scratch path, e.g.
    `/raid/scratch/$USER/kahlus-ktm-<sha>` — not `/tmp`, not a home dir, not inside the runner.
@@ -55,10 +62,13 @@ sha256sum -c SHA256SUMS
 ```
 If a checksum fails, STOP — the package is corrupt; request a fresh copy.
 
+> **Interpreter:** use `python3` (the login/cluster host has `python3` only; bare `python` may be
+> missing). All commands below already use `python3`.
+
 ### 1. (Optional) CPU smoke — proves the harness without a GPU
 
 ```bash
-python -m pip install -e .
+python3 -m pip install -e .
 bash scripts/run_ktm_smoke.sh outputs/smoke      # expect: smoke_status=completed
 ```
 
@@ -68,7 +78,7 @@ bash scripts/run_ktm_smoke.sh outputs/smoke      # expect: smoke_status=complete
 docker run --rm --gpus "\"device=0\"" --ipc=host --shm-size=64g \
   -e GPU_COUNT=1 -e CUDA_VISIBLE_DEVICES=0 -e DOCKER_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   -v "$PWD":/workspace/repo -w /workspace/repo pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
-  bash -lc 'python -m pip install -e . && GPU_COUNT=1 python scripts/docker_gpu_preflight.py /tmp/gpu_preflight_1.json'
+  bash -lc 'python3 -m pip install -e . && GPU_COUNT=1 python3 scripts/docker_gpu_preflight.py /tmp/gpu_preflight_1.json'
 ```
 **Pass = exit 0 and `visible_gpu_count == 1`.** If it fails, STOP and report `/tmp/gpu_preflight_1.json` + logs.
 
@@ -78,7 +88,7 @@ docker run --rm --gpus "\"device=0\"" --ipc=host --shm-size=64g \
 docker run --rm --gpus "\"device=0,1,2,3,4,5,6,7\"" --ipc=host --shm-size=64g \
   -e GPU_COUNT=8 -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 -e DOCKER_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   -v "$PWD":/workspace/repo -w /workspace/repo pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
-  bash -lc 'python -m pip install -e . && GPU_COUNT=8 python scripts/docker_gpu_preflight.py /tmp/gpu_preflight_8.json'
+  bash -lc 'python3 -m pip install -e . && GPU_COUNT=8 python3 scripts/docker_gpu_preflight.py /tmp/gpu_preflight_8.json'
 ```
 **Pass = exit 0 and `visible_gpu_count == 8`.** If it fails, STOP and report `/tmp/gpu_preflight_8.json` + logs. **Do not train.**
 
@@ -101,7 +111,7 @@ RUN_ROOT=$PERSISTENT_ROOT sbatch scripts/slurm/train_ktm_a100.sh \
 ### 5. Package the evidence zip
 
 ```bash
-python scripts/package_ktm_evidence_bundle.py \
+python3 scripts/package_ktm_evidence_bundle.py \
   "$PERSISTENT_ROOT" outputs/kahlus-ktm-a100-results-<sha>-evidence.zip \
   kahlus-ktm-a100-results-<sha>-evidence . "$(cat COMMIT_HASH.txt)"
 ```
@@ -135,8 +145,10 @@ The run logs incrementally so nothing is lost if it dies at startup, mid-run, or
 
 - `evidence_gate.json` → `claim_scope = synthetic_ktm_training_harness`,
   `scientific_claim_allowed = true` (harness readiness only).
-- `metrics.json` → `recovery_claim_allowed = false` unless the trained KTM genuinely beat baselines
-  on the locked held-out metrics. **A decreasing loss alone does NOT earn the recovery claim.**
+- `metrics.json` → `recovery_claim_allowed = false` unless the trained KTM beat the strongest
+  baseline by `recovery_margin` under a **matched optimizer-step budget**
+  (`ktm_vs_baselines.budget_matched = true`, `comparison_locked = true`). **A decreasing loss — or a
+  lower MSE under an unmatched budget — does NOT earn the recovery claim.**
 - `environment.json` records torch/CUDA/NCCL versions, visible GPU count + names,
   `CUDA_VISIBLE_DEVICES`, `WORLD_SIZE`.
 

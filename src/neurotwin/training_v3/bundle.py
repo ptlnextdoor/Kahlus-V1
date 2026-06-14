@@ -66,14 +66,26 @@ def write_training_bundle(
     bundle = artifacts.bundle
     device = torch.device(artifacts.device)
 
-    # Honest baseline sweep on the same synthetic gym (shared runner).
+    # Honest baseline sweep on the same synthetic gym (shared runner). Baselines train to a
+    # *matched* optimizer-step budget (default: KTM's own ``steps``) so the comparison is fair —
+    # not the runner's short default — keeping the recovery scope from flipping on a budget artifact.
+    world_size = int(artifacts.dist_info.world_size)
+    baseline_steps = cfg.baseline_train_steps or cfg.steps
     task = transition_gym_regression_task(cfg.to_world_config())
-    baseline_result = run_baselines(task, seed=cfg.seed)
+    baseline_result = run_baselines(task, seed=cfg.seed, train_steps=baseline_steps)
     baseline_metrics = baseline_result.metrics_by_model
 
     ktm_val = evaluate_ktm(model, bundle, bundle.splits.val_episodes, device)
     ktm_test = evaluate_ktm(model, bundle, bundle.splits.test_episodes, device)
-    comparison = ktm_vs_baselines(ktm_test["trajectory"]["mse"], baseline_metrics)
+    comparison = ktm_vs_baselines(
+        ktm_test["trajectory"]["mse"],
+        baseline_metrics,
+        ktm_train_steps=cfg.steps,
+        baseline_train_steps=baseline_steps,
+        ktm_world_size=world_size,
+        ktm_global_batch_size=cfg.batch_size * world_size,
+        margin=cfg.recovery_margin,
+    )
 
     all_finite = (
         _all_finite(ktm_test["trajectory"], ktm_test["calibration"], ktm_val["trajectory"])
@@ -104,11 +116,21 @@ def write_training_bundle(
         harness_blockers.append("training loss did not decrease over the run")
     harness_gate = _gate(HARNESS_SCOPE, harness_blockers)
 
-    # Stronger scope: recovery. Blocked unless the trained KTM truly beats baselines.
+    # Stronger scope: recovery. Blocked unless the comparison is locked (matched baseline budget)
+    # AND the trained KTM beats the strongest baseline by the required margin. Each failing
+    # condition records its own reason so failure_reasons.json is auditable.
     recovery_blockers = list(harness_blockers)
-    if not comparison["ktm_beats_baselines"]:
+    if not comparison["comparison_locked"]:
         recovery_blockers.append(
-            "KTM did not beat baselines on locked held-out metrics; recovery claim not earned"
+            "KTM-vs-baseline comparison not locked: baseline budget "
+            f"({comparison['budget']['baseline_train_steps']} steps) not matched to KTM "
+            f"({comparison['budget']['ktm_train_steps']} steps); recovery claim not earned"
+        )
+    elif (comparison["relative_improvement"] or 0.0) < cfg.recovery_margin:
+        recovery_blockers.append(
+            "KTM did not beat the strongest baseline by the required margin under matched budget "
+            f"(relative_improvement={comparison['relative_improvement']:.4g} < "
+            f"margin={cfg.recovery_margin:.4g}); recovery claim not earned"
         )
     recovery_gate = _gate(RECOVERY_SCOPE, recovery_blockers)
 
@@ -174,6 +196,9 @@ def write_training_bundle(
                 "Synthetic Transition Gym only; no real EEG, no clinical or control claims.",
                 "Harness readiness only — a decreasing loss does not imply operator/recovery success.",
                 "Recovery scope stays blocked until KTM beats strong baselines on locked metrics.",
+                "Locked comparison = baselines trained to a matched optimizer-step budget; KTM must "
+                "beat the strongest baseline by the recovery margin. A lower KTM MSE under an "
+                "unmatched budget never earns the recovery scope.",
             ],
         },
     )

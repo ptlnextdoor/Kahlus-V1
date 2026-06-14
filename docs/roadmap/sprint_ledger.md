@@ -92,6 +92,27 @@ logs). The first cluster job is a tiny 8×A100 micro-sweep (short steps, 3 seeds
 claims beyond the gate), launched via the printed `torchrun --nproc_per_node=8` command (or the
 slurm wrapper) — never a full beast run. 2A builds the launchpad; the rocket waits on the pad.
 
+### Sprint 2D — KTM recovery-claim fairness fix + runbook tightening
+The first real A100 micro-sweep (7×A100, commit `7915929`) was an **infra PASS** but wrongly flipped
+`recovery_claim_allowed=true`: KTM test MSE `0.000696` beat the best baseline `mlp` `0.000947`, but
+the baselines had run the runner's default **60** steps while the KTM ran **400** under 7-way DDP — a
+training-budget artifact, not an earned recovery. Fix locks the comparison:
+- `training_v3/config.py` — `baseline_train_steps` (0 = auto-match KTM `steps`) + `recovery_margin`
+  (relative MSE the KTM must clear; default 0.05).
+- `training_v3/metrics_eval.py` `ktm_vs_baselines` — records full budget provenance
+  (`ktm_train_steps`, `ktm_world_size`, `ktm_global_batch_size`, `baseline_train_steps`,
+  `baseline_batch_size`, `baseline_budget_policy="matched_optimizer_steps"`); `ktm_beats_baselines`
+  is now an **earned** win = `comparison_locked AND relative_improvement >= margin`. World size is
+  recorded but never inflates the baseline budget (would overfit the tiny synthetic baselines).
+- `training_v3/bundle.py` — runs baselines to the matched budget; emits explicit recovery blockers
+  (unmatched budget / sub-margin) so `failure_reasons.json` is auditable.
+- `configs/train/ktm_a100_micro.yaml` (`baseline_train_steps: 400`, `recovery_margin: 0.05`) +
+  smoke config (`recovery_margin: 0.05`).
+- `AGENT_RUNBOOK.md` — `python3` (host has no bare `python`), GPU-count honesty (label N×A100, never
+  claim 8 when you ran 7), matched-budget + margin claim rule.
+No A100 re-run from here (synthetic discipline); validated by CPU smoke + new `test_metrics_eval.py`
+(the unmatched-budget regression stays blocked even when `ktm_mse < baseline_mse`).
+
 ## Roadmap ahead (not yet built)
 
 - **Sprint 1C — EM Stage 0 report generator.** Prettier artifact report, artifact severity score,
