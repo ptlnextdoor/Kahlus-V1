@@ -35,6 +35,10 @@ ALLOWED_BRANCHES: frozenset[str] = frozenset({"v1", "v2", "v3", "em"})
 #: Claim scopes narrow enough to be eligible (only on a fully passing gate). Anything
 #: outside this allowlist is treated as "too broad" and blocks the claim. There is no
 #: scope here that permits SOTA / baseline-superiority / clinical claims by design.
+#: ``synthetic_ktm_training_harness`` covers infrastructure readiness only (training runs,
+#: loss decreases, checkpoint/resume, bundle writes); it never implies the model recovered
+#: anything. ``synthetic_ktm_recovery`` is the stronger claim and is earned only when a trained
+#: KTM actually beats strong baselines on locked held-out metrics.
 NARROW_CLAIM_SCOPES: frozenset[str] = frozenset(
     {
         "none",
@@ -42,6 +46,7 @@ NARROW_CLAIM_SCOPES: frozenset[str] = frozenset(
         "synthetic_dual_field_recovery",
         "synthetic_transition_gym",
         "synthetic_transition_operator_recovery",
+        "synthetic_ktm_training_harness",
         "synthetic_ktm_recovery",
         "em_artifact_audit_no_human",
         "em_stage0_artifact_audit",

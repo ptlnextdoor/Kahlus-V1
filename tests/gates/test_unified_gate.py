@@ -71,6 +71,27 @@ class UnifiedGateTests(unittest.TestCase):
         self.assertFalse(gate["scientific_claim_allowed"])
         self.assertIn("required task quarantined", gate["failure_reasons"])
 
+    def test_ktm_training_harness_scope_allowed_when_checks_pass(self):
+        gate = evaluate_gate(
+            **_passing_kwargs(branch="v3", dataset="ktm_training_synthetic",
+                              claim_scope="synthetic_ktm_training_harness")
+        )
+        self.assertTrue(gate["scientific_claim_allowed"])
+        self.assertIn("synthetic_ktm_training_harness", NARROW_CLAIM_SCOPES)
+
+    def test_ktm_recovery_scope_blocked_until_earned(self):
+        # The harness scope passing must NOT imply the stronger recovery scope: a
+        # not-yet-earned recovery claim is blocked by attaching an explicit reason.
+        gate = evaluate_gate(
+            **_passing_kwargs(
+                branch="v3", dataset="ktm_training_synthetic",
+                claim_scope="synthetic_ktm_recovery",
+                extra_failure_reasons=["KTM did not beat baselines on locked metrics"],
+            )
+        )
+        self.assertFalse(gate["scientific_claim_allowed"])
+        self.assertTrue(any("did not beat baselines" in r for r in gate["failure_reasons"]))
+
     def test_round_trip_write_read(self):
         gate = evaluate_gate(**_passing_kwargs())
         with tempfile.TemporaryDirectory() as tmp:

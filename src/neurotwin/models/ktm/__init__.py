@@ -9,5 +9,6 @@ from __future__ import annotations
 
 from neurotwin.models.ktm.config import KTMConfig
 from neurotwin.models.ktm.ktm import KTM
+from neurotwin.models.ktm.torch_ktm import TorchKTM, TorchKTMConfig
 
-__all__ = ["KTMConfig", "KTM"]
+__all__ = ["KTMConfig", "KTM", "TorchKTM", "TorchKTMConfig"]

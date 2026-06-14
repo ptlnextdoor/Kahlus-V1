@@ -1,0 +1,40 @@
+experiment: ktm_synthetic_smoke
+branch: v3
+description: >-
+  PROPOSED / SYNTHETIC ONLY. Tiny CPU smoke config for the v3 KTM training harness. Trains the
+  trainable TorchKTM on a small synthetic Transition Gym for a few steps to prove the harness
+  (training runs, loss decreases, checkpoint/resume, bundle writes). No A100, no real data, no
+  scientific claim. Earns only the narrow synthetic_ktm_training_harness scope.
+claim_scope: synthetic_ktm_training_harness
+
+seed: 0
+mode: cpu_smoke
+steps: 150
+batch_size: 16
+lr: 0.01
+weight_decay: 0.0
+precision: fp32
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 50
+eval_every_steps: 50
+w_traj: 1.0
+w_profile: 0.5
+w_nll: 0.1
+loss_explosion_factor: 8.0
+
+# Synthetic-world knobs (kept tiny so the CPU smoke is fast + deterministic).
+n_episodes: 48
+n_subjects: 4
+state_dim: 6
+n_perturbations: 4
+horizon: 5
+history_len: 6
+eeg_channels: 5
+behavior_dim: 2
+
+# Model dims.
+embed_dim: 16
+memory_dim: 12
+memory_rho: 0.8
+uncertainty_floor: 0.001
