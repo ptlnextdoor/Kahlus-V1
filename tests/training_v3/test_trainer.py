@@ -1,6 +1,8 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from neurotwin.models.ktm import TorchKTM
 from neurotwin.runtime.distributed import DistributedInfo
@@ -47,6 +49,36 @@ class TrainerSmokeTests(unittest.TestCase):
                 fresh, artifacts.bundle, artifacts.bundle.splits.test_episodes, "cpu"
             )["trajectory"]["mse"]
             self.assertAlmostEqual(original, restored, places=6)
+
+    def test_progress_and_status_logged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            train_ktm(_cfg(steps=60), out_dir=out, dist_info=_INFO)
+            progress = (out / "progress.jsonl").read_text().splitlines()
+            self.assertTrue(progress)
+            events = [json.loads(line)["event"] for line in progress]
+            self.assertIn("run_started", events)
+            self.assertIn("val_after", events)
+            self.assertIn("step", events)
+            status = json.loads((out / "run_status.json").read_text())
+            self.assertEqual(status["status"], "training_complete")
+            self.assertEqual(status["completed_steps"], 60)
+
+    def test_failure_writes_status_failed_with_phase(self):
+        # A crash mid-run must still leave a forensic trail: run_status flips to failed and
+        # records the phase it died in (here: data construction).
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            boom = mock.patch(
+                "neurotwin.training_v3.trainer.build_transition_gym",
+                side_effect=RuntimeError("synthetic boom"),
+            )
+            with boom, self.assertRaises(RuntimeError):
+                train_ktm(_cfg(steps=20), out_dir=out, dist_info=_INFO)
+            status = json.loads((out / "run_status.json").read_text())
+            self.assertEqual(status["status"], "failed")
+            self.assertEqual(status["phase"], "data")
+            self.assertEqual(status["error_type"], "RuntimeError")
 
     def test_loss_explosion_guard_aborts_via_real_config(self):
         # No debug flags: a tight explosion factor + small noisy minibatches makes a real

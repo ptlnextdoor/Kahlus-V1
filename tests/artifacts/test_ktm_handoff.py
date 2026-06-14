@@ -12,6 +12,7 @@ RUNNER_REQUIRED = {
     "SHA256SUMS",
     "BUNDLE_MANIFEST.txt",
     "BUNDLE_METADATA.txt",
+    "AGENT_RUNBOOK.md",
     "README_HANDOFF.md",
     "README_KTM_HANDOFF.md.in",
     "README_RUN.md",
@@ -75,6 +76,7 @@ class KtmHandoffTests(unittest.TestCase):
             self.assertIn("nproc_per_node=6", readme)
             self.assertIn("nproc_per_node=8", readme)
             self.assertIn("synthetic_ktm_recovery", readme)
+            self.assertIn("AGENT_RUNBOOK.md", readme)
 
             # Extract + verify the runner tarball.
             runner_tar = extract / root / f"{root.replace('handoff', 'runner')}.tar.gz"

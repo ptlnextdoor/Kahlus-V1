@@ -5,6 +5,11 @@
 **Image:** `pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel`
 **Persistent root example:** `${PERSISTENT_ROOT_EXAMPLE}`
 
+> **FOR THE CLUSTER CLAUDE AGENT:** verify checksums, extract `${RUNNER_TARBALL}`, then open
+> **`AGENT_RUNBOOK.md`** inside the runner and follow it **exactly and in order** — preflights
+> before training, no full sweep, no code changes on the cluster. This README is the human
+> reference; `AGENT_RUNBOOK.md` is the operative SOP.
+
 ## What this runner is
 
 A self-contained, checksummed package that trains the **synthetic** Kahlus v3 KTM (Kahlus Transition

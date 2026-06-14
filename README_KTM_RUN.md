@@ -76,7 +76,9 @@ python scripts/package_ktm_evidence_bundle.py \
   /abs/persistent outputs/kahlus-ktm-a100-results-<short_sha>-evidence.zip \
   kahlus-ktm-a100-results-<short_sha>-evidence . "$(cat COMMIT_HASH.txt)"
 ```
-Includes the run bundle JSON/CSV + `environment.json` + `gpu_preflight.json` + logs. **Excludes**
+Includes the run bundle JSON/CSV + `environment.json` + `gpu_preflight.json` + the progress/failure
+logs (`progress.jsonl`, `run_status.json`, `failure_report.json`) + logs. **Run the packager even if
+the run failed** — it captures partial results + the failure trail for debugging. **Excludes**
 `checkpoint*.pt`, `*.pem`, `*.key`, `.env*`, passwords, API keys, W&B tokens. Checkpoints stay on the
 cluster.
 

@@ -11,13 +11,14 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import math
 from pathlib import Path
 from typing import Any, Iterator
 
 import torch
 
-from neurotwin.repro import set_global_seed, stable_hash
+from neurotwin.repro import append_jsonl, set_global_seed, stable_hash, write_json
 from neurotwin.runtime.distributed import (
     DistributedInfo,
     barrier_if_distributed,
@@ -117,6 +118,28 @@ def _val_mse(model: TorchKTM, bundle: Any, episodes: Any, device: torch.device) 
     return float(evaluate_ktm(model, bundle, episodes, device)["trajectory"]["mse"])
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _progress(out: Path | None, dist_info: DistributedInfo, **event: Any) -> None:
+    """Append one event to ``progress.jsonl`` (rank-0 only). Survives a later crash."""
+
+    if out is None or not dist_info.is_rank_zero:
+        return
+    event.setdefault("ts", _now())
+    append_jsonl(out / "progress.jsonl", event)
+
+
+def _write_status(out: Path | None, dist_info: DistributedInfo, **fields: Any) -> None:
+    """Overwrite ``run_status.json`` (rank-0 only) — a one-glance snapshot of where the run is."""
+
+    if out is None or not dist_info.is_rank_zero:
+        return
+    fields.setdefault("updated_at", _now())
+    write_json(out / "run_status.json", fields)
+
+
 def train_ktm(
     cfg: KTMTrainConfig,
     *,
@@ -127,104 +150,149 @@ def train_ktm(
 
     cfg = cfg.validate()
     dist_info = dist_info or get_distributed_info()
+    out = Path(out_dir) if out_dir is not None else None
     set_global_seed(cfg.seed)
+    _write_status(out, dist_info, status="running", phase="setup",
+                  completed_steps=0, total_steps=cfg.steps, mode=cfg.mode, started_at=_now())
+    _progress(out, dist_info, event="run_started", mode=cfg.mode, total_steps=cfg.steps, seed=cfg.seed)
+
     ddp_initialized, backend = maybe_init_process_group(dist_info)
-    device = resolve_device(cfg.mode, dist_info)
+    completed_steps = 0
+    phase = "setup"
+    try:
+        device = resolve_device(cfg.mode, dist_info)
 
-    bundle = build_transition_gym(cfg.to_world_config())
-    bundle.splits.assert_no_episode_leakage()
-    bundle.splits.assert_no_composition_leakage()
-    train_loader, _val_loader = make_dataloaders(
-        bundle, batch_size=cfg.batch_size, seed=cfg.seed, dist_info=dist_info
-    )
+        phase = "data"
+        _write_status(out, dist_info, status="running", phase=phase,
+                      completed_steps=0, total_steps=cfg.steps)
+        bundle = build_transition_gym(cfg.to_world_config())
+        bundle.splits.assert_no_episode_leakage()
+        bundle.splits.assert_no_composition_leakage()
+        train_loader, _val_loader = make_dataloaders(
+            bundle, batch_size=cfg.batch_size, seed=cfg.seed, dist_info=dist_info
+        )
 
-    model = TorchKTM(cfg.to_model_config()).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
-    config_hash = stable_hash(cfg.as_dict())
+        phase = "model"
+        _write_status(out, dist_info, status="running", phase=phase,
+                      completed_steps=0, total_steps=cfg.steps)
+        model = TorchKTM(cfg.to_model_config()).to(device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+        config_hash = stable_hash(cfg.as_dict())
 
-    start_step = 0
-    best_val = math.inf
-    if cfg.resume_path:
-        checkpoint = load_resume(cfg.resume_path, device)
-        apply_resume(checkpoint, model=model, optimizer=optimizer)
-        start_step = resume_start_step(checkpoint)
-        best_val = float(checkpoint.get("best_val", math.inf)) if checkpoint else math.inf
+        start_step = 0
+        best_val = math.inf
+        if cfg.resume_path:
+            checkpoint = load_resume(cfg.resume_path, device)
+            apply_resume(checkpoint, model=model, optimizer=optimizer)
+            start_step = resume_start_step(checkpoint)
+            best_val = float(checkpoint.get("best_val", math.inf)) if checkpoint else math.inf
 
-    ddp_model = wrap_ddp_if_initialized(model, dist_info.local_rank)
-    guard = LossExplosionGuard(cfg.loss_explosion_factor)
-    autocast_ctx = _autocast(device, cfg.precision)
+        ddp_model = wrap_ddp_if_initialized(model, dist_info.local_rank)
+        guard = LossExplosionGuard(cfg.loss_explosion_factor)
+        autocast_ctx = _autocast(device, cfg.precision)
 
-    ckpt_dir = Path(out_dir) / "checkpoints" if out_dir is not None else None
-    failure_reasons: list[str] = []
-    step_losses: list[dict[str, float]] = []
-    best_ckpt_path: Path | None = None
-    last_ckpt_path: Path | None = None
-    aborted = False
+        ckpt_dir = out / "checkpoints" if out is not None else None
+        failure_reasons: list[str] = []
+        step_losses: list[dict[str, float]] = []
+        best_ckpt_path: Path | None = None
+        last_ckpt_path: Path | None = None
+        aborted = False
+        completed_steps = start_step
 
-    val_before = _val_mse(model, bundle, bundle.splits.val_episodes, device)
-    train_iter = _cycle(train_loader)
-    accum = max(1, cfg.gradient_accumulation_steps)
+        phase = "train"
+        val_before = _val_mse(model, bundle, bundle.splits.val_episodes, device)
+        _write_status(out, dist_info, status="running", phase=phase, device=str(device),
+                      completed_steps=start_step, total_steps=cfg.steps, val_before=val_before)
+        _progress(out, dist_info, event="val_before", val_mse=val_before, device=str(device))
+        train_iter = _cycle(train_loader)
+        accum = max(1, cfg.gradient_accumulation_steps)
 
-    for step in range(start_step, cfg.steps):
-        ddp_model.train()
-        optimizer.zero_grad(set_to_none=True)
-        accum_loss = 0.0
-        skipped = False
-        for _micro in range(accum):
-            history, k, target = next(train_iter)
-            history = history.to(device)
-            k = k.to(device)
-            target = target.to(device)
-            with autocast_ctx():
-                pred, log_var = ddp_model(history, k)
-                loss, _components = ktm_loss(pred, log_var, target, cfg)
-            loss_value = float(loss.detach())
-            if not is_finite_loss(loss_value):
-                failure_reasons.append(f"non-finite loss at step {step}; micro-batch skipped")
-                optimizer.zero_grad(set_to_none=True)
-                skipped = True
-                break
-            (loss / accum).backward()
-            accum_loss += loss_value / accum
-        if skipped:
-            continue
-
-        if guard.update(accum_loss):
-            failure_reasons.append(
-                f"loss explosion at step {step} (loss={accum_loss:.4g}); training aborted"
-            )
+        for step in range(start_step, cfg.steps):
+            ddp_model.train()
             optimizer.zero_grad(set_to_none=True)
-            aborted = True
-            break
+            accum_loss = 0.0
+            skipped = False
+            for _micro in range(accum):
+                history, k, target = next(train_iter)
+                history = history.to(device)
+                k = k.to(device)
+                target = target.to(device)
+                with autocast_ctx():
+                    pred, log_var = ddp_model(history, k)
+                    loss, _components = ktm_loss(pred, log_var, target, cfg)
+                loss_value = float(loss.detach())
+                if not is_finite_loss(loss_value):
+                    failure_reasons.append(f"non-finite loss at step {step}; micro-batch skipped")
+                    _progress(out, dist_info, event="nonfinite_skip", step=step)
+                    optimizer.zero_grad(set_to_none=True)
+                    skipped = True
+                    break
+                (loss / accum).backward()
+                accum_loss += loss_value / accum
+            if skipped:
+                continue
 
-        if cfg.max_grad_norm > 0:
-            torch.nn.utils.clip_grad_norm_(ddp_model.parameters(), cfg.max_grad_norm)
-        optimizer.step()
-        step_losses.append({"step": float(step), "loss": float(accum_loss)})
+            if guard.update(accum_loss):
+                failure_reasons.append(
+                    f"loss explosion at step {step} (loss={accum_loss:.4g}); training aborted"
+                )
+                _progress(out, dist_info, event="loss_explosion", step=step, loss=accum_loss)
+                optimizer.zero_grad(set_to_none=True)
+                aborted = True
+                break
 
-        final_step = step + 1 == cfg.steps
-        if (step + 1) % cfg.eval_every_steps == 0 or final_step:
-            val_mse = _val_mse(model, bundle, bundle.splits.val_episodes, device)
-            if val_mse < best_val:
-                best_val = val_mse
-                if ckpt_dir is not None and dist_info.is_rank_zero:
-                    best_ckpt_path = save_ktm_checkpoint(
-                        ckpt_dir / "best.pt", step=step + 1, model=model, optimizer=optimizer,
-                        best_val=best_val, rng_state={"torch": torch.get_rng_state()},
-                        config_hash=config_hash,
-                    )
-        if ckpt_dir is not None and dist_info.is_rank_zero and (
-            (step + 1) % cfg.checkpoint_every_steps == 0 or final_step
-        ):
-            last_ckpt_path = save_ktm_checkpoint(
-                ckpt_dir / "last.pt", step=step + 1, model=model, optimizer=optimizer,
-                best_val=best_val, rng_state={"torch": torch.get_rng_state()},
-                config_hash=config_hash,
-            )
+            if cfg.max_grad_norm > 0:
+                torch.nn.utils.clip_grad_norm_(ddp_model.parameters(), cfg.max_grad_norm)
+            optimizer.step()
+            step_losses.append({"step": float(step), "loss": float(accum_loss)})
+            completed_steps = step + 1
+            # Per-step progress persists incrementally, so a mid-run crash keeps the loss trace.
+            _progress(out, dist_info, event="step", step=step, loss=accum_loss)
 
-    val_after = _val_mse(model, bundle, bundle.splits.val_episodes, device)
-    barrier_if_distributed()
-    cleanup_process_group()
+            final_step = step + 1 == cfg.steps
+            if (step + 1) % cfg.eval_every_steps == 0 or final_step:
+                val_mse = _val_mse(model, bundle, bundle.splits.val_episodes, device)
+                _progress(out, dist_info, event="eval", step=step, val_mse=val_mse,
+                          completed_steps=completed_steps)
+                _write_status(out, dist_info, status="running", phase="train",
+                              completed_steps=completed_steps, total_steps=cfg.steps,
+                              val_before=val_before, best_val=min(best_val, val_mse))
+                if val_mse < best_val:
+                    best_val = val_mse
+                    if ckpt_dir is not None and dist_info.is_rank_zero:
+                        best_ckpt_path = save_ktm_checkpoint(
+                            ckpt_dir / "best.pt", step=step + 1, model=model, optimizer=optimizer,
+                            best_val=best_val, rng_state={"torch": torch.get_rng_state()},
+                            config_hash=config_hash,
+                        )
+                        _progress(out, dist_info, event="checkpoint", kind="best",
+                                  step=step + 1, best_val=best_val)
+            if ckpt_dir is not None and dist_info.is_rank_zero and (
+                (step + 1) % cfg.checkpoint_every_steps == 0 or final_step
+            ):
+                last_ckpt_path = save_ktm_checkpoint(
+                    ckpt_dir / "last.pt", step=step + 1, model=model, optimizer=optimizer,
+                    best_val=best_val, rng_state={"torch": torch.get_rng_state()},
+                    config_hash=config_hash,
+                )
+                _progress(out, dist_info, event="checkpoint", kind="last", step=step + 1)
+
+        val_after = _val_mse(model, bundle, bundle.splits.val_episodes, device)
+        _progress(out, dist_info, event="val_after", val_mse=val_after, aborted=aborted)
+        _write_status(out, dist_info, status="training_complete", phase="train",
+                      completed_steps=completed_steps, total_steps=cfg.steps,
+                      val_before=val_before, val_after=val_after, best_val=float(best_val),
+                      aborted=aborted)
+    except Exception as exc:  # noqa: BLE001 - persist where/why training died, then re-raise.
+        _progress(out, dist_info, event="training_error", phase=phase,
+                  error_type=type(exc).__name__, error=str(exc))
+        _write_status(out, dist_info, status="failed", phase=phase,
+                      completed_steps=completed_steps, total_steps=cfg.steps,
+                      error_type=type(exc).__name__, error=str(exc))
+        raise
+    finally:
+        barrier_if_distributed()
+        cleanup_process_group()
 
     return TrainingArtifacts(
         model=model,
