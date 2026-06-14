@@ -23,11 +23,16 @@ out = Path(sys.argv[1])
 required = [
     "metrics.json", "baseline_table.json", "baseline_table.csv", "evidence_gate.json",
     "model_card.json", "data_card.json", "run_config.json", "failure_reasons.json",
-    "environment.json",
+    "environment.json", "progress.jsonl", "run_status.json",
 ]
 missing = [name for name in required if not (out / name).is_file()]
 if missing:
     print(f"smoke_status=failed missing={missing}", file=sys.stderr)
+    raise SystemExit(1)
+
+status = json.loads((out / "run_status.json").read_text())
+if status.get("status") != "completed":
+    print(f"smoke_status=failed run_status={status.get('status')}", file=sys.stderr)
     raise SystemExit(1)
 
 gate = json.loads((out / "evidence_gate.json").read_text())

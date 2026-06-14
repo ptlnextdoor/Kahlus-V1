@@ -29,6 +29,7 @@ mkdir -p "$BUNDLE_ROOT"
 ARCHIVE_PATHS=(
   pyproject.toml
   environment-ktm-a100.yml
+  AGENT_RUNBOOK.md
   README_KTM_RUN.md
   README_KTM_HANDOFF.md.in
   configs/train/ktm_a100_micro.yaml

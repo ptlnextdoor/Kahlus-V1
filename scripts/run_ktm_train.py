@@ -11,8 +11,11 @@ model success. The 8xA100 micro-sweep command is built (printed) but never execu
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
+import json
 from pathlib import Path
 import sys
+import traceback
 
 from _bootstrap import ensure_src_import_path
 
@@ -26,6 +29,48 @@ from neurotwin.training_v3 import (  # noqa: E402
     train_ktm,
     write_training_bundle,
 )
+
+_BUNDLE_FILES = (
+    "metrics.json", "baseline_table.json", "baseline_table.csv", "evidence_gate.json",
+    "model_card.json", "data_card.json", "run_config.json", "failure_reasons.json",
+    "environment.json", "progress.jsonl", "run_status.json",
+)
+
+
+def _write_failure_report(out: Path, exc: BaseException) -> None:
+    """Persist a crash report so a run that dies (startup / mid-run / end) is still debuggable."""
+
+    status: dict = {}
+    status_path = out / "run_status.json"
+    if status_path.is_file():
+        try:
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            status = {}
+    present = [name for name in _BUNDLE_FILES if (out / name).is_file()]
+    ckpt_dir = out / "checkpoints"
+    checkpoints = sorted(p.name for p in ckpt_dir.glob("*.pt")) if ckpt_dir.is_dir() else []
+    write_json(out / "failure_report.json", {
+        "schema": "kahlus.ktm_failure_report.v1",
+        "status": "failed",
+        "phase": status.get("phase", "unknown"),
+        "completed_steps": status.get("completed_steps"),
+        "total_steps": status.get("total_steps"),
+        "error_type": type(exc).__name__,
+        "error": str(exc),
+        "traceback": traceback.format_exc(),
+        "argv": list(sys.argv),
+        "partial_artifacts": present,
+        "checkpoints": checkpoints,
+        "failed_at": datetime.now(timezone.utc).isoformat(),
+    })
+    write_json(out / "run_status.json", {
+        **status, "status": "failed", "phase": status.get("phase", "unknown"),
+        "error_type": type(exc).__name__, "error": str(exc),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    })
+    print(f"run_failed phase={status.get('phase', 'unknown')} error_type={type(exc).__name__} "
+          f"partial_artifacts={present} checkpoints={checkpoints}", file=sys.stderr)
 
 
 def _build_config(args: argparse.Namespace) -> KTMTrainConfig:
@@ -56,26 +101,37 @@ def main() -> int:
     out = Path(args.out_dir)
     dist_info = get_distributed_info()
 
-    artifacts = train_ktm(cfg, out_dir=out, dist_info=dist_info)
-
+    # Write environment.json up front so even a startup/training crash captures the runtime.
     if dist_info.is_rank_zero:
-        paths = write_training_bundle(out, cfg=cfg, artifacts=artifacts, config_path=args.config)
-        # Standalone environment.json for the handoff/evidence contract (torch/cuda/nccl, visible
-        # GPU count+names, CUDA_VISIBLE_DEVICES, WORLD_SIZE, docker image, git commit).
-        paths["environment"] = write_json(out / "environment.json", capture_environment(argv=sys.argv))
-        gate_path = paths["evidence_gate"]
-        from neurotwin.gates import read_evidence_gate
+        out.mkdir(parents=True, exist_ok=True)
+        write_json(out / "environment.json", capture_environment(argv=sys.argv))
 
-        gate = read_evidence_gate(gate_path)
-        print(f"branch=v3 model=TorchKTM mode={cfg.mode} device={artifacts.device} out_dir={out.resolve()}")
-        print(f"val_mse_before={artifacts.val_before:.6g} val_mse_after={artifacts.val_after:.6g} "
-              f"best_val_mse={artifacts.best_val:.6g} loss_decreased={artifacts.loss_decreased}")
-        print(f"claim_scope={gate['claim_scope']} scientific_claim_allowed={gate['scientific_claim_allowed']}")
-        print(f"aborted={artifacts.aborted} failure_reasons={artifacts.failure_reasons}")
-        print(f"checkpoints best={artifacts.best_checkpoint} last={artifacts.last_checkpoint}")
-        print("bundle=" + ", ".join(f"{key}={value}" for key, value in paths.items()))
-        print("future_micro_sweep_cmd=" + " ".join(build_torchrun_command(
-            config_path="configs/train/ktm_a100_micro.yaml", out_dir="$RUN_ROOT/ktm_micro_sweep")))
+    try:
+        artifacts = train_ktm(cfg, out_dir=out, dist_info=dist_info)
+        if dist_info.is_rank_zero:
+            paths = write_training_bundle(out, cfg=cfg, artifacts=artifacts, config_path=args.config)
+            paths["environment"] = out / "environment.json"
+            write_json(out / "run_status.json", {
+                "status": "completed", "phase": "bundle", "completed_steps": cfg.steps,
+                "total_steps": cfg.steps, "aborted": artifacts.aborted,
+            })
+            gate_path = paths["evidence_gate"]
+            from neurotwin.gates import read_evidence_gate
+
+            gate = read_evidence_gate(gate_path)
+            print(f"branch=v3 model=TorchKTM mode={cfg.mode} device={artifacts.device} out_dir={out.resolve()}")
+            print(f"val_mse_before={artifacts.val_before:.6g} val_mse_after={artifacts.val_after:.6g} "
+                  f"best_val_mse={artifacts.best_val:.6g} loss_decreased={artifacts.loss_decreased}")
+            print(f"claim_scope={gate['claim_scope']} scientific_claim_allowed={gate['scientific_claim_allowed']}")
+            print(f"aborted={artifacts.aborted} failure_reasons={artifacts.failure_reasons}")
+            print(f"checkpoints best={artifacts.best_checkpoint} last={artifacts.last_checkpoint}")
+            print("bundle=" + ", ".join(f"{key}={value}" for key, value in paths.items()))
+            print("future_micro_sweep_cmd=" + " ".join(build_torchrun_command(
+                config_path="configs/train/ktm_a100_micro.yaml", out_dir="$RUN_ROOT/ktm_micro_sweep")))
+    except Exception as exc:  # noqa: BLE001 - capture partial progress + failure, then fail loudly.
+        if dist_info.is_rank_zero:
+            _write_failure_report(out, exc)
+        raise
 
     return 0
 

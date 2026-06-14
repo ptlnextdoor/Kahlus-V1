@@ -30,6 +30,10 @@ RUN_FILES = (
     "failure_reasons.json",
     "environment.json",
     "gpu_preflight.json",
+    # Progress + failure forensics so a run that dies partway is still recoverable + debuggable.
+    "progress.jsonl",
+    "run_status.json",
+    "failure_report.json",
 )
 FORBIDDEN_SUFFIXES = (".pem", ".key", ".pt", ".pth", ".ckpt", ".npy", ".npz", ".tar.gz", ".zip")
 FORBIDDEN_MARKERS = ("password", "passwd", "secret", "api_key", "apikey", "ssh_key", "wandb", "token")
