@@ -16,16 +16,12 @@ from typing import Any
 import numpy as np
 import torch
 
-from neurotwin.baseline_runner import (
-    baseline_table_rows,
-    run_baselines,
-    transition_gym_regression_task,
-    write_baseline_table,
-)
+from neurotwin.baseline_runner import baseline_table_rows, write_baseline_table
 from neurotwin.gates import evaluate_gate
 from neurotwin.repro import capture_environment, write_json
 from neurotwin.training_v3.config import KTMTrainConfig
-from neurotwin.training_v3.metrics_eval import evaluate_ktm, ktm_vs_baselines
+from neurotwin.training_v3.metrics_eval import evaluate_ktm, fair_ktm_vs_baselines
+from neurotwin.training_v3.redteam import SeedOutcome, recovery_redteam_gate
 from neurotwin.training_v3.trainer import TrainingArtifacts, build_torchrun_command
 
 BRANCH = "v3"
@@ -53,6 +49,77 @@ def _checkpoint_files(out: Path) -> list[str]:
     return sorted(p.name for p in ckpt_dir.glob("*.pt"))
 
 
+def _assess_recovery(
+    *,
+    cfg: KTMTrainConfig,
+    artifacts: TrainingArtifacts,
+    comparison: dict[str, Any],
+    baseline_result: Any,
+    ktm_test: dict[str, Any],
+    harness_blockers: list[str],
+    world_size: int,
+    baseline_steps: int,
+) -> tuple[list[str], dict[str, Any], dict[str, Any]]:
+    """Recovery-scope blockers + red-team dossier + selection-parity record (pure; no IO).
+
+    Recovery is blocked unless the comparison is locked and clears the margin AND the single-run
+    red-team gate passes — which a lone run never does (one seed, no alternate generator family).
+    Each failing condition records its own reason so ``failure_reasons.json`` stays auditable.
+    """
+
+    recovery_blockers = list(harness_blockers)
+    if not comparison["comparison_locked"]:
+        recovery_blockers.append(
+            "KTM-vs-baseline comparison not locked: baseline budget "
+            f"({comparison['budget']['baseline_train_steps']} steps) not matched to KTM "
+            f"({comparison['budget']['ktm_train_steps']} steps); recovery claim not earned"
+        )
+    elif (comparison["relative_improvement"] or 0.0) < cfg.recovery_margin:
+        recovery_blockers.append(
+            "KTM did not beat the strongest baseline by the required margin under matched budget "
+            f"(relative_improvement={comparison['relative_improvement']:.4g} < "
+            f"margin={cfg.recovery_margin:.4g}); recovery claim not earned"
+        )
+
+    ktm_ckpt_policy = "best_val" if artifacts.selected_checkpoint == "best_val" else "final_step"
+    baseline_ckpt_policy = (
+        "best_val" if baseline_result.selection_policy == "symmetric_best_val" else "final_step"
+    )
+    seed_outcome = SeedOutcome(
+        seed=cfg.seed,
+        ktm_mse=float(ktm_test["trajectory"]["mse"]),
+        best_baseline=comparison["best_baseline"] or "none",
+        best_baseline_mse=float(comparison["best_baseline_mse"] or float("inf")),
+        relative_improvement=float(comparison["relative_improvement"] or 0.0),
+        comparison_locked=bool(comparison["comparison_locked"]),
+        ktm_checkpoint_policy=ktm_ckpt_policy,
+        baseline_checkpoint_policy=baseline_ckpt_policy,
+    )
+    redteam_dossier = recovery_redteam_gate(seeds=[seed_outcome], families=[], margin=cfg.recovery_margin)
+    recovery_blockers += [f"red-team: {reason}" for reason in redteam_dossier["blocker_reasons"]]
+
+    selection_parity = {
+        "selection_policy": baseline_result.selection_policy,
+        "ktm_checkpoint_policy": ktm_ckpt_policy,
+        "baseline_checkpoint_policy": baseline_ckpt_policy,
+        "baseline_checkpoint_policy_by_model": baseline_result.checkpoint_policy_by_model,
+        "ktm_train_steps": int(cfg.steps),
+        "baseline_train_steps": int(baseline_steps),
+        "ktm_world_size": int(world_size),
+        "baseline_world_size": 1,
+        "ktm_global_batch_size": int(cfg.batch_size * world_size),
+        "baseline_batch_size": "full_batch",
+        "same_split": True,
+        "same_seed_or_seed_set": True,
+        "same_task_config_hash": artifacts.config_hash,
+        "same_eval_metric": "mse",
+        "comparison_locked": bool(comparison["comparison_locked"]),
+        "budget_matched": bool(comparison["budget_matched"]),
+        "comparison_failure_reasons": redteam_dossier["blocker_reasons"],
+    }
+    return recovery_blockers, redteam_dossier, selection_parity
+
+
 def write_training_bundle(
     out_dir: str | Path,
     *,
@@ -66,26 +133,15 @@ def write_training_bundle(
     bundle = artifacts.bundle
     device = torch.device(artifacts.device)
 
-    # Honest baseline sweep on the same synthetic gym (shared runner). Baselines train to a
-    # *matched* optimizer-step budget (default: KTM's own ``steps``) so the comparison is fair —
-    # not the runner's short default — keeping the recovery scope from flipping on a budget artifact.
+    # Symmetric best-val baselines on the same gym + the locked matched-budget comparison. Shared
+    # one-to-one with the red-team runner (training_v3.metrics_eval.fair_ktm_vs_baselines) so the two
+    # cannot drift on baseline selection, budget, or margin.
     world_size = int(artifacts.dist_info.world_size)
-    baseline_steps = cfg.baseline_train_steps or cfg.steps
-    task = transition_gym_regression_task(cfg.to_world_config())
-    baseline_result = run_baselines(task, seed=cfg.seed, train_steps=baseline_steps)
-    baseline_metrics = baseline_result.metrics_by_model
-
-    ktm_val = evaluate_ktm(model, bundle, bundle.splits.val_episodes, device)
-    ktm_test = evaluate_ktm(model, bundle, bundle.splits.test_episodes, device)
-    comparison = ktm_vs_baselines(
-        ktm_test["trajectory"]["mse"],
-        baseline_metrics,
-        ktm_train_steps=cfg.steps,
-        baseline_train_steps=baseline_steps,
-        ktm_world_size=world_size,
-        ktm_global_batch_size=cfg.batch_size * world_size,
-        margin=cfg.recovery_margin,
+    baseline_result, ktm_test, comparison, baseline_steps = fair_ktm_vs_baselines(
+        model, bundle, cfg, device=device, world_size=world_size
     )
+    baseline_metrics = baseline_result.metrics_by_model
+    ktm_val = evaluate_ktm(model, bundle, bundle.splits.val_episodes, device)
 
     all_finite = (
         _all_finite(ktm_test["trajectory"], ktm_test["calibration"], ktm_val["trajectory"])
@@ -116,23 +172,19 @@ def write_training_bundle(
         harness_blockers.append("training loss did not decrease over the run")
     harness_gate = _gate(HARNESS_SCOPE, harness_blockers)
 
-    # Stronger scope: recovery. Blocked unless the comparison is locked (matched baseline budget)
-    # AND the trained KTM beats the strongest baseline by the required margin. Each failing
-    # condition records its own reason so failure_reasons.json is auditable.
-    recovery_blockers = list(harness_blockers)
-    if not comparison["comparison_locked"]:
-        recovery_blockers.append(
-            "KTM-vs-baseline comparison not locked: baseline budget "
-            f"({comparison['budget']['baseline_train_steps']} steps) not matched to KTM "
-            f"({comparison['budget']['ktm_train_steps']} steps); recovery claim not earned"
-        )
-    elif (comparison["relative_improvement"] or 0.0) < cfg.recovery_margin:
-        recovery_blockers.append(
-            "KTM did not beat the strongest baseline by the required margin under matched budget "
-            f"(relative_improvement={comparison['relative_improvement']:.4g} < "
-            f"margin={cfg.recovery_margin:.4g}); recovery claim not earned"
-        )
+    # Stronger scope: recovery. Blockers + red-team dossier + selection-parity are assembled by a
+    # pure helper so this orchestrator stays readable; the gate is applied here.
+    recovery_blockers, redteam_dossier, selection_parity = _assess_recovery(
+        cfg=cfg, artifacts=artifacts, comparison=comparison, baseline_result=baseline_result,
+        ktm_test=ktm_test, harness_blockers=harness_blockers,
+        world_size=world_size, baseline_steps=baseline_steps,
+    )
     recovery_gate = _gate(RECOVERY_SCOPE, recovery_blockers)
+    claim_status = (
+        "synthetic_ktm_recovery_allowed"
+        if recovery_gate["scientific_claim_allowed"]
+        else "synthetic_training_harness_only"
+    )
 
     training_failures = list(artifacts.failure_reasons) + list(baseline_result.failure_reasons)
 
@@ -143,17 +195,22 @@ def write_training_bundle(
         {
             "schema": METRICS_SCHEMA,
             "branch": BRANCH,
-            "claim_status": "synthetic_training_harness_only",
+            "claim_status": claim_status,
             "seed": cfg.seed,
             "val_mse_before": artifacts.val_before,
             "val_mse_after": artifacts.val_after,
             "best_val_mse": artifacts.best_val,
+            "selected_checkpoint": artifacts.selected_checkpoint,
+            "selected_checkpoint_step": artifacts.selected_checkpoint_step,
             "loss_decreased": artifacts.loss_decreased,
             "ktm_val": ktm_val,
             "ktm_test": ktm_test,
             "ktm_vs_baselines": comparison,
             "baseline_metrics": baseline_metrics,
+            "baseline_final_metrics": baseline_result.final_metrics_by_model,
             "baseline_ranking": baseline_result.ranking,
+            "selection_parity": selection_parity,
+            "recovery_redteam": redteam_dossier,
             "recovery_claim_allowed": recovery_gate["scientific_claim_allowed"],
             "step_losses": artifacts.step_losses,
             "failure_reasons": training_failures,
@@ -178,19 +235,23 @@ def write_training_bundle(
             "schema": MODEL_CARD_SCHEMA,
             "branch": BRANCH,
             "model": "TorchKTM",
-            "claim_status": "synthetic_training_harness_only",
+            "claim_status": claim_status,
             "claim_scope": HARNESS_SCOPE,
             "scientific_claim_allowed": harness_gate["scientific_claim_allowed"],
             "recovery_scope": RECOVERY_SCOPE,
             "recovery_claim_allowed": recovery_gate["scientific_claim_allowed"],
             "ktm_beats_baselines": comparison["ktm_beats_baselines"],
             "num_parameters": int(model.num_parameters()),
+            "selected_checkpoint": artifacts.selected_checkpoint,
+            "selected_checkpoint_step": artifacts.selected_checkpoint_step,
             "model_config": cfg.to_model_config(),
             "train_config": cfg.as_dict(),
             "test_metrics": ktm_test["trajectory"],
             "calibration": ktm_test["calibration"],
             "best_baseline": comparison["best_baseline"],
             "best_baseline_mse": comparison["best_baseline_mse"],
+            "selection_parity": selection_parity,
+            "recovery_redteam_blockers": redteam_dossier["blocker_reasons"],
             "checkpoints": _checkpoint_files(out),
             "limitations": [
                 "Synthetic Transition Gym only; no real EEG, no clinical or control claims.",
@@ -199,6 +260,9 @@ def write_training_bundle(
                 "Locked comparison = baselines trained to a matched optimizer-step budget; KTM must "
                 "beat the strongest baseline by the recovery margin. A lower KTM MSE under an "
                 "unmatched budget never earns the recovery scope.",
+                "Single-run recovery is never earned: a candidate must clear the red-team battery "
+                "(symmetric best-val selection, >=5 seeds with positive lower bound, generator-family "
+                "generalization) via scripts/run_ktm_redteam.py before synthetic_ktm_recovery opens.",
             ],
         },
     )
@@ -218,6 +282,8 @@ def write_training_bundle(
             "device": artifacts.device,
             "ddp_initialized": artifacts.ddp_initialized,
             "ddp_backend": artifacts.backend,
+            "selected_checkpoint": artifacts.selected_checkpoint,
+            "selected_checkpoint_step": artifacts.selected_checkpoint_step,
             "ddp_micro_sweep_command": build_torchrun_command(
                 config_path=config_path or "configs/train/ktm_a100_micro.yaml",
                 out_dir="$RUN_ROOT/ktm_micro_sweep",

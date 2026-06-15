@@ -21,9 +21,12 @@ class TransitionGymDatasetTests(unittest.TestCase):
 
     def test_item_shapes(self):
         ds = TransitionGymDataset(self.bundle, self.bundle.splits.train_episodes)
-        history, k, target = ds[0]
+        history, k, target, profile = ds[0]
         self.assertEqual(tuple(history.shape), (_CFG.history_len, _CFG.eeg_channels))
         self.assertEqual(tuple(target.shape), (_CFG.horizon, _CFG.eeg_channels))
+        self.assertEqual(
+            tuple(profile.shape), (_CFG.n_perturbations, _CFG.horizon, _CFG.eeg_channels)
+        )
         self.assertEqual(k.dtype, torch.long)
         self.assertTrue(0 <= int(k) < _CFG.n_perturbations)
 
@@ -48,10 +51,13 @@ class TransitionGymDatasetTests(unittest.TestCase):
             self.bundle, batch_size=8, seed=0, dist_info=info
         )
         self.assertIsInstance(train_loader.sampler, RandomSampler)
-        history, k, target = next(iter(train_loader))
+        history, k, target, profile = next(iter(train_loader))
         self.assertEqual(history.shape[0], 8)
         self.assertEqual(history.shape[1:], (_CFG.history_len, _CFG.eeg_channels))
         self.assertEqual(target.shape[1:], (_CFG.horizon, _CFG.eeg_channels))
+        self.assertEqual(
+            profile.shape[1:], (_CFG.n_perturbations, _CFG.horizon, _CFG.eeg_channels)
+        )
         self.assertGreater(len(val_loader.dataset), 0)
 
 
