@@ -1,0 +1,41 @@
+experiment: ktm_ablation_uncertainty_off
+branch: v3
+description: >-
+  PROPOSED / SYNTHETIC ONLY. Sprint 3B ablation: full trajectory + profile objective but with the
+  Gaussian NLL / uncertainty term off (w_nll = 0), so the uncertainty head is not trained. Tests
+  whether the uncertainty term helps or hurts the point-prediction MSE vs SSM. CPU smoke scale; no
+  A100, no real data, no recovery claim. Mirrors the in-code ABLATIONS matrix in
+  src/neurotwin/training_v3/failure_analysis.py.
+claim_scope: synthetic_ktm_training_harness
+
+seed: 0
+mode: cpu_smoke
+steps: 150
+batch_size: 16
+lr: 0.01
+weight_decay: 0.0
+precision: fp32
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 50
+eval_every_steps: 50
+w_traj: 1.0
+w_profile: 0.5
+w_nll: 0.0       # uncertainty head not trained
+loss_explosion_factor: 8.0
+
+recovery_margin: 0.05
+
+n_episodes: 48
+n_subjects: 4
+state_dim: 6
+n_perturbations: 4
+horizon: 5
+history_len: 6
+eeg_channels: 5
+behavior_dim: 2
+
+embed_dim: 16
+memory_dim: 12
+memory_rho: 0.8
+uncertainty_floor: 0.001
