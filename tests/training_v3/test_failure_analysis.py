@@ -23,6 +23,7 @@ _CFG = KTMTrainConfig(
 )
 
 _CONFIG_DIR = Path(__file__).resolve().parents[2] / "configs" / "train"
+_SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "run_ktm_failure_analysis.py"
 _ABLATION_YAMLS = (
     "ktm_ablation_trajectory_only.yaml",
     "ktm_ablation_traj_profile.yaml",
@@ -138,6 +139,16 @@ class AblationConfigYamlTests(unittest.TestCase):
             cfg = KTMTrainConfig.from_yaml(path)  # from_yaml validates on load
             self.assertEqual(cfg.mode, "cpu_smoke", name)
             self.assertGreater(cfg.steps, 0, name)
+
+
+class FailureAnalysisCliContractTests(unittest.TestCase):
+    """The public Sprint 3B diagnostic CLI must stay local-only and non-clustered."""
+
+    def test_cli_blocks_distributed_mode_surface(self):
+        text = _SCRIPT_PATH.read_text(encoding="utf-8")
+        self.assertIn('choices=["cpu_smoke", "single_gpu"]', text)
+        self.assertNotIn('"ddp"', text)
+        self.assertIn("distributed/cluster execution is intentionally blocked", text)
 
 
 if __name__ == "__main__":

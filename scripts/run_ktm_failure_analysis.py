@@ -44,7 +44,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--config", default=None)
-    parser.add_argument("--mode", default="cpu_smoke", choices=["cpu_smoke", "single_gpu", "ddp"])
+    parser.add_argument(
+        "--mode",
+        default="cpu_smoke",
+        choices=["cpu_smoke", "single_gpu"],
+        help="local diagnostic mode only; distributed/cluster execution is intentionally blocked",
+    )
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--steps", type=int, default=None)
     parser.add_argument(

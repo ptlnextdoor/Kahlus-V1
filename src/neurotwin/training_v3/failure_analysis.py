@@ -53,8 +53,9 @@ _INFO = DistributedInfo(rank=0, local_rank=0, world_size=1)
 def build_ablations(base_cfg: KTMTrainConfig) -> list[tuple[str, dict[str, Any]]]:
     """Named ablation overrides relative to ``base_cfg`` (single source of truth for the matrix).
 
-    Dimension sweeps scale to the base config so the same matrix works at smoke and A100 scale; the
-    mirrored ``configs/train/ktm_ablation_*.yaml`` files carry concrete smoke-scale numbers.
+    Dimension sweeps scale relative to the base config so the same matrix stays internally
+    consistent across allowed local diagnostic runs; the mirrored
+    ``configs/train/ktm_ablation_*.yaml`` files carry concrete CPU smoke-scale numbers.
     """
 
     md, ed = int(base_cfg.memory_dim), int(base_cfg.embed_dim)
