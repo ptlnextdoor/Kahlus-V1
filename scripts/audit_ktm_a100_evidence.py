@@ -8,7 +8,7 @@ recovery/model-superiority claims.
 
 usage:
   PYTHONPATH=src python3 scripts/audit_ktm_a100_evidence.py \
-    --evidence <path-to-evidence-zip-or-folder> --out-dir <out> --expected-gpus 8
+    --evidence <path-to-evidence-zip-or-folder> --out-dir <out> --expected-gpus 7
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--evidence", required=True, help="path to returned evidence folder or .zip")
     parser.add_argument("--out-dir", required=True, help="directory for audit JSON + markdown report")
-    parser.add_argument("--expected-gpus", type=int, default=8, help="expected visible GPU count (e.g. 8, 6, 1)")
+    parser.add_argument("--expected-gpus", type=int, default=8, help="expected visible GPU count (e.g. 8, 7, 6, 1)")
     parser.add_argument(
         "--allow-missing-logs",
         action="store_true",

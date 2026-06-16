@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 # Host-side Docker launcher for the Kahlus v3 KTM synthetic A100 micro-sweep (SYNTHETIC ONLY).
 # Mounts the runner at /workspace/repo, exposes GPU_COUNT GPUs, and runs docker_ktm_inner.sh.
-# Supports GPU_COUNT=1 (diagnostic), 6, or 8. NO MOABB / real-data env. DO NOT run on A100 until
-# local CPU smoke + checksum verification pass.
+# Supports GPU_COUNT=1 (diagnostic), 6, 7, or 8. NO MOABB / real-data env. DO NOT run on A100
+# until local CPU smoke + checksum verification pass.
 set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
 usage: scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-<short_sha> [host-gpu-ids]
 
-Examples (set GPU_COUNT to 1, 6, or 8):
+Examples (set GPU_COUNT to 1, 6, 7, or 8):
+  KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml \
+    GPU_COUNT=8 HOST_GPU_IDS=0,1,2,3,4,5,6,7 bash scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-abc1234
+  KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml \
+    GPU_COUNT=7 HOST_GPU_IDS=0,1,2,3,4,5,6   bash scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-abc1234
   GPU_COUNT=8 HOST_GPU_IDS=0,1,2,3,4,5,6,7 bash scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-abc1234
   GPU_COUNT=6 HOST_GPU_IDS=0,1,2,3,4,5     bash scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-abc1234
   GPU_COUNT=1 HOST_GPU_IDS=0               bash scripts/run_docker_ktm.sh /raid/scratch/$USER/kahlus-ktm-abc1234
 
 Exposing GPUs to the container is NOT enough: torchrun --nproc_per_node must equal GPU_COUNT,
 which docker_ktm_inner.sh enforces via NPROC_PER_NODE.
+KTM_CONFIG defaults to configs/train/ktm_a100_micro.yaml for older handoffs; Sprint 3D MUST set
+KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml explicitly.
 EOF
 }
 

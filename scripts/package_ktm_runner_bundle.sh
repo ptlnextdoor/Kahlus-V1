@@ -33,8 +33,11 @@ ARCHIVE_PATHS=(
   README_KTM_RUN.md
   README_KTM_HANDOFF.md.in
   configs/train/ktm_a100_micro.yaml
+  configs/train/ktm_recovery_point_objective.yaml
+  configs/train/ktm_recovery_capacity_smoke.yaml
   configs/train/ktm_synthetic_smoke.yaml
   scripts/_bootstrap.py
+  scripts/run_ktm_failure_analysis.py
   scripts/run_ktm_train.py
   scripts/run_ktm_smoke.sh
   scripts/docker_ktm_inner.sh
