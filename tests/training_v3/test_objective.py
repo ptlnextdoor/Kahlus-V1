@@ -24,9 +24,21 @@ class KTMObjectiveTests(unittest.TestCase):
         pred, log_var = model(history, k)
         loss, components = ktm_loss(pred, log_var, target, _CFG)
         self.assertTrue(torch.isfinite(loss).all())
-        for key in ("trajectory", "profile", "nll", "total"):
+        for key in ("trajectory", "profile", "nll", "nll_weight", "total"):
             self.assertIn(key, components)
             self.assertTrue(math.isfinite(components[key]))
+
+    def test_nll_weight_zero_removes_nll_from_total(self):
+        cfg = KTMTrainConfig(mode="cpu_smoke", n_episodes=16, seed=0, w_nll=100.0, nll_weight=0.0)
+        model = TorchKTM(cfg.to_model_config())
+        history, k, target = self._batch()
+        pred, log_var = model(history, k)
+        loss, components = ktm_loss(pred, log_var, target, cfg)
+        expected = cfg.w_traj * components["trajectory"] + cfg.w_profile * components["profile"]
+        self.assertEqual(cfg.effective_nll_weight(), 0.0)
+        self.assertEqual(components["nll_weight"], 0.0)
+        self.assertNotEqual(components["nll"], 0.0)
+        self.assertAlmostEqual(float(loss.detach()), expected, places=6)
 
     def test_gradients_flow(self):
         model = TorchKTM(_CFG.to_model_config())

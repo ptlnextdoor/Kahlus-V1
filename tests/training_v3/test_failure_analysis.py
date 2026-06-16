@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,8 +12,11 @@ from neurotwin.training_v3.failure_analysis import (
     REPORT_SCHEMA,
     SCHEMA,
     build_ablations,
+    objective_gap_comparison,
+    run_multiseed_objective_check,
     run_ablations,
     run_failure_analysis,
+    write_multiseed_objective_check,
     write_failure_analysis,
 )
 
@@ -32,6 +36,10 @@ _ABLATION_YAMLS = (
     "ktm_ablation_uncertainty_off.yaml",
     "ktm_ablation_memory_sweep.yaml",
     "ktm_ablation_embed_sweep.yaml",
+)
+_SPRINT3C_YAMLS = (
+    "ktm_recovery_point_objective.yaml",
+    "ktm_recovery_capacity_smoke.yaml",
 )
 
 
@@ -112,33 +120,96 @@ class AblationTests(unittest.TestCase):
         # resulting matrix is the expected shape and has no duplicate labels.
         labels = tuple(label for label, _ in build_ablations(_CFG))
         self.assertEqual(labels, ABLATION_LABELS)
-        self.assertEqual(len(ABLATION_LABELS), 10)
+        self.assertEqual(len(ABLATION_LABELS), 7)
         self.assertEqual(len(set(ABLATION_LABELS)), len(ABLATION_LABELS))
-        for required in ("trajectory_only", "full_objective", "uncertainty_off"):
+        for required in (
+            "full_objective",
+            "point_only",
+            "traj_profile",
+            "traj_profile_small_nll",
+            "uncertainty_off",
+            "uncertainty_on",
+            "capacity_smoke",
+        ):
             self.assertIn(required, ABLATION_LABELS)
 
     def test_ablation_smoke_run_blocks_recovery(self):
-        # A 2-entry subset keeps the test fast while exercising the full ablation path.
+        # A 2-entry subset keeps the test fast while exercising old full vs new point objective.
         subset = build_ablations(_CFG)[:2]
         rows = run_ablations(_CFG, ablations=subset)
         self.assertEqual(len(rows), 2)
         for row in rows:
             self.assertTrue(np.isfinite(row["ktm_test_mse"]), row["label"])
+            self.assertTrue(np.isfinite(row["ratio_ktm_over_ssm"]), row["label"])
             self.assertIs(row["recovery_allowed"], False)
             for key in ("trajectory", "profile", "nll", "total"):
                 self.assertTrue(np.isfinite(row["loss_components"][key]), f"{row['label']}.{key}")
+        summary = objective_gap_comparison(rows)
+        self.assertTrue(summary["available"])
+        self.assertEqual(summary["reference_label"], "full_objective")
+        self.assertIn(summary["candidate_label"], ABLATION_LABELS)
+        self.assertIn("gap_narrowed", summary)
+
+    def test_ablation_report_writes_gap_comparison(self):
+        rows = run_ablations(_CFG, ablations=build_ablations(_CFG)[:2])
+        report = run_failure_analysis(_CFG, run_ablations_flag=False)
+        report["ablations_ran"] = True
+        report["ablations"] = rows
+        report["objective_gap_comparison"] = objective_gap_comparison(rows)
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = write_failure_analysis(tmp, report)
+            loaded = json.loads(Path(paths["ktm_failure_analysis_json"]).read_text(encoding="utf-8"))
+            self.assertTrue(loaded["objective_gap_comparison"]["available"])
+            md = Path(paths["ktm_failure_analysis_md"]).read_text(encoding="utf-8")
+            self.assertIn("Objective gap comparison", md)
+
+
+class MultiSeedCheckTests(unittest.TestCase):
+    def test_multiseed_check_writes_requested_artifacts(self):
+        report = run_multiseed_objective_check(_CFG, seeds=(0, 1))
+        self.assertEqual(report["schema"], "kahlus.ktm_3c_multiseed_check.v1")
+        self.assertEqual(report["candidate_label"], "traj_profile")
+        self.assertEqual(report["n_seeds"], 2)
+        self.assertEqual(len(report["per_seed"]), 2)
+        self.assertFalse(report["recovery_claim_allowed"])
+        self.assertIn("mean", report["relative_ratio_reduction_summary"])
+        for row in report["per_seed"]:
+            self.assertIn("full_ratio_ktm_over_ssm", row)
+            self.assertIn("candidate_ratio_ktm_over_ssm", row)
+            self.assertTrue(np.isfinite(row["full_ratio_ktm_over_ssm"]))
+            self.assertTrue(np.isfinite(row["candidate_ratio_ktm_over_ssm"]))
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = write_multiseed_objective_check(tmp, report)
+            jp = Path(paths["ktm_3c_multiseed_check_json"])
+            mp = Path(paths["ktm_3c_multiseed_check_md"])
+            self.assertTrue(jp.exists() and mp.exists())
+            loaded = json.loads(jp.read_text(encoding="utf-8"))
+            self.assertEqual(loaded["schema"], report["schema"])
+            self.assertIn("Multi-Seed Check", mp.read_text(encoding="utf-8"))
 
 
 class AblationConfigYamlTests(unittest.TestCase):
-    """Each shipped ablation YAML loads into a valid KTMTrainConfig."""
+    """Each shipped ablation / Sprint 3C YAML loads into a valid KTMTrainConfig."""
 
     def test_yaml_configs_load_and_validate(self):
-        for name in _ABLATION_YAMLS:
+        for name in _ABLATION_YAMLS + _SPRINT3C_YAMLS:
             path = _CONFIG_DIR / name
             self.assertTrue(path.is_file(), path)
             cfg = KTMTrainConfig.from_yaml(path)  # from_yaml validates on load
             self.assertEqual(cfg.mode, "cpu_smoke", name)
             self.assertGreater(cfg.steps, 0, name)
+
+    def test_sprint3c_configs_use_point_objective_and_local_capacity(self):
+        point = KTMTrainConfig.from_yaml(_CONFIG_DIR / "ktm_recovery_point_objective.yaml")
+        capacity = KTMTrainConfig.from_yaml(_CONFIG_DIR / "ktm_recovery_capacity_smoke.yaml")
+        self.assertEqual(point.effective_nll_weight(), 0.0)
+        self.assertEqual(capacity.effective_nll_weight(), 0.0)
+        self.assertEqual(point.baseline_train_steps, 0)
+        self.assertEqual(capacity.baseline_train_steps, 0)
+        self.assertEqual(capacity.embed_dim, 32)
+        self.assertEqual(capacity.memory_dim, 24)
+        self.assertEqual(capacity.decoder_hidden_dim, 192)
+        self.assertEqual(capacity.steps, 300)
 
 
 class FailureAnalysisCliContractTests(unittest.TestCase):
@@ -149,6 +220,36 @@ class FailureAnalysisCliContractTests(unittest.TestCase):
         self.assertIn('choices=["cpu_smoke", "single_gpu"]', text)
         self.assertNotIn('"ddp"', text)
         self.assertIn("distributed/cluster execution is intentionally blocked", text)
+        self.assertIn("--seeds", text)
+        self.assertIn("run_multiseed_objective_check", text)
+
+
+class FrozenV1ScopeTests(unittest.TestCase):
+    def test_branch_diff_excludes_load_bearing_v1_paths(self):
+        repo = Path(__file__).resolve().parents[2]
+        changed: set[str] = set()
+        for args in (
+            ["git", "diff", "--name-only", "origin/main...HEAD"],
+            ["git", "diff", "--name-only"],
+        ):
+            result = subprocess.run(
+                args,
+                cwd=repo,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                self.skipTest(f"{' '.join(args)} unavailable: {result.stderr.strip()}")
+            changed.update(result.stdout.splitlines())
+        forbidden = {
+            "src/neurotwin/training/prepared.py",
+            "src/neurotwin/benchmarks/suite.py",
+            "src/neurotwin/data/split_manifest.py",
+            "src/neurotwin/reports/evidence_gate.py",
+            "src/neurotwin/models/__init__.py",
+        }
+        self.assertFalse(changed & forbidden)
 
 
 if __name__ == "__main__":

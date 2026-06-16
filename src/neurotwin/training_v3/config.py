@@ -35,6 +35,7 @@ class KTMTrainConfig:
     w_traj: float = 1.0
     w_profile: float = 0.5
     w_nll: float = 0.1
+    nll_weight: float | None = None
     loss_explosion_factor: float = 8.0
     resume_path: str | None = None
 
@@ -80,6 +81,8 @@ class KTMTrainConfig:
                 raise ValueError(f"{name} must be >= 1, got {getattr(self, name)}")
         if self.loss_explosion_factor <= 1.0:
             raise ValueError("loss_explosion_factor must be > 1.0")
+        if self.nll_weight is not None and float(self.nll_weight) < 0.0:
+            raise ValueError(f"nll_weight must be >= 0.0, got {self.nll_weight}")
         if int(self.baseline_train_steps) < 0:
             raise ValueError(f"baseline_train_steps must be >= 0, got {self.baseline_train_steps}")
         if not 0.0 <= float(self.recovery_margin) < 1.0:
@@ -135,6 +138,9 @@ class KTMTrainConfig:
             use_sequence_encoder=bool(self.use_sequence_encoder),
             use_profile_decoder=bool(self.use_profile_decoder),
         ).validate()
+
+    def effective_nll_weight(self) -> float:
+        return float(self.w_nll if self.nll_weight is None else self.nll_weight)
 
     def as_dict(self) -> dict[str, Any]:
         return {f.name: getattr(self, f.name) for f in fields(self)}
