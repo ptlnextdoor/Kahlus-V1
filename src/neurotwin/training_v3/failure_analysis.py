@@ -26,8 +26,8 @@ import numpy as np
 import torch
 
 from neurotwin.baseline_runner import (
-    _run_single_model_selected,
     regression_metrics,
+    selected_model_predictions,
     transition_gym_regression_task,
 )
 from neurotwin.repro import write_json
@@ -74,11 +74,8 @@ def build_ablations(base_cfg: KTMTrainConfig) -> list[tuple[str, dict[str, Any]]
     ]
 
 
-ABLATION_LABELS: tuple[str, ...] = (
-    "trajectory_only", "traj_profile", "traj_nll", "full_objective",
-    "uncertainty_off", "uncertainty_on",
-    "memory_dim_small", "memory_dim_large", "embed_dim_small", "embed_dim_large",
-)
+# Derived from the single source of truth above so the two cannot drift.
+ABLATION_LABELS: tuple[str, ...] = tuple(label for label, _ in build_ablations(KTMTrainConfig()))
 
 
 def _ratio(num: float, den: float) -> float:
@@ -99,13 +96,24 @@ def _slice_mses(se: np.ndarray) -> dict[str, list[float]]:
     }
 
 
-def _ktm_profile_on_test(artifacts: TrainingArtifacts) -> tuple[np.ndarray, np.ndarray]:
-    """KTM response profile ``(B, K, H, C)`` and the matching target on the held-out test split."""
+def _test_split(artifacts: TrainingArtifacts) -> tuple[Any, np.ndarray, torch.device, torch.Tensor]:
+    """``(bundle, idx, device, history_tensor)`` for the held-out test episodes.
+
+    Single source for the test-episode indexing + float32-cast + device-move contract shared by the
+    autopsy and the loss-component breakdown.
+    """
 
     bundle = artifacts.bundle
     idx = np.asarray(list(bundle.splits.test_episodes), dtype=int)
     device = torch.device(artifacts.device)
     history = torch.from_numpy(np.asarray(bundle.history_eeg, dtype=np.float32)[idx]).to(device)
+    return bundle, idx, device, history
+
+
+def _ktm_profile_on_test(artifacts: TrainingArtifacts) -> tuple[np.ndarray, np.ndarray]:
+    """KTM response profile ``(B, K, H, C)`` and the matching target on the held-out test split."""
+
+    bundle, idx, _device, history = _test_split(artifacts)
     artifacts.model.eval()
     with torch.no_grad():
         prof = artifacts.model.predict_response_profile(history).detach().cpu().numpy().astype(np.float64)
@@ -125,7 +133,7 @@ def _ssm_profile_on_test(cfg: KTMTrainConfig, shape: tuple[int, int, int, int]) 
     b, k, h, c = shape
     task = transition_gym_regression_task(cfg.to_world_config())
     steps = int(cfg.baseline_train_steps or cfg.steps)
-    res = _run_single_model_selected(SSM_MODEL_ID, task, steps, int(cfg.seed))
+    res = selected_model_predictions(SSM_MODEL_ID, task, steps, int(cfg.seed))
     pred = np.asarray(res["pred_best_val"], dtype=np.float64)  # (n_test, K*H*C)
     if pred.shape != (b, k * h * c):
         raise ValueError(f"ssm prediction shape {pred.shape} != expected {(b, k * h * c)}")
@@ -223,10 +231,7 @@ def loss_component_breakdown(artifacts: TrainingArtifacts, cfg: KTMTrainConfig) 
     uncertainty head) and averages — no dataset coupling, no training step.
     """
 
-    bundle = artifacts.bundle
-    idx = np.asarray(list(bundle.splits.test_episodes), dtype=int)
-    device = torch.device(artifacts.device)
-    history = torch.from_numpy(np.asarray(bundle.history_eeg, dtype=np.float32)[idx]).to(device)
+    bundle, idx, device, history = _test_split(artifacts)
     profile_target = torch.from_numpy(np.asarray(bundle.response_eeg, dtype=np.float32)[idx]).to(device)
     model = artifacts.model
     model.eval()

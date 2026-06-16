@@ -303,6 +303,19 @@ def _run_single_model_selected(
     }
 
 
+def selected_model_predictions(
+    model_id: str, task: RegressionTask, train_steps: int, seed: int, eval_every: int = 10
+) -> dict[str, Any]:
+    """Public best-val + final-step test predictions + checkpoint policy for ``model_id``.
+
+    A stable surface over the internal selected-baseline path so out-of-module callers (e.g. the
+    failure-analysis diagnostic) need not reach a private helper. Reuses — never reimplements or
+    weakens — the baseline training/selection path.
+    """
+
+    return _run_single_model_selected(model_id, task, train_steps, seed, eval_every)
+
+
 def dual_field_regression_task(config: "DualFieldConfig | None" = None, *, window: int = 4) -> RegressionTask:
     """Build a leakage-safe next-step EEG forecasting task from the v2 dual-field system.
 

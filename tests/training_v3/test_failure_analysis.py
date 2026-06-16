@@ -106,10 +106,15 @@ class FailureAnalysisReportTests(unittest.TestCase):
 class AblationTests(unittest.TestCase):
     """The ablation matrix loads and smoke-runs, and never earns recovery."""
 
-    def test_build_ablations_matches_labels(self):
+    def test_ablation_labels_are_well_formed(self):
+        # ABLATION_LABELS is derived from build_ablations (single source of truth); assert the
+        # resulting matrix is the expected shape and has no duplicate labels.
         labels = tuple(label for label, _ in build_ablations(_CFG))
         self.assertEqual(labels, ABLATION_LABELS)
-        self.assertEqual(len(labels), 10)
+        self.assertEqual(len(ABLATION_LABELS), 10)
+        self.assertEqual(len(set(ABLATION_LABELS)), len(ABLATION_LABELS))
+        for required in ("trajectory_only", "full_objective", "uncertainty_off"):
+            self.assertIn(required, ABLATION_LABELS)
 
     def test_ablation_smoke_run_blocks_recovery(self):
         # A 2-entry subset keeps the test fast while exercising the full ablation path.
