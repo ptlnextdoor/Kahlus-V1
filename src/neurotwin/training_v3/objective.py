@@ -44,11 +44,13 @@ def ktm_loss(
     per_sample_se = se.reshape(se.shape[0], -1).mean(dim=1)
     nll = (0.5 * (log_var + per_sample_se / torch.exp(log_var))).mean()
 
-    loss = cfg.w_traj * trajectory + cfg.w_profile * profile + cfg.w_nll * nll
+    nll_weight = cfg.effective_nll_weight()
+    loss = cfg.w_traj * trajectory + cfg.w_profile * profile + nll_weight * nll
     components = {
         "trajectory": float(trajectory.detach()),
         "profile": float(profile.detach()),
         "nll": float(nll.detach()),
+        "nll_weight": float(nll_weight),
         "total": float(loss.detach()),
     }
     return loss, components

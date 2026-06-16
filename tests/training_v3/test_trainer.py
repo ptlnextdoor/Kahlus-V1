@@ -27,6 +27,12 @@ class TrainerSmokeTests(unittest.TestCase):
         self.assertFalse(artifacts.aborted)
         self.assertEqual(artifacts.failure_reasons, [])
 
+    def test_point_objective_path_trains_with_uncertainty_nll_off(self):
+        artifacts = train_ktm(_cfg(steps=20, nll_weight=0.0, w_profile=0.5), dist_info=_INFO)
+        self.assertFalse(artifacts.aborted)
+        self.assertEqual(artifacts.failure_reasons, [])
+        self.assertTrue(artifacts.step_losses)
+
     def test_checkpoint_save_resume_reproduces(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)

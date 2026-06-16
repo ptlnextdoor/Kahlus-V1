@@ -23,8 +23,10 @@ ensure_src_import_path(__file__)
 
 from neurotwin.training_v3 import KTMTrainConfig  # noqa: E402
 from neurotwin.training_v3.failure_analysis import (  # noqa: E402
+    run_multiseed_objective_check,
     run_failure_analysis,
     write_failure_analysis,
+    write_multiseed_objective_check,
 )
 
 
@@ -38,6 +40,20 @@ def _build_config(args: argparse.Namespace) -> KTMTrainConfig:
     if args.steps is not None:
         payload["steps"] = args.steps
     return KTMTrainConfig.from_mapping(payload)
+
+
+def _parse_seeds(raw: str | None) -> list[int]:
+    if raw is None or not raw.strip():
+        return []
+    seeds: list[int] = []
+    for part in raw.split(","):
+        text = part.strip()
+        if not text:
+            continue
+        seeds.append(int(text))
+    if not seeds:
+        raise ValueError("--seeds must include at least one integer seed")
+    return seeds
 
 
 def main() -> int:
@@ -56,11 +72,22 @@ def main() -> int:
         "--ablations", action="store_true",
         help="opt-in: also run the small loss/architecture ablation sweep (slower)",
     )
+    parser.add_argument(
+        "--seeds",
+        default=None,
+        help="optional comma-separated local seeds for the Sprint 3C full_objective vs traj_profile check",
+    )
     args = parser.parse_args()
 
     cfg = _build_config(args)
+    seeds = _parse_seeds(args.seeds)
     report = run_failure_analysis(cfg, run_ablations_flag=args.ablations)
     paths = write_failure_analysis(args.out_dir, report)
+    if seeds:
+        multiseed_report = run_multiseed_objective_check(cfg, seeds=seeds)
+        paths.update(write_multiseed_objective_check(args.out_dir, multiseed_report))
+    else:
+        multiseed_report = None
 
     a = report["autopsy"]
     ov = a["overall"]
@@ -77,6 +104,27 @@ def main() -> int:
     print(f"loss_components trajectory={lc['trajectory']:.4g} profile={lc['profile']:.4g} "
           f"nll={lc['nll']:.4g} total={lc['total']:.4g}")
     print(f"ablations_ran={report['ablations_ran']} n_ablations={len(report['ablations'])}")
+    gap = report.get("objective_gap_comparison")
+    if gap:
+        print(
+            "objective_gap_comparison "
+            f"available={gap['available']} gap_narrowed={gap['gap_narrowed']} "
+            f"reference={gap.get('reference_label')}:{gap.get('reference_ratio_ktm_over_ssm')} "
+            f"best_candidate={gap.get('candidate_label')}:{gap.get('candidate_ratio_ktm_over_ssm')} "
+            f"candidate_beats_ssm={gap.get('candidate_beats_ssm')} "
+            f"candidate_beats_best_baseline_locked={gap.get('candidate_beats_best_baseline_locked')}"
+        )
+    if multiseed_report is not None:
+        red = multiseed_report["relative_ratio_reduction_summary"]
+        print(
+            "multiseed_check "
+            f"candidate={multiseed_report['candidate_label']} "
+            f"gap_narrowed={multiseed_report['n_gap_narrowed']}/{multiseed_report['n_seeds']} "
+            f"mean_relative_ratio_reduction={red['mean']} "
+            f"any_candidate_beats_ssm={multiseed_report['any_candidate_beats_ssm']} "
+            f"any_row_beats_best_baseline_locked={multiseed_report['any_row_beats_best_baseline_locked']} "
+            f"recovery_claim_allowed={multiseed_report['recovery_claim_allowed']}"
+        )
     print(f"best_failure_hypothesis: {report['best_failure_hypothesis']}")
     print(f"recovery_claim_allowed={report['recovery_claim_allowed']} (recovery stays blocked)")
     print("artifacts=" + ", ".join(f"{key}={value}" for key, value in paths.items()))

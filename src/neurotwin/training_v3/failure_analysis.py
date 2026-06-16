@@ -39,6 +39,7 @@ from neurotwin.training_v3.trainer import TrainingArtifacts, train_ktm
 
 SCHEMA = "kahlus.ktm_failure_analysis.v1"
 REPORT_SCHEMA = "kahlus.ktm_failure_analysis_report.v1"
+MULTISEED_SCHEMA = "kahlus.ktm_3c_multiseed_check.v1"
 SSM_MODEL_ID = "ssm_fallback"
 # A single locked win never earns recovery — only the red-team battery does. Hard-coded so a lucky
 # ablation cannot leak a recovery claim out of this read-only diagnostic.
@@ -51,27 +52,33 @@ _INFO = DistributedInfo(rank=0, local_rank=0, world_size=1)
 
 
 def build_ablations(base_cfg: KTMTrainConfig) -> list[tuple[str, dict[str, Any]]]:
-    """Named ablation overrides relative to ``base_cfg`` (single source of truth for the matrix).
+    """Named Sprint 3C objective/capacity overrides relative to ``base_cfg``.
 
-    Dimension sweeps scale relative to the base config so the same matrix stays internally
-    consistent across allowed local diagnostic runs; the mirrored
-    ``configs/train/ktm_ablation_*.yaml`` files carry concrete CPU smoke-scale numbers.
+    The first row is the old full objective reference; the following rows test whether a
+    point/profile-aligned objective or a modest local capacity bump narrows the KTM-vs-SSM gap.
     """
 
-    md, ed = int(base_cfg.memory_dim), int(base_cfg.embed_dim)
-    w_profile = float(base_cfg.w_profile) or 0.5
-    w_nll = float(base_cfg.w_nll) or 0.1
+    profile_weight = float(base_cfg.w_profile) if float(base_cfg.w_profile) > 0.0 else 0.5
+    full_nll = float(base_cfg.w_nll) if float(base_cfg.w_nll) > 0.0 else 0.1
+    small_nll = min(0.01, full_nll)
     return [
-        ("trajectory_only", {"w_profile": 0.0, "w_nll": 0.0}),
-        ("traj_profile", {"w_profile": w_profile, "w_nll": 0.0}),
-        ("traj_nll", {"w_profile": 0.0, "w_nll": w_nll}),
-        ("full_objective", {}),  # the base objective, unchanged — the reference row
-        ("uncertainty_off", {"w_nll": 0.0}),
-        ("uncertainty_on", {"w_nll": w_nll}),
-        ("memory_dim_small", {"memory_dim": max(4, md // 2)}),
-        ("memory_dim_large", {"memory_dim": md * 2}),
-        ("embed_dim_small", {"embed_dim": max(4, ed // 2)}),
-        ("embed_dim_large", {"embed_dim": ed * 2}),
+        ("full_objective", {"w_profile": profile_weight, "nll_weight": full_nll}),
+        ("point_only", {"w_profile": 0.0, "nll_weight": 0.0}),
+        ("traj_profile", {"w_profile": profile_weight, "nll_weight": 0.0}),
+        ("traj_profile_small_nll", {"w_profile": profile_weight, "nll_weight": small_nll}),
+        ("uncertainty_off", {"nll_weight": 0.0}),
+        ("uncertainty_on", {"nll_weight": full_nll}),
+        (
+            "capacity_smoke",
+            {
+                "w_profile": profile_weight,
+                "nll_weight": 0.0,
+                "embed_dim": max(int(base_cfg.embed_dim), 32),
+                "memory_dim": max(int(base_cfg.memory_dim), 24),
+                "decoder_hidden_dim": max(int(base_cfg.decoder_hidden_dim), 192),
+                "steps": max(int(base_cfg.steps), 300),
+            },
+        ),
     ]
 
 
@@ -273,14 +280,21 @@ def run_ablations(
         cfg = replace(base_cfg, **overrides).validate()
         artifacts = train_ktm(cfg, out_dir=None, dist_info=_INFO)
         device = torch.device(artifacts.device)
-        _baseline, ktm_test, comparison, _steps = fair_ktm_vs_baselines(
+        baseline_result, ktm_test, comparison, _steps = fair_ktm_vs_baselines(
             artifacts.model, artifacts.bundle, cfg, device=device, world_size=1
         )
         loss_comp = loss_component_breakdown(artifacts, cfg)
+        ktm_mse = float(ktm_test["trajectory"]["mse"])
+        ssm_mse_raw = baseline_result.metrics_by_model.get(SSM_MODEL_ID, {}).get("mse")
+        ssm_mse = float(ssm_mse_raw) if ssm_mse_raw is not None else None
+        ktm_over_ssm = _ratio(ktm_mse, ssm_mse) if ssm_mse is not None else None
         rows.append({
             "label": label,
             "overrides": dict(overrides),
-            "ktm_test_mse": float(ktm_test["trajectory"]["mse"]),
+            "effective_nll_weight": cfg.effective_nll_weight(),
+            "ktm_test_mse": ktm_mse,
+            "ssm_mse": ssm_mse,
+            "ratio_ktm_over_ssm": ktm_over_ssm,
             "best_baseline": comparison["best_baseline"],
             "best_baseline_mse": comparison["best_baseline_mse"],
             "relative_improvement": comparison["relative_improvement"],
@@ -290,6 +304,141 @@ def run_ablations(
             "loss_components": {key: loss_comp[key] for key in ("trajectory", "profile", "nll", "total")},
         })
     return rows
+
+
+def objective_gap_comparison(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize whether any Sprint 3C row narrows the KTM-vs-SSM gap vs full objective."""
+
+    finite_rows = [
+        row for row in rows
+        if row.get("ratio_ktm_over_ssm") is not None
+        and np.isfinite(float(row["ratio_ktm_over_ssm"]))
+    ]
+    reference = next((row for row in finite_rows if row.get("label") == "full_objective"), None)
+    candidates = [row for row in finite_rows if row.get("label") != "full_objective"]
+    if reference is None or not candidates:
+        return {
+            "reference_label": "full_objective",
+            "available": False,
+            "gap_narrowed": False,
+            "reason": "full_objective reference or candidate rows missing",
+        }
+
+    best = min(candidates, key=lambda row: float(row["ratio_ktm_over_ssm"]))
+    reference_ratio = float(reference["ratio_ktm_over_ssm"])
+    best_ratio = float(best["ratio_ktm_over_ssm"])
+    ratio_delta = reference_ratio - best_ratio
+    relative_ratio_reduction = ratio_delta / reference_ratio if reference_ratio > 0.0 else 0.0
+    return {
+        "reference_label": "full_objective",
+        "candidate_label": str(best["label"]),
+        "available": True,
+        "reference_ratio_ktm_over_ssm": reference_ratio,
+        "candidate_ratio_ktm_over_ssm": best_ratio,
+        "absolute_ratio_delta": float(ratio_delta),
+        "relative_ratio_reduction": float(relative_ratio_reduction),
+        "gap_narrowed": bool(best_ratio < reference_ratio),
+        "candidate_beats_ssm": bool(best_ratio < 1.0),
+        "candidate_beats_best_baseline_locked": bool(best.get("beats_best_baseline_locked", False)),
+    }
+
+
+def _summary(values: Sequence[float]) -> dict[str, Any]:
+    arr = np.asarray(list(values), dtype=np.float64)
+    if arr.size == 0:
+        return {"mean": None, "std": None, "min": None, "max": None}
+    return {
+        "mean": float(np.mean(arr)),
+        "std": float(np.std(arr)),
+        "min": float(np.min(arr)),
+        "max": float(np.max(arr)),
+    }
+
+
+def run_multiseed_objective_check(
+    base_cfg: KTMTrainConfig,
+    *,
+    seeds: Sequence[int],
+    candidate_label: str = "traj_profile",
+) -> dict[str, Any]:
+    """Cheap Sprint 3C multi-seed check: old full objective vs best point candidate."""
+
+    if not seeds:
+        raise ValueError("seeds must contain at least one seed")
+    matrix = dict(build_ablations(base_cfg))
+    if "full_objective" not in matrix:
+        raise ValueError("full_objective ablation is required for the multi-seed check")
+    if candidate_label not in matrix:
+        raise ValueError(f"{candidate_label!r} is not in the ablation matrix")
+
+    per_seed: list[dict[str, Any]] = []
+    for seed in seeds:
+        cfg = replace(base_cfg, seed=int(seed)).validate()
+        rows = run_ablations(
+            cfg,
+            ablations=[
+                ("full_objective", matrix["full_objective"]),
+                (candidate_label, matrix[candidate_label]),
+            ],
+        )
+        by_label = {str(row["label"]): row for row in rows}
+        full = by_label["full_objective"]
+        candidate = by_label[candidate_label]
+        full_ratio = float(full["ratio_ktm_over_ssm"])
+        candidate_ratio = float(candidate["ratio_ktm_over_ssm"])
+        absolute_delta = full_ratio - candidate_ratio
+        relative_reduction = absolute_delta / full_ratio if full_ratio > 0.0 else 0.0
+        per_seed.append({
+            "seed": int(seed),
+            "full_objective": full,
+            candidate_label: candidate,
+            "full_ratio_ktm_over_ssm": full_ratio,
+            "candidate_ratio_ktm_over_ssm": candidate_ratio,
+            "absolute_ratio_delta": float(absolute_delta),
+            "relative_ratio_reduction": float(relative_reduction),
+            "gap_narrowed": bool(candidate_ratio < full_ratio),
+            "candidate_beats_ssm": bool(candidate_ratio < 1.0),
+            "candidate_beats_best_baseline_locked": bool(
+                candidate.get("beats_best_baseline_locked", False)
+            ),
+            "recovery_allowed": False,
+        })
+
+    full_ratios = [float(row["full_ratio_ktm_over_ssm"]) for row in per_seed]
+    candidate_ratios = [float(row["candidate_ratio_ktm_over_ssm"]) for row in per_seed]
+    reductions = [float(row["relative_ratio_reduction"]) for row in per_seed]
+    narrowed = [row for row in per_seed if row["gap_narrowed"]]
+    beats_baseline = [
+        row for row in per_seed
+        if row["candidate_beats_best_baseline_locked"]
+        or row["full_objective"].get("beats_best_baseline_locked", False)
+    ]
+    return {
+        "schema": MULTISEED_SCHEMA,
+        "claim_status": "synthetic_model_failure_analysis",
+        "branch": "v3",
+        "synthetic_only": True,
+        "claim_scope": "synthetic_ktm_training_harness",
+        "recovery_claim_allowed": False,
+        "reference_label": "full_objective",
+        "candidate_label": candidate_label,
+        "seeds": [int(seed) for seed in seeds],
+        "n_seeds": len(per_seed),
+        "n_gap_narrowed": len(narrowed),
+        "gap_narrowed_fraction": float(len(narrowed) / len(per_seed)),
+        "any_candidate_beats_ssm": bool(any(row["candidate_beats_ssm"] for row in per_seed)),
+        "any_row_beats_best_baseline_locked": bool(beats_baseline),
+        "full_ratio_summary": _summary(full_ratios),
+        "candidate_ratio_summary": _summary(candidate_ratios),
+        "relative_ratio_reduction_summary": _summary(reductions),
+        "per_seed": per_seed,
+        "notes": [
+            "PROPOSED / SYNTHETIC ONLY — local CPU/single-GPU multi-seed check; no A100, "
+            "cluster job, real data, or recovery claim.",
+            RECOVERY_NOTE,
+        ],
+        "config": base_cfg.as_dict(),
+    }
 
 
 def best_failure_hypothesis(autopsy: dict[str, Any]) -> str:
@@ -348,6 +497,7 @@ def run_failure_analysis(
     autopsy = ktm_vs_ssm_autopsy(artifacts, cfg)
     loss_comp = loss_component_breakdown(artifacts, cfg)
     ablations = run_ablations(cfg) if run_ablations_flag else []
+    gap_comparison = objective_gap_comparison(ablations) if ablations else None
     hypothesis = best_failure_hypothesis(autopsy)
 
     return {
@@ -364,6 +514,7 @@ def run_failure_analysis(
         "loss_components": loss_comp,
         "ablations_ran": bool(run_ablations_flag),
         "ablations": ablations,
+        "objective_gap_comparison": gap_comparison,
         "best_failure_hypothesis": hypothesis,
         "config": cfg.as_dict(),
         "notes": [
@@ -433,16 +584,32 @@ def format_failure_md(report: dict[str, Any]) -> str:
         lines += [
             "## Ablations (cpu_smoke)",
             "",
-            "| label | ktm_test_mse | best_baseline | rel_improvement | beats_baseline_locked | recovery |",
-            "| --- | ---: | --- | ---: | --- | --- |",
+            "| label | nll_weight | ktm_test_mse | ssm_mse | ktm/ssm | best_baseline | rel_improvement | beats_baseline_locked | recovery |",
+            "| --- | ---: | ---: | ---: | ---: | --- | ---: | --- | --- |",
         ]
         for row in report["ablations"]:
             lines.append(
-                f"| {row['label']} | {_fmt(row['ktm_test_mse'])} | {row['best_baseline']} | "
+                f"| {row['label']} | {_fmt(row.get('effective_nll_weight'))} | "
+                f"{_fmt(row['ktm_test_mse'])} | {_fmt(row.get('ssm_mse'))} | "
+                f"{_fmt(row.get('ratio_ktm_over_ssm'))} | {row['best_baseline']} | "
                 f"{_fmt(row['relative_improvement'])} | {row['beats_best_baseline_locked']} | "
                 f"{row['recovery_allowed']} |"
             )
         lines.append("")
+    gap = report.get("objective_gap_comparison")
+    if gap:
+        lines += [
+            "## Objective gap comparison",
+            "",
+            f"- available: {gap['available']}",
+            f"- reference: {gap['reference_label']} ktm/ssm={_fmt(gap.get('reference_ratio_ktm_over_ssm'))}",
+            f"- best_candidate: {gap.get('candidate_label')} ktm/ssm={_fmt(gap.get('candidate_ratio_ktm_over_ssm'))}",
+            f"- gap_narrowed: **{gap['gap_narrowed']}**  "
+            f"(relative ratio reduction: {_fmt(gap.get('relative_ratio_reduction'))})",
+            f"- candidate_beats_ssm: {gap.get('candidate_beats_ssm')}  "
+            f"candidate_beats_best_baseline_locked: {gap.get('candidate_beats_best_baseline_locked')}",
+            "",
+        ]
     lines += [
         "## Best failure hypothesis",
         "",
@@ -478,4 +645,63 @@ def write_failure_analysis(out_dir: str | Path, report: dict[str, Any]) -> dict[
         "ktm_failure_analysis_json": json_path,
         "ktm_failure_analysis_md": md_path,
         "ktm_error_by_slice_csv": csv_path,
+    }
+
+
+def format_multiseed_check_md(report: dict[str, Any]) -> str:
+    cand = report["candidate_label"]
+    red = report["relative_ratio_reduction_summary"]
+    lines = [
+        "# KTM Sprint 3C Multi-Seed Check (SYNTHETIC ONLY)",
+        "",
+        f"- schema: {report['schema']}",
+        f"- reference: {report['reference_label']}",
+        f"- candidate: {cand}",
+        f"- recovery_claim_allowed: **{report['recovery_claim_allowed']}**",
+        f"- seeds: {', '.join(str(seed) for seed in report['seeds'])}",
+        f"- gap_narrowed: {report['n_gap_narrowed']}/{report['n_seeds']}",
+        f"- mean_relative_ratio_reduction: {_fmt(red['mean'])}",
+        f"- any_candidate_beats_ssm: {report['any_candidate_beats_ssm']}",
+        f"- any_row_beats_best_baseline_locked: {report['any_row_beats_best_baseline_locked']}",
+        "",
+        "## Per seed",
+        "",
+        "| seed | full ktm/ssm | candidate ktm/ssm | rel reduction | narrowed | candidate beats ssm | candidate beats best baseline |",
+        "| ---: | ---: | ---: | ---: | --- | --- | --- |",
+    ]
+    for row in report["per_seed"]:
+        lines.append(
+            f"| {row['seed']} | {_fmt(row['full_ratio_ktm_over_ssm'])} | "
+            f"{_fmt(row['candidate_ratio_ktm_over_ssm'])} | "
+            f"{_fmt(row['relative_ratio_reduction'])} | {row['gap_narrowed']} | "
+            f"{row['candidate_beats_ssm']} | {row['candidate_beats_best_baseline_locked']} |"
+        )
+    lines += [
+        "",
+        "## Summary",
+        "",
+        f"- full_ratio mean/std/min/max: {_fmt(report['full_ratio_summary']['mean'])} / "
+        f"{_fmt(report['full_ratio_summary']['std'])} / {_fmt(report['full_ratio_summary']['min'])} / "
+        f"{_fmt(report['full_ratio_summary']['max'])}",
+        f"- candidate_ratio mean/std/min/max: {_fmt(report['candidate_ratio_summary']['mean'])} / "
+        f"{_fmt(report['candidate_ratio_summary']['std'])} / {_fmt(report['candidate_ratio_summary']['min'])} / "
+        f"{_fmt(report['candidate_ratio_summary']['max'])}",
+        f"- relative_ratio_reduction mean/std/min/max: {_fmt(red['mean'])} / {_fmt(red['std'])} / "
+        f"{_fmt(red['min'])} / {_fmt(red['max'])}",
+        "",
+        "Recovery remains blocked unless the fair gated baseline comparison is actually beaten.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_multiseed_objective_check(out_dir: str | Path, report: dict[str, Any]) -> dict[str, Path]:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    json_path = write_json(out / "ktm_3c_multiseed_check.json", report)
+    md_path = out / "ktm_3c_multiseed_check.md"
+    md_path.write_text(format_multiseed_check_md(report), encoding="utf-8")
+    return {
+        "ktm_3c_multiseed_check_json": json_path,
+        "ktm_3c_multiseed_check_md": md_path,
     }

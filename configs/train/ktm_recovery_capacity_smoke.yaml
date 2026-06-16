@@ -1,0 +1,47 @@
+experiment: ktm_recovery_capacity_smoke
+branch: v3
+description: >-
+  PROPOSED / SYNTHETIC ONLY. Sprint 3C local capacity diagnostic: same trajectory +
+  response-profile point objective as ktm_recovery_point_objective, with a modest embed/memory/
+  decoder/step bump that stays CPU/local-GPU friendly. No A100, no cluster job, no real data,
+  no recovery claim.
+claim_scope: synthetic_ktm_training_harness
+
+seed: 0
+mode: cpu_smoke
+steps: 300
+batch_size: 16
+lr: 0.01
+weight_decay: 0.0
+precision: fp32
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+checkpoint_every_steps: 50
+eval_every_steps: 50
+w_traj: 1.0
+w_profile: 0.5
+w_nll: 0.1
+nll_weight: 0.0
+loss_explosion_factor: 8.0
+
+baseline_train_steps: 0
+recovery_margin: 0.05
+
+n_episodes: 48
+n_subjects: 4
+state_dim: 6
+n_perturbations: 4
+horizon: 5
+history_len: 6
+eeg_channels: 5
+behavior_dim: 2
+
+embed_dim: 32
+memory_dim: 24
+memory_rho: 0.8
+uncertainty_floor: 0.001
+use_operator_path: true
+operator_init_scale: 0.02
+decoder_hidden_dim: 192
+use_sequence_encoder: true
+use_profile_decoder: true
