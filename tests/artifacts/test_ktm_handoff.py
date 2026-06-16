@@ -19,8 +19,11 @@ RUNNER_REQUIRED = {
     "environment-ktm-a100.yml",
     "pyproject.toml",
     "configs/train/ktm_a100_micro.yaml",
+    "configs/train/ktm_recovery_point_objective.yaml",
+    "configs/train/ktm_recovery_capacity_smoke.yaml",
     "configs/train/ktm_synthetic_smoke.yaml",
     "scripts/_bootstrap.py",
+    "scripts/run_ktm_failure_analysis.py",
     "scripts/run_ktm_train.py",
     "scripts/run_ktm_smoke.sh",
     "scripts/docker_ktm_inner.sh",
@@ -70,11 +73,14 @@ class KtmHandoffTests(unittest.TestCase):
                 },
             )
 
-            # README content contract: MOABB-not-applicable + both 6 and 8 GPU.
+            # README content contract: MOABB-not-applicable + Sprint 3D config + honest 7/8 GPU.
             readme = (extract / root / "README_HANDOFF.md").read_text()
             self.assertIn("MOABB audit is not applicable", readme)
-            self.assertIn("nproc_per_node=6", readme)
+            self.assertIn("configs/train/ktm_recovery_point_objective.yaml", readme)
+            self.assertIn("configs/train/ktm_recovery_capacity_smoke.yaml", readme)
+            self.assertIn("nproc_per_node=7", readme)
             self.assertIn("nproc_per_node=8", readme)
+            self.assertIn("--expected-gpus 7", readme)
             self.assertIn("synthetic_ktm_recovery", readme)
             self.assertIn("AGENT_RUNBOOK.md", readme)
 
@@ -94,12 +100,19 @@ class KtmHandoffTests(unittest.TestCase):
                 self.assertFalse(m.endswith(FORBIDDEN_SUFFIXES), m)
                 self.assertNotIn("__pycache__", m)
                 self.assertFalse("/tests/" in m, m)
+            runner = extract / "runner" / runner_root
+            runner_text = "\n".join(
+                (runner / name).read_text(encoding="utf-8")
+                for name in ("AGENT_RUNBOOK.md", "README_RUN.md", "README_HANDOFF.md")
+            )
+            self.assertIn("KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml", runner_text)
+            self.assertIn("configs/train/ktm_recovery_capacity_smoke.yaml", runner_text)
+            self.assertIn("--expected-gpus 7", runner_text)
 
             checker = "shasum" if shutil.which("shasum") else "sha256sum"
             cmd = ["shasum", "-a", "256", "-c", "SHA256SUMS"] if checker == "shasum" \
                 else ["sha256sum", "-c", "SHA256SUMS"]
-            verify = subprocess.run(cmd, cwd=extract / "runner" / runner_root,
-                                    text=True, capture_output=True)
+            verify = subprocess.run(cmd, cwd=runner, text=True, capture_output=True)
             self.assertEqual(verify.returncode, 0, verify.stderr + verify.stdout)
 
     def test_evidence_bundle_includes_run_files_excludes_secrets(self):

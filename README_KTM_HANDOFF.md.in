@@ -1,4 +1,4 @@
-# Kahlus v3 KTM A100 Micro-Sweep — Handoff
+# Kahlus v3 KTM Sprint 3D A100 Validation — Handoff
 
 **Commit:** `${FULL_SHA}` (`${SHORT_SHA}`)
 **Runner:** `${RUNNER_NAME}` (tarball `${RUNNER_TARBALL}`)
@@ -12,9 +12,9 @@
 
 ## What this runner is
 
-A self-contained, checksummed package that trains the **synthetic** Kahlus v3 KTM (Kahlus Transition
-Model) on the synthetic Transition Gym, as an **8×A100 (or 6×A100) DDP micro-sweep**. It is
-**infrastructure validation only**.
+A self-contained, checksummed package that runs the **synthetic** Kahlus v3 KTM (Kahlus Transition
+Model) Sprint 3D `traj_profile` / point-objective validation on the synthetic Transition Gym, as an
+**8×A100 or honest 7×A100 DDP validation**. It is **infrastructure validation only**.
 
 ## MOABB / real data — NOT APPLICABLE
 
@@ -25,7 +25,7 @@ manifest window-count preflight. Leakage safety is enforced by the Transition Gy
 
 ## What it proves / does not prove
 
-- **Proves:** the KTM training harness runs cluster-native under true `torchrun` DDP (1/6/8 GPU);
+- **Proves:** the Sprint 3C point-objective direction runs cluster-native under true `torchrun` DDP;
   loss decreases on a synthetic world; checkpoint/resume works; the full evidence bundle is written;
   the evidence gate blocks broad claims.
 - **Does NOT prove:** any KTM recovery/superiority, any real-data, clinical, consciousness, or Orch-OR
@@ -60,34 +60,39 @@ docker run --rm --gpus "\"device=0\"" --ipc=host --shm-size=64g \
   bash -lc 'python -m pip install -e . && GPU_COUNT=1 python scripts/docker_gpu_preflight.py /tmp/gpu_preflight.json'
 ```
 
-6-GPU preflight: same with `--gpus "\"device=0,1,2,3,4,5\""`, `GPU_COUNT=6`, `CUDA_VISIBLE_DEVICES=0,1,2,3,4,5`.
+7-GPU preflight: same with `--gpus "\"device=0,1,2,3,4,5,6\""`, `GPU_COUNT=7`, `CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6`.
 8-GPU preflight: same with `--gpus "\"device=0,1,2,3,4,5,6,7\""`, `GPU_COUNT=8`, `CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7`.
+Use the actual selected GPU count in every report and in the returned-evidence audit.
 
-**6-GPU micro-sweep** (the host launcher enforces `torchrun --nproc_per_node=6`):
+**7-GPU Sprint 3D point-objective validation** (the host launcher enforces `torchrun --nproc_per_node=7`):
 ```bash
-GPU_COUNT=6 HOST_GPU_IDS=0,1,2,3,4,5 bash scripts/run_docker_ktm.sh ${PERSISTENT_ROOT_EXAMPLE}
+KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml \
+GPU_COUNT=7 HOST_GPU_IDS=0,1,2,3,4,5,6 bash scripts/run_docker_ktm.sh ${PERSISTENT_ROOT_EXAMPLE}
 ```
-**8-GPU micro-sweep:**
+**8-GPU Sprint 3D point-objective validation:**
 ```bash
+KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml \
 GPU_COUNT=8 HOST_GPU_IDS=0,1,2,3,4,5,6,7 bash scripts/run_docker_ktm.sh ${PERSISTENT_ROOT_EXAMPLE}
 ```
 **Exposing GPUs to Docker is not enough** — `torchrun --nproc_per_node` must equal the GPU count.
 `docker_ktm_inner.sh` enforces this via `NPROC_PER_NODE`.
+`configs/train/ktm_recovery_capacity_smoke.yaml` is included only for a later follow-up diagnostic;
+do not use it for the first Sprint 3D A100 validation.
 
 ## Direct torchrun (already inside a configured env)
 
 ```bash
 torchrun --standalone --nnodes=1 --nproc_per_node=8 \
-  scripts/run_ktm_train.py --config configs/train/ktm_a100_micro.yaml \
+  scripts/run_ktm_train.py --config configs/train/ktm_recovery_point_objective.yaml \
   --out-dir ${PERSISTENT_ROOT_EXAMPLE}/runs/ktm_micro_sweep --mode ddp
 ```
-(Use `--nproc_per_node=6` for a 6-GPU run.)
+(Use `--nproc_per_node=7` for an honest 7-GPU run.)
 
 ## Slurm / sbatch
 
 ```bash
 RUN_ROOT=${PERSISTENT_ROOT_EXAMPLE} sbatch scripts/slurm/train_ktm_a100.sh \
-  /abs/path/configs/train/ktm_a100_micro.yaml
+  /abs/path/configs/train/ktm_recovery_point_objective.yaml
 ```
 
 ## True DDP support
@@ -102,6 +107,17 @@ and `CUDA_VISIBLE_DEVICES`. Rank-0 writes the output bundle.
 `model_card.json` · `data_card.json` · `run_config.json` · `failure_reasons.json` ·
 `environment.json` · `gpu_preflight.json` · `checkpoints/` (kept on the cluster; excluded from the
 sendable evidence zip).
+
+Audit returned evidence with the actual selected GPU count:
+
+```bash
+PYTHONPATH=src python3 scripts/audit_ktm_a100_evidence.py \
+  --evidence outputs/kahlus-ktm-a100-results-${SHORT_SHA}-evidence.zip \
+  --out-dir outputs/ktm-a100-audit-${SHORT_SHA} \
+  --expected-gpus 8
+```
+
+Use `--expected-gpus 7` for an honest 7xA100 run.
 
 ## Claim boundaries
 

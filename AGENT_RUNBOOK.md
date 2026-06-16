@@ -1,14 +1,16 @@
-# AGENT RUNBOOK — Kahlus v3 KTM A100 Micro-Sweep (read this first)
+# AGENT RUNBOOK — Kahlus v3 KTM Sprint 3D A100 Validation (read this first)
 
 **You are an automation agent running on an A100 cluster node.** This package is a self-contained,
-checksummed runner for a **synthetic** Kahlus v3 KTM (Kahlus Transition Model) micro-sweep. Follow
-this runbook **exactly and in order**. It is a gated leash run: prove GPU visibility first, then run
-one tiny training sweep. **Do not improvise, do not change code, do not run a full sweep.**
+checksummed runner for a **synthetic** Kahlus v3 KTM (Kahlus Transition Model) Sprint 3D validation.
+Follow this runbook **exactly and in order**. It is a gated leash run: prove GPU visibility first,
+then run one tiny point-objective validation. **Do not improvise, do not change code, do not run a
+full sweep.**
 
 ## What this is (and is not)
 
-- **Is:** infrastructure validation — does the KTM training harness run cluster-native under real
-  `torchrun` DDP on A100s, produce a complete evidence bundle, and keep its claim gate honest.
+- **Is:** infrastructure validation — does the Sprint 3C `traj_profile` / point-objective direction
+  run cluster-native under real `torchrun` DDP on A100s, produce a complete evidence bundle, and keep
+  its claim gate honest.
 - **Is NOT:** a scientific result. Synthetic data only. **No MOABB, no real EEG, no real-data audit.**
   The MOABB prepare/eval-audit/manifest path does not exist here; leakage safety is the synthetic
   Transition Gym's own split checks + `data_card.json`.
@@ -21,8 +23,11 @@ Inside the extracted runner folder `kahlus-ktm-a100-runner-<sha>/`:
 - `README_HANDOFF.md`, `README_RUN.md` — human + command reference (same commands as below).
 - `COMMIT_HASH.txt`, `SHA256SUMS`, `BUNDLE_MANIFEST.txt`, `BUNDLE_METADATA.txt` — provenance + checksums.
 - `pyproject.toml`, `environment-ktm-a100.yml` — install metadata (lean; no moabb/mne).
-- `configs/train/ktm_a100_micro.yaml` (the micro-sweep config), `configs/train/ktm_synthetic_smoke.yaml`.
-- `scripts/run_ktm_train.py`, `scripts/run_ktm_smoke.sh`, `scripts/docker_gpu_preflight.py`,
+- `configs/train/ktm_recovery_point_objective.yaml` (Sprint 3D validation config),
+  `configs/train/ktm_recovery_capacity_smoke.yaml` (follow-up diagnostic only),
+  `configs/train/ktm_a100_micro.yaml` (legacy micro config), `configs/train/ktm_synthetic_smoke.yaml`.
+- `scripts/run_ktm_train.py`, `scripts/run_ktm_failure_analysis.py`, `scripts/run_ktm_smoke.sh`,
+  `scripts/docker_gpu_preflight.py`,
   `scripts/docker_ktm_inner.sh`, `scripts/run_docker_ktm.sh`,
   `scripts/slurm/train_ktm_a100.sh`, `scripts/slurm/_train_ktm_a100_inner.sh`,
   `scripts/package_ktm_evidence_bundle.py`.
@@ -30,13 +35,15 @@ Inside the extracted runner folder `kahlus-ktm-a100-runner-<sha>/`:
 
 ## Hard rules (non-negotiable)
 
-1. **Preflights before training.** Run the single-GPU and 8-GPU GPU-visibility preflights first. If
+1. **Preflights before training.** Run the single-GPU and selected-GPU GPU-visibility preflights
+   first. If
    **either** fails, STOP, collect logs, report, and **do not train**.
-   - **GPU-count honesty.** 8 GPUs is the target. If some are busy you MAY run fewer (N ≥ 2), but you
-     MUST predeclare the count (`GPU_COUNT=N`, `HOST_GPU_IDS=...`, record `selected_gpu_count`) and
-     **label every output and report as N×A100** — never claim 8×A100 when you ran 7. The evidence
+   - **GPU-count honesty.** 8 GPUs is the target. 7 GPUs is acceptable if only 7 are honestly
+     available. You MUST predeclare the count (`GPU_COUNT=7` or `GPU_COUNT=8`, `HOST_GPU_IDS=...`)
+     and **label every output and report as N×A100** — never claim 8×A100 when you ran 7. The evidence
      bundle records the true `world_size` / visible GPU count; do not contradict it.
-2. **No full sweep.** Only the tiny micro-sweep with `configs/train/ktm_a100_micro.yaml`.
+2. **No full sweep.** Only the tiny Sprint 3D validation with
+   `configs/train/ktm_recovery_point_objective.yaml`.
 3. **No code changes on the cluster.** Run the scripts as shipped. If something does not work, report
    the error and logs — do not patch source.
 4. **Claim discipline.** `synthetic_ktm_training_harness` may pass. `synthetic_ktm_recovery` must stay
@@ -82,7 +89,9 @@ docker run --rm --gpus "\"device=0\"" --ipc=host --shm-size=64g \
 ```
 **Pass = exit 0 and `visible_gpu_count == 1`.** If it fails, STOP and report `/tmp/gpu_preflight_1.json` + logs.
 
-### 3. 8-GPU Docker GPU-visibility preflight
+### 3. Selected-GPU Docker GPU-visibility preflight
+
+Use 8 GPUs if available:
 
 ```bash
 docker run --rm --gpus "\"device=0,1,2,3,4,5,6,7\"" --ipc=host --shm-size=64g \
@@ -90,22 +99,34 @@ docker run --rm --gpus "\"device=0,1,2,3,4,5,6,7\"" --ipc=host --shm-size=64g \
   -v "$PWD":/workspace/repo -w /workspace/repo pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash -lc 'python3 -m pip install -e . && GPU_COUNT=8 python3 scripts/docker_gpu_preflight.py /tmp/gpu_preflight_8.json'
 ```
-**Pass = exit 0 and `visible_gpu_count == 8`.** If it fails, STOP and report `/tmp/gpu_preflight_8.json` + logs. **Do not train.**
+**Pass = exit 0 and `visible_gpu_count == 8`.** If only 7 GPUs are available, predeclare and test 7:
 
-### 4. Only if BOTH preflights pass: tiny 8×A100 KTM micro-sweep
+```bash
+docker run --rm --gpus "\"device=0,1,2,3,4,5,6\"" --ipc=host --shm-size=64g \
+  -e GPU_COUNT=7 -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 -e DOCKER_IMAGE=pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+  -v "$PWD":/workspace/repo -w /workspace/repo pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
+  bash -lc 'python3 -m pip install -e . && GPU_COUNT=7 python3 scripts/docker_gpu_preflight.py /tmp/gpu_preflight_7.json'
+```
+
+**Pass = exit 0 and `visible_gpu_count == selected GPU_COUNT`.** If it fails, STOP and report the
+preflight JSON + logs. **Do not train.**
+
+### 4. Only if BOTH preflights pass: tiny Sprint 3D point-objective validation
 
 ```bash
 PERSISTENT_ROOT=/raid/scratch/$USER/kahlus-ktm-<sha>
+KTM_CONFIG=configs/train/ktm_recovery_point_objective.yaml \
 GPU_COUNT=8 HOST_GPU_IDS=0,1,2,3,4,5,6,7 bash scripts/run_docker_ktm.sh "$PERSISTENT_ROOT"
 ```
-This runs (inside the container): preflight → CPU smoke → `torchrun --standalone --nproc_per_node=8
-scripts/run_ktm_train.py --config configs/train/ktm_a100_micro.yaml --mode ddp`. Rank-0 writes the
-bundle to `$PERSISTENT_ROOT/runs/ktm_micro_sweep/`.
+For 7 GPUs, use `GPU_COUNT=7 HOST_GPU_IDS=0,1,2,3,4,5,6` and label every output as 7xA100.
+This runs (inside the container): preflight → CPU smoke → `torchrun --standalone --nproc_per_node=N
+scripts/run_ktm_train.py --config configs/train/ktm_recovery_point_objective.yaml --mode ddp`.
+Rank-0 writes the bundle to `$PERSISTENT_ROOT/runs/ktm_micro_sweep/`.
 
 Slurm alternative (if Docker is not used):
 ```bash
 RUN_ROOT=$PERSISTENT_ROOT sbatch scripts/slurm/train_ktm_a100.sh \
-  "$PWD/configs/train/ktm_a100_micro.yaml"
+  "$PWD/configs/train/ktm_recovery_point_objective.yaml"
 ```
 
 ### 5. Package the evidence zip
@@ -117,6 +138,17 @@ python3 scripts/package_ktm_evidence_bundle.py \
 ```
 Send back **only** this evidence zip. It excludes checkpoints and secrets; checkpoints stay on the
 cluster.
+
+Audit returned evidence with the actual GPU count, for example:
+
+```bash
+PYTHONPATH=src python3 scripts/audit_ktm_a100_evidence.py \
+  --evidence outputs/kahlus-ktm-a100-results-<sha>-evidence.zip \
+  --out-dir outputs/ktm-a100-audit-<sha> \
+  --expected-gpus 8
+```
+
+Use `--expected-gpus 7` for an honest 7xA100 run.
 
 ## Expected outputs (`$PERSISTENT_ROOT/runs/ktm_micro_sweep/`)
 
@@ -161,5 +193,5 @@ The run logs incrementally so nothing is lost if it dies at startup, mid-run, or
   so we can recover partial results and debug the code accurately. Then report. **Do not patch code.**
   Checkpoints stay on the cluster (excluded from the evidence zip) unless explicitly requested.
 
-This is the first real CUDA breath test. **Leash stays on:** preflights first, one tiny micro-sweep,
-full evidence bundle, no recovery claim unless earned, no full sweep.
+This is the Sprint 3D CUDA validation. **Leash stays on:** preflights first, one tiny point-objective
+run, full evidence bundle, no recovery claim unless earned, no full sweep.
