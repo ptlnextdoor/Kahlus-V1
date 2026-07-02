@@ -1,7 +1,7 @@
 # Graph Report - kahlus_trial0_m0_clean_worktree  (2026-07-02)
 
 ## Corpus Check
-- 263 files · ~172,091 words
+- 263 files · ~172,094 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

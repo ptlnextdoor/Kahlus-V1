@@ -360,7 +360,8 @@ def _null_passes(payload: dict[str, Any]) -> bool:
 def _mean_abs_corr(window: np.ndarray) -> float:
     if window.shape[1] < 2:
         return 0.0
-    corr = np.corrcoef(window, rowvar=False)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        corr = np.corrcoef(window, rowvar=False)
     tri = corr[np.triu_indices_from(corr, k=1)]
     finite = np.abs(tri[np.isfinite(tri)])
     return float(np.mean(finite)) if finite.size else 0.0
