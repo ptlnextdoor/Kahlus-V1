@@ -1,0 +1,146 @@
+{
+  "failures": [],
+  "metrics_by_model": {
+    "gbm": {
+      "bandpower_error": 824.7228265235282,
+      "mae": 0.5434120611935214,
+      "mae_ci_high": 0.5624530664057648,
+      "mae_ci_low": 0.525153481680536,
+      "mse": 0.48771592536306807,
+      "mse_ci_high": 0.5202924389572867,
+      "mse_ci_low": 0.4613402451351079,
+      "pearsonr": 0.8657865281979298,
+      "r2": 0.7460017669674994,
+      "spearmanr": 0.85031544124758,
+      "spectral_error": 15.369726006650719
+    },
+    "linear_ridge": {
+      "bandpower_error": 324.3705184607677,
+      "mae": 0.4916239611926493,
+      "mae_ci_high": 0.5080206338931121,
+      "mae_ci_low": 0.47467452489041334,
+      "mse": 0.400167477825203,
+      "mse_ci_high": 0.42605836798548147,
+      "mse_ci_low": 0.3732052123979384,
+      "pearsonr": 0.8898394039790244,
+      "r2": 0.7915962407645205,
+      "spearmanr": 0.8714968520380943,
+      "spectral_error": 10.986212093137418
+    },
+    "mlp": {
+      "bandpower_error": 5367.953484890337,
+      "mae": 0.9331280175161509,
+      "mae_ci_high": 0.9603456938447712,
+      "mae_ci_low": 0.9017895342249486,
+      "mse": 1.4758474663254542,
+      "mse_ci_high": 1.5573779110966353,
+      "mse_ci_low": 1.3761751311761339,
+      "pearsonr": 0.5852433982572078,
+      "r2": 0.23139141213586367,
+      "spearmanr": 0.5958167210052422,
+      "spectral_error": 107.56258816607588
+    },
+    "model": {
+      "bandpower_error": 3046.037996798683,
+      "mae": 0.7811335237754975,
+      "mae_ci_high": 0.8016764089818571,
+      "mae_ci_low": 0.7592258851146471,
+      "mse": 0.9568377942609343,
+      "mse_ci_high": 1.00927409579944,
+      "mse_ci_low": 0.9061152056076608,
+      "pearsonr": 0.756067058238397,
+      "r2": 0.5016871576213733,
+      "spearmanr": 0.7209088374875635,
+      "spectral_error": 62.2650145295594
+    },
+    "persistence": {
+      "bandpower_error": 252.51570868598705,
+      "mae": 0.5277538597263629,
+      "mae_ci_high": 0.5423805712742432,
+      "mae_ci_low": 0.5131534923041545,
+      "mse": 0.45343067409257537,
+      "mse_ci_high": 0.48299578977278307,
+      "mse_ci_low": 0.42450584653362916,
+      "pearsonr": 0.8831100093887662,
+      "r2": 0.7638572291103395,
+      "spearmanr": 0.8635655510159286,
+      "spectral_error": 9.576580220191776
+    },
+    "tcn": {
+      "bandpower_error": 4160.440844931449,
+      "mae": 0.7642807766598707,
+      "mae_ci_high": 0.7853195258434972,
+      "mae_ci_low": 0.7395166747855637,
+      "mse": 1.0021888477894647,
+      "mse_ci_high": 1.0608374307491397,
+      "mse_ci_low": 0.9274170058498626,
+      "pearsonr": 0.7544911219060171,
+      "r2": 0.4780687214306051,
+      "spearmanr": 0.7761730072242807,
+      "spectral_error": 70.9512155070154
+    },
+    "transformer": {
+      "bandpower_error": 1110.5357999401751,
+      "mae": 0.6214031431554019,
+      "mae_ci_high": 0.6392217262127262,
+      "mae_ci_low": 0.6005741714989415,
+      "mse": 0.6168971492980428,
+      "mse_ci_high": 0.6501452268067334,
+      "mse_ci_low": 0.5858601991866708,
+      "pearsonr": 0.8265389018713357,
+      "r2": 0.6787253035302363,
+      "spearmanr": 0.8117503156145505,
+      "spectral_error": 24.106393861790966
+    }
+  },
+  "notes": [
+    "Kahlus v1 EEG future-window forecasting under held-out subject split"
+  ],
+  "ranking": [
+    {
+      "metric": "mse",
+      "model_id": "linear_ridge",
+      "rank": 1,
+      "value": 0.400167477825203
+    },
+    {
+      "metric": "mse",
+      "model_id": "persistence",
+      "rank": 2,
+      "value": 0.45343067409257537
+    },
+    {
+      "metric": "mse",
+      "model_id": "gbm",
+      "rank": 3,
+      "value": 0.48771592536306807
+    },
+    {
+      "metric": "mse",
+      "model_id": "transformer",
+      "rank": 4,
+      "value": 0.6168971492980428
+    },
+    {
+      "metric": "mse",
+      "model_id": "model",
+      "rank": 5,
+      "value": 0.9568377942609343
+    },
+    {
+      "metric": "mse",
+      "model_id": "tcn",
+      "rank": 6,
+      "value": 1.0021888477894647
+    },
+    {
+      "metric": "mse",
+      "model_id": "mlp",
+      "rank": 7,
+      "value": 1.4758474663254542
+    }
+  ],
+  "source_modality": "eeg",
+  "status": "completed",
+  "target_modality": "eeg"
+}

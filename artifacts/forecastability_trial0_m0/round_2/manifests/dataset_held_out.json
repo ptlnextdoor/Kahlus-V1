@@ -1,0 +1,640 @@
+{
+  "notes": [
+    "Split was built at recording-manifest stage before preprocessing/windowing.",
+    "Raw public data paths are represented but not committed."
+  ],
+  "policy": "dataset",
+  "record_hashes": {
+    "synthetic_eeg_v1_sub-000_ses-00_eeg": "e4d8d52b11087da91bab7814f7dc8cdf3533576ebc7c54b3d488440cce71c5b0",
+    "synthetic_eeg_v1_sub-000_ses-00_eeg_external": "34f49750cee0858b3fb14b9341137416dbec92a56d8be858be3b15e2a41426c8",
+    "synthetic_eeg_v1_sub-000_ses-01_eeg": "1501e0c2d8d62ab1e5c0629ef1fa876e45f727ac3f5f4f2db5d0add4fcc46acf",
+    "synthetic_eeg_v1_sub-000_ses-01_eeg_external": "12b025a8a7d680347a83d0d67afbfa57f291fdf157af74e0fa1cfcc441ee1792",
+    "synthetic_eeg_v1_sub-001_ses-00_eeg": "a6ea75f3d0b53d3479b5d2b41efceb34deab8a291edf3b7e2841026fd0a93ce2",
+    "synthetic_eeg_v1_sub-001_ses-00_eeg_external": "4383663eb8253b462d70fcdc42c60c27200fa5f063349da4fa36c5feb1c8e187",
+    "synthetic_eeg_v1_sub-001_ses-01_eeg": "92d3bd8edcc618264101b352847d7c576f567b656b447db1a32d9c405c7a10c0",
+    "synthetic_eeg_v1_sub-001_ses-01_eeg_external": "722ed00f1ebcc9af1aacd7884cc7eb0fbc7db049d2216e1d4b22d4732999692c",
+    "synthetic_eeg_v1_sub-002_ses-00_eeg": "2cd881b3d7af0c760e5b15faf77f8a3466348ae566cc85843db3f57effb096ab",
+    "synthetic_eeg_v1_sub-002_ses-00_eeg_external": "c0e0d51af0382d8976d28dae58552addc70b7d3d0dca005b6dde05d544b1f253",
+    "synthetic_eeg_v1_sub-002_ses-01_eeg": "fadd782ab3944a59579b5327dc491aee21718114af58c4ef9ece8b3ae7000112",
+    "synthetic_eeg_v1_sub-002_ses-01_eeg_external": "820e6d8550e3bd4bafe64a7059e4cec2eb8b250f9b802c52750904fa51a89544",
+    "synthetic_eeg_v1_sub-003_ses-00_eeg": "f4f040660c9d2a96ce15511717d563288b99394e55a4518df9bf113fb58dc375",
+    "synthetic_eeg_v1_sub-003_ses-00_eeg_external": "7d7d4f56b38929650a3746701fffcf12e9461e58845eb2b8ca24d2f74321413b",
+    "synthetic_eeg_v1_sub-003_ses-01_eeg": "b5052f5428378c826561b1358284b558760603028c68759218da554430d7b73e",
+    "synthetic_eeg_v1_sub-003_ses-01_eeg_external": "d7ad2d761ff6768ae06db36a6d51cf9c53a04925a2f0a838b25b51129ab552b8",
+    "synthetic_eeg_v1_sub-004_ses-00_eeg": "e560b03782c4fb6321b0c12f7c23b69f64d067276ec4e98b346679bf3604ff40",
+    "synthetic_eeg_v1_sub-004_ses-00_eeg_external": "a3e3fb1d0d1813b9365aa5229783f7496daf8dba3c105726e486f4088f53773e",
+    "synthetic_eeg_v1_sub-004_ses-01_eeg": "358c2540ba3de09071c507384e483c9f4faa72d1473421c733e07ad372528524",
+    "synthetic_eeg_v1_sub-004_ses-01_eeg_external": "372a4f2abbff5b3385f76213ad2322c584bbbdc3f195915f76ca693a36736af5",
+    "synthetic_eeg_v1_sub-005_ses-00_eeg": "771ab12f68c8eac7c322d3d0661aab5f2278a620216d4469fb7f5b030da1e207",
+    "synthetic_eeg_v1_sub-005_ses-00_eeg_external": "358ea7c3651c2d1f2fa03ddb562550d20153e37a5b8d898e369b6d9df5aa9133",
+    "synthetic_eeg_v1_sub-005_ses-01_eeg": "a126d440633e34c6a5b78b3969ef176f2ac1465681f19a4c6ce9c751276c6e9a",
+    "synthetic_eeg_v1_sub-005_ses-01_eeg_external": "cf85548375be74df2c7351072884b095f719df0b3ff83eb9ceedf0ccfb976c3f",
+    "synthetic_eeg_v1_sub-006_ses-00_eeg": "a59786203b0a326fe0d982dcc109aae0d1d8347af248c42495dbb1dbf88d6588",
+    "synthetic_eeg_v1_sub-006_ses-00_eeg_external": "4fcb254dfa01d0f708b88616fa267f3007d42a405547dd1566ec04a972107096",
+    "synthetic_eeg_v1_sub-006_ses-01_eeg": "26ed5a7ae2883d686ea3d7a4523e50398144e2369939d0d89f170cf26668d313",
+    "synthetic_eeg_v1_sub-006_ses-01_eeg_external": "38d1ed429e2f655c3946ea95436aa4a4d706d3afdb373930f86bf5dccfe99ad6",
+    "synthetic_eeg_v1_sub-007_ses-00_eeg": "2a507e0eeab065bcaaa9d994db1179d9436fbdbdd6aad8bdf687cc2a69fa5f33",
+    "synthetic_eeg_v1_sub-007_ses-00_eeg_external": "86400a477b8e6d3446a05b7dfd2080a4e511faf7a51f797db6e0763c0d6fab2b",
+    "synthetic_eeg_v1_sub-007_ses-01_eeg": "9b46d97c64acd8dc3803de9bd1dd4e5d51a4624d872cec606a51b25cfc19420d",
+    "synthetic_eeg_v1_sub-007_ses-01_eeg_external": "75dbe9aca1be151cf34ffa6a9999004e2b0ec5255673463c6b41dee594c0cbc9"
+  },
+  "seed": 0,
+  "split_stage": "recording_manifest",
+  "test": [
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-000_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-000"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-000_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-000"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-001_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-001"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-001_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-001"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-002_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-002"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-002_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-002"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-003_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-003"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-003_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-003"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-004_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-004"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-004_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-004"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-005_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-005"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-005_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-005"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-006_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-006"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-006_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-006"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-007_ses-00_eeg",
+      "record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-007"
+    },
+    {
+      "dataset": "synthetic_eeg_v1",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg",
+        "synthetic": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-007_ses-01_eeg",
+      "record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-007"
+    }
+  ],
+  "train": [
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-000_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-000_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-000"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-000_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-000_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-000"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-001_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-001_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-001"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-001_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-001_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-001"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-002_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-002_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-002"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-002_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-002_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-002"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-003_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-003_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-003"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-003_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-003_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-003"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-004_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-004_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-004"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-004_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-004_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-004"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-005_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-005_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-005"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-005_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-005_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-005"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-006_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-006_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-a",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-006"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-006_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-006_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-a",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-006"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 47.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-007_ses-00_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-007_ses-00_eeg_external",
+      "session_id": "ses-00",
+      "site_id": "site-b",
+      "start_time": 0.0,
+      "stimulus_id": null,
+      "subject_id": "sub-007"
+    },
+    {
+      "dataset": "synthetic_eeg_v1_external",
+      "end_time": 147.0,
+      "metadata": {
+        "record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg",
+        "sampling_rate": 128.0,
+        "source_record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg",
+        "synthetic": true,
+        "synthetic_external_manifest_only": true
+      },
+      "modality": "eeg",
+      "path": "synthetic://synthetic_eeg_v1_sub-007_ses-01_eeg_external",
+      "record_id": "synthetic_eeg_v1_sub-007_ses-01_eeg_external",
+      "session_id": "ses-01",
+      "site_id": "site-b",
+      "start_time": 100.0,
+      "stimulus_id": null,
+      "subject_id": "sub-007"
+    }
+  ],
+  "val": []
+}

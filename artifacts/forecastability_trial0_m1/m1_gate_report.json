@@ -1,0 +1,115 @@
+{
+  "gate_passed": true,
+  "known_signal": {
+    "alarm_time_nll": 0.8523862938499615,
+    "baseline_nll": 0.5137215121823788,
+    "event_patients": 12,
+    "gbm_full": {
+      "nll": 0.35008215757675176,
+      "rfs_bits": 0.23608168538380872,
+      "rfs_ci_high": 0.2827225331891407,
+      "rfs_ci_low": 0.19390325364211114
+    },
+    "logistic_full": {
+      "nll": 0.36131616540266603,
+      "rfs_bits": 0.2198744380040544,
+      "rfs_ci_high": 0.26921502542038955,
+      "rfs_ci_low": 0.18192137968490674
+    },
+    "moving_average_nll": 0.7502972055832359,
+    "n": 1440,
+    "nuisance_probes": {
+      "patient": {
+        "accuracy": 0.12708333333333333,
+        "chance": 0.08333333333333333
+      },
+      "session": {
+        "accuracy": 0.5291666666666667,
+        "chance": 0.5
+      },
+      "site": {
+        "accuracy": 0.4895833333333333,
+        "chance": 0.5
+      },
+      "time_bucket": {
+        "accuracy": 0.37916666666666665,
+        "chance": 0.25
+      }
+    },
+    "positive_events": 383,
+    "random_warning_nll": 0.5792114370693321,
+    "shuffled_target_control": {
+      "nll": 0.589476557444829,
+      "rfs_bits": -0.10929142812245578,
+      "rfs_ci_high": -0.0804845764285346,
+      "rfs_ci_low": -0.14286504738275624
+    },
+    "survival_label_shape": [
+      1440,
+      3
+    ],
+    "time_shift_control": {
+      "nll": 0.5534459700756665,
+      "rfs_bits": -0.057310278404648626,
+      "rfs_ci_high": -0.043406726634977966,
+      "rfs_ci_low": -0.07133319942428763
+    }
+  },
+  "milestone": "M1",
+  "stop_reason": "M1 gate reached; do not proceed to M2 until this report is reviewed.",
+  "synthetic_null": {
+    "alarm_time_nll": 0.4373334723353346,
+    "baseline_nll": 0.3906785784210529,
+    "event_patients": 12,
+    "gbm_full": {
+      "nll": 0.42224323151805493,
+      "rfs_bits": -0.04553816849042527,
+      "rfs_ci_high": -0.033004415356940764,
+      "rfs_ci_low": -0.05865231425696003
+    },
+    "logistic_full": {
+      "nll": 0.39126125408217316,
+      "rfs_bits": -0.000840623286744878,
+      "rfs_ci_high": 8.377103550710204e-05,
+      "rfs_ci_low": -0.0017365974866908333
+    },
+    "moving_average_nll": 0.5842750831610103,
+    "n": 1440,
+    "nuisance_probes": {
+      "patient": {
+        "accuracy": 0.1,
+        "chance": 0.08333333333333333
+      },
+      "session": {
+        "accuracy": 0.48125,
+        "chance": 0.5
+      },
+      "site": {
+        "accuracy": 0.5083333333333333,
+        "chance": 0.5
+      },
+      "time_bucket": {
+        "accuracy": 0.3625,
+        "chance": 0.25
+      }
+    },
+    "positive_events": 201,
+    "random_warning_nll": 0.40420639266839237,
+    "shuffled_target_control": {
+      "nll": 0.3913425877131163,
+      "rfs_bits": -0.0009579629127640505,
+      "rfs_ci_high": 0.002632347974174175,
+      "rfs_ci_low": -0.004319472506070359
+    },
+    "survival_label_shape": [
+      1440,
+      3
+    ],
+    "time_shift_control": {
+      "nll": 0.3900914085863387,
+      "rfs_bits": 0.0008471070087018274,
+      "rfs_ci_high": 0.0022239590357576956,
+      "rfs_ci_low": -0.00042261648715111947
+    }
+  }
+}
