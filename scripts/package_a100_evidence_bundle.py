@@ -306,14 +306,18 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
             copied_handoff = False
     if not copied_handoff:
         short_sha = config.full_sha[:7]
-        _render_handoff_readme(
-            config.repo_root / "README_HANDOFF.md.in",
-            root / "README_HANDOFF.md",
-            full_sha=config.full_sha,
-            short_sha=short_sha,
-            runner_name=f"neurotwin-a100-runner-{short_sha}",
-            persistent_root_example=f"/raid/scratch/$USER/neurotwin-{short_sha}",
-        )
+        template_path = config.repo_root / "README_HANDOFF.md.in"
+        if template_path.exists():
+            _render_handoff_readme(
+                template_path,
+                root / "README_HANDOFF.md",
+                full_sha=config.full_sha,
+                short_sha=short_sha,
+                runner_name=f"neurotwin-a100-runner-{short_sha}",
+                persistent_root_example=f"/raid/scratch/$USER/neurotwin-{short_sha}",
+            )
+        else:
+            _write_minimal_handoff_readme(root / "README_HANDOFF.md", full_sha=config.full_sha)
     (root / "README_SEND_TO_FRIEND.md").write_text(
         "# Sendable NeuroTwin A100 Evidence\n\n"
         "Send this zip back after an A100 run. It includes small review artifacts only: summaries, metrics, "
@@ -351,6 +355,21 @@ def _render_handoff_readme(
         short_sha=short_sha,
         runner_name=runner_name,
         persistent_root_example=persistent_root_example,
+    )
+
+
+def _write_minimal_handoff_readme(output_path: Path, *, full_sha: str) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        "# NeuroTwin A100 Evidence Handoff\n\n"
+        f"Commit: `{full_sha}`\n\n"
+        "This evidence bundle is a small returned-artifact package for audit. It is not a "
+        "scientific result, clinical claim, diagnosis, treatment claim, recovery claim, "
+        "foundation-model claim, SOTA claim, or model-superiority claim.\n\n"
+        "It intentionally excludes secrets, checkpoints, raw arrays, runner archives, zip "
+        "artifacts, and raw private participant data unless explicitly requested outside "
+        "this safe evidence path.\n",
+        encoding="utf-8",
     )
 
 

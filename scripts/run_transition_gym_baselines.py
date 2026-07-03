@@ -38,7 +38,7 @@ def main() -> int:
     bundle = build_transition_gym(cfg)
     task = transition_gym_regression_task(cfg)
     result = run_baselines(task, models=list(DEFAULT_MODELS), train_steps=args.train_steps, seed=args.seed)
-    paths = write_run_artifacts(args.out_dir, task, result, train_steps=args.train_steps)
+    write_run_artifacts(args.out_dir, task, result, train_steps=args.train_steps)
     data_card_path = write_json(Path(args.out_dir) / "data_card.json", bundle.data_card)
 
     print(f"branch=v3 task={task.name} out_dir={Path(args.out_dir).resolve()}")
