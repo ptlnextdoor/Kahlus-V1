@@ -28,7 +28,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--evidence", required=True, help="path to returned evidence folder or .zip")
     parser.add_argument("--out-dir", required=True, help="directory for audit JSON + markdown report")
-    parser.add_argument("--expected-gpus", type=int, default=8, help="expected visible GPU count (e.g. 8, 7, 6, 1)")
+    parser.add_argument("--expected-gpus", type=int, default=7, help="expected visible GPU count (e.g. 7, 6, 1)")
     parser.add_argument(
         "--allow-missing-logs",
         action="store_true",
