@@ -63,7 +63,7 @@ def build_handoff_manifest(
 ) -> dict[str, Any]:
     failures: list[str] = []
     registry = _read_json(registry_package_dir / "neurovisual_dataset_registry.json", failures)
-    registry_evidence = _read_json(registry_package_dir / "neurovisual_registry_evidence_manifest.json", failures)
+    _read_json(registry_package_dir / "neurovisual_registry_evidence_manifest.json", failures)
     registry_claim_gate = _read_json(registry_package_dir / "neurovisual_registry_claim_gate.json", failures)
     split_audit = _read_json(registry_package_dir / "neurovisual_synthetic_split_audit.json", failures)
     fixture_replay = _read_json(fixture_replay_evidence_path, failures)

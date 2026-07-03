@@ -10,7 +10,6 @@ import numpy as np
 
 from neurotwin.scoring.metrics import mae, mse, pearsonr
 from neurotwin.stf.benchmark import (
-    REQUIRED_STF_BASELINES_BY_TASK,
     REQUIRED_STF_NEGATIVE_CONTROLS,
     REQUIRED_STF_SPLITS,
     REQUIRED_STF_TASKS,

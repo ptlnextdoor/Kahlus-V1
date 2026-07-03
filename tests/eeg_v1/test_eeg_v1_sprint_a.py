@@ -3892,7 +3892,9 @@ class EEGV1SprintATests(unittest.TestCase):
             )
             diagnostics = json.loads((Path(tmp) / "autocorrelation_diagnostics.json").read_text(encoding="utf-8"))
             row = next(item for item in diagnostics["diagnostics"] if item["diagnostic_id"] == "shuffled_target_control")
-            report_value = lambda value: "" if value is None else f"{float(value):.6g}"
+            def report_value(value):
+                return "" if value is None else f"{float(value):.6g}"
+
             original_line = (
                 f"| {row['diagnostic_id']} | {row['status']} | {row.get('best_model', '')} | "
                 f"{row['best_mse']:.6g} | {report_value(row['persistence_mse'])} | "

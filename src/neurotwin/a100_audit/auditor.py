@@ -21,7 +21,7 @@ The bundle shape it expects (written by ``scripts/package_ktm_evidence_bundle.py
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 import tempfile

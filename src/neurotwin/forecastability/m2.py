@@ -13,7 +13,6 @@ import numpy as np
 from neurotwin.forecastability.m1 import (
     TransitionFixture,
     _run_fixture,
-    handcrafted_eeg_features,
 )
 from neurotwin.models.baselines import NumpyRidgeBaseline
 from neurotwin.scoring.metrics import mse, r2_score

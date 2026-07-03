@@ -9,14 +9,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import zipfile
-from typing import Iterable
 
 
 EXPECTED_GPU_COUNT = 7

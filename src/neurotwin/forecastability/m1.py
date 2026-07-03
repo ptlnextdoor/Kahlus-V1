@@ -7,9 +7,7 @@ from typing import Any, Callable
 
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
-from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 
@@ -220,8 +218,31 @@ def _crossfit_residual_proba(
 def _fit_predict(model: Any, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> np.ndarray:
     if len(set(y_train)) < 2:
         return np.full(x_test.shape[0], float(np.mean(y_train)), dtype=np.float64)
+    if model == "stable_logistic":
+        return _fit_stable_logistic_predict(x_train, y_train, x_test)
     model.fit(x_train, y_train)
     return np.asarray(model.predict_proba(x_test)[:, 1], dtype=np.float64)
+
+
+def _fit_stable_logistic_predict(
+    x_train_raw: np.ndarray,
+    y_train: np.ndarray,
+    x_test_raw: np.ndarray,
+    *,
+    steps: int = 300,
+    lr: float = 0.1,
+    l2: float = 0.1,
+) -> np.ndarray:
+    x_train, x_test = _scaled_design(x_train_raw, x_test_raw)
+    w = np.zeros(x_train.shape[1], dtype=np.float64)
+    for _ in range(steps):
+        w = np.nan_to_num(w, nan=0.0, posinf=20.0, neginf=-20.0)
+        p = _sigmoid_array(np.clip(_safe_matmul(x_train, w), -50.0, 50.0))
+        grad = _safe_matmul(x_train.T, p - y_train) / len(y_train)
+        grad[1:] += l2 * w[1:]
+        grad = np.nan_to_num(np.clip(grad, -5.0, 5.0), nan=0.0, posinf=5.0, neginf=-5.0)
+        w = np.nan_to_num(np.clip(w - lr * grad, -20.0, 20.0), nan=0.0, posinf=20.0, neginf=-20.0)
+    return _sigmoid_array(np.clip(_safe_matmul(x_test, w), -50.0, 50.0))
 
 
 def _fit_residual_offset_predict(
@@ -235,19 +256,35 @@ def _fit_residual_offset_predict(
     lr: float = 0.15,
     l2: float = 0.2,
 ) -> np.ndarray:
-    scaler = StandardScaler()
-    x_train = scaler.fit_transform(z_train)
-    x_test = scaler.transform(z_test)
-    x_train = np.concatenate([np.ones((x_train.shape[0], 1)), x_train], axis=1)
-    x_test = np.concatenate([np.ones((x_test.shape[0], 1)), x_test], axis=1)
+    x_train, x_test = _scaled_design(z_train, z_test)
     w = np.zeros(x_train.shape[1], dtype=np.float64)
     offset = _logit(q0_train)
     for _ in range(steps):
-        p = _sigmoid_array(offset + x_train @ w)
-        grad = x_train.T @ (p - y_train) / len(y_train)
+        w = np.nan_to_num(w, nan=0.0, posinf=20.0, neginf=-20.0)
+        p = _sigmoid_array(np.clip(offset + _safe_matmul(x_train, w), -50.0, 50.0))
+        grad = _safe_matmul(x_train.T, p - y_train) / len(y_train)
         grad[1:] += l2 * w[1:]
-        w -= lr * grad
-    return _sigmoid_array(_logit(q0_test) + x_test @ w)
+        # ponytail: bounded toy optimizer; replace with sklearn if this becomes a model path.
+        grad = np.nan_to_num(np.clip(grad, -5.0, 5.0), nan=0.0, posinf=5.0, neginf=-5.0)
+        w = np.nan_to_num(np.clip(w - lr * grad, -20.0, 20.0), nan=0.0, posinf=20.0, neginf=-20.0)
+    return _sigmoid_array(np.clip(_logit(q0_test) + _safe_matmul(x_test, w), -50.0, 50.0))
+
+
+def _safe_matmul(left: np.ndarray, right: np.ndarray) -> np.ndarray:
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        out = left @ right
+    return np.nan_to_num(out, nan=0.0, posinf=50.0, neginf=-50.0)
+
+
+def _scaled_design(x_train_raw: np.ndarray, x_test_raw: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    scaler = StandardScaler()
+    raw_train = np.nan_to_num(np.asarray(x_train_raw, dtype=np.float64), nan=0.0, posinf=0.0, neginf=0.0)
+    raw_test = np.nan_to_num(np.asarray(x_test_raw, dtype=np.float64), nan=0.0, posinf=0.0, neginf=0.0)
+    x_train = np.nan_to_num(scaler.fit_transform(raw_train), nan=0.0, posinf=20.0, neginf=-20.0)
+    x_test = np.nan_to_num(scaler.transform(raw_test), nan=0.0, posinf=20.0, neginf=-20.0)
+    x_train = np.concatenate([np.ones((x_train.shape[0], 1)), np.clip(x_train, -20.0, 20.0)], axis=1)
+    x_test = np.concatenate([np.ones((x_test.shape[0], 1)), np.clip(x_test, -20.0, 20.0)], axis=1)
+    return x_train, x_test
 
 
 def _rfs_payload(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray, patient: np.ndarray, *, seed: int) -> dict[str, float]:
@@ -321,14 +358,16 @@ def _probe_accuracy(z: np.ndarray, labels: np.ndarray) -> dict[str, float]:
         return {"accuracy": 1.0, "chance": 1.0}
     train = np.arange(len(labels)) % 3 != 0
     test = ~train
-    model = _logistic_factory()
-    model.fit(z[train], labels[train])
-    accuracy = float(np.mean(model.predict(z[test]) == labels[test]))
+    x = np.nan_to_num(np.asarray(z, dtype=np.float64), nan=0.0, posinf=0.0, neginf=0.0)
+    centers = np.asarray([np.mean(x[train & (labels == label)], axis=0) for label in classes], dtype=np.float64)
+    distances = np.sum((x[test, None, :] - centers[None, :, :]) ** 2, axis=2)
+    pred = classes[np.argmin(distances, axis=1)]
+    accuracy = float(np.mean(pred == labels[test]))
     return {"accuracy": accuracy, "chance": float(1.0 / len(classes))}
 
 
 def _logistic_factory() -> Any:
-    return make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000, C=0.75, random_state=0))
+    return "stable_logistic"
 
 
 def _gbm_factory(seed: int) -> Callable[[], Any]:
@@ -368,11 +407,11 @@ def _mean_abs_corr(window: np.ndarray) -> float:
 
 
 def _sigmoid(x: float) -> float:
-    return float(1.0 / (1.0 + np.exp(-x)))
+    return float(1.0 / (1.0 + np.exp(-np.clip(x, -50.0, 50.0))))
 
 
 def _sigmoid_array(x: np.ndarray) -> np.ndarray:
-    return 1.0 / (1.0 + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-np.clip(x, -50.0, 50.0)))
 
 
 def _logit(p: np.ndarray) -> np.ndarray:

@@ -9,7 +9,6 @@ from typing import Any
 import numpy as np
 
 from neurotwin.stf.benchmark import (
-    REQUIRED_STF_NEGATIVE_CONTROLS,
     REQUIRED_STF_SPLITS,
     REQUIRED_STF_TASKS,
     build_stf_gate,
