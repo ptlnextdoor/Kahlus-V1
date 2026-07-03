@@ -1,83 +1,87 @@
 {
   "gate_passed": true,
   "known_signal": {
-    "alarm_time_nll": 0.8523862938499615,
-    "baseline_nll": 0.5137215121823788,
+    "alarm_time_nll": 0.7463064321861231,
+    "baseline_nll": 0.5402940475550242,
     "event_patients": 12,
+    "gated_baseline_name": "logistic_nuisance",
+    "gated_baseline_nll": 0.5402940475550242,
     "gbm_full": {
-      "nll": 0.35008215757675176,
-      "rfs_bits": 0.23608168538380872,
-      "rfs_ci_high": 0.2827225331891407,
-      "rfs_ci_low": 0.19390325364211114
+      "nll": 0.3973304656892585,
+      "rfs_bits": 0.2062528505854635,
+      "rfs_ci_high": 0.24089870181444703,
+      "rfs_ci_low": 0.17817647488509983
     },
     "logistic_full": {
-      "nll": 0.36131616540266603,
-      "rfs_bits": 0.2198744380040544,
-      "rfs_ci_high": 0.26921502542038955,
-      "rfs_ci_low": 0.18192137968490674
+      "nll": 0.38809461571924514,
+      "rfs_bits": 0.21957736553559626,
+      "rfs_ci_high": 0.24306992323655088,
+      "rfs_ci_low": 0.1981557766198469
     },
-    "moving_average_nll": 0.7502972055832359,
+    "moving_average_nll": 0.7306540105778946,
     "n": 1440,
     "nuisance_probes": {
       "patient": {
-        "accuracy": 0.12708333333333333,
+        "accuracy": 0.11666666666666667,
         "chance": 0.08333333333333333
       },
       "session": {
-        "accuracy": 0.5291666666666667,
+        "accuracy": 0.5333333333333333,
         "chance": 0.5
       },
       "site": {
-        "accuracy": 0.4895833333333333,
+        "accuracy": 0.5375,
         "chance": 0.5
       },
       "time_bucket": {
-        "accuracy": 0.37916666666666665,
+        "accuracy": 0.33958333333333335,
         "chance": 0.25
       }
     },
-    "positive_events": 383,
-    "random_warning_nll": 0.5792114370693321,
+    "positive_events": 391,
+    "random_warning_nll": 0.584772488290884,
     "shuffled_target_control": {
-      "nll": 0.589476557444829,
-      "rfs_bits": -0.10929142812245578,
-      "rfs_ci_high": -0.0804845764285346,
-      "rfs_ci_low": -0.14286504738275624
+      "nll": 0.572286752313712,
+      "rfs_bits": -0.046155716499983575,
+      "rfs_ci_high": -0.03330292585143602,
+      "rfs_ci_low": -0.058932087061217
     },
     "survival_label_shape": [
       1440,
       3
     ],
     "time_shift_control": {
-      "nll": 0.5534459700756665,
-      "rfs_bits": -0.057310278404648626,
-      "rfs_ci_high": -0.043406726634977966,
-      "rfs_ci_low": -0.07133319942428763
+      "nll": 0.5324844203342246,
+      "rfs_bits": 0.01126691046263902,
+      "rfs_ci_high": 0.014285950890734677,
+      "rfs_ci_low": 0.007140040078869111
     }
   },
   "milestone": "M1",
   "stop_reason": "M1 gate reached; do not proceed to M2 until this report is reviewed.",
   "synthetic_null": {
-    "alarm_time_nll": 0.4373334723353346,
-    "baseline_nll": 0.3906785784210529,
+    "alarm_time_nll": 0.4046259030541335,
+    "baseline_nll": 0.37415982451026997,
     "event_patients": 12,
+    "gated_baseline_name": "logistic_nuisance",
+    "gated_baseline_nll": 0.37415982451026997,
     "gbm_full": {
-      "nll": 0.42224323151805493,
-      "rfs_bits": -0.04553816849042527,
-      "rfs_ci_high": -0.033004415356940764,
-      "rfs_ci_low": -0.05865231425696003
+      "nll": 0.39286895128514154,
+      "rfs_bits": -0.026991564417470148,
+      "rfs_ci_high": -0.011267377847581818,
+      "rfs_ci_low": -0.04403606240269794
     },
     "logistic_full": {
-      "nll": 0.39126125408217316,
-      "rfs_bits": -0.000840623286744878,
-      "rfs_ci_high": 8.377103550710204e-05,
-      "rfs_ci_low": -0.0017365974866908333
+      "nll": 0.3736523071244191,
+      "rfs_bits": 0.0007321928157319723,
+      "rfs_ci_high": 0.0034745306706583648,
+      "rfs_ci_low": -0.0020002585023454625
     },
-    "moving_average_nll": 0.5842750831610103,
+    "moving_average_nll": 0.5442299537498262,
     "n": 1440,
     "nuisance_probes": {
       "patient": {
-        "accuracy": 0.1,
+        "accuracy": 0.0875,
         "chance": 0.08333333333333333
       },
       "session": {
@@ -85,31 +89,31 @@
         "chance": 0.5
       },
       "site": {
-        "accuracy": 0.5083333333333333,
+        "accuracy": 0.5375,
         "chance": 0.5
       },
       "time_bucket": {
-        "accuracy": 0.3625,
+        "accuracy": 0.31875,
         "chance": 0.25
       }
     },
-    "positive_events": 201,
-    "random_warning_nll": 0.40420639266839237,
+    "positive_events": 186,
+    "random_warning_nll": 0.3847994983433037,
     "shuffled_target_control": {
-      "nll": 0.3913425877131163,
-      "rfs_bits": -0.0009579629127640505,
-      "rfs_ci_high": 0.002632347974174175,
-      "rfs_ci_low": -0.004319472506070359
+      "nll": 0.3759466526845562,
+      "rfs_bits": -0.002577848145963402,
+      "rfs_ci_high": 0.0006828913692371351,
+      "rfs_ci_low": -0.005575048067718567
     },
     "survival_label_shape": [
       1440,
       3
     ],
     "time_shift_control": {
-      "nll": 0.3900914085863387,
-      "rfs_bits": 0.0008471070087018274,
-      "rfs_ci_high": 0.0022239590357576956,
-      "rfs_ci_low": -0.00042261648715111947
+      "nll": 0.37585681091011597,
+      "rfs_bits": -0.0024482338635138413,
+      "rfs_ci_high": -0.001249266445411072,
+      "rfs_ci_low": -0.0037935736891013456
     }
   }
 }

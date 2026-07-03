@@ -385,12 +385,16 @@ def _m3_gate_failures(chb_payload: dict[str, Any], tusz_payload: dict[str, Any])
 
 def _append_metric_failures(failures: list[str], metrics: dict[str, Any], *, prefix: str) -> None:
     full = metrics["logistic_full"]
+    gated_baseline_nll = float(metrics.get("gated_baseline_nll", _legacy_best_baseline_nll(metrics)))
     if metrics["event_patients"] < 8:
         _append_once(failures, "underpowered_event_patients")
         failures.append(f"{prefix}_underpowered_event_patients")
     if metrics["positive_events"] < 100:
         _append_once(failures, "underpowered_positive_windows")
         failures.append(f"{prefix}_underpowered_positive_windows")
+    if full["nll"] >= gated_baseline_nll:
+        _append_once(failures, "primary_not_better_than_gated_baseline")
+        failures.append(f"{prefix}_primary_not_better_than_gated_baseline")
     if full["rfs_ci_low"] <= 0.0:
         _append_once(failures, "primary_rfs_ci_includes_zero")
         failures.append(f"{prefix}_primary_rfs_ci_includes_zero")
@@ -405,6 +409,15 @@ def _append_metric_failures(failures: list[str], metrics: dict[str, Any], *, pre
         if probe["chance"] < 0.95 and probe["accuracy"] > probe["chance"] + 0.20:
             _append_once(failures, "nuisance_probe_contamination")
             failures.append(f"{prefix}_nuisance_probe_{key}_above_threshold")
+
+
+def _legacy_best_baseline_nll(metrics: dict[str, Any]) -> float:
+    return min(
+        float(metrics.get("baseline_nll", float("inf"))),
+        float(metrics.get("moving_average_nll", float("inf"))),
+        float(metrics.get("random_warning_nll", float("inf"))),
+        float(metrics.get("alarm_time_nll", float("inf"))),
+    )
 
 
 def _append_once(values: list[str], value: str) -> None:
@@ -476,6 +489,7 @@ def _metric_section(title: str, payload: dict[str, Any]) -> list[str]:
         f"- recordings: `{payload['recordings']}`",
         f"- rows/events/event-patients: `{metrics['n']}` / `{metrics['positive_events']}` / `{metrics['event_patients']}`",
         f"- RFS bits: `{metrics['logistic_full']['rfs_bits']:.6f}` CI `[ {metrics['logistic_full']['rfs_ci_low']:.6f}, {metrics['logistic_full']['rfs_ci_high']:.6f} ]`",
+        f"- gated baseline: `{metrics.get('gated_baseline_name', 'legacy_best_baseline')}` NLL `{metrics.get('gated_baseline_nll', _legacy_best_baseline_nll(metrics)):.6f}`",
         f"- GBM RFS bits: `{metrics['gbm_full']['rfs_bits']:.6f}`",
         f"- shuffled-target RFS bits: `{metrics['shuffled_target_control']['rfs_bits']:.6f}`",
         f"- time-shift RFS bits: `{metrics['time_shift_control']['rfs_bits']:.6f}`",

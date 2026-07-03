@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ import numpy as np
 
 from neurotwin.forecastability.m3 import (
     _local_tusz_recordings,
+    _m3_gate_failures,
     _run_tusz_external,
     fetch_chbmit_seizure_records,
     parse_chbmit_summary,
@@ -92,6 +94,13 @@ class ForecastabilityM3Tests(unittest.TestCase):
             self.assertIn("underpowered_event_patients", gate["gate_failures"])
             self.assertIn("## TUSZ External Held-Out", report)
             self.assertIn("No clinical seizure prediction claim is permitted", report)
+
+    def test_committed_m3_artifact_matches_current_gate_logic(self) -> None:
+        artifact = Path(__file__).parents[2] / "artifacts" / "forecastability_trial0_m3" / "m3_gate_report.json"
+        gate = json.loads(artifact.read_text(encoding="utf-8"))
+
+        self.assertIn("tusz_external", gate)
+        self.assertEqual(gate["gate_failures"], _m3_gate_failures(gate["chb_mit_development"], gate["tusz_external"]))
 
 def _write_tusz_record(root: Path, subject: str, stem: str, annotation: str) -> None:
     folder = root / subject

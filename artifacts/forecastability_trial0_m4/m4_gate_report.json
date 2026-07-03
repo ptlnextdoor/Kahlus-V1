@@ -1,0 +1,154 @@
+{
+  "claim_scope": "benchmark_method_only_not_clinical_or_foundation_model_claim",
+  "gate_passed": false,
+  "horizons": [
+    1,
+    2,
+    3
+  ],
+  "method": "leakage_safe_forecastability_vs_horizon_curve",
+  "milestone": "M4",
+  "sleep_edf_smoke": {
+    "auc_positive_rfs_bits": 0.004665601794809614,
+    "curve": [
+      {
+        "event_patients": 6,
+        "gated_baseline_name": "alarm_time_surrogate",
+        "gated_baseline_nll": 0.17924478021161414,
+        "horizon": 1,
+        "nll": 0.1740855636171501,
+        "positive_events": 929,
+        "rfs_bits": 0.007443176195705299,
+        "rfs_ci_high": 0.012143801264452147,
+        "rfs_ci_low": 0.0018418671825593301,
+        "shuffled_rfs_bits": -0.005250577064189641,
+        "time_shift_rfs_bits": 0.008158147007385872
+      },
+      {
+        "event_patients": 6,
+        "gated_baseline_name": "alarm_time_surrogate",
+        "gated_baseline_nll": 0.17876194745110105,
+        "horizon": 2,
+        "nll": 0.1758361770853525,
+        "positive_events": 929,
+        "rfs_bits": 0.004220994397445303,
+        "rfs_ci_high": 0.008032767603265616,
+        "rfs_ci_low": -0.000447391129493373,
+        "shuffled_rfs_bits": -0.009121674987925524,
+        "time_shift_rfs_bits": 0.004971864766912847
+      },
+      {
+        "event_patients": 6,
+        "gated_baseline_name": "alarm_time_surrogate",
+        "gated_baseline_nll": 0.1784260515270151,
+        "horizon": 3,
+        "nll": 0.17680919229816455,
+        "positive_events": 929,
+        "rfs_bits": 0.002332634791278239,
+        "rfs_ci_high": 0.006692442042612225,
+        "rfs_ci_low": -0.002356417525369358,
+        "shuffled_rfs_bits": -0.010490134167402132,
+        "time_shift_rfs_bits": 0.0027636588168149213
+      }
+    ],
+    "max_rfs_bits": 0.007443176195705299,
+    "root": "/tmp/kahlus_sleep_edf_subset",
+    "status": "completed_sleep_edf_smoke"
+  },
+  "sleep_edf_smoke_failures": [
+    "sleep_edf_underpowered_event_patients",
+    "sleep_edf_time_shift_control_too_close"
+  ],
+  "stop_reason": "M4 gate reached; full claim requires powered public-data and external-dataset validation.",
+  "synthetic_gate_passed": true,
+  "synthetic_known_signal": {
+    "auc_positive_rfs_bits": 0.14466312601862408,
+    "curve": [
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.5402940475550242,
+        "horizon": 1,
+        "nll": 0.38809461571924514,
+        "positive_events": 391,
+        "rfs_bits": 0.21957736553559626,
+        "rfs_ci_high": 0.24306992323655088,
+        "rfs_ci_low": 0.1981557766198469,
+        "shuffled_rfs_bits": -0.046155716499983575,
+        "time_shift_rfs_bits": 0.01126691046263902
+      },
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.5507811933161144,
+        "horizon": 2,
+        "nll": 0.4589473444687701,
+        "positive_events": 388,
+        "rfs_bits": 0.1324882383178103,
+        "rfs_ci_high": 0.15728760887676546,
+        "rfs_ci_low": 0.11070700030660598,
+        "shuffled_rfs_bits": -0.033590067281237965,
+        "time_shift_rfs_bits": 0.025028316285800368
+      },
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.5593115672357974,
+        "horizon": 3,
+        "nll": 0.5025263341265288,
+        "positive_events": 387,
+        "rfs_bits": 0.08192377420246565,
+        "rfs_ci_high": 0.10547773735418586,
+        "rfs_ci_low": 0.06160523847921559,
+        "shuffled_rfs_bits": -0.027572609116860665,
+        "time_shift_rfs_bits": 0.03146973020029273
+      }
+    ],
+    "max_rfs_bits": 0.21957736553559626
+  },
+  "synthetic_null": {
+    "auc_positive_rfs_bits": 0.00041188862973498623,
+    "curve": [
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.37415982451026997,
+        "horizon": 1,
+        "nll": 0.3736523071244191,
+        "positive_events": 186,
+        "rfs_bits": 0.0007321928157319723,
+        "rfs_ci_high": 0.0034745306706583648,
+        "rfs_ci_low": -0.0020002585023454625,
+        "shuffled_rfs_bits": -0.002577848145963402,
+        "time_shift_rfs_bits": -0.0024482338635138413
+      },
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.37399115573758923,
+        "horizon": 2,
+        "nll": 0.3747151272921622,
+        "positive_events": 186,
+        "rfs_bits": -0.0010444701715271241,
+        "rfs_ci_high": 0.000829234086937646,
+        "rfs_ci_low": -0.0035095677045155127,
+        "shuffled_rfs_bits": 1.9005843032701826e-05,
+        "time_shift_rfs_bits": 7.386572891631045e-05
+      },
+      {
+        "event_patients": 12,
+        "gated_baseline_name": "logistic_nuisance",
+        "gated_baseline_nll": 0.3720559673877556,
+        "horizon": 3,
+        "nll": 0.37170698644638994,
+        "positive_events": 185,
+        "rfs_bits": 0.0005034730734729865,
+        "rfs_ci_high": 0.003366992469456768,
+        "rfs_ci_low": -0.0025952660782376778,
+        "shuffled_rfs_bits": -0.000464136005494886,
+        "time_shift_rfs_bits": -0.000880609160874745
+      }
+    ],
+    "max_rfs_bits": 0.0007321928157319723
+  }
+}
