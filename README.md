@@ -1,6 +1,8 @@
-# NeuroTwin
+# NeuroTwin / Kahlus
 
-NeuroTwin v1 is a research repo for a leakage-proof Neural Translation benchmark and model scaffold. The current experimental architecture is NeuroTwin NFC, a Neural Field Compiler. The claim is not "first brain foundation model", "first multimodal brain model", "first stimulus-to-brain model", or a clinical digital twin.
+> **AI agents:** Read **[AGENTS.md](AGENTS.md)** before writing code or making scientific claims. Conductor workspaces: **[CONDUCTOR.md](CONDUCTOR.md)**. Cursor loads `.cursor/rules/kahlus-constitution.mdc` automatically.
+
+NeuroTwin v1 is a research repo for a leakage-proof Neural Translation benchmark and model scaffold. **Kahlus** (Forecastability Trial 0 / Neural-CASP) is the leakage-controlled engine for testing whether noninvasive biosignals contain residual information about future brain/body state transitions — see [AGENTS.md](AGENTS.md) for the full research constitution, claim boundaries, and gate discipline. The current experimental architecture is NeuroTwin NFC, a Neural Field Compiler. The claim is not "first brain foundation model", "first multimodal brain model", "first stimulus-to-brain model", or a clinical digital twin.
 
 The defensible v1 target is stricter:
 

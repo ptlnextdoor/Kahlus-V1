@@ -7,7 +7,9 @@ Current graph:
 - Report: `graphify-out/GRAPH_REPORT.md`
 - Graph JSON: `graphify-out/graph.json`
 - Browser view: `graphify-out/graph.html`
-- Codex instructions: `AGENTS.md`
+- Agent constitution (canonical): `AGENTS.md`
+- Conductor workspace entry: `CONDUCTOR.md`
+- Cursor rule: `.cursor/rules/kahlus-constitution.mdc`
 - GitHub/Copilot instructions: `.github/copilot-instructions.md`
 
 Local hook setup:
