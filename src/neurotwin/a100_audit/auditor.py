@@ -626,7 +626,7 @@ def _audit_root(root: Path, expected_gpus: int, allow_missing_logs: bool, source
 def audit_evidence(
     evidence_path: str | Path,
     *,
-    expected_gpus: int = 8,
+    expected_gpus: int = 7,
     allow_missing_logs: bool = False,
 ) -> AuditResult:
     """Audit a returned KTM A100 evidence folder or .zip. Read-only; never runs cluster work."""

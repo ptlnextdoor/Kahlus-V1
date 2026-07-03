@@ -3,7 +3,7 @@
 The gate writes/reads the unified-dossier JSON schema::
 
     {
-      "branch": "v1 | v2 | v3 | em",
+      "branch": "v1 | v2 | v3 | em | researchdock | stf",
       "dataset": "...",
       "split_audit_passed": true,
       "baseline_table_present": true,
@@ -30,7 +30,7 @@ from neurotwin.repro import write_json
 
 GATE_SCHEMA = "kahlus.unified_evidence_gate.v1"
 
-ALLOWED_BRANCHES: frozenset[str] = frozenset({"v1", "v2", "v3", "em"})
+ALLOWED_BRANCHES: frozenset[str] = frozenset({"v1", "v2", "v3", "em", "researchdock", "stf"})
 
 #: Claim scopes narrow enough to be eligible (only on a fully passing gate). Anything
 #: outside this allowlist is treated as "too broad" and blocks the claim. There is no
@@ -42,6 +42,9 @@ ALLOWED_BRANCHES: frozenset[str] = frozenset({"v1", "v2", "v3", "em"})
 NARROW_CLAIM_SCOPES: frozenset[str] = frozenset(
     {
         "none",
+        "eeg_fewshot_adaptation_benchmark_ready",
+        "eeg_future_forecasting_benchmark_ready",
+        "stf_epilepsy_benchmark_definition_ready",
         "synthetic_plumbing_only",
         "synthetic_dual_field_recovery",
         "synthetic_transition_gym",
@@ -50,6 +53,7 @@ NARROW_CLAIM_SCOPES: frozenset[str] = frozenset(
         "synthetic_ktm_recovery",
         "em_artifact_audit_no_human",
         "em_stage0_artifact_audit",
+        "researchdock_synthetic_response_profile",
     }
 )
 

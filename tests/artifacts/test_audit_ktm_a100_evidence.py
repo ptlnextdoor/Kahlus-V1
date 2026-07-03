@@ -193,6 +193,22 @@ def _codes(result, severity=None):
 
 
 class AuditKtmA100EvidenceTests(unittest.TestCase):
+    def test_default_expected_gpu_count_is_seven(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_evidence(Path(tmp), gpu_count=7)
+            result = audit_evidence(root)
+            self.assertEqual(result.verdict, "pass", _codes(result))
+            self.assertEqual(result.environment["expected_gpus"], 7)
+            self.assertEqual(result.environment["gpu_count"], 7)
+
+    def test_default_expected_gpu_count_rejects_eight_gpu_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_evidence(Path(tmp), gpu_count=8)
+            result = audit_evidence(root)
+            self.assertEqual(result.verdict, "fail")
+            self.assertIn("gpu_count_mismatch", _codes(result, "fail"))
+            self.assertEqual(result.environment["expected_gpus"], 7)
+
     def test_valid_folder_passes_and_disclaimer_text_is_not_a_claim(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_evidence(Path(tmp))
