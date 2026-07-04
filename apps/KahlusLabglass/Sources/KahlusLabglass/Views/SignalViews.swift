@@ -39,6 +39,10 @@ struct ThermalMapView: View {
                 .foregroundStyle(LabColor.muted)
                 .padding(8)
         }
+        .overlay(alignment: .topTrailing) {
+            PreviewBadge()
+                .padding(8)
+        }
     }
 }
 
@@ -78,6 +82,10 @@ struct TraceView: View {
                 context.stroke(trace, with: .color(LabColor.navy), lineWidth: 1.5)
                 context.draw(Text("CH\(channel + 1)").font(.caption).foregroundColor(LabColor.muted), at: CGPoint(x: 20, y: base - 16))
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            PreviewBadge()
+                .padding(8)
         }
     }
 
@@ -127,5 +135,22 @@ struct ScalpMapView: View {
                 }
             }
         }
+        .overlay(alignment: .topTrailing) {
+            PreviewBadge()
+                .padding(8)
+        }
+    }
+}
+
+struct PreviewBadge: View {
+    var body: some View {
+        Text("synthetic preview")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(LabColor.navy)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(LabColor.warning.opacity(0.18))
+            .overlay(Capsule().stroke(LabColor.warning.opacity(0.8)))
+            .clipShape(Capsule())
     }
 }

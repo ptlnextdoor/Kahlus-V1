@@ -16,6 +16,7 @@ from neurotwin.forecastability.m2 import _read_edf_signals, _remote_size, _sha25
 CHBMIT_BASE_URL = "https://physionet.org/files/chbmit/1.0.0/"
 TUSZ_AUDIT_URL = "https://isip.piconepress.com/projects/nedc/html/tuh_eeg/"
 PRIMARY_HORIZON_SECONDS = 300
+TUSZ_SEIZURE_LABELS = frozenset({"fnsz", "gnsz", "spsz", "cpsz", "absz", "tnsz", "tcsz", "mysz", "seiz"})
 
 
 @dataclass(frozen=True)
@@ -292,7 +293,7 @@ def parse_tusz_tse(text: str) -> tuple[tuple[float, float], ...]:
         except ValueError:
             continue
         label = parts[2].lower()
-        if stop > start and label not in {"bckg", "background", "null", "none"}:
+        if stop > start and label in TUSZ_SEIZURE_LABELS:
             seizures.append((start, stop))
     return tuple(seizures)
 

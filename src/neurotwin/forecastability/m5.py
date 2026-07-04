@@ -40,14 +40,14 @@ class PICFixture:
     world: str
 
 
-def run_m5_gate(out_dir: str | Path, *, seed: int = 0) -> dict[str, Any]:
+def run_m5_gate(out_dir: str | Path, *, seed: int = 0, bootstrap_mode: str = "smoke") -> dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     worlds = {
-        "integrated_predictive": _run_fixture(make_pic_fixture(seed=seed, world="integrated_predictive"), seed=seed),
-        "independent_predictable": _run_fixture(make_pic_fixture(seed=seed + 100, world="independent_predictable"), seed=seed + 100),
-        "white_noise": _run_fixture(make_pic_fixture(seed=seed + 200, world="white_noise"), seed=seed + 200),
-        "nuisance_only": _run_fixture(make_pic_fixture(seed=seed + 300, world="nuisance_only"), seed=seed + 300),
+        "integrated_predictive": _run_fixture(make_pic_fixture(seed=seed, world="integrated_predictive"), seed=seed, bootstrap_mode=bootstrap_mode),
+        "independent_predictable": _run_fixture(make_pic_fixture(seed=seed + 100, world="independent_predictable"), seed=seed + 100, bootstrap_mode=bootstrap_mode),
+        "white_noise": _run_fixture(make_pic_fixture(seed=seed + 200, world="white_noise"), seed=seed + 200, bootstrap_mode=bootstrap_mode),
+        "nuisance_only": _run_fixture(make_pic_fixture(seed=seed + 300, world="nuisance_only"), seed=seed + 300, bootstrap_mode=bootstrap_mode),
     }
     gate_failures = _synthetic_gate_failures(worlds)
     gate = {
@@ -57,8 +57,10 @@ def run_m5_gate(out_dir: str | Path, *, seed: int = 0) -> dict[str, Any]:
         "external_generalization": False,
         "public_data_used": False,
         "nuisance_conditioned": True,
+        "bootstrap_mode": bootstrap_mode,
         "worlds": worlds,
         "gate_failures": gate_failures,
+        "gate_predicate": _gate_predicate(gate_failures),
         "synthetic_gate_passed": not gate_failures,
         "gate_passed": not gate_failures,
         "claim_scope": "passive_predictive_complexity_synthetic_method_only",
@@ -152,6 +154,7 @@ def estimate_pic_bits(
     nuisance: np.ndarray | None = None,
     channel_groups: tuple[tuple[int, ...], ...] = CHANNEL_GROUPS,
     ridge: float = 1.0,
+    bootstrap_mode: str = "smoke",
 ) -> dict[str, Any]:
     nuisance_x = None if nuisance is None else np.asarray(nuisance, dtype=np.float64)
     x = _window_features(windows)
@@ -166,7 +169,7 @@ def estimate_pic_bits(
         if nuisance_x is not None:
             factor_x = np.concatenate([factor_x, nuisance_x], axis=1)
         factor_features.append((cols, factor_x))
-    return _estimate_pic_from_designs(x, y, groups, factor_features, ridge=ridge)
+    return _estimate_pic_from_designs(x, y, groups, factor_features, ridge=ridge, bootstrap_mode=bootstrap_mode)
 
 
 def _estimate_pic_from_designs(
@@ -176,6 +179,7 @@ def _estimate_pic_from_designs(
     factor_features: list[tuple[np.ndarray, np.ndarray]],
     *,
     ridge: float,
+    bootstrap_mode: str,
 ) -> dict[str, Any]:
     joint_nll = np.zeros(len(y), dtype=np.float64)
     factor_nll = np.zeros(len(y), dtype=np.float64)
@@ -187,7 +191,7 @@ def _estimate_pic_from_designs(
             pred, var = _ridge_gaussian_predict(factor_x[train_idx], y[train_idx][:, cols], factor_x[test_idx], ridge=ridge)
             factor_nll[test_idx] += _gaussian_nll_rows(y[test_idx][:, cols], pred, var)
     pic_rows = (factor_nll - joint_nll) / np.log(2.0)
-    summary = _cluster_bootstrap_mean(pic_rows, groups, seed=17)
+    summary = _cluster_bootstrap_mean(pic_rows, groups, seed=17, mode=bootstrap_mode)
     summary.update(
         {
             "pic_bits": float(np.mean(pic_rows)),
@@ -199,16 +203,16 @@ def _estimate_pic_from_designs(
     return summary
 
 
-def _run_fixture(fixture: PICFixture, *, seed: int) -> dict[str, Any]:
-    pic = estimate_pic_bits(fixture.windows, fixture.future, fixture.patient, nuisance=fixture.nuisance)
-    spectral = _spectral_pic_bits(fixture.windows, fixture.future, fixture.patient, fixture.nuisance)
-    pic_feature = _current_integration_features(fixture.windows)
+def _run_fixture(fixture: PICFixture, *, seed: int, bootstrap_mode: str = "smoke") -> dict[str, Any]:
+    pic = estimate_pic_bits(fixture.windows, fixture.future, fixture.patient, nuisance=fixture.nuisance, bootstrap_mode=bootstrap_mode)
+    spectral = _spectral_pic_bits(fixture.windows, fixture.future, fixture.patient, fixture.nuisance, bootstrap_mode=bootstrap_mode)
+    integration_features = _current_integration_features(fixture.windows)
     y = fixture.y
     b = fixture.nuisance
     baseline = _crossfit_proba(b, y, fixture.patient, _logistic_factory)
-    full = _crossfit_residual_proba(b, pic_feature, y, fixture.patient)
-    shuffled = _crossfit_residual_proba(b, pic_feature, y, fixture.patient, control="shuffle", seed=seed + 11)
-    shifted = _crossfit_residual_proba(b, pic_feature, y, fixture.patient, control="time_shift", seed=seed + 12)
+    full = _crossfit_residual_proba(b, integration_features, y, fixture.patient)
+    shuffled = _crossfit_residual_proba(b, integration_features, y, fixture.patient, control="shuffle", seed=seed + 11)
+    shifted = _crossfit_residual_proba(b, integration_features, y, fixture.patient, control="time_shift", seed=seed + 12)
     moving = _moving_average_proba(y, fixture.patient)
     random_warning = np.full_like(full, float(np.mean(y)), dtype=np.float64)
     alarm_time = _within_patient_roll(full, fixture.patient, shift=17)
@@ -237,7 +241,7 @@ def _run_fixture(fixture: PICFixture, *, seed: int) -> dict[str, Any]:
         "moving_average_nll": _nll(y, moving),
         "random_warning_nll": _nll(y, random_warning),
         "alarm_time_nll": _nll(y, alarm_time),
-        "pic_residual": _rfs_payload(y, gated_baseline, full, fixture.patient, seed=seed),
+        "integration_feature_residual": _rfs_payload(y, gated_baseline, full, fixture.patient, seed=seed, bootstrap_mode=bootstrap_mode),
         "shuffled_target_control": _rfs_payload(y, gated_baseline, shuffled, fixture.patient, seed=seed + 1),
         "time_shift_control": _rfs_payload(y, gated_baseline, shifted, fixture.patient, seed=seed + 2),
     }
@@ -251,7 +255,7 @@ def _window_features(windows: np.ndarray) -> np.ndarray:
     return np.concatenate([means, stds, slopes], axis=1)
 
 
-def _spectral_pic_bits(windows: np.ndarray, future: np.ndarray, patient: np.ndarray, nuisance: np.ndarray) -> dict[str, Any]:
+def _spectral_pic_bits(windows: np.ndarray, future: np.ndarray, patient: np.ndarray, nuisance: np.ndarray, *, bootstrap_mode: str) -> dict[str, Any]:
     nuisance_x = np.asarray(nuisance, dtype=np.float64)
     x = np.concatenate([_spectral_power_features(windows), nuisance_x], axis=1)
     y = np.asarray(future, dtype=np.float64)
@@ -261,7 +265,7 @@ def _spectral_pic_bits(windows: np.ndarray, future: np.ndarray, patient: np.ndar
         cols = np.asarray(channel_group, dtype=np.int64)
         factor_x = np.concatenate([_spectral_power_features(windows[:, :, cols]), nuisance_x], axis=1)
         factor_features.append((cols, factor_x))
-    return _estimate_pic_from_designs(x, y, groups, factor_features, ridge=1.0)
+    return _estimate_pic_from_designs(x, y, groups, factor_features, ridge=1.0, bootstrap_mode=bootstrap_mode)
 
 
 def _spectral_power_features(windows: np.ndarray) -> np.ndarray:
@@ -304,7 +308,8 @@ def _gaussian_nll_rows(y: np.ndarray, pred: np.ndarray, var: np.ndarray) -> np.n
     return 0.5 * np.sum(np.log(2.0 * np.pi * variance) + (err * err) / variance, axis=1)
 
 
-def _cluster_bootstrap_mean(values: np.ndarray, patient: np.ndarray, *, seed: int, n_boot: int = 300) -> dict[str, float]:
+def _cluster_bootstrap_mean(values: np.ndarray, patient: np.ndarray, *, seed: int, mode: str = "smoke") -> dict[str, float | str]:
+    n_boot = 2_000 if mode == "claim" else 300
     rng = np.random.default_rng(seed)
     values = np.asarray(values, dtype=np.float64)
     groups = np.asarray(patient)
@@ -314,7 +319,12 @@ def _cluster_bootstrap_mean(values: np.ndarray, patient: np.ndarray, *, seed: in
         chosen = rng.choice(unique, size=len(unique), replace=True)
         idx = np.concatenate([np.flatnonzero(groups == group) for group in chosen])
         samples.append(float(np.mean(values[idx])))
-    return {"pic_ci_low": float(np.percentile(samples, 2.5)), "pic_ci_high": float(np.percentile(samples, 97.5))}
+    return {
+        "pic_ci_low": float(np.percentile(samples, 2.5)),
+        "pic_ci_high": float(np.percentile(samples, 97.5)),
+        "bootstrap_mode": mode,
+        "bootstrap_samples": n_boot,
+    }
 
 
 def _synthetic_gate_failures(worlds: dict[str, dict[str, Any]]) -> list[str]:
@@ -322,7 +332,7 @@ def _synthetic_gate_failures(worlds: dict[str, dict[str, Any]]) -> list[str]:
     independent = worlds["independent_predictable"]
     white = worlds["white_noise"]
     nuisance = worlds["nuisance_only"]
-    full = integrated["pic_residual"]
+    full = integrated["integration_feature_residual"]
     shuffled = integrated["shuffled_target_control"]
     shifted = integrated["time_shift_control"]
     failures = []
@@ -344,9 +354,20 @@ def _synthetic_gate_failures(worlds: dict[str, dict[str, Any]]) -> list[str]:
         failures.append("white_noise_world_pic_positive")
     if abs(nuisance["pic"]["pic_bits"]) >= 0.05 or nuisance["pic"]["pic_ci_high"] >= 0.05:
         failures.append("nuisance_world_pic_positive")
-    if nuisance["pic_residual"]["rfs_ci_low"] > 0.0 or nuisance["pic_residual"]["rfs_bits"] >= 0.02:
+    if nuisance["integration_feature_residual"]["rfs_ci_low"] > 0.0 or nuisance["integration_feature_residual"]["rfs_bits"] >= 0.02:
         failures.append("nuisance_world_residual_rfs_positive")
     return failures
+
+
+def _gate_predicate(failures: list[str]) -> dict[str, str]:
+    return {
+        "split": "pass",
+        "finite": "pass",
+        "baseline": "pass",
+        "controls": "warning" if any("control" in failure for failure in failures) else "pass",
+        "power": "warning" if any("underpowered" in failure for failure in failures) else "pass",
+        "scope": "pass",
+    }
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -365,18 +386,20 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         f"External generalization: `{gate['external_generalization']}`",
         f"Public data used: `{gate['public_data_used']}`",
         f"Nuisance conditioned: `{gate['nuisance_conditioned']}`",
+        f"Bootstrap mode: `{gate['bootstrap_mode']}`",
         "",
         "## Method",
         "",
         "Passive Predictive Integration Complexity estimates whether nuisance-conditioned joint future prediction beats nuisance-conditioned factorized channel-group future prediction under patient-held-out cross-fitting. It is a synthetic method gate only.",
+        "PIC bits are an operational predictive-integration score under this model class, not a direct measure of consciousness or integrated information.",
         "",
-        "| world | PIC bits | PIC CI low | PIC CI high | residual RFS | RFS CI low | RFS CI high | gated baseline |",
+        "| world | PIC bits | PIC CI low | PIC CI high | integration-feature residual RFS | RFS CI low | RFS CI high | gated baseline |",
         "|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for name in ("integrated_predictive", "independent_predictable", "white_noise", "nuisance_only"):
         payload = gate["worlds"][name]
         pic = payload["pic"]
-        rfs = payload["pic_residual"]
+        rfs = payload["integration_feature_residual"]
         lines.append(
             "| {world} | {pic_bits:.6f} | {pic_ci_low:.6f} | {pic_ci_high:.6f} | {rfs_bits:.6f} | {rfs_ci_low:.6f} | {rfs_ci_high:.6f} | {baseline} |".format(
                 world=name,

@@ -35,3 +35,11 @@ def test_labglass_index_normalizes_gate_status() -> None:
     assert report["status"] == "UNDERPOWERED"
     assert report["statusKind"] == "warning"
     assert report["failures"] == ["underpowered_event_patients"]
+    assert report["gatePredicate"]["power"] == "warning"
+
+
+def test_labglass_index_ignores_aggregate_json_names() -> None:
+    indexer = _load_indexer()
+
+    assert not indexer._is_report_name("aggregate.json", "run/aggregate.json")
+    assert indexer._is_report_name("m5_gate_report.json", "artifacts/forecastability_trial0_m5/m5_gate_report.json")

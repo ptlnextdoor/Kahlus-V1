@@ -82,7 +82,7 @@ def _append_zip_reports(path: Path, reports: list[dict[str, Any]], seen: set[str
 def _is_report_name(name: str, full_name: str) -> bool:
     lower_name = name.lower()
     lower_full = full_name.lower()
-    if lower_name.endswith(".json") and "gate" in lower_name:
+    if lower_name.endswith("_gate_report.json") or lower_name.endswith("_evidence_gate.json") or lower_name in {"evidence_gate.json", "paper_mode_gate.json"}:
         return True
     return lower_name in {"summary.json", "metric_summary.json"} and "/run/" in lower_full
 
@@ -115,6 +115,7 @@ def _report_from_payload(payload: dict[str, Any], *, path: Path, source: str | N
         "metricUnit": unit,
         "metrics": metrics,
         "controls": controls,
+        "gatePredicate": _gate_predicate(payload),
         "metadata": _metadata(payload, path=path, source=source, size_bytes=size_bytes, failures=failures),
     }
 
@@ -162,7 +163,7 @@ def _metrics(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
         rows = []
         for name, world in payload["worlds"].items():
             pic = world.get("pic", {})
-            rfs = world.get("pic_residual", {})
+            rfs = world.get("integration_feature_residual", world.get("pic_residual", {}))
             rows.append(
                 _metric(
                     name,
@@ -220,6 +221,26 @@ def _metrics(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
     if rows:
         return rows, "MSE"
     return [], "Metric"
+
+
+def _gate_predicate(payload: dict[str, Any]) -> dict[str, str]:
+    predicate = payload.get("gate_predicate")
+    if isinstance(predicate, dict):
+        return {key: _status_kind(value) for key, value in predicate.items()}
+    failures = _failures(payload)
+    return {
+        "split": "neutral",
+        "finite": "neutral",
+        "baseline": "warning" if any("baseline" in failure for failure in failures) else "neutral",
+        "controls": "warning" if any("control" in failure for failure in failures) else "neutral",
+        "power": "warning" if any("underpowered" in failure for failure in failures) else "neutral",
+        "scope": "neutral",
+    }
+
+
+def _status_kind(value: Any) -> str:
+    text = str(value).lower()
+    return text if text in {"pass", "fail", "warning", "neutral"} else "neutral"
 
 
 def _controls(payload: dict[str, Any], metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:

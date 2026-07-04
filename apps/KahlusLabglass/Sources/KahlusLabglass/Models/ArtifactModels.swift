@@ -28,6 +28,7 @@ struct ArtifactReport: Decodable, Identifiable, Hashable {
     let metricUnit: String
     let metrics: [MetricRow]
     let controls: [ControlRow]
+    let gatePredicate: GatePredicate
     let metadata: [MetaRow]
 
     var statusColor: Color {
@@ -74,6 +75,15 @@ struct MetaRow: Decodable, Hashable, Identifiable {
     let label: String
     let value: String
     let state: StatusKind
+}
+
+struct GatePredicate: Decodable, Hashable {
+    let split: StatusKind
+    let finite: StatusKind
+    let baseline: StatusKind
+    let controls: StatusKind
+    let power: StatusKind
+    let scope: StatusKind
 }
 
 @MainActor
@@ -123,7 +133,7 @@ final class ArtifactStore: ObservableObject {
     }
 
     func load(from url: URL) {
-        guard let script = Bundle.main.url(forResource: "build_labglass_index", withExtension: "py") else {
+        guard let script = Self.indexerScriptURL() else {
             loadMessage = "Missing bundled indexer."
             return
         }
@@ -150,6 +160,21 @@ final class ArtifactStore: ObservableObject {
         } catch {
             loadMessage = error.localizedDescription
         }
+    }
+
+    private static func indexerScriptURL() -> URL? {
+        if let bundled = Bundle.main.url(forResource: "build_labglass_index", withExtension: "py") {
+            return bundled
+        }
+        var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        for _ in 0..<6 {
+            let candidate = dir.appendingPathComponent("scripts/build_labglass_index.py")
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+            dir.deleteLastPathComponent()
+        }
+        return nil
     }
 }
 

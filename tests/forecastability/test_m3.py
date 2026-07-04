@@ -34,13 +34,24 @@ class ForecastabilityM3Tests(unittest.TestCase):
         )
         self.assertEqual(parsed["chb01_03.edf"], ((2996, 3036),))
 
-    def test_chbmit_records_source(self) -> None:
-        self.assertIn("chb01/chb01_03.edf", fetch_chbmit_seizure_records())
+    def test_chbmit_records_source_parser_uses_official_records_file(self) -> None:
+        class _Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b"chb01/chb01_03.edf\n"
+
+        with patch("neurotwin.forecastability.m3.urlopen", return_value=_Response()):
+            self.assertIn("chb01/chb01_03.edf", fetch_chbmit_seizure_records())
 
     def test_external_dataset_audit_is_honest(self) -> None:
         self.assertEqual(tusz_source_audit()["status"], "not_run_requires_external_tusz_access")
 
-    def test_tusz_tse_parser_keeps_non_background_events(self) -> None:
+    def test_tusz_tse_parser_keeps_only_seizure_allowlist(self) -> None:
         parsed = parse_tusz_tse(
             "\n".join(
                 [
@@ -48,6 +59,7 @@ class ForecastabilityM3Tests(unittest.TestCase):
                     "0.0000 10.0000 bckg 1.0000",
                     "10.0000 14.5000 seiz 0.9000",
                     "20.0000 22.0000 fnsz 0.8000",
+                    "30.0000 32.0000 artf 0.7000",
                 ]
             )
         )

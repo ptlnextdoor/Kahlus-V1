@@ -29,7 +29,7 @@ def run_m4_gate(
     sleep_failures = _sleep_curve_failures(sleep)
     gate = {
         "milestone": "M4",
-        "method": "leakage_safe_forecastability_vs_horizon_curve",
+        "method": "leakage_safe_horizon_wise_label_curve",
         "horizons": list(horizons),
         "synthetic_known_signal": known,
         "synthetic_null": null,
@@ -161,7 +161,7 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         "",
         "## Method",
         "",
-        "Leakage-safe forecastability-vs-horizon curve: labels are shifted within each patient only, then RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline.",
+        "Leakage-safe horizon-wise label curve: labels are shifted within each patient only, then RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline. This is not a censoring-aware survival model.",
         "",
         _curve_section("Synthetic Known Signal", gate["synthetic_known_signal"]),
         "",

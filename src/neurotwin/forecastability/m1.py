@@ -317,8 +317,8 @@ def _scaled_design(x_train_raw: np.ndarray, x_test_raw: np.ndarray) -> tuple[np.
     return x_train, x_test
 
 
-def _rfs_payload(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray, patient: np.ndarray, *, seed: int) -> dict[str, float]:
-    values = _cluster_bootstrap_rfs(y, baseline, pred, patient, seed=seed)
+def _rfs_payload(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray, patient: np.ndarray, *, seed: int, bootstrap_mode: str = "smoke") -> dict[str, float | str]:
+    values = _cluster_bootstrap_rfs(y, baseline, pred, patient, seed=seed, mode=bootstrap_mode)
     values["rfs_bits"] = _rfs_bits(y, baseline, pred)
     values["nll"] = _nll(y, pred)
     return values
@@ -331,8 +331,9 @@ def _cluster_bootstrap_rfs(
     patient: np.ndarray,
     *,
     seed: int,
-    n_boot: int = 300,
-) -> dict[str, float]:
+    mode: str = "smoke",
+) -> dict[str, float | str]:
+    n_boot = 2_000 if mode == "claim" else 300
     rng = np.random.default_rng(seed)
     unique = np.unique(patient)
     samples = []
@@ -340,7 +341,12 @@ def _cluster_bootstrap_rfs(
         chosen = rng.choice(unique, size=len(unique), replace=True)
         idx = np.concatenate([np.flatnonzero(patient == group) for group in chosen])
         samples.append(_rfs_bits(y[idx], baseline[idx], pred[idx]))
-    return {"rfs_ci_low": float(np.percentile(samples, 2.5)), "rfs_ci_high": float(np.percentile(samples, 97.5))}
+    return {
+        "rfs_ci_low": float(np.percentile(samples, 2.5)),
+        "rfs_ci_high": float(np.percentile(samples, 97.5)),
+        "bootstrap_mode": mode,
+        "bootstrap_samples": n_boot,
+    }
 
 
 def _rfs_bits(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray) -> float:

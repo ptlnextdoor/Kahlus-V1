@@ -67,12 +67,12 @@ struct PredicateCard: View {
     var body: some View {
         LabCard("Claim Gate Predicate") {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                PredicatePill(label: "Split", state: .pass)
-                PredicatePill(label: "Finite", state: .pass)
-                PredicatePill(label: "Baseline", state: report.passed ? .pass : .fail)
-                PredicatePill(label: "Controls", state: report.failures.isEmpty ? .pass : .warning)
-                PredicatePill(label: "Power", state: report.failures.contains(where: { $0.localizedCaseInsensitiveContains("underpowered") }) ? .warning : .pass)
-                PredicatePill(label: "Scope", state: .pass)
+                PredicatePill(label: "Split", state: report.gatePredicate.split)
+                PredicatePill(label: "Finite", state: report.gatePredicate.finite)
+                PredicatePill(label: "Baseline", state: report.gatePredicate.baseline)
+                PredicatePill(label: "Controls", state: report.gatePredicate.controls)
+                PredicatePill(label: "Power", state: report.gatePredicate.power)
+                PredicatePill(label: "Scope", state: report.gatePredicate.scope)
             }
             VStack(alignment: .leading, spacing: 7) {
                 ForEach(report.metadata.prefix(6)) { row in

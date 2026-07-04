@@ -128,7 +128,7 @@ struct InformationAtlasCard: View {
     let report: ArtifactReport
 
     var body: some View {
-        LabCard("Information Atlas") {
+        LabCard("Conceptual Information Atlas") {
             VStack(alignment: .leading, spacing: 12) {
                 GeometryReader { proxy in
                     HStack(spacing: 2) {
@@ -139,7 +139,7 @@ struct InformationAtlasCard: View {
                     }
                 }
                 .frame(height: 42)
-                Text("Shows the allowed evidence question: how much signal remains after nuisance, subject/site, and control structure.")
+                Text("Conceptual guide only; segment widths are not measured decomposition values.")
                     .font(.callout)
                     .foregroundStyle(LabColor.muted)
             }

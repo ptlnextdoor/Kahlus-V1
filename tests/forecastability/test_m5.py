@@ -54,7 +54,7 @@ class ForecastabilityM5Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             gate = run_m5_gate(Path(tmp), seed=7)
 
-        nuisance = gate["worlds"]["nuisance_only"]["pic_residual"]
+        nuisance = gate["worlds"]["nuisance_only"]["integration_feature_residual"]
         self.assertLess(nuisance["rfs_bits"], 0.02)
         self.assertLessEqual(nuisance["rfs_ci_low"], 0.0)
 
@@ -65,7 +65,7 @@ class ForecastabilityM5Tests(unittest.TestCase):
         changed_future = _run_fixture(zero_future, seed=8)
 
         self.assertNotAlmostEqual(original["pic"]["pic_bits"], changed_future["pic"]["pic_bits"], places=2)
-        self.assertAlmostEqual(original["pic_residual"]["rfs_bits"], changed_future["pic_residual"]["rfs_bits"], places=12)
+        self.assertAlmostEqual(original["integration_feature_residual"]["rfs_bits"], changed_future["integration_feature_residual"]["rfs_bits"], places=12)
 
     def test_m5_attribution_contract_is_finite(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
