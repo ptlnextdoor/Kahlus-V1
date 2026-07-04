@@ -12,6 +12,7 @@ from neurotwin.forecastability.m3 import (
     _local_tusz_recordings,
     _m3_gate_failures,
     _run_tusz_external,
+    chbmit_source_audit,
     fetch_chbmit_seizure_records,
     parse_chbmit_summary,
     parse_tusz_tse,
@@ -50,6 +51,13 @@ class ForecastabilityM3Tests(unittest.TestCase):
 
     def test_external_dataset_audit_is_honest(self) -> None:
         self.assertEqual(tusz_source_audit()["status"], "not_run_requires_external_tusz_access")
+
+    def test_chbmit_source_audit_without_local_root_does_not_fetch_network(self) -> None:
+        with patch("neurotwin.forecastability.m3.urlopen", side_effect=AssertionError("network")):
+            audit = chbmit_source_audit()
+
+        self.assertEqual(audit["status"], "not_run_no_local_chbmit_root")
+        self.assertIsNone(audit["official_records_with_seizures_count"])
 
     def test_tusz_tse_parser_keeps_only_seizure_allowlist(self) -> None:
         parsed = parse_tusz_tse(

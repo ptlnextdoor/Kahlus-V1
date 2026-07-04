@@ -112,15 +112,18 @@ def _download_chbmit_file(root: Path, rel_path: str) -> Path:
     return target
 
 
-def chbmit_source_audit(root: str | Path | None) -> dict[str, Any]:
-    records = fetch_chbmit_seizure_records()
+def chbmit_source_audit(root: str | Path | None = None) -> dict[str, Any]:
     if root is None:
-        return {"status": "not_run_no_local_chbmit_root", "official_records_with_seizures_count": len(records), "url": CHBMIT_BASE_URL}
+        return {"status": "not_run_no_local_chbmit_root", "official_records_with_seizures_count": None, "url": CHBMIT_BASE_URL}
+    try:
+        records_count: int | None = len(fetch_chbmit_seizure_records())
+    except OSError:
+        records_count = None
     recordings = _local_chbmit_recordings(Path(root))
     return {
         "status": "local_manifest",
         "root": str(root),
-        "official_records_with_seizures_count": len(records),
+        "official_records_with_seizures_count": records_count,
         "local_seizure_recordings": len(recordings),
         "local_event_patients": len({recording.subject for recording in recordings}),
         "url": CHBMIT_BASE_URL,
