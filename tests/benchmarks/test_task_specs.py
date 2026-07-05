@@ -1,7 +1,12 @@
 import unittest
 
 from neurotwin.benchmarks.registry import competitor_registry
-from neurotwin.benchmarks.task_specs import default_translation_tasks
+from neurotwin.benchmarks.task_specs import (
+    default_translation_tasks,
+    executable_task_ids_for,
+    paper_task_ids_for_executable,
+    paper_to_executable_task_aliases,
+)
 
 
 class TaskSpecTests(unittest.TestCase):
@@ -14,6 +19,27 @@ class TaskSpecTests(unittest.TestCase):
         self.assertIn("anatomy_fmri_to_subject_conditioned_state", task_ids)
         self.assertIn("missing_modality_reconstruction", task_ids)
         self.assertIn("few_shot_subject_adaptation", task_ids)
+
+    def test_paper_tasks_name_executable_prepared_aliases(self):
+        aliases = paper_to_executable_task_aliases()
+
+        self.assertEqual(
+            aliases["stimulus_past_fmri_to_future_fmri"],
+            ("future_state_forecasting", "stimulus_to_fmri_response"),
+        )
+        self.assertEqual(
+            aliases["missing_modality_reconstruction"],
+            ("masked_neural_reconstruction", "cross_modal_translation"),
+        )
+        self.assertEqual(executable_task_ids_for("few_shot_subject_adaptation"), ("few_shot_subject_adaptation",))
+        self.assertIn(
+            "missing_modality_reconstruction",
+            paper_task_ids_for_executable("masked_neural_reconstruction"),
+        )
+        self.assertIn(
+            "stimulus_past_fmri_to_future_fmri",
+            paper_task_ids_for_executable("future_state_forecasting"),
+        )
 
     def test_competitor_registry_names_the_crowded_lanes(self):
         competitors = {competitor.competitor_id: competitor for competitor in competitor_registry()}

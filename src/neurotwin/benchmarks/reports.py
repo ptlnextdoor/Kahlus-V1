@@ -89,12 +89,14 @@ def generate_suite_report(suite: str) -> str:
         "",
         "## Required Tasks",
         "",
-        "| Task | Inputs | Targets | Metrics |",
-        "| --- | --- | --- | --- |",
+        "| Task | Inputs | Targets | Metrics | Executable prepared aliases |",
+        "| --- | --- | --- | --- | --- |",
     ]
     for task in tasks:
+        executable_aliases = ", ".join(task.executable_task_ids) or "not yet executable"
         lines.append(
-            f"| {task.name} | {', '.join(task.inputs)} | {', '.join(task.targets)} | {', '.join(task.metrics)} |"
+            f"| {task.name} | {', '.join(task.inputs)} | {', '.join(task.targets)} | "
+            f"{', '.join(task.metrics)} | {executable_aliases} |"
         )
 
     lines.extend(
