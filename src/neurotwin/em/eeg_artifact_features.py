@@ -10,7 +10,8 @@ import numpy as np
 
 
 def _integrate(y: np.ndarray, x: np.ndarray, *, axis: int) -> np.ndarray:
-    return getattr(np, "trapezoid", np.trapz)(y, x, axis=axis)
+    trapezoid = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+    return trapezoid(y, x, axis=axis)
 
 
 def compute_psd(signal: np.ndarray, fs_hz: float) -> tuple[np.ndarray, np.ndarray]:
