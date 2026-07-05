@@ -1,0 +1,290 @@
+{
+  "blocked_claims": [
+    "no_consciousness_claim",
+    "no_pci_replacement_claim",
+    "no_clinical_claim",
+    "no_model_superiority_claim"
+  ],
+  "bootstrap_mode": "smoke",
+  "claim_scope": "passive_predictive_complexity_synthetic_method_only",
+  "external_generalization": false,
+  "gate_failures": [],
+  "gate_passed": true,
+  "gate_predicate": {
+    "baseline": "pass",
+    "controls": "pass",
+    "finite": "pass",
+    "power": "pass",
+    "scope": "pass",
+    "split": "pass"
+  },
+  "method": "passive_predictive_integration_complexity_synthetic_gate",
+  "milestone": "M5",
+  "nuisance_conditioned": true,
+  "public_data_used": false,
+  "stop_reason": "M5 is synthetic-only; public-data Passive PIC requires a later gate.",
+  "synthetic_gate_passed": true,
+  "validation_scope": "synthetic_instrument_validity_only",
+  "worlds": {
+    "independent_predictable": {
+      "alarm_time_nll": 0.3565024667043482,
+      "attribution": {
+        "spectral_power": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 4.937194296850094,
+          "joint_nll": 4.93054864835347,
+          "pic_bits": 0.009587644129570303,
+          "pic_ci_high": 0.023904901484928368,
+          "pic_ci_low": -0.0016776890240909983
+        },
+        "time_summary": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 3.0869584489715223,
+          "joint_nll": 3.1076246948256045,
+          "pic_bits": -0.029815090407476146,
+          "pic_ci_high": -0.012349297899511653,
+          "pic_ci_low": -0.04565443506832808
+        }
+      },
+      "baseline_nll": 0.33809909071706035,
+      "event_patients": 12,
+      "gated_baseline_name": "logistic_nuisance",
+      "gated_baseline_nll": 0.33809909071706035,
+      "integration_feature_residual": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.3372925725300948,
+        "rfs_bits": 0.0011635597887219315,
+        "rfs_ci_high": 0.004629288705036144,
+        "rfs_ci_low": -0.0018787923188432595
+      },
+      "moving_average_nll": 0.5331598236752993,
+      "n": 1440,
+      "pic": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "factorized_nll": 3.0869584489715223,
+        "joint_nll": 3.1076246948256045,
+        "pic_bits": -0.029815090407476146,
+        "pic_ci_high": -0.012349297899511653,
+        "pic_ci_low": -0.04565443506832808
+      },
+      "positive_events": 158,
+      "random_warning_nll": 0.3459341811336508,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.33959075001579786,
+        "rfs_bits": -0.002152009472984519,
+        "rfs_ci_high": 0.00142370803082506,
+        "rfs_ci_low": -0.005713029782369089
+      },
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.34020274546533896,
+        "rfs_bits": -0.0030349322730840803,
+        "rfs_ci_high": 0.0011481197226010113,
+        "rfs_ci_low": -0.007374244425084229
+      },
+      "world": "independent_predictable"
+    },
+    "integrated_predictive": {
+      "alarm_time_nll": 0.4403372899583805,
+      "attribution": {
+        "spectral_power": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 4.278419091778738,
+          "joint_nll": 4.277823349774992,
+          "pic_bits": 0.000859474034453938,
+          "pic_ci_high": 0.015417225782560256,
+          "pic_ci_low": -0.010763235353190929
+        },
+        "time_summary": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 3.6992038449052718,
+          "joint_nll": 2.4653087369207247,
+          "pic_bits": 1.7801343532664577,
+          "pic_ci_high": 1.9450338307560808,
+          "pic_ci_low": 1.6024853820068232
+        }
+      },
+      "baseline_nll": 0.41684829320001027,
+      "event_patients": 12,
+      "gated_baseline_name": "logistic_nuisance",
+      "gated_baseline_nll": 0.41684829320001027,
+      "integration_feature_residual": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.38662609955530713,
+        "rfs_bits": 0.04360140889599916,
+        "rfs_ci_high": 0.05502142310552433,
+        "rfs_ci_low": 0.03353402789132531
+      },
+      "moving_average_nll": 0.5772243281444187,
+      "n": 1440,
+      "pic": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "factorized_nll": 3.6992038449052718,
+        "joint_nll": 2.4653087369207247,
+        "pic_bits": 1.7801343532664577,
+        "pic_ci_high": 1.9450338307560808,
+        "pic_ci_low": 1.6024853820068232
+      },
+      "positive_events": 216,
+      "random_warning_nll": 0.422709087805991,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.4213126571743864,
+        "rfs_bits": -0.0064407157665557525,
+        "rfs_ci_high": -0.0031084025999879566,
+        "rfs_ci_low": -0.010026873829167914
+      },
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.41869059743265313,
+        "rfs_bits": -0.0026578831802426105,
+        "rfs_ci_high": -0.001080677046600521,
+        "rfs_ci_low": -0.004438243528655937
+      },
+      "world": "integrated_predictive"
+    },
+    "nuisance_only": {
+      "alarm_time_nll": 0.6052396717111467,
+      "attribution": {
+        "spectral_power": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 3.577458187835738,
+          "joint_nll": 3.5756752877985116,
+          "pic_bits": 0.002572181042107023,
+          "pic_ci_high": 0.0079127202104386,
+          "pic_ci_low": -0.003964874982963751
+        },
+        "time_summary": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 3.5813260253609878,
+          "joint_nll": 3.59692928649982,
+          "pic_bits": -0.022510747466689067,
+          "pic_ci_high": -0.012670183701587345,
+          "pic_ci_low": -0.03326987980691516
+        }
+      },
+      "baseline_nll": 0.45354583006546173,
+      "event_patients": 12,
+      "gated_baseline_name": "logistic_nuisance",
+      "gated_baseline_nll": 0.45354583006546173,
+      "integration_feature_residual": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.454364466634031,
+        "rfs_bits": -0.0011810429177652674,
+        "rfs_ci_high": 0.0006383599127799754,
+        "rfs_ci_low": -0.0028039209022863248
+      },
+      "moving_average_nll": 0.6979140469218342,
+      "n": 1440,
+      "pic": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "factorized_nll": 3.5813260253609878,
+        "joint_nll": 3.59692928649982,
+        "pic_bits": -0.022510747466689067,
+        "pic_ci_high": -0.012670183701587345,
+        "pic_ci_low": -0.03326987980691516
+      },
+      "positive_events": 304,
+      "random_warning_nll": 0.5154250939514232,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.45861533957786654,
+        "rfs_bits": -0.007313756233285851,
+        "rfs_ci_high": -0.002153636074237072,
+        "rfs_ci_low": -0.01268999107005238
+      },
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.4558858708722672,
+        "rfs_bits": -0.0033759652674560225,
+        "rfs_ci_high": 0.0001185311747257258,
+        "rfs_ci_low": -0.0068298795723257585
+      },
+      "world": "nuisance_only"
+    },
+    "white_noise": {
+      "alarm_time_nll": 0.4788259614889499,
+      "attribution": {
+        "spectral_power": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 5.631969021897877,
+          "joint_nll": 5.634409807018978,
+          "pic_bits": -0.0035213085900881896,
+          "pic_ci_high": 0.001893890472211459,
+          "pic_ci_low": -0.009831528485638369
+        },
+        "time_summary": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "factorized_nll": 5.640084026507064,
+          "joint_nll": 5.6479623728871085,
+          "pic_bits": -0.011366051252896072,
+          "pic_ci_high": 0.004227259560453567,
+          "pic_ci_low": -0.0271279441480891
+        }
+      },
+      "baseline_nll": 0.4365879504444106,
+      "event_patients": 12,
+      "gated_baseline_name": "logistic_nuisance",
+      "gated_baseline_nll": 0.4365879504444106,
+      "integration_feature_residual": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.43794442577060155,
+        "rfs_bits": -0.0019569802261838955,
+        "rfs_ci_high": 4.408011118560163e-06,
+        "rfs_ci_low": -0.0038410202133204382
+      },
+      "moving_average_nll": 0.6134249838703937,
+      "n": 1440,
+      "pic": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "factorized_nll": 5.640084026507064,
+        "joint_nll": 5.6479623728871085,
+        "pic_bits": -0.011366051252896072,
+        "pic_ci_high": 0.004227259560453567,
+        "pic_ci_low": -0.0271279441480891
+      },
+      "positive_events": 243,
+      "random_warning_nll": 0.4538986312612634,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.4366068274900454,
+        "rfs_bits": -2.7233820123963456e-05,
+        "rfs_ci_high": 0.0011624889999679309,
+        "rfs_ci_low": -0.001246157854155452
+      },
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.435929282216256,
+        "rfs_bits": 0.0009502573863498125,
+        "rfs_ci_high": 0.002207361761502179,
+        "rfs_ci_low": -0.00022083292702102127
+      },
+      "world": "white_noise"
+    }
+  }
+}

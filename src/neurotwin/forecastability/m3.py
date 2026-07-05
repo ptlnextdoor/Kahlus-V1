@@ -16,6 +16,7 @@ from neurotwin.forecastability.m2 import _read_edf_signals, _remote_size, _sha25
 CHBMIT_BASE_URL = "https://physionet.org/files/chbmit/1.0.0/"
 TUSZ_AUDIT_URL = "https://isip.piconepress.com/projects/nedc/html/tuh_eeg/"
 PRIMARY_HORIZON_SECONDS = 300
+TUSZ_SEIZURE_LABELS = frozenset({"fnsz", "gnsz", "spsz", "cpsz", "absz", "tnsz", "tcsz", "mysz", "seiz"})
 
 
 @dataclass(frozen=True)
@@ -111,15 +112,18 @@ def _download_chbmit_file(root: Path, rel_path: str) -> Path:
     return target
 
 
-def chbmit_source_audit(root: str | Path | None) -> dict[str, Any]:
-    records = fetch_chbmit_seizure_records()
+def chbmit_source_audit(root: str | Path | None = None) -> dict[str, Any]:
     if root is None:
-        return {"status": "not_run_no_local_chbmit_root", "official_records_with_seizures_count": len(records), "url": CHBMIT_BASE_URL}
+        return {"status": "not_run_no_local_chbmit_root", "official_records_with_seizures_count": None, "url": CHBMIT_BASE_URL}
+    try:
+        records_count: int | None = len(fetch_chbmit_seizure_records())
+    except OSError:
+        records_count = None
     recordings = _local_chbmit_recordings(Path(root))
     return {
         "status": "local_manifest",
         "root": str(root),
-        "official_records_with_seizures_count": len(records),
+        "official_records_with_seizures_count": records_count,
         "local_seizure_recordings": len(recordings),
         "local_event_patients": len({recording.subject for recording in recordings}),
         "url": CHBMIT_BASE_URL,
@@ -292,7 +296,7 @@ def parse_tusz_tse(text: str) -> tuple[tuple[float, float], ...]:
         except ValueError:
             continue
         label = parts[2].lower()
-        if stop > start and label not in {"bckg", "background", "null", "none"}:
+        if stop > start and label in TUSZ_SEIZURE_LABELS:
             seizures.append((start, stop))
     return tuple(seizures)
 
@@ -385,12 +389,16 @@ def _m3_gate_failures(chb_payload: dict[str, Any], tusz_payload: dict[str, Any])
 
 def _append_metric_failures(failures: list[str], metrics: dict[str, Any], *, prefix: str) -> None:
     full = metrics["logistic_full"]
+    gated_baseline_nll = float(metrics.get("gated_baseline_nll", _legacy_best_baseline_nll(metrics)))
     if metrics["event_patients"] < 8:
         _append_once(failures, "underpowered_event_patients")
         failures.append(f"{prefix}_underpowered_event_patients")
     if metrics["positive_events"] < 100:
         _append_once(failures, "underpowered_positive_windows")
         failures.append(f"{prefix}_underpowered_positive_windows")
+    if full["nll"] >= gated_baseline_nll:
+        _append_once(failures, "primary_not_better_than_gated_baseline")
+        failures.append(f"{prefix}_primary_not_better_than_gated_baseline")
     if full["rfs_ci_low"] <= 0.0:
         _append_once(failures, "primary_rfs_ci_includes_zero")
         failures.append(f"{prefix}_primary_rfs_ci_includes_zero")
@@ -405,6 +413,15 @@ def _append_metric_failures(failures: list[str], metrics: dict[str, Any], *, pre
         if probe["chance"] < 0.95 and probe["accuracy"] > probe["chance"] + 0.20:
             _append_once(failures, "nuisance_probe_contamination")
             failures.append(f"{prefix}_nuisance_probe_{key}_above_threshold")
+
+
+def _legacy_best_baseline_nll(metrics: dict[str, Any]) -> float:
+    return min(
+        float(metrics.get("baseline_nll", float("inf"))),
+        float(metrics.get("moving_average_nll", float("inf"))),
+        float(metrics.get("random_warning_nll", float("inf"))),
+        float(metrics.get("alarm_time_nll", float("inf"))),
+    )
 
 
 def _append_once(values: list[str], value: str) -> None:
@@ -476,6 +493,7 @@ def _metric_section(title: str, payload: dict[str, Any]) -> list[str]:
         f"- recordings: `{payload['recordings']}`",
         f"- rows/events/event-patients: `{metrics['n']}` / `{metrics['positive_events']}` / `{metrics['event_patients']}`",
         f"- RFS bits: `{metrics['logistic_full']['rfs_bits']:.6f}` CI `[ {metrics['logistic_full']['rfs_ci_low']:.6f}, {metrics['logistic_full']['rfs_ci_high']:.6f} ]`",
+        f"- gated baseline: `{metrics.get('gated_baseline_name', 'legacy_best_baseline')}` NLL `{metrics.get('gated_baseline_nll', _legacy_best_baseline_nll(metrics)):.6f}`",
         f"- GBM RFS bits: `{metrics['gbm_full']['rfs_bits']:.6f}`",
         f"- shuffled-target RFS bits: `{metrics['shuffled_target_control']['rfs_bits']:.6f}`",
         f"- time-shift RFS bits: `{metrics['time_shift_control']['rfs_bits']:.6f}`",

@@ -145,20 +145,31 @@ def _run_fixture(fixture: TransitionFixture, *, seed: int) -> dict[str, Any]:
     moving = _moving_average_proba(y, fixture.patient)
     random_warning = np.full_like(full, float(np.mean(y)), dtype=np.float64)
     alarm_time = _within_patient_roll(full, fixture.patient, shift=17)
+    gated_name, gated_baseline = _best_baseline(
+        y,
+        {
+            "logistic_nuisance": baseline,
+            "moving_average": moving,
+            "random_warning": random_warning,
+            "alarm_time_surrogate": alarm_time,
+        },
+    )
     survival = discrete_survival_labels(y, bins=3)
     return {
         "n": int(len(y)),
         "positive_events": int(np.sum(y)),
         "event_patients": int(len(set(fixture.patient[y == 1]))),
         "survival_label_shape": list(survival.shape),
+        "gated_baseline_name": gated_name,
+        "gated_baseline_nll": _nll(y, gated_baseline),
         "baseline_nll": _nll(y, baseline),
         "moving_average_nll": _nll(y, moving),
         "random_warning_nll": _nll(y, random_warning),
         "alarm_time_nll": _nll(y, alarm_time),
-        "logistic_full": _rfs_payload(y, baseline, full, fixture.patient, seed=seed),
-        "gbm_full": _rfs_payload(y, baseline, gbm, fixture.patient, seed=seed + 1),
-        "shuffled_target_control": _rfs_payload(y, baseline, shuffled, fixture.patient, seed=seed + 2),
-        "time_shift_control": _rfs_payload(y, baseline, shifted, fixture.patient, seed=seed + 3),
+        "logistic_full": _rfs_payload(y, gated_baseline, full, fixture.patient, seed=seed),
+        "gbm_full": _rfs_payload(y, gated_baseline, gbm, fixture.patient, seed=seed + 1),
+        "shuffled_target_control": _rfs_payload(y, gated_baseline, shuffled, fixture.patient, seed=seed + 2),
+        "time_shift_control": _rfs_payload(y, gated_baseline, shifted, fixture.patient, seed=seed + 3),
         "nuisance_probes": {
             "patient": _probe_accuracy(z, fixture.patient),
             "site": _probe_accuracy(z, fixture.site),
@@ -252,22 +263,41 @@ def _fit_residual_offset_predict(
     z_test: np.ndarray,
     q0_test: np.ndarray,
     *,
-    steps: int = 500,
-    lr: float = 0.15,
+    steps: int = 40,
     l2: float = 0.2,
 ) -> np.ndarray:
     x_train, x_test = _scaled_design(z_train, z_test)
     w = np.zeros(x_train.shape[1], dtype=np.float64)
     offset = _logit(q0_train)
     for _ in range(steps):
-        w = np.nan_to_num(w, nan=0.0, posinf=20.0, neginf=-20.0)
-        p = _sigmoid_array(np.clip(offset + _safe_matmul(x_train, w), -50.0, 50.0))
+        eta = np.clip(offset + _safe_matmul(x_train, w), -50.0, 50.0)
+        p = _sigmoid_array(eta)
+        weights = np.clip(p * (1.0 - p), 1e-5, None)
         grad = _safe_matmul(x_train.T, p - y_train) / len(y_train)
         grad[1:] += l2 * w[1:]
-        # ponytail: bounded toy optimizer; replace with sklearn if this becomes a model path.
-        grad = np.nan_to_num(np.clip(grad, -5.0, 5.0), nan=0.0, posinf=5.0, neginf=-5.0)
-        w = np.nan_to_num(np.clip(w - lr * grad, -20.0, 20.0), nan=0.0, posinf=20.0, neginf=-20.0)
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            hess = (x_train.T * weights) @ x_train / len(y_train)
+        hess = np.nan_to_num(hess, nan=0.0, posinf=1e6, neginf=-1e6)
+        hess[1:, 1:] += np.eye(x_train.shape[1] - 1) * l2
+        try:
+            step = np.linalg.solve(hess, grad)
+        except np.linalg.LinAlgError:
+            step = np.linalg.pinv(hess) @ grad
+        step = np.nan_to_num(step, nan=0.0, posinf=5.0, neginf=-5.0)
+        old_obj = _offset_logistic_objective(x_train, y_train, offset, w, l2)
+        for scale in (1.0, 0.5, 0.25, 0.125):
+            candidate = w - scale * step
+            if _offset_logistic_objective(x_train, y_train, offset, candidate, l2) <= old_obj:
+                w = candidate
+                break
+        if float(np.linalg.norm(step)) < 1e-6:
+            break
     return _sigmoid_array(np.clip(_logit(q0_test) + _safe_matmul(x_test, w), -50.0, 50.0))
+
+
+def _offset_logistic_objective(x: np.ndarray, y: np.ndarray, offset: np.ndarray, w: np.ndarray, l2: float) -> float:
+    eta = np.clip(offset + _safe_matmul(x, w), -50.0, 50.0)
+    return float(np.mean(np.logaddexp(0.0, eta) - y * eta) + 0.5 * l2 * float(np.dot(w[1:], w[1:])))
 
 
 def _safe_matmul(left: np.ndarray, right: np.ndarray) -> np.ndarray:
@@ -287,8 +317,8 @@ def _scaled_design(x_train_raw: np.ndarray, x_test_raw: np.ndarray) -> tuple[np.
     return x_train, x_test
 
 
-def _rfs_payload(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray, patient: np.ndarray, *, seed: int) -> dict[str, float]:
-    values = _cluster_bootstrap_rfs(y, baseline, pred, patient, seed=seed)
+def _rfs_payload(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray, patient: np.ndarray, *, seed: int, bootstrap_mode: str = "smoke") -> dict[str, float | str]:
+    values = _cluster_bootstrap_rfs(y, baseline, pred, patient, seed=seed, mode=bootstrap_mode)
     values["rfs_bits"] = _rfs_bits(y, baseline, pred)
     values["nll"] = _nll(y, pred)
     return values
@@ -301,8 +331,9 @@ def _cluster_bootstrap_rfs(
     patient: np.ndarray,
     *,
     seed: int,
-    n_boot: int = 300,
-) -> dict[str, float]:
+    mode: str = "smoke",
+) -> dict[str, float | str]:
+    n_boot = 2_000 if mode == "claim" else 300
     rng = np.random.default_rng(seed)
     unique = np.unique(patient)
     samples = []
@@ -310,11 +341,21 @@ def _cluster_bootstrap_rfs(
         chosen = rng.choice(unique, size=len(unique), replace=True)
         idx = np.concatenate([np.flatnonzero(patient == group) for group in chosen])
         samples.append(_rfs_bits(y[idx], baseline[idx], pred[idx]))
-    return {"rfs_ci_low": float(np.percentile(samples, 2.5)), "rfs_ci_high": float(np.percentile(samples, 97.5))}
+    return {
+        "rfs_ci_low": float(np.percentile(samples, 2.5)),
+        "rfs_ci_high": float(np.percentile(samples, 97.5)),
+        "bootstrap_mode": mode,
+        "bootstrap_samples": n_boot,
+    }
 
 
 def _rfs_bits(y: np.ndarray, baseline: np.ndarray, pred: np.ndarray) -> float:
     return float((_nll(y, baseline) - _nll(y, pred)) / np.log(2.0))
+
+
+def _best_baseline(y: np.ndarray, candidates: dict[str, np.ndarray]) -> tuple[str, np.ndarray]:
+    name = min(candidates, key=lambda key: _nll(y, candidates[key]))
+    return name, candidates[name]
 
 
 def _nll(y: np.ndarray, p: np.ndarray) -> float:
@@ -455,6 +496,7 @@ def _fixture_lines(payload: dict[str, Any]) -> str:
             f"- GBM RFS bits: `{payload['gbm_full']['rfs_bits']:.6f}`",
             f"- shuffled-target RFS bits: `{shuffled['rfs_bits']:.6f}`",
             f"- time-shift RFS bits: `{shifted['rfs_bits']:.6f}`",
+            f"- gated baseline: `{payload.get('gated_baseline_name', 'logistic_nuisance')}` NLL `{payload.get('gated_baseline_nll', payload['baseline_nll']):.6f}`",
             f"- baseline/moving/random/alarm NLL: `{payload['baseline_nll']:.6f}` / `{payload['moving_average_nll']:.6f}` / `{payload['random_warning_nll']:.6f}` / `{payload['alarm_time_nll']:.6f}`",
         ]
     )
