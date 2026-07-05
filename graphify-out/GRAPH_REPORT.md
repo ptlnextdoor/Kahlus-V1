@@ -1,11 +1,11 @@
-# Graph Report - /Users/aayu/conductor/workspaces/kahlus-v2/munich  (2026-07-04)
+# Graph Report - kahlus_trial0_m0_clean_worktree  (2026-07-05)
 
 ## Corpus Check
-- 356 files · ~525,910 words
+- 356 files · ~253,935 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3505 nodes · 8619 edges · 110 communities detected
+- 3505 nodes · 8619 edges · 93 communities detected
 - Extraction: 58% EXTRACTED · 42% INFERRED · 0% AMBIGUOUS · INFERRED: 3589 edges (avg confidence: 0.71)
 - Token cost: 0 input · 0 output
 
@@ -56,23 +56,6 @@
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
 - [[_COMMUNITY_Community 63|Community 63]]
 - [[_COMMUNITY_Community 64|Community 64]]
 - [[_COMMUNITY_Community 65|Community 65]]
@@ -135,15 +118,15 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `Outcome` --uses--> `Write the Markdown report + shared-core report/gate JSONs; return their paths.`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v2/munich/src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/surat/src/neurotwin/em/stage0_report.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/surat/src/neurotwin/em/stage0_report.py
 - `Outcome` --uses--> `Operator-recovery falsification diagnostics for the v3 Transition Gym.  PROPOSED`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v2/munich/src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v2/munich/src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v2/munich/src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Recover each hidden operator ``M_k`` from latent transitions and compare to trut`  [INFERRED]
-  /Users/aayu/conductor/workspaces/kahlus-v2/munich/src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 
 ## Communities
 
@@ -330,74 +313,6 @@ Nodes (1): ResearchDockRD9ObservationSplitAuditTests
 ### Community 45 - "Community 45"
 Cohesion: 0.67
 Nodes (1): ResearchDockRD8ObservationSplitReportTests
-
-### Community 46 - "Community 46"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 47 - "Community 47"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 48 - "Community 48"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 49 - "Community 49"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 50 - "Community 50"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 51 - "Community 51"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 52 - "Community 52"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 53 - "Community 53"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 54 - "Community 54"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 55 - "Community 55"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 56 - "Community 56"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 57 - "Community 57"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 58 - "Community 58"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 59 - "Community 59"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 60 - "Community 60"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 61 - "Community 61"
-Cohesion: 1.0
-Nodes (0):
-
-### Community 62 - "Community 62"
-Cohesion: 1.0
-Nodes (0):
 
 ### Community 63 - "Community 63"
 Cohesion: 1.0
@@ -590,39 +505,21 @@ Nodes (1): Narrow loaded YAML at the command boundary after load_config validati
 ## Knowledge Gaps
 - **211 isolated node(s):** `Tests for the KTM A100 evidence intake auditor (synthetic fixtures only).`, `Build a synthetic KTM A100 evidence bundle folder; returns the bundle root.`, `Base (no-ablation) failure-analysis report shape, finiteness, and gate disciplin`, `The ablation matrix loads and smoke-runs, and never earns recovery.`, `Each shipped ablation / Sprint 3C YAML loads into a valid KTMTrainConfig.` (+206 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 46`** (1 nodes): `__init__.py`
+- **Thin community `Community 27`** (25 nodes): `ExpandedCliTests`, `.run_cli()`, `.run_script()`, `.test_bids_prepare_writes_event_manifest_when_derivative_exists()`, `.test_data_and_split_audits()`, `.test_estimate_and_train_dry_run()`, `.test_eval_classification_leakage_demo_warns_on_deprecated_typo_alias()`, `.test_eval_classification_leakage_demo_writes_paper_artifacts()`, `.test_eval_leakage_demo_subcommand_accepts_multi_seed()`, `.test_eval_nfc_synthetic_require_pass_fails_needs_evidence()`, `.test_eval_nfc_synthetic_suite_honors_multiple_seeds()`, `.test_eval_nfc_synthetic_suite_writes_artifacts()`, `.test_eval_rejects_options_before_real_subcommand()`, `.test_make_figures_treats_malformed_gate_as_absent()`, `.test_make_figures_treats_malformed_summary_as_absent()`, `.test_make_tables_treats_malformed_gate_as_plumbing()`, `.test_make_tables_treats_malformed_summary_as_plumbing()`, `.test_report_compare_surfaces_malformed_json_artifact()`, `.test_report_compare_writes_aggregate_artifacts()`, `.test_report_run_dir()`, `.test_report_run_dir_keeps_summary_claim_source_of_truth_with_valid_gate()`, `.test_report_run_dir_rejects_invalid_colocated_gate()`, `.test_report_run_dir_uses_colocated_prepared_baseline_suite()`, `_valid_paper_mode_gate()`, `test_expanded.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (1 nodes): `__init__.py`
+- **Thin community `Community 30`** (18 nodes): `ArtifactDocsContractsTests`, `._run_docker_launcher_dry_run()`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_runbook_separates_fast_and_heavy_lanes()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_agent_deploy_docs_and_dockerfile_are_6gpu_first()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_docker_6gpu_runner_contains_required_sequence()`, `.test_docker_launcher_default_and_diagnostic_cuda_visible_devices()`, `.test_docker_launcher_honors_explicit_container_cuda_visible_devices()`, `.test_docker_launcher_uses_container_local_cuda_visible_devices()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_runpod_rehearsal_is_budget_gated()`, `.test_tribe_style_does_not_become_required_dependency()`, `test_docs_contracts.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (1 nodes): `__init__.py`
+- **Thin community `Community 39`** (6 nodes): `_copy_current_worktree_to_clean_git()`, `KahlusA100SevenGpuHandoffTests`, `.test_package_contains_7x_a100_handoff_contract_and_runner()`, `.test_package_refuses_dirty_worktree()`, `.test_package_refuses_tracked_symlink_in_runner_source()`, `test_kahlus_a100_7x_handoff.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (1 nodes): `__init__.py`
+- **Thin community `Community 41`** (5 nodes): `KtmHandoffTests`, `.setUp()`, `.test_evidence_bundle_includes_run_files_excludes_secrets()`, `.test_handoff_zip_shape_and_runner_checksum()`, `test_ktm_handoff.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (1 nodes): `__init__.py`
+- **Thin community `Community 42`** (4 nodes): `ResearchDockRD11AggregateReportArtifactIndexTests`, `.test_aggregate_report_indexes_observation_split_audit_artifact()`, `.test_aggregate_report_indexes_optional_researchdock_artifacts()`, `test_rd11_aggregate_report_artifact_index.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (1 nodes): `__init__.py`
+- **Thin community `Community 43`** (3 nodes): `ResearchDockRD7ObservationMissingModalityReportTests`, `.test_observation_report_lists_missing_modality_reason_counts()`, `test_rd7_observation_missing_modality_report.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (1 nodes): `__init__.py`
+- **Thin community `Community 44`** (3 nodes): `ResearchDockRD9ObservationSplitAuditTests`, `.test_observation_script_writes_split_audit_sidecar()`, `test_rd9_observation_split_audit.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 56`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (1 nodes): `__init__.py`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `Package.swift`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (1 nodes): `paper_mode.py`
+- **Thin community `Community 45`** (3 nodes): `ResearchDockRD8ObservationSplitReportTests`, `.test_observation_report_lists_subject_held_out_split_summary()`, `test_rd8_observation_split_report.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 63`** (1 nodes): `Load a local NeuroTwin TRIBE-style config or seeded defaults.          No pretra`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -723,11 +620,11 @@ Nodes (1): Narrow loaded YAML at the command boundary after load_config validati
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Data schemas, split manifests, and leakage guards.` connect `Community 9` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 33`, `Community 7`, `Community 8`, `Community 13`, `Community 17`, `Community 19`, `Community 23`?**
-  _High betweenness centrality (0.080) - this node is a cross-community bridge._
+  _High betweenness centrality (0.087) - this node is a cross-community bridge._
 - **Why does `train_ktm()` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 6`, `Community 12`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
 - **Why does `EEGV1SprintATests` connect `Community 10` to `Community 1`, `Community 20`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `ValueError` (e.g. with `_parse_seeds()` and `_require_bundle_rel()`) actually correct?**
   _`ValueError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 91 inferred relationships involving `NumpyRidgeBaseline` (e.g. with `DualFieldTests` and `BaselinesAndArchitectureTests`) actually correct?**

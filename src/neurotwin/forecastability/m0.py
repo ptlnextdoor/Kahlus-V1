@@ -108,7 +108,7 @@ def _freeze_manifests(out: Path, records: tuple[RecordingRecord, ...], *, seed: 
     for name, manifest in manifests.items():
         path = out / f"{name}.json"
         _write_json(path, _manifest_payload(manifest))
-        index[name] = {"path": str(path), "sha256": _sha256_file(path)}
+        index[name] = {"path": f"manifests/{path.name}", "sha256": _sha256_file(path)}
     return index
 
 

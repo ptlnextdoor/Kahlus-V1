@@ -119,10 +119,11 @@ def chbmit_source_audit(root: str | Path | None = None) -> dict[str, Any]:
         records_count: int | None = len(fetch_chbmit_seizure_records())
     except OSError:
         records_count = None
-    recordings = _local_chbmit_recordings(Path(root))
+    root_path = Path(root)
+    recordings = _local_chbmit_recordings(root_path)
     return {
         "status": "local_manifest",
-        "root": str(root),
+        "local_cache": root_path.name,
         "official_records_with_seizures_count": records_count,
         "local_seizure_recordings": len(recordings),
         "local_event_patients": len({recording.subject for recording in recordings}),
@@ -143,7 +144,7 @@ def tusz_source_audit(root: str | Path | None = None) -> dict[str, Any]:
     status = "local_manifest" if recordings and not missing and not _is_relative_to(root_path, repo) else "local_manifest_failed"
     return {
         "status": status,
-        "root": str(root_path),
+        "local_cache": root_path.name,
         "url": TUSZ_AUDIT_URL,
         "local_seizure_recordings": len(recordings),
         "local_event_patients": len({recording.subject for recording in recordings}),
@@ -208,7 +209,7 @@ def _run_chbmit_smoke(root: Path, *, seed: int) -> dict[str, Any]:
 def _run_tusz_external(root: Path, *, seed: int) -> dict[str, Any]:
     root = root.expanduser().resolve()
     if _is_relative_to(root, Path.cwd().resolve()):
-        return {"status": "raw_tusz_root_inside_repo", "root": str(root)}
+        return {"status": "raw_tusz_root_inside_repo", "local_cache": root.name}
     recordings, missing = _local_tusz_recordings(root)
     if missing:
         return {"status": "missing_tusz_annotations", "missing_annotations": [str(path) for path in missing[:25]]}

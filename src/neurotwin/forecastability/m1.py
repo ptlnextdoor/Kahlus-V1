@@ -220,8 +220,8 @@ def _crossfit_residual_proba(
         elif control == "time_shift":
             y_train = _shift_train_labels(y_train, groups[train_idx], shift=9)
         nuisance = _logistic_factory()
-        q0_train = _fit_predict(nuisance, b[train_idx], y[train_idx], b[train_idx])
-        q0_test = _fit_predict(nuisance, b[train_idx], y[train_idx], b[test_idx])
+        q0_train = _fit_predict(nuisance, b[train_idx], y_train, b[train_idx])
+        q0_test = _fit_predict(nuisance, b[train_idx], y_train, b[test_idx])
         pred[test_idx] = _fit_residual_offset_predict(z[train_idx], y_train, q0_train, z[test_idx], q0_test)
     return np.clip(pred, 1e-5, 1.0 - 1e-5)
 
