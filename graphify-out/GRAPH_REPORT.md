@@ -118,15 +118,15 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `Outcome` --uses--> `Write the Markdown report + shared-core report/gate JSONs; return their paths.`  [INFERRED]
-  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/surat/src/neurotwin/em/stage0_report.py
+  src/neurotwin/falsification.py → src/neurotwin/em/stage0_report.py
 - `Outcome` --uses--> `Operator-recovery falsification diagnostics for the v3 Transition Gym.  PROPOSED`  [INFERRED]
-  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Recover each hidden operator ``M_k`` from latent transitions and compare to trut`  [INFERRED]
-  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
 
 ## Communities
 
