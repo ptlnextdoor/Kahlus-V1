@@ -11,6 +11,8 @@ from neurotwin.forecastability.m2 import _as_transition_fixture, load_sleep_edf_
 
 
 DEFAULT_HORIZONS = (1, 2, 3)
+NUISANCE_PROBE_KEYS = ("patient", "site", "time_bucket", "session")
+NUISANCE_PROBE_MARGIN = 0.20
 
 
 def run_m4_gate(
@@ -68,6 +70,7 @@ def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], see
     rows = []
     for offset, horizon in enumerate(horizons):
         payload = _run_fixture(_with_labels(fixture, labels_by_horizon[horizon]), seed=seed + offset)
+        nuisance_probes = payload.get("nuisance_probes", {})
         rows.append(
             {
                 "horizon": horizon,
@@ -81,6 +84,11 @@ def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], see
                 "event_patients": payload["event_patients"],
                 "shuffled_rfs_bits": payload["shuffled_target_control"]["rfs_bits"],
                 "time_shift_rfs_bits": payload["time_shift_control"]["rfs_bits"],
+                "nuisance_probes": nuisance_probes,
+                "nuisance_probe_failures": _nuisance_probe_failures(
+                    nuisance_probes,
+                    prefix=f"horizon_{horizon}",
+                ),
             }
         )
     positive = [max(0.0, float(row["rfs_bits"])) for row in rows]
@@ -123,11 +131,46 @@ def _known_curve_passes(payload: dict[str, Any]) -> bool:
         and first["rfs_ci_low"] > 0.0
         and first["shuffled_rfs_bits"] < first["rfs_bits"] * 0.5
         and first["time_shift_rfs_bits"] < first["rfs_bits"] * 0.5
+        and _nuisance_probes_pass(payload)
     )
 
 
 def _null_curve_passes(payload: dict[str, Any]) -> bool:
-    return bool(all(abs(row["rfs_bits"]) < 0.03 and row["rfs_ci_low"] <= 0.0 <= row["rfs_ci_high"] for row in payload["curve"]))
+    return bool(
+        all(
+            abs(row["rfs_bits"]) < 0.03
+            and row["rfs_ci_low"] <= 0.0 <= row["rfs_ci_high"]
+            for row in payload["curve"]
+        )
+        and _nuisance_probes_pass(payload)
+    )
+
+
+def _nuisance_probes_pass(payload: dict[str, Any]) -> bool:
+    rows = payload.get("curve", [])
+    return bool(rows) and all(not row.get("nuisance_probe_failures", ["nuisance_probe_missing"]) for row in rows)
+
+
+def _nuisance_probe_failures(probes: Any, *, prefix: str) -> list[str]:
+    if not isinstance(probes, dict):
+        probes = {}
+    failures: list[str] = []
+    for key in NUISANCE_PROBE_KEYS:
+        probe = probes.get(key)
+        if not isinstance(probe, dict):
+            failures.append(f"{prefix}_nuisance_probe_{key}_missing")
+            continue
+        try:
+            accuracy = float(probe["accuracy"])
+            chance = float(probe["chance"])
+        except (KeyError, TypeError, ValueError):
+            failures.append(f"{prefix}_nuisance_probe_{key}_invalid")
+            continue
+        if not np.isfinite(accuracy) or not np.isfinite(chance):
+            failures.append(f"{prefix}_nuisance_probe_{key}_nonfinite")
+        elif chance < 0.95 and accuracy > chance + NUISANCE_PROBE_MARGIN:
+            failures.append(f"{prefix}_nuisance_probe_{key}_above_threshold")
+    return failures
 
 
 def _sleep_curve_failures(payload: dict[str, Any]) -> list[str]:
@@ -143,6 +186,16 @@ def _sleep_curve_failures(payload: dict[str, Any]) -> list[str]:
         failures.append("sleep_edf_shuffled_control_too_close")
     if first["time_shift_rfs_bits"] >= first["rfs_bits"] * 0.5:
         failures.append("sleep_edf_time_shift_control_too_close")
+    curve = payload.get("curve", [])
+    if not curve:
+        failures.append("sleep_edf_nuisance_probe_missing")
+    for row in curve:
+        horizon = row.get("horizon", "unknown")
+        for failure in row.get("nuisance_probe_failures", ["nuisance_probe_missing"]):
+            if failure.startswith("horizon_"):
+                failures.append(f"sleep_edf_{failure}")
+            else:
+                failures.append(f"sleep_edf_horizon_{horizon}_{failure}")
     return failures
 
 
@@ -163,6 +216,10 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         "",
         "Leakage-safe horizon-wise label curve: labels are shifted within each patient only, then RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline. This is not a censoring-aware survival model.",
         "",
+        "Nuisance probes are reported for every M4 horizon and are claim blockers "
+        f"if accuracy exceeds chance + {NUISANCE_PROBE_MARGIN:.2f}; "
+        "passing probes do not unlock any clinical, causal, or model-superiority claim.",
+        "",
         _curve_section("Synthetic Known Signal", gate["synthetic_known_signal"]),
         "",
         _curve_section("Synthetic Null", gate["synthetic_null"]),
@@ -179,15 +236,38 @@ def _curve_section(title: str, payload: dict[str, Any]) -> str:
     lines = [
         f"## {title}",
         "",
-        "| horizon | RFS bits | CI low | CI high | events | event patients | gated baseline | shuffle | time-shift |",
-        "|---:|---:|---:|---:|---:|---:|---|---:|---:|",
+        "| horizon | RFS bits | CI low | CI high | events | event patients | gated baseline | shuffle | time-shift | "
+        "nuisance probes |",
+        "|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
     ]
     for row in payload["curve"]:
         lines.append(
-            "| {horizon} | {rfs_bits:.6f} | {rfs_ci_low:.6f} | {rfs_ci_high:.6f} | {positive_events} | {event_patients} | {gated_baseline_name} | {shuffled_rfs_bits:.6f} | {time_shift_rfs_bits:.6f} |".format(
-                **row
+            "| {horizon} | {rfs_bits:.6f} | {rfs_ci_low:.6f} | {rfs_ci_high:.6f} | {positive_events} | "
+            "{event_patients} | {gated_baseline_name} | {shuffled_rfs_bits:.6f} | {time_shift_rfs_bits:.6f} | "
+            "{probe_summary} |".format(
+                probe_summary=_format_probe_summary(row),
+                **row,
             )
         )
     lines.append("")
     lines.append(f"- positive-RFS AUC: `{payload['auc_positive_rfs_bits']:.6f}` bits")
     return "\n".join(lines)
+
+
+def _format_probe_summary(row: dict[str, Any]) -> str:
+    failures = row.get("nuisance_probe_failures", ["nuisance_probe_missing"])
+    if failures:
+        return ", ".join(f"`{failure}`" for failure in failures)
+    probes = row.get("nuisance_probes", {})
+    if not isinstance(probes, dict):
+        probes = {}
+    values = []
+    for key in NUISANCE_PROBE_KEYS:
+        probe = probes.get(key, {})
+        try:
+            values.append(
+                f"{key}={float(probe['accuracy']):.3f}/{float(probe['chance']):.3f}"
+            )
+        except (KeyError, TypeError, ValueError):
+            values.append(f"{key}=missing")
+    return "passed (" + ", ".join(values) + ")"
