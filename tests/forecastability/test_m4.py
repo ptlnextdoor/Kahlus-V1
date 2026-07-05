@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
+from neurotwin.forecastability.m1 import TransitionFixture, make_transition_fixture
 from neurotwin.forecastability.m4 import (
     NUISANCE_PROBE_KEYS,
+    _curve_payload,
+    _filter_fixture,
     _known_curve_passes,
     _nuisance_probe_failures,
     _sleep_curve_failures,
     patient_horizon_labels,
+    patient_horizon_valid_masks,
     run_m4_gate,
 )
 
@@ -17,8 +24,32 @@ from neurotwin.forecastability.m4 import (
 class ForecastabilityM4Tests(unittest.TestCase):
     def test_patient_horizon_labels_do_not_cross_patients(self) -> None:
         labels = patient_horizon_labels([0, 1, 0, 1], [0, 0, 1, 1], horizons=(1, 2))
+        masks = patient_horizon_valid_masks([0, 1, 0, 1], [0, 0, 1, 1], horizons=(1, 2))
         self.assertEqual(labels[1].tolist(), [0, 1, 0, 1])
         self.assertEqual(labels[2].tolist(), [1, 0, 1, 0])
+        self.assertEqual(masks[1].tolist(), [True, True, True, True])
+        self.assertEqual(masks[2].tolist(), [True, False, True, False])
+
+    def test_filter_fixture_preserves_row_alignment(self) -> None:
+        fixture = TransitionFixture(
+            windows=np.arange(24, dtype=np.float32).reshape(4, 3, 2),
+            nuisance=np.arange(12, dtype=np.float32).reshape(4, 3),
+            y=np.asarray([0, 1, 0, 1], dtype=np.int64),
+            patient=np.asarray([10, 10, 20, 20], dtype=np.int64),
+            site=np.asarray([1, 1, 2, 2], dtype=np.int64),
+            time_bucket=np.asarray([0, 1, 2, 3], dtype=np.int64),
+            session=np.asarray([0, 0, 1, 1], dtype=np.int64),
+        )
+
+        filtered = _filter_fixture(fixture, np.asarray([True, False, True, False]))
+
+        self.assertEqual(filtered.y.tolist(), [0, 0])
+        self.assertEqual(filtered.patient.tolist(), [10, 20])
+        self.assertEqual(filtered.site.tolist(), [1, 2])
+        self.assertEqual(filtered.time_bucket.tolist(), [0, 2])
+        self.assertEqual(filtered.session.tolist(), [0, 1])
+        self.assertEqual(filtered.windows.shape, (2, 3, 2))
+        self.assertEqual(filtered.nuisance.shape, (2, 3))
 
     def test_m4_synthetic_curve_passes_without_sleep_edf_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -31,6 +62,24 @@ class ForecastabilityM4Tests(unittest.TestCase):
         self.assertGreater(first["rfs_ci_low"], 0.0)
         self.assertEqual(set(first["nuisance_probes"]), set(NUISANCE_PROBE_KEYS))
         self.assertEqual(first["nuisance_probe_failures"], [])
+        rows = gate["synthetic_known_signal"]["curve"]
+        self.assertEqual(rows[0]["invalid_terminal_rows"], 0)
+        self.assertEqual(rows[1]["invalid_terminal_rows"], 12)
+        self.assertEqual(rows[2]["invalid_terminal_rows"], 24)
+        for row in rows:
+            self.assertEqual(row["valid_rows"] + row["invalid_terminal_rows"], row["total_rows"])
+            self.assertEqual(row["evaluated_rows"], row["valid_rows"])
+
+    def test_m4_rejects_horizon_without_valid_future_labels(self) -> None:
+        fixture = make_transition_fixture(
+            seed=5,
+            residual_signal=True,
+            n_patients=4,
+            steps_per_patient=2,
+        )
+
+        with self.assertRaisesRegex(ValueError, "no valid within-patient future labels"):
+            _curve_payload(fixture, horizons=(3,), seed=5)
 
     def test_m4_nuisance_probe_failures_are_claim_blockers(self) -> None:
         probes = {
@@ -113,8 +162,26 @@ class ForecastabilityM4Tests(unittest.TestCase):
             report = Path(tmp, "M4_EVIDENCE_REPORT.md").read_text(encoding="utf-8")
 
         self.assertIn("Nuisance probes are reported for every M4 horizon", report)
-        self.assertIn("| horizon | RFS bits | CI low | CI high |", report)
+        self.assertIn("| horizon | total rows | valid rows | evaluated rows | invalid terminal |", report)
         self.assertIn("nuisance probes", report)
+        self.assertIn("terminal rows without a within-patient future label are excluded", report)
+
+    def test_committed_m4_artifact_reports_current_row_accounting(self) -> None:
+        root = Path(__file__).parents[2] / "artifacts" / "forecastability_trial0_m4"
+        gate = json.loads((root / "m4_gate_report.json").read_text(encoding="utf-8"))
+        report = (root / "M4_EVIDENCE_REPORT.md").read_text(encoding="utf-8")
+
+        self.assertEqual(gate["sleep_edf_smoke"]["status"], "not_run_no_local_sleep_edf_root")
+        self.assertIn("| horizon | total rows | valid rows | evaluated rows | invalid terminal |", report)
+        self.assertIn("nuisance_probes", json.dumps(gate, sort_keys=True))
+        for section in ("synthetic_known_signal", "synthetic_null"):
+            for row in gate[section]["curve"]:
+                self.assertEqual(row["valid_rows"] + row["invalid_terminal_rows"], row["total_rows"])
+                self.assertEqual(row["evaluated_rows"], row["valid_rows"])
+                self.assertEqual(
+                    row["horizon_label_policy"],
+                    "drop_terminal_rows_without_within_patient_future_label",
+                )
 
 
 if __name__ == "__main__":

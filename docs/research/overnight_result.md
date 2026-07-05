@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Kahlus now has a stricter RFS gate and a new M4 forecastability-vs-horizon benchmark lane. The CHB-MIT smoke no longer shows positive forecastability once the gate uses the strongest trivial baseline: moving average wins, and the primary RFS is `-0.388076` bits. The new M4 curve passes on synthetic known/null fixtures and runs on the local Sleep-EDF smoke path, but the real smoke gate fails honestly because it has only 6 event-patients and the time-shift control is too close.
+Kahlus now has a stricter RFS gate and a new M4 forecastability-vs-horizon benchmark lane. The CHB-MIT smoke no longer shows positive forecastability once the gate uses the strongest trivial baseline: moving average wins, and the primary RFS is `-0.388076` bits. The M4 curve passes on synthetic known/null fixtures. The current committed M4 artifact was regenerated without a local Sleep-EDF root, so Sleep-EDF remains not run in the artifact rather than being promoted from stale local evidence.
 
 ## Precise Claim
 
@@ -24,7 +24,7 @@ With oracle nuisance and full predictors this is the conditional information gai
 I(Y_{t+h}; Z_t | B_t)
 ```
 
-The implementation uses patient-safe horizon labels: for each patient group, labels are shifted only inside that group. No last row from one patient can become the future label for the next patient.
+The implementation uses patient-safe horizon labels: for each patient group, labels are shifted only inside that group. No last row from one patient can become the future label for the next patient, and terminal rows without a within-patient future label are excluded before fitting/scoring for that horizon.
 
 ## Evidence
 
@@ -46,22 +46,24 @@ M3 after hardened gated baseline:
 M4 synthetic known signal:
 
 - horizon 1 RFS: `0.219577` bits, CI `[0.198156, 0.243070]`
-- horizon 2 RFS: `0.132488` bits, CI `[0.110707, 0.157288]`
-- horizon 3 RFS: `0.081924` bits, CI `[0.061605, 0.105478]`
-- positive-RFS AUC: `0.144663` bits
+- horizon 2 RFS: `0.133120` bits, CI `[0.113036, 0.156743]`
+- horizon 3 RFS: `0.082506` bits, CI `[0.063052, 0.104817]`
+- positive-RFS AUC: `0.145068` bits
+- valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
 
 M4 synthetic null:
 
-- horizon RFS values: `0.000732`, `-0.001044`, `0.000503`
+- horizon RFS values: `0.000732`, `-0.001066`, `0.000518`
 - all CIs straddle zero
-- positive-RFS AUC: `0.000412` bits
+- positive-RFS AUC: `0.000417` bits
+- valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
 
 M4 Sleep-EDF smoke:
 
-- status: `completed_sleep_edf_smoke`
+- status: `not_run_no_local_sleep_edf_root`
 - gate: `False`
-- failures: `sleep_edf_underpowered_event_patients`, `sleep_edf_time_shift_control_too_close`
-- horizon 1 RFS: `0.007443` bits, but time-shift RFS is `0.008158`
+- failures: `sleep_edf_smoke_not_completed`
+- current artifact does not include Sleep-EDF curve rows because the local subset root was unavailable during artifact refresh
 
 ## Implementation Notes
 
@@ -69,13 +71,14 @@ M4 Sleep-EDF smoke:
 - RFS payloads now use the best nuisance/trivial baseline among logistic nuisance, moving average, random warning, and alarm-time surrogate.
 - Added `src/neurotwin/forecastability/m4.py`.
 - Added `tests/forecastability/test_m4.py`.
+- M4 now reports nuisance probes per horizon and excludes terminal rows without a within-patient future label before fitting/scoring.
 - Added an M3 artifact freshness test that recomputes failures from current gate logic.
 - Added `.github/workflows/ci.yml`.
 
 ## Limitations
 
 - M4 is a benchmark-method contribution, not a powered biological result.
-- Sleep-EDF smoke has only 6 event-patients here.
+- Sleep-EDF smoke is not present in the current committed M4 artifact because no local Sleep-EDF root was available at refresh time.
 - CHB-MIT remains a development smoke path and fails after the stronger baseline.
 - TUSZ external validation was not run because no local out-of-repo TUSZ root is available.
 - Bootstrap remains percentile-based and small in the current shared helper; BCa and larger `n_boot` remain future hardening.

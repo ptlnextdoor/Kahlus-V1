@@ -65,15 +65,51 @@ def patient_horizon_labels(events: np.ndarray, patient: np.ndarray, *, horizons:
     return labels
 
 
+def patient_horizon_valid_masks(
+    events: np.ndarray,
+    patient: np.ndarray,
+    *,
+    horizons: tuple[int, ...],
+) -> dict[int, np.ndarray]:
+    y = np.asarray(events, dtype=np.int64)
+    groups = np.asarray(patient)
+    if len(y) != len(groups):
+        raise ValueError("events and patient must have the same length")
+    masks = {horizon: np.zeros(len(y), dtype=bool) for horizon in horizons}
+    for horizon in horizons:
+        if horizon <= 0:
+            raise ValueError("horizons must be positive")
+    for group in np.unique(groups):
+        idx = np.flatnonzero(groups == group)
+        for horizon in horizons:
+            valid_count = len(idx) - max(0, horizon - 1)
+            if valid_count <= 0:
+                continue
+            masks[horizon][idx[:valid_count]] = True
+    return masks
+
+
 def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], seed: int) -> dict[str, Any]:
     labels_by_horizon = patient_horizon_labels(fixture.y, fixture.patient, horizons=horizons)
+    valid_masks_by_horizon = patient_horizon_valid_masks(fixture.y, fixture.patient, horizons=horizons)
+    total_rows = int(len(fixture.y))
     rows = []
     for offset, horizon in enumerate(horizons):
-        payload = _run_fixture(_with_labels(fixture, labels_by_horizon[horizon]), seed=seed + offset)
+        valid_mask = valid_masks_by_horizon[horizon]
+        valid_windows = int(np.sum(valid_mask))
+        if valid_windows == 0:
+            raise ValueError(f"horizon {horizon} has no valid within-patient future labels")
+        horizon_fixture = _filter_fixture(_with_labels(fixture, labels_by_horizon[horizon]), valid_mask)
+        payload = _run_fixture(horizon_fixture, seed=seed + offset)
         nuisance_probes = payload.get("nuisance_probes", {})
         rows.append(
             {
                 "horizon": horizon,
+                "total_rows": total_rows,
+                "valid_rows": valid_windows,
+                "evaluated_rows": payload["n"],
+                "invalid_terminal_rows": total_rows - valid_windows,
+                "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
                 "rfs_bits": payload["logistic_full"]["rfs_bits"],
                 "rfs_ci_low": payload["logistic_full"]["rfs_ci_low"],
                 "rfs_ci_high": payload["logistic_full"]["rfs_ci_high"],
@@ -119,6 +155,21 @@ def _with_labels(fixture: TransitionFixture, y: np.ndarray) -> TransitionFixture
         site=fixture.site,
         time_bucket=fixture.time_bucket,
         session=fixture.session,
+    )
+
+
+def _filter_fixture(fixture: TransitionFixture, mask: np.ndarray) -> TransitionFixture:
+    keep = np.asarray(mask, dtype=bool)
+    if len(keep) != len(fixture.y):
+        raise ValueError("mask and fixture must have the same length")
+    return TransitionFixture(
+        windows=fixture.windows[keep],
+        nuisance=fixture.nuisance[keep],
+        y=fixture.y[keep],
+        patient=fixture.patient[keep],
+        site=fixture.site[keep],
+        time_bucket=fixture.time_bucket[keep],
+        session=fixture.session[keep],
     )
 
 
@@ -214,7 +265,10 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         "",
         "## Method",
         "",
-        "Leakage-safe horizon-wise label curve: labels are shifted within each patient only, then RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline. This is not a censoring-aware survival model.",
+        "Leakage-safe horizon-wise label curve: labels are shifted within each patient only, "
+        "terminal rows without a within-patient future label are excluded before fitting, then "
+        "RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline. "
+        "This is not a censoring-aware survival model.",
         "",
         "Nuisance probes are reported for every M4 horizon and are claim blockers "
         f"if accuracy exceeds chance + {NUISANCE_PROBE_MARGIN:.2f}; "
@@ -236,14 +290,18 @@ def _curve_section(title: str, payload: dict[str, Any]) -> str:
     lines = [
         f"## {title}",
         "",
-        "| horizon | RFS bits | CI low | CI high | events | event patients | gated baseline | shuffle | time-shift | "
+        "| horizon | total rows | valid rows | evaluated rows | invalid terminal | RFS bits | CI low | CI high | events | "
+        "event patients | gated baseline | shuffle | time-shift | "
         "nuisance probes |",
-        "|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
     ]
     for row in payload["curve"]:
         lines.append(
-            "| {horizon} | {rfs_bits:.6f} | {rfs_ci_low:.6f} | {rfs_ci_high:.6f} | {positive_events} | "
-            "{event_patients} | {gated_baseline_name} | {shuffled_rfs_bits:.6f} | {time_shift_rfs_bits:.6f} | "
+            "| {horizon} | {total_rows} | {valid_rows} | {evaluated_rows} | "
+            "{invalid_terminal_rows} | {rfs_bits:.6f} | {rfs_ci_low:.6f} | "
+            "{rfs_ci_high:.6f} | {positive_events} | "
+            "{event_patients} | {gated_baseline_name} | {shuffled_rfs_bits:.6f} | "
+            "{time_shift_rfs_bits:.6f} | "
             "{probe_summary} |".format(
                 probe_summary=_format_probe_summary(row),
                 **row,
