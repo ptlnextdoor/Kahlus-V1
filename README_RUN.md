@@ -13,15 +13,15 @@ Non-purpose: this package does not prove model superiority, paper readiness, cli
 
 ## Krish Cluster Contract
 
-Krish's partner requirements target a Chapman node with up to 8x A100 80GB GPUs. This runner uses at most 6 GPUs: use exactly 6x A100 80GB GPUs for the heavy lane, leave the seventh/eighth GPUs unused, and expose them inside Docker as `cuda:0` through `cuda:5`.
+Krish's partner requirements target a Chapman node with 7x A100 80GB GPUs. This runner uses at most 7 GPUs: use exactly 7x A100 80GB GPUs for the heavy lane, and expose them inside Docker as `cuda:0` through `cuda:6`.
 
-The deep lane target is 2 days: request `48:00:00` wall time, set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, set `A100_RUN_ID=moabb_a100`, and run the long `moabb_a100` config with `steps: 50000` (50,000 configured steps). The short smoke/synthetic/debug jobs are expected to finish much sooner. Short diagnostic runs ending in a few hours are normal and do not mean the 48-hour deep lane was exercised.
+The deep lane target is 12 hours: request `12:00:00` wall time, set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, set `A100_RUN_ID=moabb_a100`, and run the long `moabb_a100` config with `steps: 50000` (50,000 configured steps). The short smoke/synthetic/debug jobs are expected to finish much sooner. Short diagnostic runs ending in a few hours are normal and do not mean the 12-hour deep lane was exercised.
 
-Docker does not control Chapman queue duration. Run Docker inside a 48-hour scheduler allocation when using the full lane, or use the Slurm heavy follow-up with `--time=48:00:00`. There is no artificial per-GPU VRAM cap in the runner; allocate 6x A100 80GB GPUs and let PyTorch use the available VRAM.
+Docker does not control Chapman queue duration. Run Docker inside a 12-hour scheduler allocation when using the full lane, or use the Slurm heavy follow-up with `--time=12:00:00`. There is no artificial per-GPU VRAM cap in the runner; allocate 7x A100 80GB GPUs and let PyTorch use the available VRAM.
 
 ## Chapman Queue Order
 
-Use the cluster in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full six-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
+Use the cluster in two phases. Phase 1 uses separate one-GPU evidence jobs. Queue the Phase 1 jobs at the same time when Chapman scheduling allows; if the scheduler serializes them, they must still be submitted as independent one-GPU jobs before Phase 2. Phase 2 is one full seven-GPU DDP training job and must wait until Phase 1 artifacts are healthy.
 
 Phase 1 one-GPU evidence lane:
 
@@ -32,27 +32,27 @@ parallel 1-GPU job: identity-probe seeds 0/1/2
 parallel 1-GPU job or post-evidence step: model-card and artifact generation
 ```
 
-Do not reserve six GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs have completed and their artifacts are present or explicitly reported unavailable.
+Do not reserve seven GPUs for Phase 1. Do not start Phase 2 until all Phase 1 jobs have completed and their artifacts are present or explicitly reported unavailable.
 
 Phase 2 full model lane:
 
 ```text
-exactly 6x A100 80GB GPUs
-use 6 of the available 8x A100 80GB GPUs
-world_size=6
-GPU_COUNT=6
-NPROC_PER_NODE=6
-HOST_GPU_IDS=<six comma-separated host GPU ids>
-CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
-wall_time=48:00:00
+exactly 7x A100 80GB GPUs
+use 7 of the available 7x A100 80GB GPUs
+world_size=7
+GPU_COUNT=7
+NPROC_PER_NODE=7
+HOST_GPU_IDS=<seven comma-separated host GPU ids>
+CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6
+wall_time=12:00:00
 config=configs/train/moabb_a100.yaml
 steps=50000
 bf16 precision
 selected-best checkpoint semantics included
-torchrun --standalone --nproc_per_node=6
+torchrun --standalone --nproc_per_node=7
 ```
 
-Do not request or use 7 or 8 GPUs for this handoff. Chapman may have up to 8 A100s, but this runner is contracted for one-GPU evidence jobs first and exactly one six-GPU DDP full run afterward.
+Use exactly 7 GPUs for the full DDP lane. Do not relabel this as 8xA100, and do not silently downgrade to one GPU.
 
 ## Operator Workflow
 
@@ -66,32 +66,32 @@ cat COMMIT_HASH.txt
 sha256sum -c SHA256SUMS
 ```
 
-### Primary Docker 6-GPU Path
+### Primary Docker 7-GPU Path
 
-Use this path when the machine has Docker with NVIDIA GPU support. It does not require `conda` or `sbatch`. The launcher defaults to host GPUs `0,1,2,3,4,5`, maps them to container devices `cuda:0` through `cuda:5`, probes CUDA inside the container, and refuses to train unless exactly six CUDA devices are visible.
+Use this path when the machine has Docker with NVIDIA GPU support. It does not require `conda` or `sbatch`. The launcher defaults to host GPUs `0,1,2,3,4,5,6`, maps them to container devices `cuda:0` through `cuda:6`, probes CUDA inside the container, and refuses to train unless exactly seven CUDA devices are visible.
 
 ```bash
-export HOST_GPU_IDS=0,1,2,3,4,5
-export GPU_COUNT=6
-export NPROC_PER_NODE=6
-export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export HOST_GPU_IDS=0,1,2,3,4,5,6
+export GPU_COUNT=7
+export NPROC_PER_NODE=7
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6
 export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
 export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
+bash scripts/run_docker_7gpu.sh "$PERSISTENT_ROOT"
 ```
 
-The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`. Do not bypass `scripts/run_docker_6gpu.sh` for the full Docker run; it owns the log and evidence metadata contract. Do not change the full lane to seven or eight GPUs.
+The launcher auto-generates `DOCKER_LOG_PATH`, writes it to `$PERSISTENT_ROOT/docker_run.env`, and tees output to a current-run log named `neurotwin-a100-docker-<generated>.log`. Do not bypass `scripts/run_docker_7gpu.sh` for the full Docker run; it owns the log and evidence metadata contract. Do not change the full lane to eight GPUs or silently downgrade it to one GPU.
 
 An automated deployment agent should follow `README_AGENT_DEPLOY.md`. The runner also includes `Dockerfile.a100` as a dependency/runtime image helper. It does not hide source code; this runner still ships the runtime Python source required to execute.
 
-Six-GPU Docker preflight:
+Seven-GPU Docker preflight:
 
 ```bash
-HOST_GPU_IDS=0,1,2,3,4,5
+HOST_GPU_IDS=0,1,2,3,4,5,6
 docker run --rm --gpus "\"device=${HOST_GPU_IDS}\"" \
   --ipc=host --shm-size=64g \
-  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 \
+  -e CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 \
   pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel \
   bash -lc 'nvidia-smi && python - <<'"'"'PY'"'"'
 import torch
@@ -100,15 +100,15 @@ print("cuda", torch.version.cuda)
 print("cuda_available", torch.cuda.is_available())
 print("device_count", torch.cuda.device_count())
 assert torch.cuda.is_available()
-assert torch.cuda.device_count() == 6
+assert torch.cuda.device_count() == 7
 for i in range(torch.cuda.device_count()):
     print(i, torch.cuda.get_device_name(i))
 PY'
 ```
 
-The exact inside-container sequence lives in `scripts/docker_a100_inner.sh`; deployment-agent details live in `README_AGENT_DEPLOY.md`. The full Docker run command remains `bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"`, which writes `docker_run.env`, the Docker log, `gpu_preflight.json`, run outputs, and the evidence bundle.
-If `A100_CONFIG_TEMPLATE` is unset, the helper keeps the short `configs/train/moabb_a100_smoke.yaml` infrastructure validation behavior. Set `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml` and `A100_RUN_ID=moabb_a100` for the long 6-GPU MOABB training lane.
-For non-smoke run ids, the helper consumes existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when that directory contains a passing `paper_mode_gate.json`. If Phase 1 artifacts are missing, the full lane writes an explicit `paper_mode_artifacts_unavailable` marker and continues without silently running paper-mode inside the six-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation.
+The exact inside-container sequence lives in `scripts/docker_a100_inner.sh`; deployment-agent details live in `README_AGENT_DEPLOY.md`. The full Docker run command remains `bash scripts/run_docker_7gpu.sh "$PERSISTENT_ROOT"`, which writes `docker_run.env`, the Docker log, `gpu_preflight.json`, run outputs, and the evidence bundle.
+The final 7-GPU wrapper defaults to `configs/train/moabb_a100.yaml` and `A100_RUN_ID=moabb_a100`. Call `scripts/run_smoke.sh` separately for a short smoke test.
+For non-smoke run ids, the helper consumes existing Phase 1 paper-mode artifacts from `A100_PAPER_MODE_EVAL_DIR` when that directory contains a passing `paper_mode_gate.json`. If Phase 1 artifacts are missing, the full lane writes an explicit `paper_mode_artifacts_unavailable` marker and continues without silently running paper-mode inside the seven-GPU allocation. Only set `A100_RUN_PAPER_MODE_IN_FULL=1` to run the 3-seed paper-mode gate inside the full allocation.
 
 The current training path supports single-node DDP through `torchrun`, `LOCAL_RANK`, `RANK`, `WORLD_SIZE`, `torch.cuda.set_device(local_rank)`, and PyTorch `DistributedDataParallel` wrapping. The code uses container-local CUDA device indexes and does not hard-code host GPU IDs.
 
@@ -191,14 +191,14 @@ python -m pip install -r requirements/cluster-a100.txt
 The packaged helper is the recommended Docker fallback when `conda` or `sbatch` are not available:
 
 ```bash
-export HOST_GPU_IDS=0,1,2,3,4,5
-export GPU_COUNT=6
-export NPROC_PER_NODE=6
-export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+export HOST_GPU_IDS=0,1,2,3,4,5,6
+export GPU_COUNT=7
+export NPROC_PER_NODE=7
+export CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6
 export A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml
 export A100_RUN_ID=moabb_a100
 export PERSISTENT_ROOT=/raid/scratch/$USER/neurotwin-<short_sha>
-bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
+bash scripts/run_docker_7gpu.sh "$PERSISTENT_ROOT"
 ```
 
 For a one-GPU diagnostic, pass one visible host GPU id and force one worker:
@@ -208,10 +208,10 @@ export HOST_GPU_IDS=<host_gpu_id>
 export GPU_COUNT=1
 export NPROC_PER_NODE=1
 export CONTAINER_CUDA_VISIBLE_DEVICES=0
-bash scripts/run_docker_6gpu.sh "$PERSISTENT_ROOT"
+bash scripts/run_docker_7gpu.sh "$PERSISTENT_ROOT"
 ```
 
-In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Use this lane for Phase 1 paper evidence diagnostics only. Do not treat a one-GPU diagnostic as the requested 6-GPU run.
+In that diagnostic mode the helper passes Docker `--gpus "\"device=<host_gpu_id>\""` and launches `torchrun --standalone --nproc_per_node=1`. Use this lane for Phase 1 paper evidence diagnostics only. Do not treat a one-GPU diagnostic as the requested 7-GPU run.
 
 Exact single-GPU Docker fallback sequence, useful when an operator needs to debug the inside-container steps manually:
 
@@ -274,7 +274,7 @@ torchrun --standalone --nproc_per_node=1 -m neurotwin.cli train \
 python -m neurotwin.cli report --run-dir "$PERSISTENT_ROOT/runs/$A100_RUN_ID"'
 ```
 
-For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_6gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
+For exact Docker flags, environment variables, and agent deployment behavior, use `README_AGENT_DEPLOY.md`. The full Docker run must go through `scripts/run_docker_7gpu.sh` so `docker_run.env` and the current Docker log are produced for the evidence bundle.
 
 The helper delegates the inside-container install, preflight, audit, materialization, training, reporting, and evidence packaging steps to `scripts/docker_a100_inner.sh`. Use `README_AGENT_DEPLOY.md` for the detailed deployment-agent contract; do not copy a raw `docker run` full-run command from this README.
 
@@ -304,10 +304,10 @@ Smoke succeeds when the script prints `smoke_status=completed`.
 Required resources:
 
 ```text
-GPU: 1x A100 80GB for the first Slurm validation, or exactly 6x A100 80GB for the Docker/helper heavy lane
+GPU: 1x A100 80GB for the first Slurm validation, or exactly 7x A100 80GB for the Docker/helper heavy lane
 CPU: 16 cores
 RAM: 128G
-Wall time: 02:00:00 for the first infrastructure validation, 48:00:00 for the deep 6-GPU lane
+Wall time: 02:00:00 for the first infrastructure validation, 12:00:00 for the deep 7-GPU lane
 ```
 
 Use a persistent shared root:
@@ -371,9 +371,9 @@ bash scripts/run_full.sh /absolute/shared/persistent/neurotwin
 
 The scripts pass these values to `sbatch` as command-line flags. They are not embedded in `#SBATCH` lines.
 
-## Heavy 6-GPU Slurm Follow-Up
+## Heavy 7-GPU Slurm Follow-Up
 
-Do not start a long 6-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms six A100 80GB GPUs are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
+Do not start a long 7-GPU run until local tests, the 1-GPU A100 smoke, and the 3-seed MOABB paper-mode eval pass for this exact commit. If Chapman confirms seven A100 80GB GPUs are available and `outputs/configs/moabb_a100.materialized.yaml` already exists, the packaged heavy-lane wrapper is:
 
 ```bash
 export NEUROTWIN_DATA=/path/to/shared/persistent/neurotwin
@@ -386,11 +386,11 @@ PYTHONPATH=src python3 -m neurotwin.cli cluster materialize-config \
   --prepared-root "$NEUROTWIN_DATA/prepared/moabb_benchmark" \
   --out outputs/configs/moabb_a100.materialized.yaml
 RUN_ROOT="$RUN_ROOT" \
-sbatch --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 \
+sbatch --ntasks-per-node=7 --gres=gpu:a100:7 --time=12:00:00 \
   scripts/slurm/train_a100.sh outputs/configs/moabb_a100.materialized.yaml
 ```
 
-The Slurm script also carries `#SBATCH --time=48:00:00` and `#SBATCH --mem=0`. Keep the command-line `--time=48:00:00` when submitting manually so site defaults do not shorten the deep lane.
+The Slurm script also carries `#SBATCH --time=12:00:00` and `#SBATCH --mem=0`. Keep the command-line `--time=12:00:00` when submitting manually so site defaults do not shorten the deep lane.
 
 ## Data And Internet
 
@@ -461,9 +461,9 @@ For full non-smoke runs, the zip also includes paper-mode baseline artifacts und
 
 ## Known Limitations
 
-- Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_6gpu.sh`.
+- Docker fallback does not submit Slurm; it runs directly inside the Docker allocation with the GPU list passed to `scripts/run_docker_7gpu.sh`.
 - MOABB data preparation may need internet or a populated MOABB cache.
-- The default guarded run is configured for 50 smoke steps and `scientific_claim_allowed=false`; the long 6-GPU lane requires `A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml`, 6x A100 80GB GPUs, and a `48:00:00` scheduler allocation.
+- The default 7-GPU wrapper runs `configs/train/moabb_a100.yaml` for the 50,000-step full lane; it still reports infrastructure evidence only and requires 7x A100 80GB GPUs plus a `12:00:00` scheduler allocation.
 - Short diagnostic runs ending in a few hours are normal for smoke/synthetic/debug configs. They are not the deep 50,000-step lane.
 - `summary.json` is the source of truth for `scientific_claim_allowed`; paper-mode gate status is reported separately.
 - Scientific claims require repeated held-out real-data runs, baseline comparisons, CI-backed reporting, and paper-mode gates. This handoff evaluates evidence quality and infrastructure, not model superiority.
@@ -473,7 +473,7 @@ For full non-smoke runs, the zip also includes paper-mode baseline artifacts und
 The first A100 validation succeeds only when:
 
 - Slurm starts a job on an A100 allocation.
-- Or, for the primary Docker path, Docker exposes exactly six CUDA devices and `run/gpu_preflight.json` reports `visible_gpu_count=6`.
+- Or, for the primary Docker path, Docker exposes exactly seven CUDA devices and `run/gpu_preflight.json` reports `visible_gpu_count=7`.
 - `nt doctor` reports CUDA available and device count greater than zero inside the job.
 - `nt cluster preflight --require-cuda --require-prepared-windows` passes.
 - The prepared window gate is exactly `18144` total windows with `12096/2016/4032` train/val/test windows.

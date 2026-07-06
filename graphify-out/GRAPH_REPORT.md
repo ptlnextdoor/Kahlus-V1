@@ -1,11 +1,11 @@
 # Graph Report - kahlus_trial0_m0_clean_worktree  (2026-07-05)
 
 ## Corpus Check
-- 356 files · ~253,935 words
+- 356 files · ~253,967 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3505 nodes · 8619 edges · 93 communities detected
+- 3506 nodes · 8619 edges · 94 communities detected
 - Extraction: 58% EXTRACTED · 42% INFERRED · 0% AMBIGUOUS · INFERRED: 3589 edges (avg confidence: 0.71)
 - Token cost: 0 input · 0 output
 
@@ -103,6 +103,7 @@
 - [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
 - [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `EEGV1SprintATests` - 118 edges
@@ -118,15 +119,15 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `Outcome` --uses--> `Write the Markdown report + shared-core report/gate JSONs; return their paths.`  [INFERRED]
-  src/neurotwin/falsification.py → src/neurotwin/em/stage0_report.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/surat/src/neurotwin/em/stage0_report.py
 - `Outcome` --uses--> `Operator-recovery falsification diagnostics for the v3 Transition Gym.  PROPOSED`  [INFERRED]
-  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Latent pre-perturbation state z_pre per episode (E, Dz).`  [INFERRED]
-  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 - `Outcome` --uses--> `Recover each hidden operator ``M_k`` from latent transitions and compare to trut`  [INFERRED]
-  src/neurotwin/falsification.py → src/neurotwin/transition_gym/operator_recovery.py
+  src/neurotwin/falsification.py → /Users/aayu/conductor/workspaces/kahlus-v2/irvine/src/neurotwin/transition_gym/operator_recovery.py
 
 ## Communities
 
@@ -324,67 +325,67 @@ Nodes (1): Compatibility shim for TRIBE-style callers.          Prefer :meth:`fr
 
 ### Community 65 - "Community 65"
 Cohesion: 1.0
-Nodes (1): Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h
+Nodes (1): Raised when a handoff package would be misleading or unsafe.
 
 ### Community 66 - "Community 66"
 Cohesion: 1.0
-Nodes (1): Per-channel integrated power in ``[low, high)`` Hz.
+Nodes (1): Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h
 
 ### Community 67 - "Community 67"
 Cohesion: 1.0
-Nodes (1): Per-channel ratio of mains-line band power to total power (artifact indicator).
+Nodes (1): Per-channel integrated power in ``[low, high)`` Hz.
 
 ### Community 68 - "Community 68"
 Cohesion: 1.0
-Nodes (1): Per-channel artifact features for an idle/phantom recording.      Returns arrays
+Nodes (1): Per-channel ratio of mains-line band power to total power (artifact indicator).
 
 ### Community 69 - "Community 69"
 Cohesion: 1.0
-Nodes (1): Raised when a handoff package would be misleading or unsafe.
+Nodes (1): Per-channel artifact features for an idle/phantom recording.      Returns arrays
 
 ### Community 70 - "Community 70"
 Cohesion: 1.0
-Nodes (1): Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h
+Nodes (1): Raised when a handoff package would be misleading or unsafe.
 
 ### Community 71 - "Community 71"
 Cohesion: 1.0
-Nodes (1): Per-channel integrated power in ``[low, high)`` Hz.
+Nodes (1): Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h
 
 ### Community 72 - "Community 72"
 Cohesion: 1.0
-Nodes (1): Per-channel ratio of mains-line band power to total power (artifact indicator).
+Nodes (1): Per-channel integrated power in ``[low, high)`` Hz.
 
 ### Community 73 - "Community 73"
 Cohesion: 1.0
-Nodes (1): Per-channel artifact features for an idle/phantom recording.      Returns arrays
+Nodes (1): Per-channel ratio of mains-line band power to total power (artifact indicator).
 
 ### Community 74 - "Community 74"
 Cohesion: 1.0
-Nodes (1): Return RD-3 public dataset mappings in source-review order.
+Nodes (1): Per-channel artifact features for an idle/phantom recording.      Returns arrays
 
 ### Community 75 - "Community 75"
 Cohesion: 1.0
-Nodes (1): Raised when a handoff package would be misleading or unsafe.
+Nodes (1): Return RD-3 public dataset mappings in source-review order.
 
 ### Community 76 - "Community 76"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Raised when a handoff package would be misleading or unsafe.
 
 ### Community 77 - "Community 77"
 Cohesion: 1.0
-Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 78 - "Community 78"
 Cohesion: 1.0
-Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
 
 ### Community 79 - "Community 79"
 Cohesion: 1.0
-Nodes (1): Gate the narrow v1 benchmark-readiness claim.
+Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
 
 ### Community 80 - "Community 80"
 Cohesion: 1.0
-Nodes (1): Gate the narrow v1 few-shot adaptation benchmark-readiness claim.
+Nodes (1): Gate the narrow v1 benchmark-readiness claim.
 
 ### Community 81 - "Community 81"
 Cohesion: 1.0
@@ -392,7 +393,7 @@ Nodes (1): Gate the narrow v1 few-shot adaptation benchmark-readiness claim.
 
 ### Community 82 - "Community 82"
 Cohesion: 1.0
-Nodes (1): Raised when a handoff package would be misleading or unsafe.
+Nodes (1): Gate the narrow v1 few-shot adaptation benchmark-readiness claim.
 
 ### Community 83 - "Community 83"
 Cohesion: 1.0
@@ -412,39 +413,39 @@ Nodes (1): Raised when a handoff package would be misleading or unsafe.
 
 ### Community 87 - "Community 87"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Raised when a handoff package would be misleading or unsafe.
 
 ### Community 88 - "Community 88"
 Cohesion: 1.0
-Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 89 - "Community 89"
 Cohesion: 1.0
-Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
 
 ### Community 90 - "Community 90"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
 
 ### Community 91 - "Community 91"
 Cohesion: 1.0
-Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 92 - "Community 92"
 Cohesion: 1.0
-Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
 
 ### Community 93 - "Community 93"
 Cohesion: 1.0
-Nodes (1): Gate the narrow v1 benchmark-readiness claim.
+Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
 
 ### Community 94 - "Community 94"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Gate the narrow v1 benchmark-readiness claim.
 
 ### Community 95 - "Community 95"
 Cohesion: 1.0
-Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 96 - "Community 96"
 Cohesion: 1.0
@@ -452,62 +453,66 @@ Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
 
 ### Community 97 - "Community 97"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
 
 ### Community 98 - "Community 98"
 Cohesion: 1.0
-Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 99 - "Community 99"
 Cohesion: 1.0
-Nodes (1): Roll the autonomous base dynamics to produce per-episode history states.      Re
+Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
 
 ### Community 100 - "Community 100"
 Cohesion: 1.0
-Nodes (1): Roll the base dynamics forward ``horizon`` steps from a perturbed state.      Re
+Nodes (1): Roll the autonomous base dynamics to produce per-episode history states.      Re
 
 ### Community 101 - "Community 101"
 Cohesion: 1.0
-Nodes (1): Least-squares affine map ``y ≈ x @ W.T + c``; returns (W, c).
+Nodes (1): Roll the base dynamics forward ``horizon`` steps from a perturbed state.      Re
 
 ### Community 102 - "Community 102"
 Cohesion: 1.0
-Nodes (1): Recover each hidden operator ``M_k`` from latent transitions and compare to trut
+Nodes (1): Least-squares affine map ``y ≈ x @ W.T + c``; returns (W, c).
 
 ### Community 103 - "Community 103"
 Cohesion: 1.0
-Nodes (1): Predict held-out AB/BA compositions from single-operator estimates only.      Si
+Nodes (1): Recover each hidden operator ``M_k`` from latent transitions and compare to trut
 
 ### Community 104 - "Community 104"
 Cohesion: 1.0
-Nodes (1): Explicit AB-vs-BA gap; the battery must be genuinely non-commutative.
+Nodes (1): Predict held-out AB/BA compositions from single-operator estimates only.      Si
 
 ### Community 105 - "Community 105"
 Cohesion: 1.0
-Nodes (1): Mean trajectory, operator-induced, and subject-transfer response-profile distanc
+Nodes (1): Explicit AB-vs-BA gap; the battery must be genuinely non-commutative.
 
 ### Community 106 - "Community 106"
 Cohesion: 1.0
-Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
+Nodes (1): Mean trajectory, operator-induced, and subject-transfer response-profile distanc
 
 ### Community 107 - "Community 107"
 Cohesion: 1.0
-Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
+Nodes (1): Evaluate the gate and return the dossier-schema payload.      All checks are con
 
 ### Community 108 - "Community 108"
 Cohesion: 1.0
-Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+Nodes (1): Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).
 
 ### Community 109 - "Community 109"
+Cohesion: 1.0
+Nodes (1): Load a gate payload written by :func:`write_evidence_gate`.
+
+### Community 110 - "Community 110"
 Cohesion: 1.0
 Nodes (1): Narrow loaded YAML at the command boundary after load_config validation.
 
 ## Knowledge Gaps
-- **211 isolated node(s):** `Tests for the KTM A100 evidence intake auditor (synthetic fixtures only).`, `Build a synthetic KTM A100 evidence bundle folder; returns the bundle root.`, `Base (no-ablation) failure-analysis report shape, finiteness, and gate disciplin`, `The ablation matrix loads and smoke-runs, and never earns recovery.`, `Each shipped ablation / Sprint 3C YAML loads into a valid KTMTrainConfig.` (+206 more)
+- **212 isolated node(s):** `Tests for the KTM A100 evidence intake auditor (synthetic fixtures only).`, `Build a synthetic KTM A100 evidence bundle folder; returns the bundle root.`, `Base (no-ablation) failure-analysis report shape, finiteness, and gate disciplin`, `The ablation matrix loads and smoke-runs, and never earns recovery.`, `Each shipped ablation / Sprint 3C YAML loads into a valid KTMTrainConfig.` (+207 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 27`** (25 nodes): `ExpandedCliTests`, `.run_cli()`, `.run_script()`, `.test_bids_prepare_writes_event_manifest_when_derivative_exists()`, `.test_data_and_split_audits()`, `.test_estimate_and_train_dry_run()`, `.test_eval_classification_leakage_demo_warns_on_deprecated_typo_alias()`, `.test_eval_classification_leakage_demo_writes_paper_artifacts()`, `.test_eval_leakage_demo_subcommand_accepts_multi_seed()`, `.test_eval_nfc_synthetic_require_pass_fails_needs_evidence()`, `.test_eval_nfc_synthetic_suite_honors_multiple_seeds()`, `.test_eval_nfc_synthetic_suite_writes_artifacts()`, `.test_eval_rejects_options_before_real_subcommand()`, `.test_make_figures_treats_malformed_gate_as_absent()`, `.test_make_figures_treats_malformed_summary_as_absent()`, `.test_make_tables_treats_malformed_gate_as_plumbing()`, `.test_make_tables_treats_malformed_summary_as_plumbing()`, `.test_report_compare_surfaces_malformed_json_artifact()`, `.test_report_compare_writes_aggregate_artifacts()`, `.test_report_run_dir()`, `.test_report_run_dir_keeps_summary_claim_source_of_truth_with_valid_gate()`, `.test_report_run_dir_rejects_invalid_colocated_gate()`, `.test_report_run_dir_uses_colocated_prepared_baseline_suite()`, `_valid_paper_mode_gate()`, `test_expanded.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (18 nodes): `ArtifactDocsContractsTests`, `._run_docker_launcher_dry_run()`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_runbook_separates_fast_and_heavy_lanes()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_agent_deploy_docs_and_dockerfile_are_6gpu_first()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_docker_6gpu_runner_contains_required_sequence()`, `.test_docker_launcher_default_and_diagnostic_cuda_visible_devices()`, `.test_docker_launcher_honors_explicit_container_cuda_visible_devices()`, `.test_docker_launcher_uses_container_local_cuda_visible_devices()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_runpod_rehearsal_is_budget_gated()`, `.test_tribe_style_does_not_become_required_dependency()`, `test_docs_contracts.py`
+- **Thin community `Community 30`** (18 nodes): `ArtifactDocsContractsTests`, `._run_docker_launcher_dry_run()`, `.test_a100_h100_configs_scripts_and_paper_docs_exist()`, `.test_a100_runbook_separates_fast_and_heavy_lanes()`, `.test_a100_slurm_scripts_require_safe_inputs()`, `.test_agent_deploy_docs_and_dockerfile_are_7gpu_first()`, `.test_chapman_first_run_launcher_contains_required_sequence()`, `.test_claims_doc_blocks_forbidden_claims()`, `.test_docker_7gpu_runner_contains_required_sequence()`, `.test_docker_launcher_default_and_diagnostic_cuda_visible_devices()`, `.test_docker_launcher_honors_explicit_container_cuda_visible_devices()`, `.test_docker_launcher_uses_container_local_cuda_visible_devices()`, `.test_moabb_benchmark_script_blocks_slurm_tmp_fallback()`, `.test_moabb_scripts_and_cluster_configs_use_benchmark_windows()`, `.test_operator_run_bundle_files_are_self_contained()`, `.test_runpod_rehearsal_is_budget_gated()`, `.test_tribe_style_does_not_become_required_dependency()`, `test_docs_contracts.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 39`** (6 nodes): `_copy_current_worktree_to_clean_git()`, `KahlusA100SevenGpuHandoffTests`, `.test_package_contains_7x_a100_handoff_contract_and_runner()`, `.test_package_refuses_dirty_worktree()`, `.test_package_refuses_tracked_symlink_in_runner_source()`, `test_kahlus_a100_7x_handoff.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -525,41 +530,41 @@ Nodes (1): Narrow loaded YAML at the command boundary after load_config validati
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 64`** (1 nodes): `Compatibility shim for TRIBE-style callers.          Prefer :meth:`from_checkpoi`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (1 nodes): `Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h`
+- **Thin community `Community 65`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (1 nodes): `Per-channel integrated power in ``[low, high)`` Hz.`
+- **Thin community `Community 66`** (1 nodes): `Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (1 nodes): `Per-channel ratio of mains-line band power to total power (artifact indicator).`
+- **Thin community `Community 67`** (1 nodes): `Per-channel integrated power in ``[low, high)`` Hz.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (1 nodes): `Per-channel artifact features for an idle/phantom recording.      Returns arrays`
+- **Thin community `Community 68`** (1 nodes): `Per-channel ratio of mains-line band power to total power (artifact indicator).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
+- **Thin community `Community 69`** (1 nodes): `Per-channel artifact features for an idle/phantom recording.      Returns arrays`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (1 nodes): `Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h`
+- **Thin community `Community 70`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (1 nodes): `Per-channel integrated power in ``[low, high)`` Hz.`
+- **Thin community `Community 71`** (1 nodes): `Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.      ``psd`` h`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (1 nodes): `Per-channel ratio of mains-line band power to total power (artifact indicator).`
+- **Thin community `Community 72`** (1 nodes): `Per-channel integrated power in ``[low, high)`` Hz.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 73`** (1 nodes): `Per-channel artifact features for an idle/phantom recording.      Returns arrays`
+- **Thin community `Community 73`** (1 nodes): `Per-channel ratio of mains-line band power to total power (artifact indicator).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 74`** (1 nodes): `Return RD-3 public dataset mappings in source-review order.`
+- **Thin community `Community 74`** (1 nodes): `Per-channel artifact features for an idle/phantom recording.      Returns arrays`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 75`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
+- **Thin community `Community 75`** (1 nodes): `Return RD-3 public dataset mappings in source-review order.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 76`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
+- **Thin community `Community 77`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+- **Thin community `Community 78`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (1 nodes): `Gate the narrow v1 benchmark-readiness claim.`
+- **Thin community `Community 79`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (1 nodes): `Gate the narrow v1 few-shot adaptation benchmark-readiness claim.`
+- **Thin community `Community 80`** (1 nodes): `Gate the narrow v1 benchmark-readiness claim.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 81`** (1 nodes): `Gate the narrow v1 few-shot adaptation benchmark-readiness claim.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 82`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
+- **Thin community `Community 82`** (1 nodes): `Gate the narrow v1 few-shot adaptation benchmark-readiness claim.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 83`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -569,51 +574,53 @@ Nodes (1): Narrow loaded YAML at the command boundary after load_config validati
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 86`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 87`** (1 nodes): `Raised when a handoff package would be misleading or unsafe.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
+- **Thin community `Community 88`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+- **Thin community `Community 89`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 90`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 91`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
+- **Thin community `Community 91`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 92`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+- **Thin community `Community 92`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (1 nodes): `Gate the narrow v1 benchmark-readiness claim.`
+- **Thin community `Community 93`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 94`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 94`** (1 nodes): `Gate the narrow v1 benchmark-readiness claim.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 95`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+- **Thin community `Community 95`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 96`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 97`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 98`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
+- **Thin community `Community 98`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (1 nodes): `Roll the autonomous base dynamics to produce per-episode history states.      Re`
+- **Thin community `Community 99`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 100`** (1 nodes): `Roll the base dynamics forward ``horizon`` steps from a perturbed state.      Re`
+- **Thin community `Community 100`** (1 nodes): `Roll the autonomous base dynamics to produce per-episode history states.      Re`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 101`** (1 nodes): `Least-squares affine map ``y ≈ x @ W.T + c``; returns (W, c).`
+- **Thin community `Community 101`** (1 nodes): `Roll the base dynamics forward ``horizon`` steps from a perturbed state.      Re`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (1 nodes): `Recover each hidden operator ``M_k`` from latent transitions and compare to trut`
+- **Thin community `Community 102`** (1 nodes): `Least-squares affine map ``y ≈ x @ W.T + c``; returns (W, c).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (1 nodes): `Predict held-out AB/BA compositions from single-operator estimates only.      Si`
+- **Thin community `Community 103`** (1 nodes): `Recover each hidden operator ``M_k`` from latent transitions and compare to trut`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (1 nodes): `Explicit AB-vs-BA gap; the battery must be genuinely non-commutative.`
+- **Thin community `Community 104`** (1 nodes): `Predict held-out AB/BA compositions from single-operator estimates only.      Si`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (1 nodes): `Mean trajectory, operator-induced, and subject-transfer response-profile distanc`
+- **Thin community `Community 105`** (1 nodes): `Explicit AB-vs-BA gap; the battery must be genuinely non-commutative.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
+- **Thin community `Community 106`** (1 nodes): `Mean trajectory, operator-induced, and subject-transfer response-profile distanc`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 107`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
+- **Thin community `Community 107`** (1 nodes): `Evaluate the gate and return the dossier-schema payload.      All checks are con`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+- **Thin community `Community 108`** (1 nodes): `Persist a gate payload as pretty, sorted JSON (reuses repro.write_json).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 109`** (1 nodes): `Narrow loaded YAML at the command boundary after load_config validation.`
+- **Thin community `Community 109`** (1 nodes): `Load a gate payload written by :func:`write_evidence_gate`.`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 110`** (1 nodes): `Narrow loaded YAML at the command boundary after load_config validation.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
