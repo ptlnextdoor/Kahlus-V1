@@ -31,5 +31,7 @@
   "raw_data_policy": "outside_repo_only",
   "schema": "kahlus.forecastability.m4.sleep_edf_preregistration.v1",
   "seed": 5,
+  "session_boundary_unit": "sleep_edf_subject_session_id",
+  "split_cluster_unit": "sleep_edf_subject_id",
   "sleep_edf_max_pairs": null
 }

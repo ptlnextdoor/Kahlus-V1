@@ -13,6 +13,7 @@ from neurotwin.forecastability.m2 import (
     _as_transition_fixture,
     _local_sleep_edf_pairs,
     _sha256,
+    _sleep_edf_pair_metadata,
     load_sleep_edf_fixture,
 )
 
@@ -87,6 +88,8 @@ def build_m4_sleep_edf_preregistration(
         "sleep_edf_max_pairs": None if sleep_edf_max_pairs is None else int(sleep_edf_max_pairs),
         "primary_endpoint": "primary_horizon_rfs_bits_vs_strongest_gated_baseline",
         "inferential_scope": "primary_horizon_only",
+        "split_cluster_unit": "sleep_edf_subject_id",
+        "session_boundary_unit": "sleep_edf_subject_session_id",
         "descriptive_horizons": [int(horizon) for horizon in planned_horizons if horizon != primary],
         "minimum_event_patients": 8,
         "minimum_primary_positive_events": SLEEP_EDF_MIN_PRIMARY_POSITIVE_EVENTS,
@@ -135,6 +138,7 @@ def run_m4_sleep_edf_primary_execution(
     pairs = _local_sleep_edf_pairs(root)
     max_pairs = prereg.get("sleep_edf_max_pairs")
     used_pairs = pairs if max_pairs is None else pairs[: int(max_pairs)]
+    pair_metadata = _sleep_edf_pair_metadata(used_pairs)
     fixture = _as_transition_fixture(fixture_loader(root, max_pairs=max_pairs))
     curve = _curve_payload(fixture, horizons=horizons, seed=int(prereg["seed"]) + 200)
     sleep_payload = {"status": "completed_sleep_edf_smoke", **curve}
@@ -150,6 +154,8 @@ def run_m4_sleep_edf_primary_execution(
         "raw_data_in_repo": False,
         "sleep_edf_pair_count": len(pairs),
         "sleep_edf_used_pairs": len(used_pairs),
+        "sleep_edf_subject_count": len({row["subject_id"] for row in pair_metadata}),
+        "sleep_edf_session_count": len({row["subject_session_id"] for row in pair_metadata}),
         "file_fingerprints": fingerprints,
         "data_fingerprint_sha256": _fingerprint_hash(fingerprints),
         "preregistration_hash": m4_preregistration_hash(prereg),
@@ -171,9 +177,15 @@ def run_m4_sleep_edf_primary_execution(
     return execution
 
 
-def patient_horizon_labels(events: np.ndarray, patient: np.ndarray, *, horizons: tuple[int, ...]) -> dict[int, np.ndarray]:
+def patient_horizon_labels(
+    events: np.ndarray,
+    patient: np.ndarray,
+    *,
+    horizons: tuple[int, ...],
+    session: np.ndarray | list[int] | None = None,
+) -> dict[int, np.ndarray]:
     y = np.asarray(events, dtype=np.int64)
-    groups = np.asarray(patient)
+    groups = _horizon_groups(patient, session)
     labels = {horizon: np.zeros(len(y), dtype=np.int64) for horizon in horizons}
     for group in np.unique(groups):
         idx = np.flatnonzero(groups == group)
@@ -194,9 +206,10 @@ def patient_horizon_valid_masks(
     patient: np.ndarray,
     *,
     horizons: tuple[int, ...],
+    session: np.ndarray | list[int] | None = None,
 ) -> dict[int, np.ndarray]:
     y = np.asarray(events, dtype=np.int64)
-    groups = np.asarray(patient)
+    groups = _horizon_groups(patient, session)
     if len(y) != len(groups):
         raise ValueError("events and patient must have the same length")
     masks = {horizon: np.zeros(len(y), dtype=bool) for horizon in horizons}
@@ -214,8 +227,18 @@ def patient_horizon_valid_masks(
 
 
 def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], seed: int) -> dict[str, Any]:
-    labels_by_horizon = patient_horizon_labels(fixture.y, fixture.patient, horizons=horizons)
-    valid_masks_by_horizon = patient_horizon_valid_masks(fixture.y, fixture.patient, horizons=horizons)
+    labels_by_horizon = patient_horizon_labels(
+        fixture.y,
+        fixture.patient,
+        session=fixture.session,
+        horizons=horizons,
+    )
+    valid_masks_by_horizon = patient_horizon_valid_masks(
+        fixture.y,
+        fixture.patient,
+        session=fixture.session,
+        horizons=horizons,
+    )
     total_rows = int(len(fixture.y))
     rows = []
     for offset, horizon in enumerate(horizons):
@@ -240,7 +263,7 @@ def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], see
                 "valid_rows": valid_windows,
                 "evaluated_rows": payload["n"],
                 "invalid_terminal_rows": total_rows - valid_windows,
-                "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
+                "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
                 "rfs_bits": payload["logistic_full"]["rfs_bits"],
                 "rfs_ci_low": payload["logistic_full"]["rfs_ci_low"],
                 "rfs_ci_high": payload["logistic_full"]["rfs_ci_high"],
@@ -288,7 +311,8 @@ def _sleep_edf_curve_payload(root: str | Path | None, *, horizons: tuple[int, ..
             "status": "sleep_edf_smoke_failed",
             "local_root_redacted": True,
             "raw_data_policy": "outside_repo_only",
-            "error": str(exc),
+            "error": "sleep_edf_smoke_failed_redacted",
+            "error_type": type(exc).__name__,
         }
 
 
@@ -316,6 +340,19 @@ def _filter_fixture(fixture: TransitionFixture, mask: np.ndarray) -> TransitionF
         site=fixture.site[keep],
         time_bucket=fixture.time_bucket[keep],
         session=fixture.session[keep],
+    )
+
+
+def _horizon_groups(patient: np.ndarray | list[int], session: np.ndarray | list[int] | None) -> np.ndarray:
+    patients = np.asarray(patient)
+    if session is None:
+        return patients
+    sessions = np.asarray(session)
+    if len(patients) != len(sessions):
+        raise ValueError("patient and session must have the same length")
+    return np.asarray(
+        [f"{patient_value}:{session_value}" for patient_value, session_value in zip(patients, sessions)],
+        dtype=object,
     )
 
 
@@ -569,16 +606,17 @@ def _sleep_curve_failures(
     return failures
 
 
-def _pair_fingerprints(pairs: list[tuple[Path, Path]]) -> list[dict[str, str]]:
+def _pair_fingerprints(pairs: list[tuple[Path, Path]]) -> list[dict[str, Any]]:
     return [
         {
+            **metadata,
             "record_id": psg.name.removesuffix("-PSG.edf"),
             "psg": psg.name,
             "psg_sha256": _sha256(psg),
             "hypnogram": hyp.name,
             "hypnogram_sha256": _sha256(hyp),
         }
-        for psg, hyp in pairs
+        for metadata, (psg, hyp) in zip(_sleep_edf_pair_metadata(pairs), pairs, strict=True)
     ]
 
 
@@ -602,8 +640,8 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         "",
         "## Method",
         "",
-        "Leakage-safe horizon-wise label curve: labels are shifted within each patient only, "
-        "terminal rows without a within-patient future label are excluded before fitting, then "
+        "Leakage-aware horizon-wise label curve: labels are shifted within each patient/session only, "
+        "terminal rows without a within-patient/session future label are excluded before fitting, then "
         "RFS is recomputed per horizon against the strongest gated nuisance/trivial baseline. "
         "This is not a censoring-aware survival model.",
         "",

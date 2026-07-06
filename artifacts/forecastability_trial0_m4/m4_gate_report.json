@@ -18,7 +18,7 @@
   "stop_reason": "M4 gate reached; full claim requires powered public-data and external-dataset validation.",
   "synthetic_gate_passed": true,
   "synthetic_known_signal": {
-    "auc_positive_rfs_bits": 0.14506788671257928,
+    "auc_positive_rfs_bits": 0.1440088458825511,
     "curve": [
       {
         "cluster_permutation": {
@@ -46,7 +46,7 @@
         "gated_baseline_name": "logistic_nuisance",
         "gated_baseline_nll": 0.5402940475550242,
         "horizon": 1,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
         "invalid_terminal_rows": 0,
         "nll": 0.38809461565801906,
         "nuisance_probe_failures": [],
@@ -85,10 +85,10 @@
           "mode": "exact",
           "n_clusters": 12,
           "n_permutations": 4096,
-          "null_ci_high": 0.07868841089171513,
-          "null_ci_low": -0.07868841089171513,
+          "null_ci_high": 0.07836916702162258,
+          "null_ci_low": -0.07836916702162258,
           "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": 0.13312039896436131,
+          "observed_rfs_bits": 0.13255488810347285,
           "p_resolution": 0.000244081034903588,
           "p_value": 0.000488162069807176,
           "permutation_unit": "patient_cluster_sign_flip",
@@ -98,41 +98,41 @@
           "statistic": "rfs_bits"
         },
         "cluster_permutation_failures": [],
-        "evaluated_rows": 1428,
+        "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.5529302681396661,
+        "gated_baseline_nll": 0.5532499286577072,
         "horizon": 2,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
-        "invalid_terminal_rows": 12,
-        "nll": 0.46065823892250396,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 24,
+        "nll": 0.46136988169934584,
         "nuisance_probe_failures": [],
         "nuisance_probes": {
           "patient": {
-            "accuracy": 0.10084033613445378,
+            "accuracy": 0.125,
             "chance": 0.08333333333333333
           },
           "session": {
-            "accuracy": 0.5252100840336135,
+            "accuracy": 0.5529661016949152,
             "chance": 0.5
           },
           "site": {
-            "accuracy": 0.5252100840336135,
+            "accuracy": 0.5190677966101694,
             "chance": 0.5
           },
           "time_bucket": {
-            "accuracy": 0.33403361344537813,
+            "accuracy": 0.3559322033898305,
             "chance": 0.25
           }
         },
-        "positive_events": 388,
-        "rfs_bits": 0.13312039896436131,
-        "rfs_ci_high": 0.1567431402443379,
-        "rfs_ci_low": 0.11303558422949443,
-        "shuffled_rfs_bits": -0.038720049838368215,
-        "time_shift_rfs_bits": 0.0284349400271915,
+        "positive_events": 384,
+        "rfs_bits": 0.132554888103473,
+        "rfs_ci_high": 0.1562281264517312,
+        "rfs_ci_low": 0.1120872253197447,
+        "shuffled_rfs_bits": -0.03127661574349668,
+        "time_shift_rfs_bits": 0.03374540925243878,
         "total_rows": 1440,
-        "valid_rows": 1428
+        "valid_rows": 1416
       },
       {
         "cluster_permutation": {
@@ -142,10 +142,10 @@
           "mode": "exact",
           "n_clusters": 12,
           "n_permutations": 4096,
-          "null_ci_high": 0.051511764414458025,
-          "null_ci_low": -0.051511764414458025,
-          "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": 0.08250589554944986,
+          "null_ci_high": 0.051083061094339716,
+          "null_ci_low": -0.051083061094339716,
+          "null_mean_rfs_bits": 8.673617379884035e-19,
+          "observed_rfs_bits": 0.07989428392025356,
           "p_resolution": 0.000244081034903588,
           "p_value": 0.000488162069807176,
           "permutation_unit": "patient_cluster_sign_flip",
@@ -155,47 +155,47 @@
           "statistic": "rfs_bits"
         },
         "cluster_permutation_failures": [],
-        "evaluated_rows": 1416,
+        "evaluated_rows": 1392,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.5638821596674518,
+        "gated_baseline_nll": 0.5640943032766743,
         "horizon": 3,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
-        "invalid_terminal_rows": 24,
-        "nll": 0.5066934307877774,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 48,
+        "nll": 0.5087158056344948,
         "nuisance_probe_failures": [],
         "nuisance_probes": {
           "patient": {
-            "accuracy": 0.11652542372881355,
+            "accuracy": 0.10344827586206896,
             "chance": 0.08333333333333333
           },
           "session": {
-            "accuracy": 0.5529661016949152,
+            "accuracy": 0.5538793103448276,
             "chance": 0.5
           },
           "site": {
-            "accuracy": 0.5338983050847458,
+            "accuracy": 0.5323275862068966,
             "chance": 0.5
           },
           "time_bucket": {
-            "accuracy": 0.3432203389830508,
+            "accuracy": 0.34913793103448276,
             "chance": 0.25
           }
         },
-        "positive_events": 387,
-        "rfs_bits": 0.08250589554944972,
-        "rfs_ci_high": 0.10481654702782821,
-        "rfs_ci_low": 0.06305151276676174,
-        "shuffled_rfs_bits": -0.019519759170396875,
-        "time_shift_rfs_bits": 0.03313738264297512,
+        "positive_events": 378,
+        "rfs_bits": 0.07989428392025352,
+        "rfs_ci_high": 0.10273088734955534,
+        "rfs_ci_low": 0.06060222528344614,
+        "shuffled_rfs_bits": -0.018451668377054805,
+        "time_shift_rfs_bits": 0.03594579646243507,
         "total_rows": 1440,
-        "valid_rows": 1416
+        "valid_rows": 1392
       }
     ],
     "max_rfs_bits": 0.21957736562392682
   },
   "synthetic_null": {
-    "auc_positive_rfs_bits": 0.00041665100957997536,
+    "auc_positive_rfs_bits": 0.000378335164084523,
     "curve": [
       {
         "cluster_permutation": {
@@ -225,7 +225,7 @@
         "gated_baseline_name": "logistic_nuisance",
         "gated_baseline_nll": 0.37415982451026997,
         "horizon": 1,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
         "invalid_terminal_rows": 0,
         "nll": 0.37365230606858485,
         "nuisance_probe_failures": [],
@@ -264,12 +264,12 @@
           "mode": "exact",
           "n_clusters": 12,
           "n_permutations": 4096,
-          "null_ci_high": 0.002093169236320213,
-          "null_ci_low": -0.002093169236320213,
-          "null_mean_rfs_bits": -1.3552527156068805e-20,
-          "observed_rfs_bits": -0.0010661998436168672,
+          "null_ci_high": 0.001943665041089464,
+          "null_ci_low": -0.001943665041089464,
+          "null_mean_rfs_bits": -2.0328790734103208e-20,
+          "observed_rfs_bits": -0.0006310587901497089,
           "p_resolution": 0.000244081034903588,
-          "p_value": 0.7910666341225286,
+          "p_value": 0.7154015133024164,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 10106,
@@ -279,41 +279,41 @@
         "cluster_permutation_failures": [
           "horizon_2_cluster_permutation_not_significant"
         ],
-        "evaluated_rows": 1428,
+        "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.37625409608473354,
+        "gated_baseline_nll": 0.37593996768118887,
         "horizon": 2,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
-        "invalid_terminal_rows": 12,
-        "nll": 0.37699312950025005,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 24,
+        "nll": 0.3763773843023487,
         "nuisance_probe_failures": [],
         "nuisance_probes": {
           "patient": {
-            "accuracy": 0.07142857142857142,
+            "accuracy": 0.08686440677966102,
             "chance": 0.08333333333333333
           },
           "session": {
-            "accuracy": 0.4894957983193277,
+            "accuracy": 0.4788135593220339,
             "chance": 0.5
           },
           "site": {
-            "accuracy": 0.5168067226890757,
+            "accuracy": 0.5402542372881356,
             "chance": 0.5
           },
           "time_bucket": {
-            "accuracy": 0.38235294117647056,
+            "accuracy": 0.3538135593220339,
             "chance": 0.25
           }
         },
-        "positive_events": 186,
-        "rfs_bits": -0.001066199843616902,
-        "rfs_ci_high": 0.0007908180653413059,
-        "rfs_ci_low": -0.0035147112996499166,
-        "shuffled_rfs_bits": -0.0006113828952190037,
-        "time_shift_rfs_bits": 0.0001995407266612293,
+        "positive_events": 184,
+        "rfs_bits": -0.0006310587901496702,
+        "rfs_ci_high": 0.0011725771304263014,
+        "rfs_ci_low": -0.002680787826522772,
+        "shuffled_rfs_bits": -0.0005338795505525948,
+        "time_shift_rfs_bits": 0.000337309177097656,
         "total_rows": 1440,
-        "valid_rows": 1428
+        "valid_rows": 1416
       },
       {
         "cluster_permutation": {
@@ -323,12 +323,12 @@
           "mode": "exact",
           "n_clusters": 12,
           "n_permutations": 4096,
-          "null_ci_high": 0.003056670466131645,
-          "null_ci_low": -0.003056670466131645,
-          "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": 0.0005177586897611092,
+          "null_ci_high": 0.002859625140992775,
+          "null_ci_low": -0.002859625140992775,
+          "null_mean_rfs_bits": -1.3552527156068805e-20,
+          "observed_rfs_bits": 0.00040281115327472455,
           "p_resolution": 0.000244081034903588,
-          "p_value": 0.38223090065901877,
+          "p_value": 0.3985843299975592,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 10107,
@@ -338,41 +338,41 @@
         "cluster_permutation_failures": [
           "horizon_3_cluster_permutation_not_significant"
         ],
-        "evaluated_rows": 1416,
+        "evaluated_rows": 1392,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.3766687519250428,
+        "gated_baseline_nll": 0.3767259972492552,
         "horizon": 3,
-        "horizon_label_policy": "drop_terminal_rows_without_within_patient_future_label",
-        "invalid_terminal_rows": 24,
-        "nll": 0.37630986894902446,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 48,
+        "nll": 0.3764467898340647,
         "nuisance_probe_failures": [],
         "nuisance_probes": {
           "patient": {
-            "accuracy": 0.1038135593220339,
+            "accuracy": 0.09267241379310345,
             "chance": 0.08333333333333333
           },
           "session": {
-            "accuracy": 0.4915254237288136,
+            "accuracy": 0.47844827586206895,
             "chance": 0.5
           },
           "site": {
-            "accuracy": 0.5042372881355932,
+            "accuracy": 0.5560344827586207,
             "chance": 0.5
           },
           "time_bucket": {
-            "accuracy": 0.3559322033898305,
+            "accuracy": 0.34913793103448276,
             "chance": 0.25
           }
         },
-        "positive_events": 185,
-        "rfs_bits": 0.0005177586897611125,
-        "rfs_ci_high": 0.0034578479462184534,
-        "rfs_ci_low": -0.0026862969663381583,
-        "shuffled_rfs_bits": -0.004205550974064563,
-        "time_shift_rfs_bits": -0.00045652208334316516,
+        "positive_events": 182,
+        "rfs_bits": 0.00040281115327475534,
+        "rfs_ci_high": 0.003156441679691395,
+        "rfs_ci_low": -0.0027818108248003908,
+        "shuffled_rfs_bits": 0.00011564895778059165,
+        "time_shift_rfs_bits": -0.0003585945062694464,
         "total_rows": 1440,
-        "valid_rows": 1416
+        "valid_rows": 1392
       }
     ],
     "max_rfs_bits": 0.0007321943389788136

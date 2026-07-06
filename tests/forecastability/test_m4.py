@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import numpy as np
@@ -36,6 +37,23 @@ class ForecastabilityM4Tests(unittest.TestCase):
         self.assertEqual(labels[1].tolist(), [0, 1, 0, 1])
         self.assertEqual(labels[2].tolist(), [1, 0, 1, 0])
         self.assertEqual(masks[1].tolist(), [True, True, True, True])
+        self.assertEqual(masks[2].tolist(), [True, False, True, False])
+
+    def test_patient_horizon_labels_can_stop_at_session_boundaries(self) -> None:
+        labels = patient_horizon_labels(
+            [0, 1, 0, 1],
+            [7, 7, 7, 7],
+            session=[1, 1, 2, 2],
+            horizons=(2,),
+        )
+        masks = patient_horizon_valid_masks(
+            [0, 1, 0, 1],
+            [7, 7, 7, 7],
+            session=[1, 1, 2, 2],
+            horizons=(2,),
+        )
+
+        self.assertEqual(labels[2].tolist(), [1, 0, 1, 0])
         self.assertEqual(masks[2].tolist(), [True, False, True, False])
 
     def test_filter_fixture_preserves_row_alignment(self) -> None:
@@ -72,8 +90,8 @@ class ForecastabilityM4Tests(unittest.TestCase):
         self.assertEqual(first["nuisance_probe_failures"], [])
         rows = gate["synthetic_known_signal"]["curve"]
         self.assertEqual(rows[0]["invalid_terminal_rows"], 0)
-        self.assertEqual(rows[1]["invalid_terminal_rows"], 12)
-        self.assertEqual(rows[2]["invalid_terminal_rows"], 24)
+        self.assertEqual(rows[1]["invalid_terminal_rows"], 24)
+        self.assertEqual(rows[2]["invalid_terminal_rows"], 48)
         for row in rows:
             self.assertEqual(row["valid_rows"] + row["invalid_terminal_rows"], row["total_rows"])
             self.assertEqual(row["evaluated_rows"], row["valid_rows"])
@@ -132,7 +150,7 @@ class ForecastabilityM4Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "external_sleep_edf"
             _write_sleep_pair(root, "SC4001E0")
-            _write_sleep_pair(root, "SC4011E0")
+            _write_sleep_pair(root, "SC4002E0")
             out = Path(tmp) / "out"
             prereg = build_m4_sleep_edf_preregistration(seed=5, sleep_edf_max_pairs=None)
             observed_max_pairs = []
@@ -155,6 +173,16 @@ class ForecastabilityM4Tests(unittest.TestCase):
             self.assertNotIn(str(root), json.dumps(payload, sort_keys=True))
             self.assertEqual(payload["sleep_edf_pair_count"], 2)
             self.assertEqual(payload["sleep_edf_used_pairs"], 2)
+            self.assertEqual(payload["sleep_edf_subject_count"], 1)
+            self.assertEqual(payload["sleep_edf_session_count"], 2)
+            self.assertEqual(payload["file_fingerprints"][0]["subject_id"], "SC-00")
+            self.assertEqual(payload["file_fingerprints"][1]["subject_id"], "SC-00")
+            self.assertEqual(payload["file_fingerprints"][0]["night"], 1)
+            self.assertEqual(payload["file_fingerprints"][1]["night"], 2)
+            self.assertNotEqual(
+                payload["file_fingerprints"][0]["subject_session_id"],
+                payload["file_fingerprints"][1]["subject_session_id"],
+            )
             self.assertEqual(payload["preregistration_hash"], m4_preregistration_hash(prereg))
             self.assertEqual(payload["primary_horizon_result"]["horizon"], 1)
             self.assertEqual(observed_max_pairs, [None])
@@ -175,6 +203,20 @@ class ForecastabilityM4Tests(unittest.TestCase):
             serialized = json.dumps(gate, sort_keys=True)
             self.assertNotIn(str(root), serialized)
             self.assertTrue(gate["sleep_edf_smoke"]["local_root_redacted"])
+
+    def test_m4_gate_redacts_path_bearing_sleep_edf_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "external_sleep_edf"
+            _write_sleep_pair(root, "SC4001E0")
+            with mock.patch(
+                "neurotwin.forecastability.m4.load_sleep_edf_fixture",
+                side_effect=ValueError(f"missing required Sleep-EDF channels in {root / 'SC4001E0-PSG.edf'}"),
+            ):
+                gate = run_m4_gate(Path(tmp) / "out", seed=5, sleep_edf_root=root)
+
+            serialized = json.dumps(gate, sort_keys=True)
+            self.assertNotIn(str(root), serialized)
+            self.assertEqual(gate["sleep_edf_smoke"]["error"], "sleep_edf_smoke_failed_redacted")
 
     def test_committed_m4_preregistration_has_no_local_data(self) -> None:
         path = Path(__file__).parents[2] / "configs" / "forecastability" / "m4_sleep_edf_primary_preregistration.json"
@@ -508,7 +550,7 @@ class ForecastabilityM4Tests(unittest.TestCase):
         self.assertIn("patient-cluster sign-flip permutation p-values", report)
         self.assertIn("cluster p", report)
         self.assertIn("nuisance probes", report)
-        self.assertIn("terminal rows without a within-patient future label are excluded", report)
+        self.assertIn("terminal rows without a within-patient/session future label are excluded", report)
 
     def test_committed_m4_artifact_reports_current_row_accounting(self) -> None:
         root = Path(__file__).parents[2] / "artifacts" / "forecastability_trial0_m4"
@@ -526,7 +568,7 @@ class ForecastabilityM4Tests(unittest.TestCase):
                 self.assertEqual(row["evaluated_rows"], row["valid_rows"])
                 self.assertEqual(
                     row["horizon_label_policy"],
-                    "drop_terminal_rows_without_within_patient_future_label",
+                    "drop_terminal_rows_without_within_patient_session_future_label",
                 )
                 self.assertIn("p_value", row["cluster_permutation"])
 

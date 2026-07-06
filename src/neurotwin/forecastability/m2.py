@@ -27,6 +27,7 @@ class SleepFixture:
     stages: np.ndarray
     transition: np.ndarray
     subject: np.ndarray
+    session: np.ndarray
     dataset: np.ndarray
     site: np.ndarray
     nuisance: np.ndarray
@@ -97,6 +98,7 @@ def make_synthetic_sleep_fixture(
     stages: list[int] = []
     transitions: list[int] = []
     subjects: list[int] = []
+    sessions: list[int] = []
     datasets: list[int] = []
     sites: list[int] = []
     nuisance: list[list[float]] = []
@@ -132,6 +134,7 @@ def make_synthetic_sleep_fixture(
             stages.append(raw_stages[epoch])
             transitions.append(next_transition)
             subjects.append(subject)
+            sessions.append(dataset)
             datasets.append(dataset)
             sites.append(site)
             nuisance.append([1.0, np.sin(2.0 * np.pi * epoch / epochs_per_subject), np.cos(2.0 * np.pi * epoch / epochs_per_subject), recent, raw_stages[epoch] / 4.0])
@@ -141,6 +144,7 @@ def make_synthetic_sleep_fixture(
         stages=np.asarray(stages, dtype=np.int64),
         transition=np.asarray(transitions, dtype=np.int64),
         subject=np.asarray(subjects, dtype=np.int64),
+        session=np.asarray(sessions, dtype=np.int64),
         dataset=np.asarray(datasets, dtype=np.int64),
         site=np.asarray(sites, dtype=np.int64),
         nuisance=np.asarray(nuisance, dtype=np.float32),
@@ -204,14 +208,22 @@ def load_sleep_edf_fixture(root: str | Path, *, max_pairs: int | None = 4) -> Sl
     pairs = _local_sleep_edf_pairs(Path(root))
     if max_pairs is not None:
         pairs = pairs[:max_pairs]
+    pair_metadata = _sleep_edf_pair_metadata(pairs)
+    subject_codes = {subject: idx for idx, subject in enumerate(dict.fromkeys(row["subject_id"] for row in pair_metadata))}
+    session_codes = {
+        session: idx
+        for idx, session in enumerate(dict.fromkeys(row["subject_session_id"] for row in pair_metadata))
+    }
+    dataset_codes = {dataset: idx for idx, dataset in enumerate(dict.fromkeys(row["dataset_id"] for row in pair_metadata))}
     windows: list[np.ndarray] = []
     stages: list[int] = []
     transitions: list[int] = []
     subjects: list[int] = []
+    sessions: list[int] = []
     datasets: list[int] = []
     sites: list[int] = []
     nuisance: list[list[float]] = []
-    for subject_idx, (psg_path, hyp_path) in enumerate(pairs):
+    for metadata, (psg_path, hyp_path) in zip(pair_metadata, pairs, strict=True):
         psg = _read_edf_signals(psg_path, preferred_labels=("EEG Fpz-Cz", "EEG Pz-Oz", "EOG horizontal", "EMG submental"))
         hyp = _read_sleep_edf_hypnogram(hyp_path)
         labels = _stage_per_record(hyp, n_records=psg["signals"].shape[0], record_seconds=float(psg["record_duration"]))
@@ -226,9 +238,10 @@ def load_sleep_edf_fixture(root: str | Path, *, max_pairs: int | None = 4) -> Sl
             windows.append(signals[epoch])
             stages.append(int(labels[epoch]))
             transitions.append(transition)
-            subjects.append(subject_idx)
-            datasets.append(0)
-            sites.append(0)
+            subjects.append(subject_codes[metadata["subject_id"]])
+            sessions.append(session_codes[metadata["subject_session_id"]])
+            datasets.append(dataset_codes[metadata["dataset_id"]])
+            sites.append(dataset_codes[metadata["dataset_id"]])
             recent = float(np.mean(recent_changes[-10:]))
             nuisance.append([1.0, np.sin(2.0 * np.pi * epoch / max(1, len(labels))), np.cos(2.0 * np.pi * epoch / max(1, len(labels))), recent, labels[epoch] / 5.0])
             recent_changes.append(transition)
@@ -239,6 +252,7 @@ def load_sleep_edf_fixture(root: str | Path, *, max_pairs: int | None = 4) -> Sl
         stages=np.asarray(stages, dtype=np.int64),
         transition=np.asarray(transitions, dtype=np.int64),
         subject=np.asarray(subjects, dtype=np.int64),
+        session=np.asarray(sessions, dtype=np.int64),
         dataset=np.asarray(datasets, dtype=np.int64),
         site=np.asarray(sites, dtype=np.int64),
         nuisance=np.asarray(nuisance, dtype=np.float32),
@@ -249,6 +263,42 @@ def _local_sleep_edf_pairs(root: Path) -> list[tuple[Path, Path]]:
     psg = sorted(root.rglob("*-PSG.edf"))
     hyp_by_prefix = {path.name[:6]: path for path in root.rglob("*-Hypnogram.edf")}
     return [(path, hyp_by_prefix[path.name[:6]]) for path in psg if path.name[:6] in hyp_by_prefix]
+
+
+def _sleep_edf_record_metadata(path: str | Path) -> dict[str, Any]:
+    name = Path(path).name
+    record_id = name.removesuffix("-PSG.edf").removesuffix("-Hypnogram.edf")
+    match = re.match(r"^(?P<study>SC)4(?P<subject>\d{2})(?P<night>\d)[A-Z]\d$", record_id)
+    dataset_id = "sleep-cassette"
+    if match is None:
+        match = re.match(r"^(?P<study>ST)7(?P<subject>\d{2})(?P<night>\d)[A-Z]\d$", record_id)
+        dataset_id = "sleep-telemetry"
+    if match is None:
+        raise ValueError(f"Sleep-EDF filename is not recognized: {name}")
+    study = match.group("study")
+    subject_id = f"{study}-{match.group('subject')}"
+    night = int(match.group("night"))
+    session_id = f"night-{night}"
+    return {
+        "record_id": record_id,
+        "study_code": study,
+        "dataset_id": dataset_id,
+        "subject_id": subject_id,
+        "night": night,
+        "session_id": session_id,
+        "subject_session_id": f"{subject_id}-{session_id}",
+    }
+
+
+def _sleep_edf_pair_metadata(pairs: list[tuple[Path, Path]]) -> list[dict[str, Any]]:
+    rows = []
+    for psg, hyp in pairs:
+        psg_metadata = _sleep_edf_record_metadata(psg)
+        hyp_metadata = _sleep_edf_record_metadata(hyp)
+        if psg_metadata["subject_session_id"] != hyp_metadata["subject_session_id"]:
+            raise ValueError(f"PSG/hypnogram Sleep-EDF pair mismatch: {psg.name} vs {hyp.name}")
+        rows.append(psg_metadata)
+    return rows
 
 
 def _sleep_edf_directory_index() -> list[str]:
@@ -406,8 +456,17 @@ def _stage_per_record(hypnogram: list[tuple[float, float, int]], *, n_records: i
     return labels
 
 
-def _pair_hashes(pairs: list[tuple[Path, Path]]) -> list[dict[str, str]]:
-    return [{"psg": path.name, "psg_sha256": _sha256(path), "hypnogram": hyp.name, "hypnogram_sha256": _sha256(hyp)} for path, hyp in pairs]
+def _pair_hashes(pairs: list[tuple[Path, Path]]) -> list[dict[str, Any]]:
+    return [
+        {
+            **metadata,
+            "psg": path.name,
+            "psg_sha256": _sha256(path),
+            "hypnogram": hyp.name,
+            "hypnogram_sha256": _sha256(hyp),
+        }
+        for metadata, (path, hyp) in zip(_sleep_edf_pair_metadata(pairs), pairs, strict=True)
+    ]
 
 
 def _sha256(path: Path) -> str:
@@ -429,7 +488,7 @@ def _as_transition_fixture(fixture: SleepFixture) -> TransitionFixture:
         patient=fixture.subject,
         site=fixture.site,
         time_bucket=fixture.stages,
-        session=fixture.dataset,
+        session=fixture.session,
     )
 
 

@@ -46,19 +46,19 @@ M3 after hardened gated baseline:
 M4 synthetic known signal:
 
 - horizon 1 RFS: `0.219577` bits, CI `[0.198156, 0.243070]`
-- horizon 2 RFS: `0.133120` bits, CI `[0.113036, 0.156743]`
-- horizon 3 RFS: `0.082506` bits, CI `[0.063052, 0.104817]`
+- horizon 2 RFS: `0.132555` bits, CI `[0.112087, 0.156228]`
+- horizon 3 RFS: `0.079894` bits, CI `[0.060602, 0.102731]`
 - exact patient-cluster sign-flip p-values: `0.000488`, `0.000488`, `0.000488`
-- positive-RFS AUC: `0.145068` bits
-- valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
+- positive-RFS AUC: `0.144009` bits
+- valid/invalid rows by horizon: `1440/0`, `1416/24`, `1392/48`
 
 M4 synthetic null:
 
-- horizon RFS values: `0.000732`, `-0.001066`, `0.000518`
-- exact patient-cluster sign-flip p-values: `0.306322`, `0.791067`, `0.382231`
+- horizon RFS values: `0.000732`, `-0.000631`, `0.000403`
+- exact patient-cluster sign-flip p-values: `0.306322`, `0.715402`, `0.398584`
 - all CIs straddle zero
-- positive-RFS AUC: `0.000417` bits
-- valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
+- positive-RFS AUC: `0.000378` bits
+- valid/invalid rows by horizon: `1440/0`, `1416/24`, `1392/48`
 
 M4 Sleep-EDF smoke:
 
@@ -73,9 +73,10 @@ M4 Sleep-EDF smoke:
 - RFS payloads now use the best nuisance/trivial baseline among logistic nuisance, moving average, random warning, and alarm-time surrogate.
 - Added `src/neurotwin/forecastability/m4.py`.
 - Added `tests/forecastability/test_m4.py`.
-- M4 now reports nuisance probes per horizon and excludes terminal rows without a within-patient future label before fitting/scoring.
+- M4 now reports nuisance probes per horizon and excludes terminal rows without a within-patient/session future label before fitting/scoring.
 - M4 reports fixed-prediction patient-cluster sign-flip permutation p-values per horizon; only the explicit primary horizon is inferential for the gate.
 - Added an M4 Sleep-EDF primary-horizon pre-analysis plan and runner contract so a future public-data run can execute from an out-of-repo raw-data root without committing local paths or raw data.
+- Sleep-EDF filenames are parsed into dataset-scoped subject IDs and night/session IDs, so split/cluster units are subjects while horizon labels stop at session boundaries.
 - Added an M3 artifact freshness test that recomputes failures from current gate logic.
 - Added `.github/workflows/ci.yml`.
 
@@ -84,6 +85,7 @@ M4 Sleep-EDF smoke:
 - M4 is a benchmark-method contribution, not a powered biological result.
 - Sleep-EDF smoke is not present in the current committed M4 artifact because no local Sleep-EDF root was available at refresh time.
 - The M4 Sleep-EDF runner is now preregistered as a future execution contract, but no full Sleep-EDF result is claimed by this note.
+- Historical tiny Sleep-EDF M2 evidence must be treated cautiously because subject/night metadata now makes paired nights stricter than pair-count-as-subject accounting.
 - CHB-MIT remains a development smoke path and fails after the stronger baseline.
 - TUSZ external validation was not run because no local out-of-repo TUSZ root is available.
 - Bootstrap remains percentile-based and small in the current shared helper; BCa and larger `n_boot` remain future hardening.
@@ -91,7 +93,7 @@ M4 Sleep-EDF smoke:
 
 ## Next Experiments
 
-1. Run the M4 Sleep-EDF primary-horizon runner against an out-of-repo Sleep-EDF root and preserve the redacted execution metadata.
+1. Run the M4 Sleep-EDF primary-horizon runner against an out-of-repo Sleep-EDF root and preserve redacted subject/night execution metadata.
 2. Run CHB-MIT with at least 8 event-patients, then real out-of-repo TUSZ.
 3. Add a multiplicity-controlled protocol if future M4 claims use more than the preregistered primary horizon.
 4. Add variance-normalized skill for A100 aggregate reporting and stop headlining unweighted task means.

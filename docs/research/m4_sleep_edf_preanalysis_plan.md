@@ -7,6 +7,8 @@ pre-analysis plan for a future local/public-data run, not a completed Sleep-EDF 
 
 - Dataset: PhysioNet Sleep-EDF Expanded.
 - Raw data policy: raw PSG and hypnogram files must stay outside the repository.
+- Split/cluster unit: dataset-scoped Sleep-EDF subject ID parsed from the filename.
+- Session boundary unit: subject/night ID parsed from the filename.
 - Primary horizon: horizon 1.
 - Descriptive horizons: horizons 2 and 3.
 - Primary endpoint: RFS bits versus the strongest gated nuisance/trivial baseline.
@@ -21,6 +23,7 @@ are descriptive unless a separate multiplicity-controlled plan is added.
 The future Sleep-EDF execution must fail closed if:
 
 - the local Sleep-EDF root is inside the repository,
+- Sleep-EDF filenames cannot be parsed into subject and night metadata,
 - primary-horizon event patients are below 8,
 - primary-horizon positive events are below 100,
 - the primary RFS confidence interval includes zero,
@@ -31,8 +34,9 @@ The future Sleep-EDF execution must fail closed if:
 ## Provenance Requirements
 
 The runner writes redacted execution metadata only. It records file names, file
-hashes, pair counts, the preregistration hash, the primary-horizon result, and gate
-failures. It does not record absolute local raw-data paths.
+hashes, parsed subject IDs, parsed night/session IDs, pair counts, the
+preregistration hash, the primary-horizon result, and gate failures. It does not
+record absolute local raw-data paths.
 
 ## Sources
 
