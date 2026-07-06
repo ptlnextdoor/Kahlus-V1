@@ -8,6 +8,7 @@
   ],
   "method": "leakage_safe_horizon_wise_label_curve",
   "milestone": "M4",
+  "primary_horizon": 1,
   "sleep_edf_smoke": {
     "status": "not_run_no_local_sleep_edf_root"
   },
@@ -20,6 +21,26 @@
     "auc_positive_rfs_bits": 0.14506788671257928,
     "curve": [
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.12381286934515064,
+          "null_ci_low": -0.12381286934515064,
+          "null_mean_rfs_bits": -8.673617379884035e-19,
+          "observed_rfs_bits": 0.2195773656239268,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10005,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
         "evaluated_rows": 1440,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
@@ -57,6 +78,26 @@
         "valid_rows": 1440
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.07868841089171513,
+          "null_ci_low": -0.07868841089171513,
+          "null_mean_rfs_bits": 0.0,
+          "observed_rfs_bits": 0.13312039896436131,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10006,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
         "evaluated_rows": 1428,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
@@ -94,6 +135,26 @@
         "valid_rows": 1428
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.051511764414458025,
+          "null_ci_low": -0.051511764414458025,
+          "null_mean_rfs_bits": 0.0,
+          "observed_rfs_bits": 0.08250589554944986,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10007,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
         "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
@@ -137,6 +198,28 @@
     "auc_positive_rfs_bits": 0.00041665100957997536,
     "curve": [
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.0026675016163429425,
+          "null_ci_low": -0.0026675016163429425,
+          "null_mean_rfs_bits": 2.710505431213761e-20,
+          "observed_rfs_bits": 0.0007321943389789074,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.30632169880400295,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10105,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_1_cluster_permutation_not_significant"
+        ],
         "evaluated_rows": 1440,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
@@ -174,6 +257,28 @@
         "valid_rows": 1440
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.002093169236320213,
+          "null_ci_low": -0.002093169236320213,
+          "null_mean_rfs_bits": -1.3552527156068805e-20,
+          "observed_rfs_bits": -0.0010661998436168672,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.7910666341225286,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10106,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_2_cluster_permutation_not_significant"
+        ],
         "evaluated_rows": 1428,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
@@ -211,6 +316,28 @@
         "valid_rows": 1428
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.003056670466131645,
+          "null_ci_low": -0.003056670466131645,
+          "null_mean_rfs_bits": 0.0,
+          "observed_rfs_bits": 0.0005177586897611092,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.38223090065901877,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10107,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_3_cluster_permutation_not_significant"
+        ],
         "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",

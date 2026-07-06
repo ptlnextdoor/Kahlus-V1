@@ -133,6 +133,15 @@ def discrete_survival_labels(events: np.ndarray, *, bins: int = 3) -> np.ndarray
 
 
 def _run_fixture(fixture: TransitionFixture, *, seed: int) -> dict[str, Any]:
+    payload, _ = _run_fixture_with_traces(fixture, seed=seed)
+    return payload
+
+
+def _run_fixture_with_traces(
+    fixture: TransitionFixture,
+    *,
+    seed: int,
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
     y = fixture.y
     z = handcrafted_eeg_features(fixture.windows)
     b = fixture.nuisance
@@ -155,7 +164,7 @@ def _run_fixture(fixture: TransitionFixture, *, seed: int) -> dict[str, Any]:
         },
     )
     survival = discrete_survival_labels(y, bins=3)
-    return {
+    payload = {
         "n": int(len(y)),
         "positive_events": int(np.sum(y)),
         "event_patients": int(len(set(fixture.patient[y == 1]))),
@@ -177,6 +186,13 @@ def _run_fixture(fixture: TransitionFixture, *, seed: int) -> dict[str, Any]:
             "session": _probe_accuracy(z, fixture.session),
         },
     }
+    traces = {
+        "y": np.asarray(y, dtype=np.int64),
+        "patient": np.asarray(fixture.patient),
+        "gated_baseline": np.asarray(gated_baseline, dtype=np.float64),
+        "logistic_full": np.asarray(full, dtype=np.float64),
+    }
+    return payload, traces
 
 
 def _crossfit_proba(

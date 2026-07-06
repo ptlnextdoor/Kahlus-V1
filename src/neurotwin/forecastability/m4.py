@@ -6,13 +6,14 @@ from typing import Any
 
 import numpy as np
 
-from neurotwin.forecastability.m1 import TransitionFixture, _run_fixture, make_transition_fixture
+from neurotwin.forecastability.m1 import TransitionFixture, _run_fixture_with_traces, make_transition_fixture
 from neurotwin.forecastability.m2 import _as_transition_fixture, load_sleep_edf_fixture
 
 
 DEFAULT_HORIZONS = (1, 2, 3)
 NUISANCE_PROBE_KEYS = ("patient", "site", "time_bucket", "session")
 NUISANCE_PROBE_MARGIN = 0.20
+CLUSTER_PERMUTATION_ALPHA = 0.05
 
 
 def run_m4_gate(
@@ -21,18 +22,24 @@ def run_m4_gate(
     seed: int = 0,
     sleep_edf_root: str | Path | None = None,
     horizons: tuple[int, ...] = DEFAULT_HORIZONS,
+    primary_horizon: int | None = None,
 ) -> dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    primary = _resolve_primary_horizon(horizons, primary_horizon)
     known = _curve_payload(make_transition_fixture(seed=seed, residual_signal=True), horizons=horizons, seed=seed)
     null = _curve_payload(make_transition_fixture(seed=seed + 100, residual_signal=False), horizons=horizons, seed=seed + 100)
     sleep = _sleep_edf_curve_payload(sleep_edf_root, horizons=horizons, seed=seed + 200)
-    synthetic_passed = _known_curve_passes(known) and _null_curve_passes(null)
-    sleep_failures = _sleep_curve_failures(sleep)
+    synthetic_passed = _known_curve_passes(known, primary_horizon=primary) and _null_curve_passes(
+        null,
+        primary_horizon=primary,
+    )
+    sleep_failures = _sleep_curve_failures(sleep, primary_horizon=primary)
     gate = {
         "milestone": "M4",
         "method": "leakage_safe_horizon_wise_label_curve",
         "horizons": list(horizons),
+        "primary_horizon": primary,
         "synthetic_known_signal": known,
         "synthetic_null": null,
         "sleep_edf_smoke": sleep,
@@ -100,8 +107,15 @@ def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], see
         if valid_windows == 0:
             raise ValueError(f"horizon {horizon} has no valid within-patient future labels")
         horizon_fixture = _filter_fixture(_with_labels(fixture, labels_by_horizon[horizon]), valid_mask)
-        payload = _run_fixture(horizon_fixture, seed=seed + offset)
+        payload, traces = _run_fixture_with_traces(horizon_fixture, seed=seed + offset)
         nuisance_probes = payload.get("nuisance_probes", {})
+        cluster_permutation = _cluster_permutation_rfs(
+            traces["y"],
+            traces["gated_baseline"],
+            traces["logistic_full"],
+            traces["patient"],
+            seed=seed + 10_000 + offset,
+        )
         rows.append(
             {
                 "horizon": horizon,
@@ -123,6 +137,11 @@ def _curve_payload(fixture: TransitionFixture, *, horizons: tuple[int, ...], see
                 "nuisance_probes": nuisance_probes,
                 "nuisance_probe_failures": _nuisance_probe_failures(
                     nuisance_probes,
+                    prefix=f"horizon_{horizon}",
+                ),
+                "cluster_permutation": cluster_permutation,
+                "cluster_permutation_failures": _cluster_permutation_failures(
+                    cluster_permutation,
                     prefix=f"horizon_{horizon}",
                 ),
             }
@@ -173,8 +192,24 @@ def _filter_fixture(fixture: TransitionFixture, mask: np.ndarray) -> TransitionF
     )
 
 
-def _known_curve_passes(payload: dict[str, Any]) -> bool:
-    first = payload["curve"][0]
+def _resolve_primary_horizon(horizons: tuple[int, ...], primary_horizon: int | None) -> int:
+    if not horizons:
+        raise ValueError("horizons must include at least one horizon")
+    primary = horizons[0] if primary_horizon is None else primary_horizon
+    if primary not in horizons:
+        raise ValueError("primary_horizon must be present in horizons")
+    return primary
+
+
+def _primary_row(payload: dict[str, Any], primary_horizon: int) -> dict[str, Any]:
+    for row in payload.get("curve", []):
+        if row.get("horizon") == primary_horizon:
+            return row
+    raise ValueError(f"primary horizon {primary_horizon} is missing from curve")
+
+
+def _known_curve_passes(payload: dict[str, Any], *, primary_horizon: int = DEFAULT_HORIZONS[0]) -> bool:
+    first = _primary_row(payload, primary_horizon)
     return bool(
         first["positive_events"] >= 40
         and first["event_patients"] >= 8
@@ -182,17 +217,21 @@ def _known_curve_passes(payload: dict[str, Any]) -> bool:
         and first["rfs_ci_low"] > 0.0
         and first["shuffled_rfs_bits"] < first["rfs_bits"] * 0.5
         and first["time_shift_rfs_bits"] < first["rfs_bits"] * 0.5
+        and not first.get("cluster_permutation_failures", ["cluster_permutation_missing"])
         and _nuisance_probes_pass(payload)
     )
 
 
-def _null_curve_passes(payload: dict[str, Any]) -> bool:
+def _null_curve_passes(payload: dict[str, Any], *, primary_horizon: int = DEFAULT_HORIZONS[0]) -> bool:
+    primary = _primary_row(payload, primary_horizon)
     return bool(
         all(
             abs(row["rfs_bits"]) < 0.03
             and row["rfs_ci_low"] <= 0.0 <= row["rfs_ci_high"]
             for row in payload["curve"]
         )
+        and _cluster_permutation_is_valid(primary.get("cluster_permutation"))
+        and not _cluster_permutation_is_significant(primary.get("cluster_permutation"))
         and _nuisance_probes_pass(payload)
     )
 
@@ -200,6 +239,118 @@ def _null_curve_passes(payload: dict[str, Any]) -> bool:
 def _nuisance_probes_pass(payload: dict[str, Any]) -> bool:
     rows = payload.get("curve", [])
     return bool(rows) and all(not row.get("nuisance_probe_failures", ["nuisance_probe_missing"]) for row in rows)
+
+
+def _cluster_permutation_rfs(
+    y: np.ndarray,
+    baseline: np.ndarray,
+    pred: np.ndarray,
+    patient: np.ndarray,
+    *,
+    seed: int,
+    n_permutations: int = 300,
+    alpha: float = CLUSTER_PERMUTATION_ALPHA,
+) -> dict[str, Any]:
+    labels = np.asarray(y, dtype=np.float64)
+    baseline_proba = np.clip(np.asarray(baseline, dtype=np.float64), 1e-5, 1.0 - 1e-5)
+    pred_proba = np.clip(np.asarray(pred, dtype=np.float64), 1e-5, 1.0 - 1e-5)
+    groups = np.asarray(patient)
+    if not (len(labels) == len(baseline_proba) == len(pred_proba) == len(groups)):
+        raise ValueError("y, baseline, pred, and patient must have the same length")
+    if len(labels) == 0:
+        raise ValueError("cluster permutation requires at least one row")
+    unique = np.unique(groups)
+    if len(unique) == 0:
+        raise ValueError("cluster permutation requires at least one patient cluster")
+
+    baseline_loss = _log_loss_rows(labels, baseline_proba)
+    pred_loss = _log_loss_rows(labels, pred_proba)
+    row_delta = (baseline_loss - pred_loss) / np.log(2.0)
+    cluster_delta = np.asarray(
+        [float(np.sum(row_delta[groups == group]) / len(labels)) for group in unique],
+        dtype=np.float64,
+    )
+    observed = float(np.sum(cluster_delta))
+
+    if len(unique) <= 12:
+        n_draws = 2 ** len(unique)
+        signs = np.empty((n_draws, len(unique)), dtype=np.float64)
+        for idx in range(n_draws):
+            signs[idx] = [1.0 if (idx >> bit) & 1 else -1.0 for bit in range(len(unique))]
+        mode = "exact"
+    else:
+        n_draws = int(n_permutations)
+        if n_draws <= 0:
+            raise ValueError("n_permutations must be positive")
+        rng = np.random.default_rng(seed)
+        signs = rng.choice(np.asarray([-1.0, 1.0]), size=(n_draws, len(unique)))
+        mode = "sampled"
+    null = np.sum(signs * cluster_delta[None, :], axis=1)
+    exceedances = int(np.sum(null >= observed))
+    p_value = float((exceedances + 1) / (len(null) + 1))
+    return {
+        "method": "patient_cluster_sign_flip_rfs",
+        "permutation_unit": "patient_cluster_sign_flip",
+        "alternative": "greater",
+        "statistic": "rfs_bits",
+        "alpha": float(alpha),
+        "seed": int(seed),
+        "mode": mode,
+        "n_clusters": int(len(unique)),
+        "n_permutations": int(len(null)),
+        "p_resolution": float(1.0 / (len(null) + 1)),
+        "observed_rfs_bits": observed,
+        "null_mean_rfs_bits": float(np.mean(null)),
+        "null_ci_low": float(np.percentile(null, 2.5)),
+        "null_ci_high": float(np.percentile(null, 97.5)),
+        "p_value": p_value,
+        "significant": bool(observed > 0.0 and p_value <= alpha),
+        "scope": "primary_horizon_control_only_not_claim_enabling",
+    }
+
+
+def _log_loss_rows(y: np.ndarray, p: np.ndarray) -> np.ndarray:
+    return -(y * np.log(p) + (1.0 - y) * np.log(1.0 - p))
+
+
+def _cluster_permutation_failures(permutation: Any, *, prefix: str) -> list[str]:
+    if not isinstance(permutation, dict):
+        return [f"{prefix}_cluster_permutation_missing"]
+    try:
+        p_value = float(permutation["p_value"])
+        observed = float(permutation["observed_rfs_bits"])
+        alpha = float(permutation.get("alpha", CLUSTER_PERMUTATION_ALPHA))
+    except (KeyError, TypeError, ValueError):
+        return [f"{prefix}_cluster_permutation_invalid"]
+    if not np.isfinite(p_value) or not np.isfinite(observed) or not np.isfinite(alpha):
+        return [f"{prefix}_cluster_permutation_nonfinite"]
+    if observed <= 0.0 or p_value > alpha:
+        return [f"{prefix}_cluster_permutation_not_significant"]
+    return []
+
+
+def _cluster_permutation_is_significant(permutation: Any) -> bool:
+    if not isinstance(permutation, dict):
+        return False
+    try:
+        observed = float(permutation["observed_rfs_bits"])
+        p_value = float(permutation["p_value"])
+        alpha = float(permutation.get("alpha", CLUSTER_PERMUTATION_ALPHA))
+        return bool(observed > 0.0 and p_value <= alpha)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def _cluster_permutation_is_valid(permutation: Any) -> bool:
+    if not isinstance(permutation, dict):
+        return False
+    try:
+        p_value = float(permutation["p_value"])
+        observed = float(permutation["observed_rfs_bits"])
+        alpha = float(permutation.get("alpha", CLUSTER_PERMUTATION_ALPHA))
+    except (KeyError, TypeError, ValueError):
+        return False
+    return bool(np.isfinite(p_value) and np.isfinite(observed) and np.isfinite(alpha))
 
 
 def _nuisance_probe_failures(probes: Any, *, prefix: str) -> list[str]:
@@ -224,10 +375,14 @@ def _nuisance_probe_failures(probes: Any, *, prefix: str) -> list[str]:
     return failures
 
 
-def _sleep_curve_failures(payload: dict[str, Any]) -> list[str]:
+def _sleep_curve_failures(
+    payload: dict[str, Any],
+    *,
+    primary_horizon: int = DEFAULT_HORIZONS[0],
+) -> list[str]:
     if payload["status"] != "completed_sleep_edf_smoke":
         return ["sleep_edf_smoke_not_completed"]
-    first = payload["curve"][0]
+    first = _primary_row(payload, primary_horizon)
     failures = []
     if first["event_patients"] < 8:
         failures.append("sleep_edf_underpowered_event_patients")
@@ -237,6 +392,8 @@ def _sleep_curve_failures(payload: dict[str, Any]) -> list[str]:
         failures.append("sleep_edf_shuffled_control_too_close")
     if first["time_shift_rfs_bits"] >= first["rfs_bits"] * 0.5:
         failures.append("sleep_edf_time_shift_control_too_close")
+    if first.get("cluster_permutation_failures", ["cluster_permutation_missing"]):
+        failures.append("sleep_edf_primary_cluster_permutation_not_significant")
     curve = payload.get("curve", [])
     if not curve:
         failures.append("sleep_edf_nuisance_probe_missing")
@@ -274,6 +431,10 @@ def _write_report(path: Path, gate: dict[str, Any]) -> None:
         f"if accuracy exceeds chance + {NUISANCE_PROBE_MARGIN:.2f}; "
         "passing probes do not unlock any clinical, causal, or model-superiority claim.",
         "",
+        "M4 also reports patient-cluster sign-flip permutation p-values for horizon RFS. "
+        "Only the preregistered primary horizon is inferential for the gate; other horizons "
+        "remain descriptive unless a multiplicity-controlled protocol is added.",
+        "",
         _curve_section("Synthetic Known Signal", gate["synthetic_known_signal"]),
         "",
         _curve_section("Synthetic Null", gate["synthetic_null"]),
@@ -292,8 +453,8 @@ def _curve_section(title: str, payload: dict[str, Any]) -> str:
         "",
         "| horizon | total rows | valid rows | evaluated rows | invalid terminal | RFS bits | CI low | CI high | events | "
         "event patients | gated baseline | shuffle | time-shift | "
-        "nuisance probes |",
-        "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
+        "cluster p | nuisance probes |",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---|",
     ]
     for row in payload["curve"]:
         lines.append(
@@ -302,7 +463,9 @@ def _curve_section(title: str, payload: dict[str, Any]) -> str:
             "{rfs_ci_high:.6f} | {positive_events} | "
             "{event_patients} | {gated_baseline_name} | {shuffled_rfs_bits:.6f} | "
             "{time_shift_rfs_bits:.6f} | "
+            "{cluster_p:.6f} | "
             "{probe_summary} |".format(
+                cluster_p=_cluster_p_value(row),
                 probe_summary=_format_probe_summary(row),
                 **row,
             )
@@ -329,3 +492,10 @@ def _format_probe_summary(row: dict[str, Any]) -> str:
         except (KeyError, TypeError, ValueError):
             values.append(f"{key}=missing")
     return "passed (" + ", ".join(values) + ")"
+
+
+def _cluster_p_value(row: dict[str, Any]) -> float:
+    try:
+        return float(row["cluster_permutation"]["p_value"])
+    except (KeyError, TypeError, ValueError):
+        return float("nan")

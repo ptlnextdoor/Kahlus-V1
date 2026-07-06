@@ -48,12 +48,14 @@ M4 synthetic known signal:
 - horizon 1 RFS: `0.219577` bits, CI `[0.198156, 0.243070]`
 - horizon 2 RFS: `0.133120` bits, CI `[0.113036, 0.156743]`
 - horizon 3 RFS: `0.082506` bits, CI `[0.063052, 0.104817]`
+- exact patient-cluster sign-flip p-values: `0.000488`, `0.000488`, `0.000488`
 - positive-RFS AUC: `0.145068` bits
 - valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
 
 M4 synthetic null:
 
 - horizon RFS values: `0.000732`, `-0.001066`, `0.000518`
+- exact patient-cluster sign-flip p-values: `0.306322`, `0.791067`, `0.382231`
 - all CIs straddle zero
 - positive-RFS AUC: `0.000417` bits
 - valid/invalid rows by horizon: `1440/0`, `1428/12`, `1416/24`
@@ -72,6 +74,7 @@ M4 Sleep-EDF smoke:
 - Added `src/neurotwin/forecastability/m4.py`.
 - Added `tests/forecastability/test_m4.py`.
 - M4 now reports nuisance probes per horizon and excludes terminal rows without a within-patient future label before fitting/scoring.
+- M4 reports fixed-prediction patient-cluster sign-flip permutation p-values per horizon; only the explicit primary horizon is inferential for the gate.
 - Added an M3 artifact freshness test that recomputes failures from current gate logic.
 - Added `.github/workflows/ci.yml`.
 
@@ -82,11 +85,11 @@ M4 Sleep-EDF smoke:
 - CHB-MIT remains a development smoke path and fails after the stronger baseline.
 - TUSZ external validation was not run because no local out-of-repo TUSZ root is available.
 - Bootstrap remains percentile-based and small in the current shared helper; BCa and larger `n_boot` remain future hardening.
+- The M4 permutation control is synthetic method evidence only. It does not compensate for the missing full Sleep-EDF/public-data run.
 
 ## Next Experiments
 
 1. Run full Sleep-EDF with enough event-patients and pre-register one primary horizon.
 2. Run CHB-MIT with at least 8 event-patients, then real out-of-repo TUSZ.
-3. Add cluster-permutation p-values for the M4 primary horizon.
-4. Add nuisance probes to M4 per horizon and fail if patient/site/session are recoverable above threshold.
-5. Add variance-normalized skill for A100 aggregate reporting and stop headlining unweighted task means.
+3. Add a multiplicity-controlled protocol if future M4 claims use more than the preregistered primary horizon.
+4. Add variance-normalized skill for A100 aggregate reporting and stop headlining unweighted task means.
