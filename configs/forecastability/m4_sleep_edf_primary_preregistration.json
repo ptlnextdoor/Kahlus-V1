@@ -1,0 +1,35 @@
+{
+  "a100_jobs_launched": false,
+  "claim_boundary": "benchmark-method hardening only; no clinical, treatment, or model-superiority claim",
+  "clinical_claim_allowed": false,
+  "controls": {
+    "nuisance_probe_rule": "fail if accuracy exceeds chance + 0.20",
+    "primary_cluster_permutation_alpha": 0.05,
+    "shuffled_target_control": "must stay below half of primary RFS",
+    "time_shift_control": "must stay below half of primary RFS"
+  },
+  "dataset_id": "sleep_edf_expanded",
+  "dataset_url": "https://physionet.org/files/sleep-edfx/1.0.0/",
+  "descriptive_horizons": [
+    2,
+    3
+  ],
+  "horizons": [
+    1,
+    2,
+    3
+  ],
+  "inferential_scope": "primary_horizon_only",
+  "minimum_event_patients": 8,
+  "minimum_primary_positive_events": 100,
+  "model_superiority_claim_allowed": false,
+  "preanalysis_plan": true,
+  "primary_endpoint": "primary_horizon_rfs_bits_vs_strongest_gated_baseline",
+  "primary_horizon": 1,
+  "protocol": "M4 Sleep-EDF primary-horizon pre-analysis plan",
+  "public_data_used": false,
+  "raw_data_policy": "outside_repo_only",
+  "schema": "kahlus.forecastability.m4.sleep_edf_preregistration.v1",
+  "seed": 5,
+  "sleep_edf_max_pairs": null
+}

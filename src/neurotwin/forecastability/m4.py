@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -7,13 +8,22 @@ from typing import Any
 import numpy as np
 
 from neurotwin.forecastability.m1 import TransitionFixture, _run_fixture_with_traces, make_transition_fixture
-from neurotwin.forecastability.m2 import _as_transition_fixture, load_sleep_edf_fixture
+from neurotwin.forecastability.m2 import (
+    SLEEP_EDF_BASE_URL,
+    _as_transition_fixture,
+    _local_sleep_edf_pairs,
+    _sha256,
+    load_sleep_edf_fixture,
+)
 
 
 DEFAULT_HORIZONS = (1, 2, 3)
 NUISANCE_PROBE_KEYS = ("patient", "site", "time_bucket", "session")
 NUISANCE_PROBE_MARGIN = 0.20
 CLUSTER_PERMUTATION_ALPHA = 0.05
+SLEEP_EDF_MIN_PRIMARY_POSITIVE_EVENTS = 100
+M4_SLEEP_EDF_PREREGISTRATION_SCHEMA = "kahlus.forecastability.m4.sleep_edf_preregistration.v1"
+M4_SLEEP_EDF_EXECUTION_SCHEMA = "kahlus.forecastability.m4.sleep_edf_primary_execution.v1"
 
 
 def run_m4_gate(
@@ -52,6 +62,113 @@ def run_m4_gate(
     _write_json(out / "m4_gate_report.json", gate)
     _write_report(out / "M4_EVIDENCE_REPORT.md", gate)
     return gate
+
+
+def build_m4_sleep_edf_preregistration(
+    *,
+    seed: int = 5,
+    horizons: tuple[int, ...] = DEFAULT_HORIZONS,
+    primary_horizon: int | None = None,
+    sleep_edf_max_pairs: int | None = None,
+) -> dict[str, Any]:
+    planned_horizons = tuple(int(horizon) for horizon in horizons)
+    primary = _resolve_primary_horizon(planned_horizons, primary_horizon)
+    if sleep_edf_max_pairs is not None and int(sleep_edf_max_pairs) <= 0:
+        raise ValueError("sleep_edf_max_pairs must be positive or None")
+    return {
+        "schema": M4_SLEEP_EDF_PREREGISTRATION_SCHEMA,
+        "protocol": "M4 Sleep-EDF primary-horizon pre-analysis plan",
+        "dataset_id": "sleep_edf_expanded",
+        "dataset_url": SLEEP_EDF_BASE_URL,
+        "raw_data_policy": "outside_repo_only",
+        "seed": int(seed),
+        "horizons": list(planned_horizons),
+        "primary_horizon": int(primary),
+        "sleep_edf_max_pairs": None if sleep_edf_max_pairs is None else int(sleep_edf_max_pairs),
+        "primary_endpoint": "primary_horizon_rfs_bits_vs_strongest_gated_baseline",
+        "inferential_scope": "primary_horizon_only",
+        "descriptive_horizons": [int(horizon) for horizon in planned_horizons if horizon != primary],
+        "minimum_event_patients": 8,
+        "minimum_primary_positive_events": SLEEP_EDF_MIN_PRIMARY_POSITIVE_EVENTS,
+        "controls": {
+            "nuisance_probe_rule": f"fail if accuracy exceeds chance + {NUISANCE_PROBE_MARGIN:.2f}",
+            "primary_cluster_permutation_alpha": CLUSTER_PERMUTATION_ALPHA,
+            "shuffled_target_control": "must stay below half of primary RFS",
+            "time_shift_control": "must stay below half of primary RFS",
+        },
+        "claim_boundary": "benchmark-method hardening only; no clinical, treatment, or model-superiority claim",
+        "clinical_claim_allowed": False,
+        "model_superiority_claim_allowed": False,
+        "public_data_used": False,
+        "a100_jobs_launched": False,
+        "preanalysis_plan": True,
+    }
+
+
+def m4_preregistration_hash(preregistration: dict[str, Any]) -> str:
+    encoded = json.dumps(
+        preregistration,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def run_m4_sleep_edf_primary_execution(
+    out_dir: str | Path,
+    *,
+    sleep_edf_root: str | Path,
+    repo_root: str | Path | None = None,
+    preregistration: dict[str, Any] | None = None,
+    fixture_loader: Any = load_sleep_edf_fixture,
+) -> dict[str, Any]:
+    prereg = preregistration or build_m4_sleep_edf_preregistration()
+    _validate_m4_sleep_edf_preregistration(prereg)
+    horizons = tuple(int(horizon) for horizon in prereg["horizons"])
+    primary = _resolve_primary_horizon(horizons, int(prereg["primary_horizon"]))
+    root = Path(sleep_edf_root).expanduser().resolve()
+    repo = _default_repo_root() if repo_root is None else Path(repo_root).expanduser().resolve()
+    if root == repo or root.is_relative_to(repo):
+        raise ValueError("Sleep-EDF root must stay outside the repository")
+
+    pairs = _local_sleep_edf_pairs(root)
+    max_pairs = prereg.get("sleep_edf_max_pairs")
+    used_pairs = pairs if max_pairs is None else pairs[: int(max_pairs)]
+    fixture = _as_transition_fixture(fixture_loader(root, max_pairs=max_pairs))
+    curve = _curve_payload(fixture, horizons=horizons, seed=int(prereg["seed"]) + 200)
+    sleep_payload = {"status": "completed_sleep_edf_smoke", **curve}
+    failures = _sleep_curve_failures(sleep_payload, primary_horizon=primary)
+    fingerprints = _pair_fingerprints(used_pairs)
+    execution = {
+        "schema": M4_SLEEP_EDF_EXECUTION_SCHEMA,
+        "dataset_id": prereg["dataset_id"],
+        "dataset_url": prereg["dataset_url"],
+        "raw_data_policy": prereg["raw_data_policy"],
+        "public_data_used": True,
+        "local_root_redacted": True,
+        "raw_data_in_repo": False,
+        "sleep_edf_pair_count": len(pairs),
+        "sleep_edf_used_pairs": len(used_pairs),
+        "file_fingerprints": fingerprints,
+        "data_fingerprint_sha256": _fingerprint_hash(fingerprints),
+        "preregistration_hash": m4_preregistration_hash(prereg),
+        "preregistration": prereg,
+        "horizons": list(horizons),
+        "primary_horizon": primary,
+        "primary_horizon_result": _primary_row(sleep_payload, primary),
+        "sleep_edf_smoke": sleep_payload,
+        "sleep_edf_smoke_failures": failures,
+        "gate_passed": not failures,
+        "claim_scope": "benchmark_method_only_not_clinical_or_foundation_model_claim",
+        "clinical_claim_allowed": False,
+        "model_superiority_claim_allowed": False,
+    }
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    _write_json(out / "m4_sleep_edf_preregistration.json", prereg)
+    _write_json(out / "m4_sleep_edf_primary_execution.json", execution)
+    return execution
 
 
 def patient_horizon_labels(events: np.ndarray, patient: np.ndarray, *, horizons: tuple[int, ...]) -> dict[int, np.ndarray]:
@@ -160,9 +277,19 @@ def _sleep_edf_curve_payload(root: str | Path | None, *, horizons: tuple[int, ..
     try:
         fixture = _as_transition_fixture(load_sleep_edf_fixture(root, max_pairs=8))
         payload = _curve_payload(fixture, horizons=horizons, seed=seed)
-        return {"status": "completed_sleep_edf_smoke", "root": str(root), **payload}
+        return {
+            "status": "completed_sleep_edf_smoke",
+            "local_root_redacted": True,
+            "raw_data_policy": "outside_repo_only",
+            **payload,
+        }
     except Exception as exc:  # noqa: BLE001 - parser/runtime failures are evidence.
-        return {"status": "sleep_edf_smoke_failed", "root": str(root), "error": str(exc)}
+        return {
+            "status": "sleep_edf_smoke_failed",
+            "local_root_redacted": True,
+            "raw_data_policy": "outside_repo_only",
+            "error": str(exc),
+        }
 
 
 def _with_labels(fixture: TransitionFixture, y: np.ndarray) -> TransitionFixture:
@@ -199,6 +326,34 @@ def _resolve_primary_horizon(horizons: tuple[int, ...], primary_horizon: int | N
     if primary not in horizons:
         raise ValueError("primary_horizon must be present in horizons")
     return primary
+
+
+def _validate_m4_sleep_edf_preregistration(preregistration: dict[str, Any]) -> None:
+    if preregistration.get("schema") != M4_SLEEP_EDF_PREREGISTRATION_SCHEMA:
+        raise ValueError("schema must be M4 Sleep-EDF preregistration v1")
+    if preregistration.get("raw_data_policy") != "outside_repo_only":
+        raise ValueError("raw_data_policy must be outside_repo_only")
+    if preregistration.get("inferential_scope") != "primary_horizon_only":
+        raise ValueError("inferential_scope must be primary_horizon_only")
+    for key in (
+        "clinical_claim_allowed",
+        "model_superiority_claim_allowed",
+        "public_data_used",
+        "a100_jobs_launched",
+    ):
+        if preregistration.get(key) is not False:
+            raise ValueError(f"{key} must be false in the pre-analysis plan")
+    if preregistration.get("preanalysis_plan") is not True:
+        raise ValueError("preanalysis_plan must be true")
+    horizons = tuple(int(horizon) for horizon in preregistration.get("horizons", []))
+    _resolve_primary_horizon(horizons, int(preregistration["primary_horizon"]))
+    max_pairs = preregistration.get("sleep_edf_max_pairs")
+    if max_pairs is not None and int(max_pairs) <= 0:
+        raise ValueError("sleep_edf_max_pairs must be positive or None")
+
+
+def _default_repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
 
 
 def _primary_row(payload: dict[str, Any], primary_horizon: int) -> dict[str, Any]:
@@ -386,6 +541,13 @@ def _sleep_curve_failures(
     failures = []
     if first["event_patients"] < 8:
         failures.append("sleep_edf_underpowered_event_patients")
+    try:
+        positive_events = int(first["positive_events"])
+    except (KeyError, TypeError, ValueError):
+        failures.append("sleep_edf_primary_positive_events_missing")
+    else:
+        if positive_events < SLEEP_EDF_MIN_PRIMARY_POSITIVE_EVENTS:
+            failures.append("sleep_edf_primary_positive_events_underpowered")
     if first["rfs_ci_low"] <= 0.0:
         failures.append("sleep_edf_primary_rfs_ci_includes_zero")
     if first["shuffled_rfs_bits"] >= first["rfs_bits"] * 0.5:
@@ -405,6 +567,24 @@ def _sleep_curve_failures(
             else:
                 failures.append(f"sleep_edf_horizon_{horizon}_{failure}")
     return failures
+
+
+def _pair_fingerprints(pairs: list[tuple[Path, Path]]) -> list[dict[str, str]]:
+    return [
+        {
+            "record_id": psg.name.removesuffix("-PSG.edf"),
+            "psg": psg.name,
+            "psg_sha256": _sha256(psg),
+            "hypnogram": hyp.name,
+            "hypnogram_sha256": _sha256(hyp),
+        }
+        for psg, hyp in pairs
+    ]
+
+
+def _fingerprint_hash(fingerprints: list[dict[str, str]]) -> str:
+    encoded = json.dumps(fingerprints, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _write_json(path: Path, payload: Any) -> None:

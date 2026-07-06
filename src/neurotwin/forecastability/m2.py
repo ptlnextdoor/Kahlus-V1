@@ -200,8 +200,10 @@ def fetch_sleep_edf_records_index() -> list[str]:
         return response.read().decode("utf-8").splitlines()
 
 
-def load_sleep_edf_fixture(root: str | Path, *, max_pairs: int = 4) -> SleepFixture:
-    pairs = _local_sleep_edf_pairs(Path(root))[:max_pairs]
+def load_sleep_edf_fixture(root: str | Path, *, max_pairs: int | None = 4) -> SleepFixture:
+    pairs = _local_sleep_edf_pairs(Path(root))
+    if max_pairs is not None:
+        pairs = pairs[:max_pairs]
     windows: list[np.ndarray] = []
     stages: list[int] = []
     transitions: list[int] = []

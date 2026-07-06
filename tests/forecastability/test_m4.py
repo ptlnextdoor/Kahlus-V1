@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,8 +10,10 @@ from pathlib import Path
 import numpy as np
 
 from neurotwin.forecastability.m1 import TransitionFixture, make_transition_fixture
+from neurotwin.forecastability.m2 import make_synthetic_sleep_fixture
 from neurotwin.forecastability.m4 import (
     NUISANCE_PROBE_KEYS,
+    build_m4_sleep_edf_preregistration,
     _cluster_permutation_rfs,
     _curve_payload,
     _filter_fixture,
@@ -17,8 +21,10 @@ from neurotwin.forecastability.m4 import (
     _nuisance_probe_failures,
     _null_curve_passes,
     _sleep_curve_failures,
+    m4_preregistration_hash,
     patient_horizon_labels,
     patient_horizon_valid_masks,
+    run_m4_sleep_edf_primary_execution,
     run_m4_gate,
 )
 
@@ -74,6 +80,172 @@ class ForecastabilityM4Tests(unittest.TestCase):
             self.assertIn("cluster_permutation", row)
             self.assertEqual(row["cluster_permutation_failures"], [])
         self.assertEqual(gate["primary_horizon"], 1)
+
+    def test_m4_sleep_edf_preregistration_is_stable_and_explicit(self) -> None:
+        prereg = build_m4_sleep_edf_preregistration(seed=5, horizons=(1, 2, 3), primary_horizon=1)
+        again = build_m4_sleep_edf_preregistration(seed=5, horizons=(1, 2, 3), primary_horizon=1)
+
+        self.assertEqual(prereg, again)
+        self.assertEqual(m4_preregistration_hash(prereg), m4_preregistration_hash(again))
+        self.assertEqual(prereg["schema"], "kahlus.forecastability.m4.sleep_edf_preregistration.v1")
+        self.assertEqual(prereg["dataset_id"], "sleep_edf_expanded")
+        self.assertEqual(prereg["horizons"], [1, 2, 3])
+        self.assertEqual(prereg["primary_horizon"], 1)
+        self.assertEqual(prereg["sleep_edf_max_pairs"], None)
+        self.assertEqual(prereg["inferential_scope"], "primary_horizon_only")
+        self.assertFalse(prereg["clinical_claim_allowed"])
+
+    def test_m4_sleep_edf_preregistration_rejects_missing_primary_horizon(self) -> None:
+        with self.assertRaisesRegex(ValueError, "primary_horizon"):
+            build_m4_sleep_edf_preregistration(horizons=(2, 3), primary_horizon=1)
+
+    def test_m4_sleep_edf_execution_rejects_invalid_preregistration_claim_flags(self) -> None:
+        prereg = build_m4_sleep_edf_preregistration(seed=5)
+        prereg["clinical_claim_allowed"] = True
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "external_sleep_edf"
+            _write_sleep_pair(root, "SC4001E0")
+            with self.assertRaisesRegex(ValueError, "clinical_claim_allowed"):
+                run_m4_sleep_edf_primary_execution(
+                    Path(tmp) / "out",
+                    sleep_edf_root=root,
+                    repo_root=Path(tmp) / "repo",
+                    preregistration=prereg,
+                    fixture_loader=lambda _root, *, max_pairs: make_synthetic_sleep_fixture(seed=5),
+                )
+
+    def test_m4_sleep_edf_full_execution_rejects_raw_root_inside_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            root = repo / "raw_sleep_edf"
+            root.mkdir(parents=True)
+            with self.assertRaisesRegex(ValueError, "outside the repository"):
+                run_m4_sleep_edf_primary_execution(
+                    Path(tmp) / "out",
+                    sleep_edf_root=root,
+                    repo_root=repo,
+                    preregistration=build_m4_sleep_edf_preregistration(seed=5),
+                    fixture_loader=lambda _root, *, max_pairs: make_synthetic_sleep_fixture(seed=5),
+                )
+
+    def test_m4_sleep_edf_execution_writes_redacted_metadata_with_injected_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "external_sleep_edf"
+            _write_sleep_pair(root, "SC4001E0")
+            _write_sleep_pair(root, "SC4011E0")
+            out = Path(tmp) / "out"
+            prereg = build_m4_sleep_edf_preregistration(seed=5, sleep_edf_max_pairs=None)
+            observed_max_pairs = []
+
+            def loader(_root: Path, *, max_pairs: int | None):
+                observed_max_pairs.append(max_pairs)
+                return make_synthetic_sleep_fixture(seed=5)
+
+            payload = run_m4_sleep_edf_primary_execution(
+                out,
+                sleep_edf_root=root,
+                repo_root=Path(tmp) / "repo",
+                preregistration=prereg,
+                fixture_loader=loader,
+            )
+
+            self.assertEqual(payload["schema"], "kahlus.forecastability.m4.sleep_edf_primary_execution.v1")
+            self.assertTrue(payload["public_data_used"])
+            self.assertTrue(payload["local_root_redacted"])
+            self.assertNotIn(str(root), json.dumps(payload, sort_keys=True))
+            self.assertEqual(payload["sleep_edf_pair_count"], 2)
+            self.assertEqual(payload["sleep_edf_used_pairs"], 2)
+            self.assertEqual(payload["preregistration_hash"], m4_preregistration_hash(prereg))
+            self.assertEqual(payload["primary_horizon_result"]["horizon"], 1)
+            self.assertEqual(observed_max_pairs, [None])
+            self.assertTrue((out / "m4_sleep_edf_primary_execution.json").exists())
+            self.assertTrue((out / "m4_sleep_edf_preregistration.json").exists())
+
+    def test_m4_gate_redacts_sleep_edf_root_from_smoke_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "external_sleep_edf"
+            _write_sleep_pair(root, "SC4001E0")
+            out = Path(tmp) / "out"
+            gate = run_m4_gate(
+                out,
+                seed=5,
+                sleep_edf_root=root,
+            )
+
+            serialized = json.dumps(gate, sort_keys=True)
+            self.assertNotIn(str(root), serialized)
+            self.assertTrue(gate["sleep_edf_smoke"]["local_root_redacted"])
+
+    def test_committed_m4_preregistration_has_no_local_data(self) -> None:
+        path = Path(__file__).parents[2] / "configs" / "forecastability" / "m4_sleep_edf_primary_preregistration.json"
+        prereg = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(prereg["schema"], "kahlus.forecastability.m4.sleep_edf_preregistration.v1")
+        self.assertEqual(prereg["sleep_edf_max_pairs"], None)
+        self.assertNotIn("/Users/", json.dumps(prereg, sort_keys=True))
+        self.assertNotIn("file_hashes", prereg)
+
+    def test_m4_cli_writes_preregistration_only_without_sleep_edf_data(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            config = Path(__file__).parents[2] / "configs" / "forecastability" / "m4_sleep_edf_primary_preregistration.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_forecastability_m4.py",
+                    "--out-dir",
+                    str(out),
+                    "--preregistration",
+                    str(config),
+                    "--write-preregistration-only",
+                ],
+                cwd=Path(__file__).parents[2],
+                env={"PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"},
+                check=False,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            written = json.loads((out / "m4_sleep_edf_preregistration.json").read_text(encoding="utf-8"))
+            self.assertFalse(written["public_data_used"])
+            self.assertFalse(written["a100_jobs_launched"])
+            self.assertNotIn("completed_sleep_edf", json.dumps(written, sort_keys=True))
+
+    def test_m4_cli_full_execution_rejects_raw_root_inside_repo_when_run_from_subdir(self) -> None:
+        repo = Path(__file__).parents[2]
+        root = repo / "tmp_sleep_edf_for_m4_test"
+        if root.exists():
+            self.fail(f"temporary test root already exists: {root}")
+        try:
+            _write_sleep_pair(root, "SC4001E0")
+            with tempfile.TemporaryDirectory() as tmp:
+                out = Path(tmp) / "out"
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(repo / "scripts" / "run_forecastability_m4.py"),
+                        "--out-dir",
+                        str(out),
+                        "--preregistration",
+                        str(repo / "configs" / "forecastability" / "m4_sleep_edf_primary_preregistration.json"),
+                        "--sleep-edf-root",
+                        str(root),
+                        "--execute-full-sleep-edf",
+                    ],
+                    cwd=repo / "scripts",
+                    env={"PYTHONPATH": str(repo / "src"), "PYTHONDONTWRITEBYTECODE": "1"},
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("outside the repository", result.stderr)
+        finally:
+            for path in sorted(root.glob("*"), reverse=True):
+                path.unlink()
+            root.rmdir()
 
     def test_cluster_permutation_rfs_detects_consistent_cluster_gain(self) -> None:
         y = np.asarray([0, 1] * 8, dtype=np.int64)
@@ -262,6 +434,30 @@ class ForecastabilityM4Tests(unittest.TestCase):
             _sleep_curve_failures(payload),
         )
 
+    def test_sleep_curve_failures_include_underpowered_primary_positive_events(self) -> None:
+        payload = {
+            "status": "completed_sleep_edf_smoke",
+            "curve": [
+                {
+                    "horizon": 1,
+                    "event_patients": 8,
+                    "positive_events": 99,
+                    "rfs_ci_low": 0.01,
+                    "rfs_bits": 0.10,
+                    "shuffled_rfs_bits": 0.01,
+                    "time_shift_rfs_bits": 0.01,
+                    "nuisance_probe_failures": [],
+                    "cluster_permutation": {"p_value": 0.01, "observed_rfs_bits": 0.10},
+                    "cluster_permutation_failures": [],
+                }
+            ],
+        }
+
+        self.assertIn(
+            "sleep_edf_primary_positive_events_underpowered",
+            _sleep_curve_failures(payload),
+        )
+
     def test_sleep_curve_failures_use_explicit_primary_horizon(self) -> None:
         payload = {
             "status": "completed_sleep_edf_smoke",
@@ -333,6 +529,12 @@ class ForecastabilityM4Tests(unittest.TestCase):
                     "drop_terminal_rows_without_within_patient_future_label",
                 )
                 self.assertIn("p_value", row["cluster_permutation"])
+
+
+def _write_sleep_pair(root: Path, stem: str) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / f"{stem}-PSG.edf").write_bytes(f"{stem}:psg\n".encode("utf-8"))
+    (root / f"{stem}-Hypnogram.edf").write_bytes(f"{stem}:hypnogram\n".encode("utf-8"))
 
 
 if __name__ == "__main__":

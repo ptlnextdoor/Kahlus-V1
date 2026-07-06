@@ -75,6 +75,7 @@ M4 Sleep-EDF smoke:
 - Added `tests/forecastability/test_m4.py`.
 - M4 now reports nuisance probes per horizon and excludes terminal rows without a within-patient future label before fitting/scoring.
 - M4 reports fixed-prediction patient-cluster sign-flip permutation p-values per horizon; only the explicit primary horizon is inferential for the gate.
+- Added an M4 Sleep-EDF primary-horizon pre-analysis plan and runner contract so a future public-data run can execute from an out-of-repo raw-data root without committing local paths or raw data.
 - Added an M3 artifact freshness test that recomputes failures from current gate logic.
 - Added `.github/workflows/ci.yml`.
 
@@ -82,6 +83,7 @@ M4 Sleep-EDF smoke:
 
 - M4 is a benchmark-method contribution, not a powered biological result.
 - Sleep-EDF smoke is not present in the current committed M4 artifact because no local Sleep-EDF root was available at refresh time.
+- The M4 Sleep-EDF runner is now preregistered as a future execution contract, but no full Sleep-EDF result is claimed by this note.
 - CHB-MIT remains a development smoke path and fails after the stronger baseline.
 - TUSZ external validation was not run because no local out-of-repo TUSZ root is available.
 - Bootstrap remains percentile-based and small in the current shared helper; BCa and larger `n_boot` remain future hardening.
@@ -89,7 +91,7 @@ M4 Sleep-EDF smoke:
 
 ## Next Experiments
 
-1. Run full Sleep-EDF with enough event-patients and pre-register one primary horizon.
+1. Run the M4 Sleep-EDF primary-horizon runner against an out-of-repo Sleep-EDF root and preserve the redacted execution metadata.
 2. Run CHB-MIT with at least 8 event-patients, then real out-of-repo TUSZ.
 3. Add a multiplicity-controlled protocol if future M4 claims use more than the preregistered primary horizon.
 4. Add variance-normalized skill for A100 aggregate reporting and stop headlining unweighted task means.
