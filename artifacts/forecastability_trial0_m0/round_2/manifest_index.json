@@ -1,14 +1,14 @@
 {
   "dataset_held_out": {
-    "path": "/tmp/kahlus_trial0_m0_clean_evidence/round_2/manifests/dataset_held_out.json",
+    "path": "manifests/dataset_held_out.json",
     "sha256": "1d8529a1e6a4719e16e6d7689e2d3d008b9ea8154ca3ed05e60dc043795dbce4"
   },
   "patient_held_out": {
-    "path": "/tmp/kahlus_trial0_m0_clean_evidence/round_2/manifests/patient_held_out.json",
+    "path": "manifests/patient_held_out.json",
     "sha256": "37cb2daf824d203c01599b818b88309fd95e78ce446b2c7a2e7018ecea340caf"
   },
   "site_held_out": {
-    "path": "/tmp/kahlus_trial0_m0_clean_evidence/round_2/manifests/site_held_out.json",
+    "path": "manifests/site_held_out.json",
     "sha256": "bce1c60ff8fff564e96bdae43bd138a97a69876224c50a7966f6763dfe9e34eb"
   }
 }

@@ -159,7 +159,7 @@ def sleep_edf_manifest_audit(root: str | Path | None) -> dict[str, Any]:
     if len(pairs) < 3:
         return {
             "status": "local_manifest_insufficient",
-            "root": str(root_path),
+            "local_cache": root_path.name,
             "pairs": len(pairs),
             "minimum_pairs": 3,
             "parsed_local_sleep_edf": False,
@@ -176,7 +176,7 @@ def sleep_edf_manifest_audit(root: str | Path | None) -> dict[str, Any]:
         passed = not failures
         return {
             "status": "parsed_local_sleep_edf" if passed else "parsed_local_sleep_edf_gate_failed",
-            "root": str(root_path),
+            "local_cache": root_path.name,
             "pairs": len(pairs),
             "used_pairs": used_pairs,
             "file_hashes": _pair_hashes(pairs[:used_pairs]),
@@ -188,7 +188,7 @@ def sleep_edf_manifest_audit(root: str | Path | None) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001 - parser failures are evidence.
         return {
             "status": "local_sleep_edf_parse_failed",
-            "root": str(root_path),
+            "local_cache": root_path.name,
             "pairs": len(pairs),
             "error": str(exc),
             "parsed_local_sleep_edf": False,
@@ -442,8 +442,9 @@ def _held_out_channel_reconstruction(fixture: SleepFixture, *, target_idx: int |
     train_subjects = set(subjects[:-1])
     train = np.asarray([subject in train_subjects for subject in fixture.subject], dtype=bool)
     model = NumpyRidgeBaseline(alpha=1e-2)
-    model.fit(x[train].reshape(-1, 3), y[train].reshape(-1, 1))
-    pred = model.predict(x[~train].reshape(-1, 3)).reshape(y[~train].shape)
+    n_source = len(source_idx)
+    model.fit(x[train].reshape(-1, n_source), y[train].reshape(-1, 1))
+    pred = model.predict(x[~train].reshape(-1, n_source)).reshape(y[~train].shape)
     mean = np.mean(y[train], axis=(0, 1), keepdims=True)
     mean_pred = np.broadcast_to(mean, y[~train].shape)
     return {

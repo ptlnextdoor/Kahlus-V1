@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=neurotwin-a100-full
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:a100:1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=128G
-#SBATCH --time=02:00:00
+#SBATCH --ntasks-per-node=7
+#SBATCH --gres=gpu:a100:7
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=0
+#SBATCH --time=12:00:00
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
@@ -40,4 +40,4 @@ fi
 export RUN_ROOT
 export PYTHON_BIN="${PYTHON_BIN:-python3}"
 
-bash scripts/train_a100_inner.sh "$CONFIG" "$RUN_ROOT" 1
+bash scripts/train_a100_inner.sh "$CONFIG" "$RUN_ROOT" "${SLURM_NTASKS_PER_NODE:-7}"

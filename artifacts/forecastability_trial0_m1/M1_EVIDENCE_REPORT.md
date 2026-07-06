@@ -4,22 +4,22 @@ Gate passed: `True`
 
 ## Synthetic Known Signal
 
-- rows/events/event-patients: `1440` / `391` / `12`
-- logistic RFS bits: `0.219577` CI `[ 0.198156, 0.243070 ]`
-- GBM RFS bits: `0.206253`
-- shuffled-target RFS bits: `-0.046156`
-- time-shift RFS bits: `0.011267`
-- gated baseline: `logistic_nuisance` NLL `0.540294`
-- baseline/moving/random/alarm NLL: `0.540294` / `0.730654` / `0.584772` / `0.746306`
+- rows/events/event-patients: `1440` / `383` / `12`
+- logistic RFS bits: `0.235298` CI `[ 0.199965, 0.277949 ]`
+- GBM RFS bits: `0.245883`
+- shuffled-target RFS bits: `-0.116459`
+- time-shift RFS bits: `-0.066434`
+- gated baseline: `logistic_nuisance` NLL `0.520515`
+- baseline/moving/random/alarm NLL: `0.520515` / `0.750297` / `0.579211` / `0.807673`
 
 ## Synthetic Null
 
-- rows/events/event-patients: `1440` / `186` / `12`
-- logistic RFS bits: `0.000732` CI `[ -0.002000, 0.003475 ]`
-- GBM RFS bits: `-0.026992`
-- shuffled-target RFS bits: `-0.002578`
-- time-shift RFS bits: `-0.002448`
-- gated baseline: `logistic_nuisance` NLL `0.374160`
-- baseline/moving/random/alarm NLL: `0.374160` / `0.544230` / `0.384799` / `0.404626`
+- rows/events/event-patients: `1440` / `201` / `12`
+- logistic RFS bits: `-0.000572` CI `[ -0.002406, 0.001382 ]`
+- GBM RFS bits: `-0.045462`
+- shuffled-target RFS bits: `-0.031868`
+- time-shift RFS bits: `-0.016422`
+- gated baseline: `logistic_nuisance` NLL `0.390731`
+- baseline/moving/random/alarm NLL: `0.390731` / `0.584275` / `0.404206` / `0.420171`
 
 M1 stops here. M2 should not start until this instrumentation gate is reviewed.

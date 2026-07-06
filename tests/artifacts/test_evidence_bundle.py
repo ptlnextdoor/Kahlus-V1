@@ -43,8 +43,8 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
         logs.mkdir(parents=True)
         files = {
             persistent / "gpu_preflight.json": (
-                '{"passed":true,"visible_gpu_count":6,'
-                '"CUDA_VISIBLE_DEVICES":"0,1,2,3,4,5","WORLD_SIZE":"6"}\n'
+                '{"passed":true,"visible_gpu_count":7,'
+                '"CUDA_VISIBLE_DEVICES":"0,1,2,3,4,5,6","WORLD_SIZE":"6"}\n'
             ),
             run / "summary.json": summary_json,
             run / "metrics.json": "{}\n",
@@ -356,7 +356,7 @@ class EvidenceBundleArtifactTests(unittest.TestCase):
             _, evidence_root = self._package_a100_evidence_fixture_with_root(persistent, root / "second")
             handoff_readme = (evidence_root / "README_HANDOFF.md").read_text(encoding="utf-8")
             self.assertIn("This handoff contains a runnable NeuroTwin A100 runner tarball", handoff_readme)
-            self.assertIn("bash scripts/run_docker_6gpu.sh", handoff_readme)
+            self.assertIn("bash scripts/run_docker_7gpu.sh", handoff_readme)
             self.assertIn("README_AGENT_DEPLOY.md", handoff_readme)
             self.assertIn("scripts/docker_a100_inner.sh", handoff_readme)
             self.assertNotIn("Evidence bundle for commit", handoff_readme)
