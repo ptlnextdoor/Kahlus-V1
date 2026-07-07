@@ -33,11 +33,14 @@ dev = [
   "pytest>=8",
 ]
 docs = [
+  "matplotlib>=3.8",
   "sphinx>=7.4",
   "myst-parser>=3.0",
   "pydata-sphinx-theme>=0.15",
   "sphinx-copybutton>=0.5",
   "sphinx-autodoc-typehints>=2.0",
+  "scipy>=1.11",
+  "SciencePlots>=2.1",
 ]
 
 [project.scripts]

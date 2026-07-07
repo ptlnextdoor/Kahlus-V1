@@ -3,3 +3,6 @@ myst-parser>=3.0
 pydata-sphinx-theme>=0.15
 sphinx-copybutton>=0.5
 sphinx-autodoc-typehints>=2.0
+matplotlib>=3.8
+scipy>=1.11
+SciencePlots>=2.1
