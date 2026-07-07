@@ -1,0 +1,20 @@
+{
+  "baseline_table_sha256_round_1": "c99f8a27102df50ade17a1a26bb986594891c88d730b3a2f630b029990bc9039",
+  "baseline_table_sha256_round_2": "c99f8a27102df50ade17a1a26bb986594891c88d730b3a2f630b029990bc9039",
+  "bit_stable_baseline_table": true,
+  "clean_worktree": true,
+  "clean_worktree_required": true,
+  "gate_passed": true,
+  "milestone": "M0",
+  "missing_rows": [],
+  "required_rows": [
+    "persistence",
+    "ridge",
+    "gbm",
+    "mlp",
+    "tcn",
+    "transformer",
+    "model"
+  ],
+  "stop_reason": "M0 gate reached; do not proceed to M1 until this report is reviewed."
+}

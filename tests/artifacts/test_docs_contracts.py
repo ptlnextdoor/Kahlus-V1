@@ -21,7 +21,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
                 }
             )
             result = subprocess.run(
-                ["bash", "scripts/run_docker_6gpu.sh", str(persistent)],
+                ["bash", "scripts/run_docker_7gpu.sh", str(persistent)],
                 text=True,
                 capture_output=True,
                 env=env,
@@ -36,8 +36,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
     def test_docker_launcher_uses_container_local_cuda_visible_devices(self):
         values = self._run_docker_launcher_dry_run({"CUDA_VISIBLE_DEVICES": "2,3,4,5,6,7"})
 
-        self.assertEqual(values["HOST_GPU_IDS"], "0,1,2,3,4,5")
-        self.assertEqual(values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5")
+        self.assertEqual(values["HOST_GPU_IDS"], "0,1,2,3,4,5,6")
+        self.assertEqual(values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5,6")
 
     def test_docker_launcher_default_and_diagnostic_cuda_visible_devices(self):
         default_values = self._run_docker_launcher_dry_run({})
@@ -45,7 +45,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             {"GPU_COUNT": "1", "NPROC_PER_NODE": "1", "HOST_GPU_IDS": "7"}
         )
 
-        self.assertEqual(default_values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5")
+        self.assertEqual(default_values["CUDA_VISIBLE_DEVICES"], "0,1,2,3,4,5,6")
         self.assertEqual(diagnostic_values["HOST_GPU_IDS"], "7")
         self.assertEqual(diagnostic_values["CUDA_VISIBLE_DEVICES"], "0")
 
@@ -97,7 +97,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/cluster/chapman_a100_first_run.sh",
             "scripts/cluster/runpod_a100_rehearsal.sh",
             "scripts/run_smoke.sh",
-            "scripts/run_docker_6gpu.sh",
+            "scripts/run_docker_7gpu.sh",
             "scripts/docker_a100_inner.sh",
             "scripts/docker_gpu_preflight.py",
             "scripts/run_full.sh",
@@ -175,10 +175,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         runbook = Path("docs/A100_RUNBOOK.md").read_text(encoding="utf-8")
 
         self.assertIn("Fast Iteration Lane", runbook)
-        self.assertIn("Heavy 6-GPU Lane", runbook)
-        self.assertIn("--ntasks-per-node=6 --gres=gpu:a100:6", runbook)
-        self.assertIn("8x A100 80GB", runbook)
-        self.assertIn("48:00:00", runbook)
+        self.assertIn("Heavy 7-GPU Lane", runbook)
+        self.assertIn("--ntasks-per-node=7 --gres=gpu:a100:7", runbook)
+        self.assertIn("7x A100 80GB", runbook)
+        self.assertIn("12:00:00", runbook)
         self.assertIn("50,000 configured steps", runbook)
         self.assertIn("Short diagnostic runs ending in a few hours are normal", runbook)
         self.assertIn("MOABB EEG is expected to skip `tribe_style`", runbook)
@@ -207,9 +207,9 @@ class ArtifactDocsContractsTests(unittest.TestCase):
 
         self.assertIn("Refusing to run the generic placeholder config", train)
         self.assertIn("_train_a100_inner.sh", train)
-        self.assertIn("#SBATCH --ntasks-per-node=6", train)
-        self.assertIn("#SBATCH --gres=gpu:a100:6", train)
-        self.assertIn("#SBATCH --time=48:00:00", train)
+        self.assertIn("#SBATCH --ntasks-per-node=7", train)
+        self.assertIn("#SBATCH --gres=gpu:a100:7", train)
+        self.assertIn("#SBATCH --time=12:00:00", train)
         self.assertIn("cluster preflight", inner)
         self.assertLess(inner.index("cluster preflight"), inner.index("torchrun"))
         self.assertIn("--require-cuda", inner)
@@ -239,11 +239,16 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("Refusing to run default/synthetic eval", eval_script)
         self.assertNotIn("python -m neurotwin.cli eval --suite", eval_script)
 
-    def test_docker_6gpu_runner_contains_required_sequence(self):
+    def test_docker_7gpu_runner_contains_required_sequence(self):
         launcher = Path("scripts/run_docker_6gpu.sh").read_text(encoding="utf-8")
+        wrapper = Path("scripts/run_docker_7gpu.sh").read_text(encoding="utf-8")
         inner = Path("scripts/docker_a100_inner.sh").read_text(encoding="utf-8")
         finalizer = Path("src/neurotwin/reports/finalize.py").read_text(encoding="utf-8")
         preflight = Path("scripts/docker_gpu_preflight.py").read_text(encoding="utf-8")
+
+        self.assertIn('export GPU_COUNT="${GPU_COUNT:-7}"', wrapper)
+        self.assertIn('export A100_CONFIG_TEMPLATE="${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100.yaml}"', wrapper)
+        self.assertIn('exec "$SCRIPT_DIR/run_docker_6gpu.sh" "$@"', wrapper)
 
         for required in (
             "pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel",
@@ -254,8 +259,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "--ulimit stack=67108864",
             "-v \"$REPO_ROOT\":/workspace/repo",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
-            "HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}",
-            "GPU_COUNT=${GPU_COUNT:-6}",
+            "HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5,6}}",
+            "GPU_COUNT=${GPU_COUNT:-7}",
             "NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}",
             "CONTAINER_CUDA_VISIBLE_DEVICES=0",
             "DOCKER_RUN_ID=${DOCKER_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}",
@@ -319,36 +324,36 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         ):
             self.assertIn(required, preflight)
 
-    def test_agent_deploy_docs_and_dockerfile_are_6gpu_first(self):
+    def test_agent_deploy_docs_and_dockerfile_are_7gpu_first(self):
         doc = Path("README_AGENT_DEPLOY.md").read_text(encoding="utf-8")
         dockerfile = Path("Dockerfile.a100").read_text(encoding="utf-8")
 
         for required in (
             "automated deployment agent",
-            "8x A100 80GB",
-            "6x A100 80GB",
-            "48:00:00",
+            "7x A100 80GB",
+            "7x A100 80GB",
+            "12:00:00",
             "50,000 configured steps",
             "Short diagnostic runs ending in a few hours are normal",
             "There is no artificial per-GPU VRAM cap",
-            "salloc --nodes=1 --ntasks-per-node=6 --gres=gpu:a100:6 --time=48:00:00 --mem=0",
+            "salloc --nodes=1 --ntasks-per-node=7 --gres=gpu:a100:7 --time=12:00:00 --mem=0",
             'docker run --rm --gpus "\\"device=${HOST_GPU_IDS}\\""',
             "device_count",
-            "not exactly `6`, stop",
-            "HOST_GPU_IDS=0,1,2,3,4,5",
-            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
-            "GPU_COUNT=6",
-            "NPROC_PER_NODE=6",
+            "not exactly `7`, stop",
+            "HOST_GPU_IDS=0,1,2,3,4,5,6",
+            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6",
+            "GPU_COUNT=7",
+            "NPROC_PER_NODE=7",
             "--shm-size=64g",
             "--ulimit memlock=-1",
             "NCCL_DEBUG=INFO",
-            "bash scripts/run_docker_6gpu.sh",
-            "torchrun --standalone --nproc_per_node=6",
+            "bash scripts/run_docker_7gpu.sh",
+            "torchrun --standalone --nproc_per_node=7",
             "DOCKER_LOG_PATH",
             "run/docker_run.env",
             "current Docker log",
             "One-GPU Diagnostic Only",
-            "not the requested 6-GPU handoff run",
+            "not the requested 7-GPU handoff run",
             "torch.cuda.set_device(local_rank)",
             "DistributedDataParallel",
             "dependency/runtime image helper",
@@ -370,10 +375,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         for required in (
             "Operator Workflow",
             "sha256sum -c SHA256SUMS",
-            "Primary Docker 6-GPU Path",
+            "Primary Docker 7-GPU Path",
             "README_AGENT_DEPLOY.md",
             "Dockerfile.a100",
-            "bash scripts/run_docker_6gpu.sh",
+            "bash scripts/run_docker_7gpu.sh",
             "scripts/docker_a100_inner.sh",
             "conda env create -f environment-a100.yml",
             "python -m pip install -e '.[moabb,cluster]'",
@@ -382,10 +387,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             '--gpus "\\"device=${HOST_GPU_IDS}\\""',
             '--gpus "\\"device=<host_gpu_id>\\""',
             "--ipc=host --shm-size=64g",
-            "HOST_GPU_IDS=0,1,2,3,4,5",
-            "GPU_COUNT=6",
-            "NPROC_PER_NODE=6",
-            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5",
+            "HOST_GPU_IDS=0,1,2,3,4,5,6",
+            "GPU_COUNT=7",
+            "NPROC_PER_NODE=7",
+            "CONTAINER_CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6",
             "/raid/scratch/$USER/neurotwin-<short_sha>",
             "Raspberry Pi Handoff Path",
             "Use the Raspberry Pi only as a Chapman-network bridge",
@@ -408,14 +413,14 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "neurotwin-a100-docker-<generated>.log",
             "MOABB task labels are intentionally not persisted",
             "Krish Cluster Contract",
-            "8x A100 80GB",
-            "exactly 6x A100 80GB",
-            "48:00:00",
+            "7x A100 80GB",
+            "exactly 7x A100 80GB",
+            "12:00:00",
             "50,000 configured steps",
             "Short diagnostic runs ending in a few hours are normal",
             "There is no artificial per-GPU VRAM cap",
             "1x A100 80GB",
-            "6x A100 80GB",
+            "7x A100 80GB",
             "128G",
             "MOABB `BNCI2014_001`",
             "Expected Full Outputs",

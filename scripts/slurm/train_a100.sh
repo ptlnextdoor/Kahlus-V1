@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=neurotwin-train-a100
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=6
-#SBATCH --gres=gpu:a100:6
+#SBATCH --ntasks-per-node=7
+#SBATCH --gres=gpu:a100:7
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=0
-#SBATCH --time=48:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=logs/%x-%j.out
 
 set -euo pipefail
@@ -31,7 +31,7 @@ if [[ "$RUN_ROOT" != /* ]]; then
   exit 2
 fi
 
-NPROC=${SLURM_NTASKS_PER_NODE:-6}
+NPROC=${SLURM_NTASKS_PER_NODE:-7}
 export PYTHON_BIN
 
 bash scripts/slurm/_train_a100_inner.sh "$CONFIG" "$RUN_ROOT" "$NPROC"

@@ -1,0 +1,147 @@
+{
+  "chb_mit_development": {
+    "file_hashes": [
+      {
+        "edf": "chb01_03.edf",
+        "edf_sha256": "4c4a95a9b4331aeaadadd538763eb2e735950d9aa615b85ee6246c784be8ae90",
+        "seizures": [
+          [
+            2996,
+            3036
+          ]
+        ],
+        "subject": "chb01",
+        "summary": "chb01-summary.txt",
+        "summary_sha256": "77e86183845192d147c88a9bb4263c2b4a32e936c6236029770f86ca2ea023db"
+      },
+      {
+        "edf": "chb02_16.edf",
+        "edf_sha256": "b50345b4b7d35d2735e3d2fc5f7df3e39a60916a881a11f2cd40337e529ea3fa",
+        "seizures": [
+          [
+            130,
+            212
+          ]
+        ],
+        "subject": "chb02",
+        "summary": "chb02-summary.txt",
+        "summary_sha256": "a4a84999f666652479bc0340d49c98f9c018a53b155e3164500f035dc35b025a"
+      },
+      {
+        "edf": "chb03_01.edf",
+        "edf_sha256": "74f1ebc1334c4d52a132513c8ecab03d15d5b8ecbd91c7fdc71346bf69797d02",
+        "seizures": [
+          [
+            362,
+            414
+          ]
+        ],
+        "subject": "chb03",
+        "summary": "chb03-summary.txt",
+        "summary_sha256": "8d74eb131a96959c7b2aec82215d232dc26c3012c4d98c2a1c5f5dac520f52b4"
+      }
+    ],
+    "metrics": {
+      "alarm_time_nll": 0.307396530307321,
+      "baseline_nll": 0.2910723613525971,
+      "event_patients": 3,
+      "gated_baseline_name": "moving_average",
+      "gated_baseline_nll": 0.020900791172474956,
+      "gbm_full": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.4178567789794761,
+        "rfs_bits": -0.5726864350603403,
+        "rfs_ci_high": -0.009590276707335133,
+        "rfs_ci_low": -0.672543756805649
+      },
+      "logistic_full": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.28989473791702774,
+        "rfs_bits": -0.38807623299751626,
+        "rfs_ci_high": -0.32538146295172954,
+        "rfs_ci_low": -0.460188821721685
+      },
+      "moving_average_nll": 0.020900791172474956,
+      "n": 7082,
+      "nuisance_probes": {
+        "patient": {
+          "accuracy": 0.4104193138500635,
+          "chance": 0.3333333333333333
+        },
+        "session": {
+          "accuracy": 0.4104193138500635,
+          "chance": 0.3333333333333333
+        },
+        "site": {
+          "accuracy": 1.0,
+          "chance": 1.0
+        },
+        "time_bucket": {
+          "accuracy": 0.15290131300296483,
+          "chance": 0.08333333333333333
+        }
+      },
+      "positive_events": 730,
+      "random_warning_nll": 0.331794359512275,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.3419882667176497,
+        "rfs_bits": -0.46323130866057993,
+        "rfs_ci_high": -0.42653415917777937,
+        "rfs_ci_low": -0.8376462604900804
+      },
+      "survival_label_shape": [
+        7082,
+        3
+      ],
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.2820994497100424,
+        "rfs_bits": -0.3768300093589983,
+        "rfs_ci_high": -0.3199465313025398,
+        "rfs_ci_low": -0.4434366014954121
+      }
+    },
+    "preictal_exclusion": "ictal and 300s postictal rows skipped",
+    "primary_horizon_seconds": 300,
+    "recordings": 3,
+    "status": "completed_chbmit_development_smoke"
+  },
+  "forecastability_class": "UNDERPOWERED",
+  "gate_failures": [
+    "underpowered_event_patients",
+    "chbmit_underpowered_event_patients",
+    "primary_not_better_than_gated_baseline",
+    "chbmit_primary_not_better_than_gated_baseline",
+    "primary_rfs_ci_includes_zero",
+    "chbmit_primary_rfs_ci_includes_zero",
+    "external_dataset_held_out_not_run"
+  ],
+  "gate_passed": false,
+  "milestone": "M3",
+  "source_audit": {
+    "chb_mit": {
+      "local_cache": "kahlus_chbmit_subset",
+      "local_event_patients": 3,
+      "local_seizure_recordings": 3,
+      "official_records_with_seizures_count": 142,
+      "status": "local_manifest",
+      "url": "https://physionet.org/files/chbmit/1.0.0/"
+    },
+    "claim_scope": "seizure_forecastability_screening_only_not_clinical_prediction",
+    "external_scalp_corpus": {
+      "reason": "TUSZ/TUH EEG access is not an unauthenticated PhysioNet file path in this environment.",
+      "status": "not_run_requires_external_tusz_access",
+      "url": "https://isip.piconepress.com/projects/nedc/html/tuh_eeg/"
+    },
+    "primary_horizon_seconds": 300
+  },
+  "stop_reason": "M3 gate reached; do not proceed to M4 until this report is reviewed.",
+  "tusz_external": {
+    "status": "not_run_no_local_tusz_root"
+  }
+}

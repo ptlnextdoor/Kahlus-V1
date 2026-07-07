@@ -13,5 +13,7 @@ graphify-out/.graphify_detect.json
 graphify-out/.graphify_python
 runs/
 outputs/
+dist/
+apps/KahlusLabglass/.build/
 neurotwin-a100-results-*/
 external/vendor/

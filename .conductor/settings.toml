@@ -1,0 +1,6 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[prompts]
+general = "Before working in this repository, read CONDUCTOR.md and AGENTS.md. Follow Kahlus claim hygiene: no clinical/foundation-model/first-ever claims, no raw neural data in git, and every scientific claim needs held-out splits, best-baseline gates, negative controls, powered CIs, and JSON+Markdown artifacts."
+code_review = "Review against CONDUCTOR.md and AGENTS.md. Prioritize leakage risks, claim overreach, raw-data exposure, stale artifacts, missing gates, missing tests, and graphify drift after code changes."
+create_pr = "Use main as the base. Summarize how the change follows CONDUCTOR.md and AGENTS.md, list evidence artifacts and gate outcomes when relevant, and report ruff/pytest/graphify status."

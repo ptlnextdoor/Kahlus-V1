@@ -455,6 +455,24 @@ def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> 
     return pred.reshape(x_test.shape[0], x_test.shape[1], y_train.shape[-1])
 
 
+def _fit_gbm(task: SupervisedWindowTask, seed: int) -> np.ndarray:
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    from sklearn.multioutput import MultiOutputRegressor
+
+    base = HistGradientBoostingRegressor(
+        learning_rate=0.05,
+        max_iter=48,
+        max_leaf_nodes=15,
+        min_samples_leaf=10,
+        early_stopping=False,
+        random_state=seed,
+    )
+    model = MultiOutputRegressor(base, n_jobs=1)
+    model.fit(_flatten_time(task.x_train), _flatten_time(task.y_train))
+    pred = model.predict(_flatten_time(task.x_test))
+    return pred.reshape(task.x_test.shape[0], task.x_test.shape[1], task.y_train.shape[-1]).astype(np.float32)
+
+
 def _fit_autoregressive_ridge(task: SupervisedWindowTask) -> np.ndarray:
     if task.x_train.ndim != 3 or task.y_train.ndim != 3 or task.x_test.ndim != 3 or task.y_test.ndim != 3:
         raise ValueError("autoregressive_ridge requires [sample, time, feature] windows")
@@ -628,6 +646,7 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
     ExecutableBaselineRunner("train_mean", lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape)),
     ExecutableBaselineRunner("random_permutation", lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101)),
     ExecutableBaselineRunner("linear_ridge", lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test)),
+    ExecutableBaselineRunner("gbm", lambda task, seed, steps: _fit_gbm(task, seed=seed + 21)),
     ExecutableBaselineRunner("autoregressive_ridge", lambda task, seed, steps: _fit_autoregressive_ridge(task)),
     ExecutableBaselineRunner(
         "mlp",
@@ -671,7 +690,17 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
             steps=steps,
         ),
     ),
+    ExecutableBaselineRunner(
+        "tiny_ssm",
+        lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
+            task,
+            seed=seed + 4,
+            steps=steps,
+        ),
+    ),
     ExecutableBaselineRunner("neurotwin", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
+    ExecutableBaselineRunner("model", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
     ExecutableBaselineRunner(
         "tribe_style",
         lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),

@@ -1,0 +1,135 @@
+{
+  "gate_passed": true,
+  "known_signal": {
+    "alarm_time_nll": 0.8076729551326003,
+    "baseline_nll": 0.5205152222419686,
+    "event_patients": 12,
+    "gated_baseline_name": "logistic_nuisance",
+    "gated_baseline_nll": 0.5205152222419686,
+    "gbm_full": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.35008215757675176,
+      "rfs_bits": 0.24588293719601628,
+      "rfs_ci_high": 0.2884118150840199,
+      "rfs_ci_low": 0.2015602056486453
+    },
+    "logistic_full": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.35741909268661937,
+      "rfs_bits": 0.23529797729768617,
+      "rfs_ci_high": 0.27794944569461827,
+      "rfs_ci_low": 0.19996474663235583
+    },
+    "moving_average_nll": 0.7502972055832359,
+    "n": 1440,
+    "nuisance_probes": {
+      "patient": {
+        "accuracy": 0.10833333333333334,
+        "chance": 0.08333333333333333
+      },
+      "session": {
+        "accuracy": 0.51875,
+        "chance": 0.5
+      },
+      "site": {
+        "accuracy": 0.5166666666666667,
+        "chance": 0.5
+      },
+      "time_bucket": {
+        "accuracy": 0.3729166666666667,
+        "chance": 0.25
+      }
+    },
+    "positive_events": 383,
+    "random_warning_nll": 0.5792114370693321,
+    "shuffled_target_control": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.6012382349334666,
+      "rfs_bits": -0.11645869009564111,
+      "rfs_ci_high": -0.08314978647191816,
+      "rfs_ci_low": -0.14682239905716923
+    },
+    "survival_label_shape": [
+      1440,
+      3
+    ],
+    "time_shift_control": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.5665638110518154,
+      "rfs_bits": -0.06643407071590107,
+      "rfs_ci_high": -0.049123559677154816,
+      "rfs_ci_low": -0.08424611244098175
+    }
+  },
+  "milestone": "M1",
+  "stop_reason": "M1 gate reached; do not proceed to M2 until this report is reviewed.",
+  "synthetic_null": {
+    "alarm_time_nll": 0.42017111700977167,
+    "baseline_nll": 0.39073106534660906,
+    "event_patients": 12,
+    "gated_baseline_name": "logistic_nuisance",
+    "gated_baseline_nll": 0.39073106534660906,
+    "gbm_full": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.42224323151805493,
+      "rfs_bits": -0.04546244586321391,
+      "rfs_ci_high": -0.033478057145331676,
+      "rfs_ci_low": -0.05728115763820028
+    },
+    "logistic_full": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.3911276927366701,
+      "rfs_bits": -0.0005722123687217686,
+      "rfs_ci_high": 0.0013824942781989048,
+      "rfs_ci_low": -0.0024057344947470524
+    },
+    "moving_average_nll": 0.5842750831610103,
+    "n": 1440,
+    "nuisance_probes": {
+      "patient": {
+        "accuracy": 0.07916666666666666,
+        "chance": 0.08333333333333333
+      },
+      "session": {
+        "accuracy": 0.475,
+        "chance": 0.5
+      },
+      "site": {
+        "accuracy": 0.5166666666666667,
+        "chance": 0.5
+      },
+      "time_bucket": {
+        "accuracy": 0.31666666666666665,
+        "chance": 0.25
+      }
+    },
+    "positive_events": 201,
+    "random_warning_nll": 0.40420639266839237,
+    "shuffled_target_control": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.4128200454082623,
+      "rfs_bits": -0.031867661993242286,
+      "rfs_ci_high": -0.02199330717814421,
+      "rfs_ci_low": -0.04181289678712842
+    },
+    "survival_label_shape": [
+      1440,
+      3
+    ],
+    "time_shift_control": {
+      "bootstrap_mode": "smoke",
+      "bootstrap_samples": 300,
+      "nll": 0.40211365671062,
+      "rfs_bits": -0.01642160811332411,
+      "rfs_ci_high": -0.0068895142723590045,
+      "rfs_ci_low": -0.025293595432673472
+    }
+  }
+}

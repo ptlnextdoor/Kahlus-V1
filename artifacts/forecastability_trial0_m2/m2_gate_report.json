@@ -1,0 +1,224 @@
+{
+  "gate_passed": true,
+  "milestone": "M2",
+  "real_sleep_edf": {
+    "file_hashes": [
+      {
+        "hypnogram": "SC4001EC-Hypnogram.edf",
+        "hypnogram_sha256": "a4cf67694ade1b52a0ddd06d5817fd45d2d3e8bac5302f640f3e9cfbbf12a996",
+        "psg": "SC4001E0-PSG.edf",
+        "psg_sha256": "2b40a18adf76af69a42d6db1f30f31d26b369f6d27ca0050ef30147ef892b131"
+      },
+      {
+        "hypnogram": "SC4002EC-Hypnogram.edf",
+        "hypnogram_sha256": "76e8457a67eaaaa62c7f6cc6e098fbe1c0a9c3fa02fa90ea01460aa481d71e82",
+        "psg": "SC4002E0-PSG.edf",
+        "psg_sha256": "bf91934cdbf7c9577bc91b411462ddb51c418e17e10a2f59a15feeeb917b0a5f"
+      },
+      {
+        "hypnogram": "SC4011EH-Hypnogram.edf",
+        "hypnogram_sha256": "5bbf7b4ed8a95c8d20e4347b08c2ded2ee21e2dac4680dedf629795adc2edc83",
+        "psg": "SC4011E0-PSG.edf",
+        "psg_sha256": "9e4c34f3f631275990fd7a2d61a24e998c7b03eb9b37ebe5cd7c8323d8310a15"
+      },
+      {
+        "hypnogram": "SC4012EC-Hypnogram.edf",
+        "hypnogram_sha256": "b6323df8b3867a5fdbd80f0cd8233b59659ac496fa48c8c7277f48bfbb1d9a0e",
+        "psg": "SC4012E0-PSG.edf",
+        "psg_sha256": "1aa575e87d16f6c8f73c186d7a64a212de919bb9cbb62ac7c1750d3896852095"
+      },
+      {
+        "hypnogram": "SC4021EH-Hypnogram.edf",
+        "hypnogram_sha256": "62b49b26bf08941cb0e974cfeeb0a820bf7dd43fb0c66dd89b4c3a6c0ee45dd8",
+        "psg": "SC4021E0-PSG.edf",
+        "psg_sha256": "810adaedf42621e389ca767274045fbafb123bbc5d99bc15ce2c5bacb52e378c"
+      },
+      {
+        "hypnogram": "SC4022EJ-Hypnogram.edf",
+        "hypnogram_sha256": "5289ca8a9417307cbbf8b2a4e511909ac742c69d45c17aee7f1731a2a98c49ce",
+        "psg": "SC4022E0-PSG.edf",
+        "psg_sha256": "8573b32d49ff646b8c1c3589380346be02dc4f25ebcbabb05626cbdffd96d93a"
+      }
+    ],
+    "gate_failures": [],
+    "local_cache": "kahlus_sleep_edf_subset",
+    "pairs": 6,
+    "parsed_local_sleep_edf": true,
+    "payload": {
+      "held_out_channel_reconstruction": {
+        "mse": 98.60843244595213,
+        "r2": 0.038567177821523746,
+        "train_mean_mse": 102.59633855084563
+      },
+      "leakage_audit": {
+        "label_standard": "Sleep-EDF hypnogram labels; R&K/AASM mismatch must be recorded",
+        "per_recording_normalization": "blocked",
+        "same_subject_nights": "must stay within one split",
+        "split_unit": "subject",
+        "wake_trimming": "not applied silently",
+        "window_overlap": "synthetic fixture uses epoch-level non-overlap"
+      },
+      "transition_hazard": {
+        "alarm_time_nll": 0.1792447802116141,
+        "baseline_nll": 0.18107517259067166,
+        "event_patients": 6,
+        "gated_baseline_name": "alarm_time_surrogate",
+        "gated_baseline_nll": 0.1792447802116141,
+        "gbm_full": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "nll": 0.13759934871255328,
+          "rfs_bits": 0.06008165749937609,
+          "rfs_ci_high": 0.06851712199654107,
+          "rfs_ci_low": 0.0511815292114833
+        },
+        "logistic_full": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "nll": 0.1740855636171501,
+          "rfs_bits": 0.007443176195705259,
+          "rfs_ci_high": 0.012582865146358825,
+          "rfs_ci_low": 0.0003504420661772809
+        },
+        "moving_average_nll": 0.18622425388887956,
+        "n": 16682,
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.22064376910627584,
+            "chance": 0.16666666666666666
+          },
+          "session": {
+            "accuracy": 1.0,
+            "chance": 1.0
+          },
+          "site": {
+            "accuracy": 1.0,
+            "chance": 1.0
+          },
+          "time_bucket": {
+            "accuracy": 0.6040280525085416,
+            "chance": 0.16666666666666666
+          }
+        },
+        "positive_events": 929,
+        "random_warning_nll": 0.21493640076079554,
+        "shuffled_target_control": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "nll": 0.2134173226971549,
+          "rfs_bits": -0.04930055757845713,
+          "rfs_ci_high": -0.03965917557397886,
+          "rfs_ci_low": -0.05964003490712958
+        },
+        "survival_label_shape": [
+          16682,
+          3
+        ],
+        "time_shift_control": {
+          "bootstrap_mode": "smoke",
+          "bootstrap_samples": 300,
+          "nll": 0.16997402521338706,
+          "rfs_bits": 0.013374872261238735,
+          "rfs_ci_high": 0.020242851420761734,
+          "rfs_ci_low": 0.005854318680143685
+        }
+      }
+    },
+    "real_sleep_edf_gate_passed": true,
+    "status": "parsed_local_sleep_edf",
+    "used_pairs": 6
+  },
+  "sleep_edf_source": {
+    "name": "Sleep-EDF Expanded",
+    "raw_data_policy": "outside_repo_only",
+    "url": "https://physionet.org/files/sleep-edfx/1.0.0/"
+  },
+  "stop_reason": "M2 gate reached; real Sleep-EDF validation must pass before M3.",
+  "synthetic_sleep_machinery": {
+    "cross_dataset_transfer": {
+      "dataset0_crossfit_rfs_bits": 0.016048886969656576,
+      "dataset1_crossfit_rfs_bits": 0.02863662645624144,
+      "exploratory_note": "synthetic split only; real cross-dataset transfer requires MASS/SHHS or another PSG corpus"
+    },
+    "held_out_channel_reconstruction": {
+      "mse": 0.006441505395866903,
+      "r2": 0.9117813728405892,
+      "train_mean_mse": 0.07303252755752736
+    },
+    "leakage_audit": {
+      "label_standard": "synthetic_stage_labels",
+      "per_recording_normalization": "blocked",
+      "same_subject_nights": "must stay within one split",
+      "split_unit": "subject",
+      "wake_trimming": "not applied silently",
+      "window_overlap": "synthetic fixture uses epoch-level non-overlap"
+    },
+    "source": "synthetic_sleep_fixture",
+    "transition_hazard": {
+      "alarm_time_nll": 0.4304366938439362,
+      "baseline_nll": 0.4123864227834901,
+      "event_patients": 14,
+      "gated_baseline_name": "logistic_nuisance",
+      "gated_baseline_nll": 0.4123864227834901,
+      "gbm_full": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.39874210324924075,
+        "rfs_bits": 0.019684592128365916,
+        "rfs_ci_high": 0.04424001299579753,
+        "rfs_ci_low": -0.0035846595526773106
+      },
+      "logistic_full": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.3969587525191198,
+        "rfs_bits": 0.022257423382877166,
+        "rfs_ci_high": 0.03127594393367189,
+        "rfs_ci_low": 0.013202883570919631
+      },
+      "moving_average_nll": 0.5745902796084965,
+      "n": 1960,
+      "nuisance_probes": {
+        "patient": {
+          "accuracy": 0.14067278287461774,
+          "chance": 0.07142857142857142
+        },
+        "session": {
+          "accuracy": 0.4923547400611621,
+          "chance": 0.5
+        },
+        "site": {
+          "accuracy": 0.463302752293578,
+          "chance": 0.3333333333333333
+        },
+        "time_bucket": {
+          "accuracy": 0.6651376146788991,
+          "chance": 0.2
+        }
+      },
+      "positive_events": 296,
+      "random_warning_nll": 0.4244750132152965,
+      "shuffled_target_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.42685667473637257,
+        "rfs_bits": -0.0208761607328374,
+        "rfs_ci_high": -0.015625754659247884,
+        "rfs_ci_low": -0.02706445497648516
+      },
+      "survival_label_shape": [
+        1960,
+        3
+      ],
+      "time_shift_control": {
+        "bootstrap_mode": "smoke",
+        "bootstrap_samples": 300,
+        "nll": 0.41966624430637245,
+        "rfs_bits": -0.010502562409619134,
+        "rfs_ci_high": -0.0043124714190672575,
+        "rfs_ci_low": -0.017065128115132555
+      }
+    }
+  },
+  "synthetic_sleep_machinery_passed": true
+}

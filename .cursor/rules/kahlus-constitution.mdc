@@ -1,0 +1,19 @@
+---
+description: Kahlus agent constitution — read AGENTS.md before any code or scientific claim
+alwaysApply: true
+---
+
+# Kahlus grounding (mandatory)
+
+Before writing code, running experiments, or making claims, read **`AGENTS.md`** at the repo root.
+
+## Non-negotiables
+
+- **Kahlus** = leakage-controlled residual forecastability engine (Neural-CASP + RFS bits). Not a clinical predictor, consciousness detector, or foundation model.
+- **Flagship research:** Passive PCI (passive EEG/MEG vs PCI incumbent). **Arena:** M0–M4 forecastability gates.
+- **Every claim** needs: held-out splits, best trivial baseline beaten (incl. moving average), negative controls, powered CIs, scoped `claim_scope` in JSON+Markdown artifacts.
+- **Never claim:** 3.116 MSE/0.972 r as whole model · clinical seizure/diagnosis · raw neural data in repo · human stimulation hardware.
+- **Pattern:** `runner → gate → artifacts`. Run `PYTHONPATH=src python -m pytest -q` and `python -m ruff check .` before done.
+- **Conductor:** also see `CONDUCTOR.md`. Gamble on hypotheses; never gamble on evidence standards.
+
+Full detail: [AGENTS.md](../AGENTS.md)
