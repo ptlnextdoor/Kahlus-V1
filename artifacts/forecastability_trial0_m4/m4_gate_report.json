@@ -6,149 +6,375 @@
     2,
     3
   ],
-  "method": "leakage_safe_forecastability_vs_horizon_curve",
+  "method": "leakage_safe_horizon_wise_label_curve",
   "milestone": "M4",
+  "primary_horizon": 1,
   "sleep_edf_smoke": {
-    "auc_positive_rfs_bits": 0.004665601794809614,
-    "curve": [
-      {
-        "event_patients": 6,
-        "gated_baseline_name": "alarm_time_surrogate",
-        "gated_baseline_nll": 0.17924478021161414,
-        "horizon": 1,
-        "nll": 0.1740855636171501,
-        "positive_events": 929,
-        "rfs_bits": 0.007443176195705299,
-        "rfs_ci_high": 0.012143801264452147,
-        "rfs_ci_low": 0.0018418671825593301,
-        "shuffled_rfs_bits": -0.005250577064189641,
-        "time_shift_rfs_bits": 0.008158147007385872
-      },
-      {
-        "event_patients": 6,
-        "gated_baseline_name": "alarm_time_surrogate",
-        "gated_baseline_nll": 0.17876194745110105,
-        "horizon": 2,
-        "nll": 0.1758361770853525,
-        "positive_events": 929,
-        "rfs_bits": 0.004220994397445303,
-        "rfs_ci_high": 0.008032767603265616,
-        "rfs_ci_low": -0.000447391129493373,
-        "shuffled_rfs_bits": -0.009121674987925524,
-        "time_shift_rfs_bits": 0.004971864766912847
-      },
-      {
-        "event_patients": 6,
-        "gated_baseline_name": "alarm_time_surrogate",
-        "gated_baseline_nll": 0.1784260515270151,
-        "horizon": 3,
-        "nll": 0.17680919229816455,
-        "positive_events": 929,
-        "rfs_bits": 0.002332634791278239,
-        "rfs_ci_high": 0.006692442042612225,
-        "rfs_ci_low": -0.002356417525369358,
-        "shuffled_rfs_bits": -0.010490134167402132,
-        "time_shift_rfs_bits": 0.0027636588168149213
-      }
-    ],
-    "max_rfs_bits": 0.007443176195705299,
-    "root": "/tmp/kahlus_sleep_edf_subset",
-    "status": "completed_sleep_edf_smoke"
+    "status": "not_run_no_local_sleep_edf_root"
   },
   "sleep_edf_smoke_failures": [
-    "sleep_edf_underpowered_event_patients",
-    "sleep_edf_time_shift_control_too_close"
+    "sleep_edf_smoke_not_completed"
   ],
   "stop_reason": "M4 gate reached; full claim requires powered public-data and external-dataset validation.",
   "synthetic_gate_passed": true,
   "synthetic_known_signal": {
-    "auc_positive_rfs_bits": 0.14466312601862408,
+    "auc_positive_rfs_bits": 0.1440088458825511,
     "curve": [
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.12381286934515064,
+          "null_ci_low": -0.12381286934515064,
+          "null_mean_rfs_bits": -8.673617379884035e-19,
+          "observed_rfs_bits": 0.2195773656239268,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10005,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
+        "evaluated_rows": 1440,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
         "gated_baseline_nll": 0.5402940475550242,
         "horizon": 1,
-        "nll": 0.38809461571924514,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 0,
+        "nll": 0.38809461565801906,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.11666666666666667,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.5333333333333333,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5375,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.33958333333333335,
+            "chance": 0.25
+          }
+        },
         "positive_events": 391,
-        "rfs_bits": 0.21957736553559626,
-        "rfs_ci_high": 0.24306992323655088,
-        "rfs_ci_low": 0.1981557766198469,
-        "shuffled_rfs_bits": -0.046155716499983575,
-        "time_shift_rfs_bits": 0.01126691046263902
+        "rfs_bits": 0.21957736562392682,
+        "rfs_ci_high": 0.24306992381678766,
+        "rfs_ci_low": 0.19815577752720154,
+        "shuffled_rfs_bits": -0.046155718655152826,
+        "time_shift_rfs_bits": 0.011266909409795741,
+        "total_rows": 1440,
+        "valid_rows": 1440
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.07836916702162258,
+          "null_ci_low": -0.07836916702162258,
+          "null_mean_rfs_bits": 0.0,
+          "observed_rfs_bits": 0.13255488810347285,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10006,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
+        "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.5507811933161144,
+        "gated_baseline_nll": 0.5532499286577072,
         "horizon": 2,
-        "nll": 0.4589473444687701,
-        "positive_events": 388,
-        "rfs_bits": 0.1324882383178103,
-        "rfs_ci_high": 0.15728760887676546,
-        "rfs_ci_low": 0.11070700030660598,
-        "shuffled_rfs_bits": -0.033590067281237965,
-        "time_shift_rfs_bits": 0.025028316285800368
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 24,
+        "nll": 0.46136988169934584,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.125,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.5529661016949152,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5190677966101694,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.3559322033898305,
+            "chance": 0.25
+          }
+        },
+        "positive_events": 384,
+        "rfs_bits": 0.132554888103473,
+        "rfs_ci_high": 0.1562281264517312,
+        "rfs_ci_low": 0.1120872253197447,
+        "shuffled_rfs_bits": -0.03127661574349668,
+        "time_shift_rfs_bits": 0.03374540925243878,
+        "total_rows": 1440,
+        "valid_rows": 1416
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.051083061094339716,
+          "null_ci_low": -0.051083061094339716,
+          "null_mean_rfs_bits": 8.673617379884035e-19,
+          "observed_rfs_bits": 0.07989428392025356,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.000488162069807176,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10007,
+          "significant": true,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [],
+        "evaluated_rows": 1392,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.5593115672357974,
+        "gated_baseline_nll": 0.5640943032766743,
         "horizon": 3,
-        "nll": 0.5025263341265288,
-        "positive_events": 387,
-        "rfs_bits": 0.08192377420246565,
-        "rfs_ci_high": 0.10547773735418586,
-        "rfs_ci_low": 0.06160523847921559,
-        "shuffled_rfs_bits": -0.027572609116860665,
-        "time_shift_rfs_bits": 0.03146973020029273
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 48,
+        "nll": 0.5087158056344948,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.10344827586206896,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.5538793103448276,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5323275862068966,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.34913793103448276,
+            "chance": 0.25
+          }
+        },
+        "positive_events": 378,
+        "rfs_bits": 0.07989428392025352,
+        "rfs_ci_high": 0.10273088734955534,
+        "rfs_ci_low": 0.06060222528344614,
+        "shuffled_rfs_bits": -0.018451668377054805,
+        "time_shift_rfs_bits": 0.03594579646243507,
+        "total_rows": 1440,
+        "valid_rows": 1392
       }
     ],
-    "max_rfs_bits": 0.21957736553559626
+    "max_rfs_bits": 0.21957736562392682
   },
   "synthetic_null": {
-    "auc_positive_rfs_bits": 0.00041188862973498623,
+    "auc_positive_rfs_bits": 0.000378335164084523,
     "curve": [
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.0026675016163429425,
+          "null_ci_low": -0.0026675016163429425,
+          "null_mean_rfs_bits": 2.710505431213761e-20,
+          "observed_rfs_bits": 0.0007321943389789074,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.30632169880400295,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10105,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_1_cluster_permutation_not_significant"
+        ],
+        "evaluated_rows": 1440,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
         "gated_baseline_nll": 0.37415982451026997,
         "horizon": 1,
-        "nll": 0.3736523071244191,
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 0,
+        "nll": 0.37365230606858485,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.0875,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.48125,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5375,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.31875,
+            "chance": 0.25
+          }
+        },
         "positive_events": 186,
-        "rfs_bits": 0.0007321928157319723,
-        "rfs_ci_high": 0.0034745306706583648,
-        "rfs_ci_low": -0.0020002585023454625,
-        "shuffled_rfs_bits": -0.002577848145963402,
-        "time_shift_rfs_bits": -0.0024482338635138413
+        "rfs_bits": 0.0007321943389788136,
+        "rfs_ci_high": 0.0034745321649187013,
+        "rfs_ci_low": -0.0020002564512415217,
+        "shuffled_rfs_bits": -0.0025778493484210356,
+        "time_shift_rfs_bits": -0.0024482329533314765,
+        "total_rows": 1440,
+        "valid_rows": 1440
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.001943665041089464,
+          "null_ci_low": -0.001943665041089464,
+          "null_mean_rfs_bits": -2.0328790734103208e-20,
+          "observed_rfs_bits": -0.0006310587901497089,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.7154015133024164,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10106,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_2_cluster_permutation_not_significant"
+        ],
+        "evaluated_rows": 1416,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.37399115573758923,
+        "gated_baseline_nll": 0.37593996768118887,
         "horizon": 2,
-        "nll": 0.3747151272921622,
-        "positive_events": 186,
-        "rfs_bits": -0.0010444701715271241,
-        "rfs_ci_high": 0.000829234086937646,
-        "rfs_ci_low": -0.0035095677045155127,
-        "shuffled_rfs_bits": 1.9005843032701826e-05,
-        "time_shift_rfs_bits": 7.386572891631045e-05
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 24,
+        "nll": 0.3763773843023487,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.08686440677966102,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.4788135593220339,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5402542372881356,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.3538135593220339,
+            "chance": 0.25
+          }
+        },
+        "positive_events": 184,
+        "rfs_bits": -0.0006310587901496702,
+        "rfs_ci_high": 0.0011725771304263014,
+        "rfs_ci_low": -0.002680787826522772,
+        "shuffled_rfs_bits": -0.0005338795505525948,
+        "time_shift_rfs_bits": 0.000337309177097656,
+        "total_rows": 1440,
+        "valid_rows": 1416
       },
       {
+        "cluster_permutation": {
+          "alpha": 0.05,
+          "alternative": "greater",
+          "method": "patient_cluster_sign_flip_rfs",
+          "mode": "exact",
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.002859625140992775,
+          "null_ci_low": -0.002859625140992775,
+          "null_mean_rfs_bits": -1.3552527156068805e-20,
+          "observed_rfs_bits": 0.00040281115327472455,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.3985843299975592,
+          "permutation_unit": "patient_cluster_sign_flip",
+          "scope": "primary_horizon_control_only_not_claim_enabling",
+          "seed": 10107,
+          "significant": false,
+          "statistic": "rfs_bits"
+        },
+        "cluster_permutation_failures": [
+          "horizon_3_cluster_permutation_not_significant"
+        ],
+        "evaluated_rows": 1392,
         "event_patients": 12,
         "gated_baseline_name": "logistic_nuisance",
-        "gated_baseline_nll": 0.3720559673877556,
+        "gated_baseline_nll": 0.3767259972492552,
         "horizon": 3,
-        "nll": 0.37170698644638994,
-        "positive_events": 185,
-        "rfs_bits": 0.0005034730734729865,
-        "rfs_ci_high": 0.003366992469456768,
-        "rfs_ci_low": -0.0025952660782376778,
-        "shuffled_rfs_bits": -0.000464136005494886,
-        "time_shift_rfs_bits": -0.000880609160874745
+        "horizon_label_policy": "drop_terminal_rows_without_within_patient_session_future_label",
+        "invalid_terminal_rows": 48,
+        "nll": 0.3764467898340647,
+        "nuisance_probe_failures": [],
+        "nuisance_probes": {
+          "patient": {
+            "accuracy": 0.09267241379310345,
+            "chance": 0.08333333333333333
+          },
+          "session": {
+            "accuracy": 0.47844827586206895,
+            "chance": 0.5
+          },
+          "site": {
+            "accuracy": 0.5560344827586207,
+            "chance": 0.5
+          },
+          "time_bucket": {
+            "accuracy": 0.34913793103448276,
+            "chance": 0.25
+          }
+        },
+        "positive_events": 182,
+        "rfs_bits": 0.00040281115327475534,
+        "rfs_ci_high": 0.003156441679691395,
+        "rfs_ci_low": -0.0027818108248003908,
+        "shuffled_rfs_bits": 0.00011564895778059165,
+        "time_shift_rfs_bits": -0.0003585945062694464,
+        "total_rows": 1440,
+        "valid_rows": 1392
       }
     ],
-    "max_rfs_bits": 0.0007321928157319723
+    "max_rfs_bits": 0.0007321943389788136
   }
 }
