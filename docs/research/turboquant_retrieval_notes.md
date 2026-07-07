@@ -6,43 +6,43 @@ TurboQuant/TurboVec is optional retrieval, compression, and audit infrastructure
 
 Normalize:
 
-```math
+```{math}
 r=\|v\|_2,\qquad u=\frac{v}{\|v\|_2}
 ```
 
 Random rotation:
 
-```math
+```{math}
 z=Ru
 ```
 
 High-dimensional coordinate approximation:
 
-```math
+```{math}
 z_i\approx\mathcal{N}(0,1/d)
 ```
 
 Quantization map:
 
-```math
+```{math}
 Q:\mathbb{R}^d\rightarrow\{0,1\}^{bd}
 ```
 
 MSE objective:
 
-```math
+```{math}
 \mathbb{E}\|x-\hat{x}\|_2^2
 ```
 
 Inner-product distortion objective:
 
-```math
+```{math}
 \mathbb{E}\left[(\langle x,q\rangle-\langle\hat{x},q\rangle)^2\right]
 ```
 
 Score error bound:
 
-```math
+```{math}
 |\langle q,z_i\rangle-\langle q,\hat z_i\rangle|
 \leq
 \|q\|_2\|z_i-\hat z_i\|_2
@@ -50,16 +50,16 @@ Score error bound:
 
 ## Retrieval-kNN Baseline
 
-```math
+```{math}
 \mathcal{N}_k(q)=\{i_1,\ldots,i_k\}
 ```
 
-```math
+```{math}
 \hat y_{\mathrm{test}}=
 \sum_{i\in \mathcal{N}_k(q)}w_i y_i
 ```
 
-```math
+```{math}
 w_i=
 \frac{\exp(\tau\langle q,z_i\rangle)}
 {\sum_{j\in\mathcal{N}_k(q)}\exp(\tau\langle q,z_j\rangle)}
@@ -69,7 +69,7 @@ This baseline may use train labels and test query features. It must never use te
 
 ## Semantic Near-Duplicate Audit
 
-```math
+```{math}
 d_{\min}(x_{\mathrm{test}},\mathcal{D}_{\mathrm{train}})
 =
 \min_{x_i\in\mathcal{D}_{\mathrm{train}}}

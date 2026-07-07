@@ -6,7 +6,7 @@ This is the canonical markdown entry point for the NeuroTwin NFC math. The longe
 
 NFC treats each recording as a partial, noisy observation of a subject-specific latent neural field:
 
-```math
+```{math}
 F_s(x,t,\omega) \in \mathbb{R}^d
 ```
 
@@ -16,7 +16,7 @@ Here `s` indexes subject, `x` indexes neural location or parcel, `t` indexes tim
 
 Each modality is an observation operator over the same field:
 
-```math
+```{math}
 Y_m = \mathcal{O}_m(F_s,A_s,U,\epsilon_m)
 ```
 
@@ -24,7 +24,7 @@ Y_m = \mathcal{O}_m(F_s,A_s,U,\epsilon_m)
 
 ## Generative Model
 
-```math
+```{math}
 p(Y_{1:M}\mid U,A_s)=\int p(F\mid U,A_s)\prod_m p(Y_m\mid F,A_s)\,dF
 ```
 
@@ -32,7 +32,7 @@ The benchmark question is whether a field-mediated model explains held-out obser
 
 ## Controlled Dynamics
 
-```math
+```{math}
 F(t+\Delta)=\Phi_{\theta,\Delta}(F(t),U_{[t-H,t]},A_s)
 ```
 
@@ -40,7 +40,7 @@ This says future field state depends on current field state, recent stimulus/con
 
 ## Neural Field Dynamics
 
-```math
+```{math}
 \tau \partial_t F(x,t)
 =
 -F(x,t)
@@ -54,21 +54,21 @@ B_\theta U(t)
 
 ## Discretized Dynamics
 
-```math
+```{math}
 Z_{t+1}=Z_t+\Delta t[-DZ_t+K_t\sigma(Z_t)+BU_t]+\xi_t
 ```
 
 ## Low-Rank Pair Kernel
 
-```math
+```{math}
 K_t \approx U_tV_t^\top
 ```
 
-```math
+```{math}
 M_t=\operatorname{softmax}\left((U_tV_t^\top)/\sqrt r+S\right)
 ```
 
-```math
+```{math}
 Z'_t=Z_t+M_tZ_tW
 ```
 
@@ -76,35 +76,35 @@ This is where the old Pair-Operator idea survives: not as the main architecture,
 
 ## fMRI Observation
 
-```math
+```{math}
 (H_{\mathrm{HRF}}a)(t)=\int_0^\infty h(\tau)a(t-\tau)\,d\tau
 ```
 
-```math
+```{math}
 Y_{\mathrm{fMRI}}(p,t)=R_pH_{\mathrm{HRF}}g_\theta(F(\cdot,t))+\epsilon
 ```
 
 ## EEG and MEG Observation
 
-```math
+```{math}
 Y_{\mathrm{EEG}}(t)=L_sJ_\theta(F_t)+\epsilon_{\mathrm{EEG}}
 ```
 
-```math
+```{math}
 Y_{\mathrm{MEG}}(t)=M_sJ_\theta(F_t)+\epsilon_{\mathrm{MEG}}
 ```
 
 ## Spike, Calcium, and Behavior Observations
 
-```math
+```{math}
 Y_{n,t}\sim\operatorname{Poisson}\left(\Delta t\cdot\operatorname{softplus}(w_n^\top F(x_n,t))\right)
 ```
 
-```math
+```{math}
 c_{n,t}=(k_{\mathrm{Ca}}*r_n)(t)+\epsilon
 ```
 
-```math
+```{math}
 p(a_t\mid F_t,U_t)=\operatorname{softmax}(C\operatorname{pool}(F_t)+DU_t)
 ```
 
@@ -120,29 +120,29 @@ NFC can be read as a controlled state-space model where `F_t` is the latent stat
 
 ## Graph Calculus Interpretation
 
-```math
+```{math}
 \nabla_wF(i,j)=\sqrt{w_{ij}}(F_j-F_i)
 ```
 
-```math
+```{math}
 L=D-W
 ```
 
-```math
+```{math}
 R_{\mathrm{graph}}(F)=\sum_{(i,j)\in E}w_{ij}\|F_i-F_j\|^2=\operatorname{Tr}(F^\top L F)
 ```
 
 ## Identifiability and Gauge Ambiguity
 
-```math
+```{math}
 F'=AF
 ```
 
-```math
+```{math}
 \mathcal{O}'_m=\mathcal{O}_mA^{-1}
 ```
 
-```math
+```{math}
 \mathcal{O}'_m(F')=\mathcal{O}_m(F)
 ```
 
@@ -150,7 +150,7 @@ Latent fields are identifiable only up to transformations unless constrained by 
 
 ## Uncertainty and Calibration
 
-```math
+```{math}
 \mathcal{L}_{\mathrm{NLL}}
 =
 \sum_{m,t,i}
@@ -159,7 +159,7 @@ Latent fields are identifiable only up to transformations unless constrained by 
 \frac12\log\sigma_{m,t,i}^2
 ```
 
-```math
+```{math}
 \mathbb{P}[Y\in C_\alpha(X)]\approx 1-\alpha
 ```
 

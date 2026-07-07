@@ -31,6 +31,13 @@ cluster = [
 dev = [
   "pytest>=8",
 ]
+docs = [
+  "sphinx>=7.4",
+  "myst-parser>=3.0",
+  "pydata-sphinx-theme>=0.15",
+  "sphinx-copybutton>=0.5",
+  "sphinx-autodoc-typehints>=2.0",
+]
 
 [project.scripts]
 nt = "neurotwin.cli:main"

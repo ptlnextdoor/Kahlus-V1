@@ -16,21 +16,21 @@ latent neural field
 
 ## Rytov Approximation
 
-```math
+```{math}
 \log\left(\frac{\phi_1(t;\theta)}{\phi_0}\right)
 \approx
 J\delta\mu_a(t;\theta)
 ```
 
-```math
+```{math}
 \phi_1(t;\theta)\approx \phi_0\exp(J\delta\mu_a(t;\theta))
 ```
 
-```math
+```{math}
 \Delta OD(t;\theta)=\log\bar\phi_{\mathrm{base}}-\log\phi_1(t;\theta)
 ```
 
-```math
+```{math}
 Y_{\mathrm{fNIRS}}(t)=\Delta OD(\phi_0\exp(J\delta\mu_a(t)))+\epsilon
 ```
 
@@ -48,7 +48,7 @@ Future synthetic realism should separate:
 
 The hemodynamic bridge can be written:
 
-```math
+```{math}
 F_{\mathrm{hemo}}(t)=(h_{\mathrm{HRF}}*g(F_{\mathrm{neural}}))(t)
 ```
 

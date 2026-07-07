@@ -22,11 +22,11 @@ Pair-Operator captured a useful low-rank relational update, but it is not broad 
 
 Direct fusion treats modalities as separate streams. NFC treats them as partial observations of one latent neural field:
 
-```math
+```{math}
 F_s(x,t,\omega)\in\mathbb{R}^d
 ```
 
-```math
+```{math}
 Y_m=\mathcal{O}_m(F_s,A_s,U,\epsilon_m)
 ```
 

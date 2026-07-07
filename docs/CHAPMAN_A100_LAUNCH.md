@@ -52,7 +52,7 @@ bash scripts/prepare_moabb_benchmark.sh
 
 Required gate before launch:
 
-```txt
+```text
 eval_audit_passed=True
 window_count=18144
 window_counts_by_split=train:12096,val:2016,test:4032
@@ -60,7 +60,7 @@ window_counts_by_split=train:12096,val:2016,test:4032
 
 Expected completed task statuses for this EEG-only MOABB path:
 
-```txt
+```text
 summary_task_status_future_state_forecasting=completed
 summary_task_status_masked_neural_reconstruction=completed
 summary_task_status_few_shot_subject_adaptation=completed
@@ -68,7 +68,7 @@ summary_task_status_few_shot_subject_adaptation=completed
 
 Expected skipped tasks:
 
-```txt
+```text
 cross_modal_translation: need paired train/test windows for two modalities
 dataset_site_generalization: need train/test windows from different datasets or sites
 ```

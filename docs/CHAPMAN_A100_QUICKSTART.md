@@ -40,7 +40,7 @@ PYTHONPATH=src python3 -m neurotwin.cli cluster preflight \
 
 Required output includes:
 
-```txt
+```text
 preflight_passed=True
 cuda_available=True
 window_count=18144

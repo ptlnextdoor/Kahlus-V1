@@ -1,0 +1,30 @@
+:root {
+  --kahlus-blue: #2563eb;
+  --kahlus-red: #dc2626;
+  --kahlus-ink: #111827;
+  --kahlus-muted: #6b7280;
+}
+.figure-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #fff;
+}
+.figure-card img {
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: white;
+}
+.evidence-badge, .schematic-badge, .todo-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.evidence-badge { color: #065f46; background: #d1fae5; }
+.schematic-badge { color: #92400e; background: #fef3c7; }
+.todo-badge { color: #1e3a8a; background: #dbeafe; }
+.caption-note { color: var(--kahlus-muted); font-size: 0.9rem; }
