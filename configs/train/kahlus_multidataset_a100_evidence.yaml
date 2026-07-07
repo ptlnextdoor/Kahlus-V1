@@ -1,0 +1,63 @@
+experiment: kahlus_multidataset_a100_evidence
+description: Public multi-dataset EEG evidence run from prepared manifests; no clinical diagnosis or seizure-prediction claim.
+dataset: prepared_manifest
+task: neural_translation_v1
+split: subject
+data:
+  event_manifest: /path/to/kahlus_multidataset_a100_evidence/event_manifest.json
+  split_manifest: /path/to/kahlus_multidataset_a100_evidence/split_manifest.json
+seed: 0
+steps: 50000
+batch_size: 128
+window_size: 128
+stride: 128
+precision: bf16
+gradient_accumulation_steps: 8
+checkpoint_every_steps: 2500
+eval_every_steps: 1000
+model:
+  type: NeuralStateSpaceTranslator
+  latent_dim: 384
+  n_layers: 12
+  backbone: ssm_fallback
+  encoder: auto
+  n_heads: 8
+  subject_adapter_dim: 48
+  adapter_mode: disabled
+  use_subject_embeddings: false
+  modalities:
+    - eeg
+    - clinical
+training:
+  ddp: true
+  torchrun: true
+  compile: false
+  objective_weights:
+    future_state_forecasting: 1.0
+    masked_neural_reconstruction: 1.0
+    cross_modal_translation: 1.0
+  adapter_mode: disabled
+  internet_required: false
+evidence:
+  package_name: kahlus-multidataset-a100-evidence
+  required_datasets:
+    - sleep_edf_expanded
+    - chb_mit_physionet
+    - eegmmi_physionet
+    - siena_scalp_eeg
+  required_baselines:
+    - persistence
+    - linear_ridge
+    - autoregressive_ridge
+    - tiny_ssm
+    - transformer
+    - tcn
+    - random_permutation
+    - time_shift_control
+    - patient_session_nuisance
+  allowed_claim: multidataset_eeg_forecasting_completion_benchmark_ready
+  blocked_claims:
+    - clinical seizure prediction
+    - sleep diagnosis
+    - treatment prediction
+    - brain foundation model
