@@ -72,6 +72,18 @@ BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
         notes="Seeded permutation of training targets with target-shaped output.",
     ),
     BaselineCatalogEntry(
+        model_id="time_shift_control",
+        display_name="Time-Shift Control",
+        status="negative_control",
+        notes="Seeded train-target control with rolled time axis; uses no held-out target values.",
+    ),
+    BaselineCatalogEntry(
+        model_id="patient_session_nuisance",
+        display_name="Patient/Session Nuisance Mean",
+        status="negative_control",
+        notes="Group-mean baseline from train patient/session metadata, with global-mean fallback for held-out groups.",
+    ),
+    BaselineCatalogEntry(
         model_id="linear_ridge",
         display_name="Linear Ridge",
         status="local_baseline",

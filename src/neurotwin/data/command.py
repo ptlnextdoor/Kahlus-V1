@@ -100,6 +100,44 @@ def run_data_prepare_command(config: DataPrepareConfig) -> CommandResult:
         lines.extend(f"violation={violation}" for violation in report.violations)
         lines.extend(f"eval_violation={violation}" for violation in eval_audit.violations)
         return CommandResult("\n".join(lines), exit_code=0 if eval_audit.passed and report.passed else 1)
+    if config.dataset == "multidataset_a100":
+        if not config.out_dir:
+            return CommandResult("", exit_code=1, error="--out-dir is required for --dataset multidataset_a100")
+        try:
+            from neurotwin.adapters.multidataset import prepare_multidataset_a100_evidence
+
+            prepared = prepare_multidataset_a100_evidence(
+                config.root,
+                config.out_dir,
+                seed=0,
+                max_records_per_dataset=config.max_trials,
+                max_samples_per_record=16384,
+                max_channels=32,
+                window_length=config.window_length,
+                stride=config.stride,
+            )
+        except Exception as exc:  # noqa: BLE001 - CLI should surface preflight failures without a traceback by default.
+            return CommandResult("", exit_code=1, error=str(exc))
+        gate = prepared["gate"]
+        lines = [
+            "dataset=multidataset_a100",
+            "split_policy=subject",
+            f"supported_datasets={','.join(gate['supported_datasets'])}",
+            f"missing_required_datasets={','.join(gate['missing_required_datasets'])}",
+            f"gate_passed={gate['passed']}",
+            "window_counts_by_split="
+            + ",".join(
+                f"{split_name}:{gate['window_counts_by_split'].get(split_name, 0)}"
+                for split_name in ("train", "val", "test")
+            ),
+            f"event_manifest={prepared['event_manifest']}",
+            f"split_manifest={prepared['split_manifest']}",
+            f"data_manifest={prepared['data_manifest']}",
+            f"evidence_manifest={Path(config.out_dir) / 'multidataset_evidence_bundle_manifest.json'}",
+        ]
+        lines.extend(f"violation={violation}" for violation in gate["split_audit_violations"])
+        lines.extend(f"violation={violation}" for violation in gate["source_record_split_violations"])
+        return CommandResult("\n".join(lines), exit_code=0 if gate["passed"] else 1)
     if config.dataset == "synthetic":
         records = make_synthetic_recordings()
         event_batches = make_synthetic_event_batches()
@@ -133,7 +171,7 @@ def run_data_prepare_command(config: DataPrepareConfig) -> CommandResult:
         records = trials_to_recordings(trials, dataset_id=config.moabb_dataset)
         event_batches = trials_to_event_batches(trials, dataset_id=config.moabb_dataset)
     else:
-        return CommandResult("", exit_code=1, error="Supported datasets: synthetic, bids, moabb, algonauts2025")
+        return CommandResult("", exit_code=1, error="Supported datasets: synthetic, bids, moabb, algonauts2025, multidataset_a100")
 
     manifest = build_split_manifest(records, policy=config.split, seed=0)
     report = check_manifest_leakage(manifest, keys=_leakage_keys(config.split))
@@ -227,7 +265,21 @@ def run_data_audit_command(config: DataAuditConfig) -> CommandResult:
                 )
             )
         )
-    return CommandResult("", exit_code=1, error="Supported datasets: synthetic, bids, moabb, algonauts2025")
+    if config.dataset == "multidataset_a100":
+        if not config.root:
+            return CommandResult("", exit_code=1, error="--root is required for MultiDataset A100 audit")
+        from neurotwin.adapters.multidataset import discover_multidataset_roots, multidataset_registry
+
+        roots = discover_multidataset_roots(config.root)
+        registry = multidataset_registry()
+        lines = [
+            "dataset=multidataset_a100",
+            "official_sources=" + ",".join(f"{dataset_id}:{entry.official_url}" for dataset_id, entry in registry.items()),
+            "discovered_roots=" + ",".join(f"{dataset_id}:{path}" for dataset_id, path in roots.items()),
+            f"audit_passed={all(dataset_id in roots for dataset_id in registry)}",
+        ]
+        return CommandResult("\n".join(lines))
+    return CommandResult("", exit_code=1, error="Supported datasets: synthetic, bids, moabb, algonauts2025, multidataset_a100")
 
 
 def _leakage_keys(split: str) -> tuple[str, ...]:

@@ -448,11 +448,51 @@ def _predict_random_permutation(y_train: np.ndarray, target_shape: tuple[int, ..
     return (y_flat[indices] + noise).reshape(target_shape).astype(np.float32)
 
 
+def _predict_time_shift_control(y_train: np.ndarray, target_shape: tuple[int, ...], seed: int) -> np.ndarray:
+    prediction = _predict_random_permutation(y_train, target_shape, seed=seed)
+    if prediction.ndim >= 3 and prediction.shape[1] > 1:
+        return np.roll(prediction, shift=1, axis=1).astype(np.float32)
+    return prediction
+
+
+def _predict_patient_session_nuisance(task: SupervisedWindowTask) -> np.ndarray:
+    train_groups = tuple(str(group) for group in task.metadata.get("train_nuisance_groups", ()))
+    test_groups = tuple(str(group) for group in task.metadata.get("test_nuisance_groups", ()))
+    if len(train_groups) != int(task.y_train.shape[0]) or len(test_groups) != int(task.y_test.shape[0]):
+        raise ValueError("patient_session_nuisance requires train/test nuisance groups aligned to target windows")
+    global_mean = np.mean(np.asarray(task.y_train, dtype=np.float32), axis=0, keepdims=False)
+    group_means: dict[str, np.ndarray] = {}
+    for group in sorted(set(train_groups)):
+        indices = [idx for idx, value in enumerate(train_groups) if value == group]
+        if indices:
+            group_means[group] = np.mean(task.y_train[indices], axis=0)
+    predictions = [group_means.get(group, global_mean) for group in test_groups]
+    return np.asarray(predictions, dtype=np.float32)
+
+
 def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> np.ndarray:
     model = NumpyRidgeBaseline(alpha=1e-2)
     model.fit(_flatten_time(x_train), _flatten_time(y_train))
     pred = model.predict(_flatten_time(x_test))
     return pred.reshape(x_test.shape[0], x_test.shape[1], y_train.shape[-1])
+
+
+def _fit_gbm(task: SupervisedWindowTask, seed: int) -> np.ndarray:
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    from sklearn.multioutput import MultiOutputRegressor
+
+    base = HistGradientBoostingRegressor(
+        learning_rate=0.05,
+        max_iter=48,
+        max_leaf_nodes=15,
+        min_samples_leaf=10,
+        early_stopping=False,
+        random_state=seed,
+    )
+    model = MultiOutputRegressor(base, n_jobs=1)
+    model.fit(_flatten_time(task.x_train), _flatten_time(task.y_train))
+    pred = model.predict(_flatten_time(task.x_test))
+    return pred.reshape(task.x_test.shape[0], task.x_test.shape[1], task.y_train.shape[-1]).astype(np.float32)
 
 
 def _fit_autoregressive_ridge(task: SupervisedWindowTask) -> np.ndarray:
@@ -627,7 +667,10 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
     ExecutableBaselineRunner("persistence", lambda task, seed, steps: _predict_persistence(task)),
     ExecutableBaselineRunner("train_mean", lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape)),
     ExecutableBaselineRunner("random_permutation", lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101)),
+    ExecutableBaselineRunner("time_shift_control", lambda task, seed, steps: _predict_time_shift_control(task.y_train, task.y_test.shape, seed=seed + 202)),
+    ExecutableBaselineRunner("patient_session_nuisance", lambda task, seed, steps: _predict_patient_session_nuisance(task)),
     ExecutableBaselineRunner("linear_ridge", lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test)),
+    ExecutableBaselineRunner("gbm", lambda task, seed, steps: _fit_gbm(task, seed=seed + 21)),
     ExecutableBaselineRunner("autoregressive_ridge", lambda task, seed, steps: _fit_autoregressive_ridge(task)),
     ExecutableBaselineRunner(
         "mlp",
@@ -671,7 +714,17 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
             steps=steps,
         ),
     ),
+    ExecutableBaselineRunner(
+        "tiny_ssm",
+        lambda task, seed, steps: _fit_torch_sequence_model(
+            lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
+            task,
+            seed=seed + 4,
+            steps=steps,
+        ),
+    ),
     ExecutableBaselineRunner("neurotwin", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
+    ExecutableBaselineRunner("model", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
     ExecutableBaselineRunner(
         "tribe_style",
         lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),

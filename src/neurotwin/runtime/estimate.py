@@ -35,7 +35,7 @@ def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | floa
     checkpoint_mb = estimated_parameters * bytes_per_value / (1024 * 1024)
     pair_state_mb = pair_state_factor_values * bytes_per_value / (1024 * 1024)
     single_a100_mb = activation_mb + optimizer_mb + checkpoint_mb
-    six_a100_ddp_mb = activation_mb + optimizer_mb + checkpoint_mb
+    seven_a100_ddp_mb = activation_mb + optimizer_mb + checkpoint_mb
     return {
         "estimated_parameters": int(estimated_parameters),
         "estimated_activation_mb": round(activation_mb, 3),
@@ -43,7 +43,7 @@ def estimate_config(config: PreparedTrainingConfigInput) -> dict[str, int | floa
         "estimated_checkpoint_mb": round(checkpoint_mb, 3),
         "estimated_pair_state_mb": round(pair_state_mb, 3),
         "estimated_1xa100_runtime_mb": round(single_a100_mb, 3),
-        "estimated_6xa100_ddp_per_gpu_mb": round(six_a100_ddp_mb, 3),
+        "estimated_7xa100_ddp_per_gpu_mb": round(seven_a100_ddp_mb, 3),
         "effective_batch_size": batch_size * max(grad_accum, 1),
         "model_type": model.type,
         "model_status": model_status,
