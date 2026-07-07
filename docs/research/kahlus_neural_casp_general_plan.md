@@ -1,3 +1,5 @@
+# Kahlus Neural-CASP general plan
+
 ## Core update
 
 You’re right. I narrowed too fast into **Criticality Residual** as an implementation bet. That was useful, but the research question should stay wider for one more layer.

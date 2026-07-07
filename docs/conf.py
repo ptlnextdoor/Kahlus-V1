@@ -52,6 +52,7 @@ myst_enable_extensions = [
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
+html_extra_path = ["CNAME", ".nojekyll"]
 html_css_files = ["custom.css"]
 html_title = "Kahlus / NeuroTwin Research Docs"
 html_theme_options = {
