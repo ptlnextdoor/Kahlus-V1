@@ -594,6 +594,7 @@ def build_summary(evidence: dict[str, Any], versions_root: Path, figure_stems: d
         "inventory": asdict(inv),
         "eeg_metric_summary": summarize_task_metrics(eeg_rows),
         "baseline_metric_summary": summarize_baselines(baseline_results),
+        "recovered_kahlus_vs_ridge": summarize_recovered_kahlus_vs_ridge(eeg_rows, baseline_results),
         "audit_summary": summarize_audits(audits),
         "figure_files": {f"{key}_{ext}": f"{stem}.{ext}" for key, stem in figure_stems.items() for ext in ("png", "pdf", "svg")},
     }
@@ -620,6 +621,39 @@ def summarize_baselines(rows: list[BaselineResult]) -> dict[str, dict[str, float
     for model in sorted({r.model_id for r in mse_rows}):
         model_rows = [r for r in mse_rows if r.model_id == model]
         out[model] = {"n": len(model_rows), "median_mse": median_or_nan(r.value for r in model_rows), "median_rank": median_or_nan(r.rank for r in model_rows)}
+    return out
+
+
+def summarize_recovered_kahlus_vs_ridge(task_rows: list[TaskResult], baseline_rows: list[BaselineResult]) -> dict[str, dict[str, float | str | None]]:
+    """Compare best recovered Kahlus task-result MSE against linear ridge.
+
+    The recovered 6621642 run is stored in task_results.csv, while the ridge rows
+    live in baseline_ranking.csv. Keeping these separate made Figure 3 misleading,
+    so this summary joins them at the task level.
+    """
+
+    out: dict[str, dict[str, float | str | None]] = {}
+    task_ids = sorted({r.task_id for r in task_rows if r.source_modality == "eeg" and r.target_modality == "eeg"})
+    for task_id in task_ids:
+        candidate_rows = [r for r in task_rows if r.task_id == task_id and r.source_modality == "eeg" and r.target_modality == "eeg" and math.isfinite(r.test_mse)]
+        recovered_rows = [r for r in candidate_rows if "6621642" in f"{r.bundle} {r.artifact_path}".lower()]
+        comparison_rows = recovered_rows or candidate_rows
+        kahlus_vals = finite(r.test_mse for r in comparison_rows)
+        ridge_vals = finite(r.value for r in baseline_rows if r.task_id == task_id and r.model_id == "linear_ridge" and r.metric.lower() == "mse")
+        kahlus_best = min(kahlus_vals) if kahlus_vals else None
+        ridge_best = min(ridge_vals) if ridge_vals else None
+        winner: str | None
+        if kahlus_best is None or ridge_best is None:
+            winner = None
+        elif kahlus_best < ridge_best:
+            winner = "kahlus_v1_recovered"
+        else:
+            winner = "linear_ridge"
+        out[task_id] = {
+            "kahlus_v1_recovered_mse": kahlus_best,
+            "linear_ridge_mse": ridge_best,
+            "winner": winner,
+        }
     return out
 
 
@@ -662,6 +696,20 @@ def analysis_md(summary: dict[str, Any]) -> str:
     if not baseline_lines:
         baseline_lines.append("- No non-empty baseline-ranking rows were found.")
 
+    comparison_lines = []
+    for task, vals in summary.get("recovered_kahlus_vs_ridge", {}).items():
+        kahlus = vals.get("kahlus_v1_recovered_mse")
+        ridge = vals.get("linear_ridge_mse")
+        winner = vals.get("winner")
+        if kahlus is None or ridge is None or winner is None:
+            comparison_lines.append(f"- `{task}`: incomplete Kahlus/ridge comparison in cached artifacts.")
+        elif winner == "kahlus_v1_recovered":
+            comparison_lines.append(f"- Kahlus v1 recovered beats linear ridge on {task}: MSE {fmt(kahlus)} vs {fmt(ridge)}.")
+        else:
+            comparison_lines.append(f"- linear ridge beats Kahlus v1 recovered on {task}: MSE {fmt(ridge)} vs {fmt(kahlus)}.")
+    if not comparison_lines:
+        comparison_lines.append("- No recovered Kahlus versus linear ridge comparison could be computed.")
+
     return f"""# EEG/ridge versions evidence figures
 
 ## Real evidence artifacts
@@ -686,6 +734,10 @@ No raw tensor or prediction-array artifact was found, so this renderer intention
 ## Baseline rankings
 
 {chr(10).join(baseline_lines)}
+
+## Recovered Kahlus v1 versus ridge
+
+{chr(10).join(comparison_lines)}
 
 ## Audit summary
 

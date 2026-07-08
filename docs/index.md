@@ -67,6 +67,7 @@ references/reputable-neuroscience-repos
 
 methods/ridge-baseline
 methods/leakage-proof-evaluation
+research/best_supported_stats/README
 paper/benchmark_protocol
 paper/methods
 paper/experiments

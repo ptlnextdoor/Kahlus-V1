@@ -119,6 +119,18 @@
     "task_results_csv": 7
   },
   "raw_tensor_artifacts_found": false,
+  "recovered_kahlus_vs_ridge": {
+    "future_state_forecasting": {
+      "kahlus_v1_recovered_mse": 3.11607456072082,
+      "linear_ridge_mse": 7.7452734660906435,
+      "winner": "kahlus_v1_recovered"
+    },
+    "masked_neural_reconstruction": {
+      "kahlus_v1_recovered_mse": 53.977131681115935,
+      "linear_ridge_mse": 7.807342737229374,
+      "winner": "linear_ridge"
+    }
+  },
   "source_mode": "versions_evidence",
   "task_result_rows": 15,
   "versions_root": "/Users/aayu/Downloads/versions"

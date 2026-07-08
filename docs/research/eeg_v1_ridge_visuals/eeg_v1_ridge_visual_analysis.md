@@ -33,6 +33,11 @@ No raw tensor or prediction-array artifact was found, so this renderer intention
 - `train_mean`: n=8, median MSE=53.6, median rank=8.5
 - `random_permutation`: n=8, median MSE=84.6, median rank=10
 
+## Recovered Kahlus v1 versus ridge
+
+- Kahlus v1 recovered beats linear ridge on future_state_forecasting: MSE 3.12 vs 7.75.
+- linear ridge beats Kahlus v1 recovered on masked_neural_reconstruction: MSE 7.81 vs 54.
+
 ## Audit summary
 
 - Total violations recorded in parsed audits: **0**

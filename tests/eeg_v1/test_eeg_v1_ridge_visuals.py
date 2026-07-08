@@ -43,11 +43,14 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
                 zf.writestr(
                     "sample/run/tables/task_results.csv",
                     "task_id,source_modality,target_modality,eval_mse,eval_mae,eval_pearsonr,eval_r2,test_mse,best_val_mse\n"
-                    "future_state_forecasting,eeg,eeg,12.5,2.1,0.81,0.62,12.5,6.0\n",
+                    "future_state_forecasting,eeg,eeg,3.11607456072082,1.29685807808655,0.9721078350075555,0.9418946133048665,3.11607456072082,2.2286510506462704\n"
+                    "masked_neural_reconstruction,eeg,eeg,53.977132,5.690621,-0.012507,-0.006490,53.977132,47.425705\n",
                 )
                 zf.writestr(
                     "sample/run/tables/baseline_ranking.csv",
-                    "task_id,model_id,metric,value,rank\nfuture_state_forecasting,linear_ridge,mse,7.7,1\n",
+                    "task_id,model_id,metric,value,rank\n"
+                    "future_state_forecasting,linear_ridge,mse,7.7,1\n"
+                    "masked_neural_reconstruction,linear_ridge,mse,7.8,1\n",
                 )
                 zf.writestr("sample/prepared/leakage_report.json", json.dumps({"passed": True, "violations": []}))
 
@@ -83,6 +86,11 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
             self.assertEqual(summary["source_mode"], "versions_evidence")
             self.assertFalse(summary["raw_tensor_artifacts_found"])
+            comparison = summary["recovered_kahlus_vs_ridge"]
+            self.assertAlmostEqual(comparison["future_state_forecasting"]["kahlus_v1_recovered_mse"], 3.11607456072082)
+            self.assertAlmostEqual(comparison["future_state_forecasting"]["linear_ridge_mse"], 7.7)
+            self.assertEqual(comparison["future_state_forecasting"]["winner"], "kahlus_v1_recovered")
+            self.assertEqual(comparison["masked_neural_reconstruction"]["winner"], "linear_ridge")
             self.assertIn("benchmark_overview_png", summary["figure_files"])
             self.assertIn("audit_matrix_png", summary["figure_files"])
             self.assertIn("baseline_ranking_png", summary["figure_files"])
@@ -90,6 +98,8 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             self.assertIn("Real evidence artifacts", analysis)
             self.assertIn("CEBRA-style figure-source packet", analysis)
             self.assertIn("standard matplotlib/seaborn", analysis)
+            self.assertIn("Kahlus v1 recovered beats linear ridge on future_state_forecasting", analysis)
+            self.assertIn("linear ridge beats Kahlus v1 recovered on masked_neural_reconstruction", analysis)
             self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
             self.assertNotIn("synthetic fixture", analysis.lower())
 

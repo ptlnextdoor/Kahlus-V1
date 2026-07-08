@@ -69,7 +69,7 @@ docs/research/eeg_v1_figure_source/
 
 ![EEG v1 baseline ranking](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png)
 
-**Figure 3. Baseline ranking.** Standard horizontal seaborn dot/median plot rendered from `baseline_ranking.csv`. Long model names stay on the y-axis, and lower MSE is better. Source: [`src/Figure3_eeg_v1_baseline_ranking.py`](../research/eeg_v1_figure_source/src/Figure3_eeg_v1_baseline_ranking.py). Data: [`baseline_ranking.csv`](../research/eeg_v1_figure_source/data/baseline_ranking.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg)
+**Figure 3. Recovered Kahlus v1 versus baselines.** Standard horizontal seaborn dot/median plot rendered by joining recovered Kahlus rows from `task_results.csv` with baseline rows from `baseline_ranking.csv`. This makes the honest story visible: recovered Kahlus v1 beats linear ridge on EEG future forecasting, while ridge remains stronger on masked reconstruction. Source: [`src/Figure3_eeg_v1_baseline_ranking.py`](../research/eeg_v1_figure_source/src/Figure3_eeg_v1_baseline_ranking.py). Data: [`task_results.csv`](../research/eeg_v1_figure_source/data/task_results.csv), [`baseline_ranking.csv`](../research/eeg_v1_figure_source/data/baseline_ranking.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg)
 
 </div>
 
