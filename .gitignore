@@ -13,3 +13,8 @@ runs/
 outputs/
 neurotwin-a100-results-*/
 external/vendor/
+
+# Sphinx build outputs
+docs/_build/
+docs/auto_examples/
+docs/sg_execution_times.rst

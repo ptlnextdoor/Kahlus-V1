@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="460" viewBox="0 0 900 460"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30.0" y="34.0" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#111827">Raw EEG window used by ridge</text>
+<line x1="75" y1="368" x2="875" y2="368" stroke="#111827"/>
+<line x1="75" y1="55" x2="75" y2="368" stroke="#111827"/>
+<text x="370.0" y="436.0" font-family="Arial, sans-serif" font-size="13" font-weight="normal" fill="#374151">seconds from input-window start</text>
+<text x="12.0" y="215.0" font-family="Arial, sans-serif" font-size="13" font-weight="normal" fill="#374151">EEG amplitude (benchmark units)</text>
+<line x1="75.0" y1="368" x2="75.0" y2="373" stroke="#374151"/>
+<text x="59.0" y="390.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.000</text>
+<line x1="275.0" y1="368" x2="275.0" y2="373" stroke="#374151"/>
+<text x="259.0" y="390.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.016</text>
+<line x1="475.0" y1="368" x2="475.0" y2="373" stroke="#374151"/>
+<text x="459.0" y="390.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.031</text>
+<line x1="675.0" y1="368" x2="675.0" y2="373" stroke="#374151"/>
+<text x="659.0" y="390.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.047</text>
+<line x1="875.0" y1="368" x2="875.0" y2="373" stroke="#374151"/>
+<text x="859.0" y="390.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.062</text>
+<line x1="70" y1="368.0" x2="75" y2="368.0" stroke="#374151"/>
+<text x="8.0" y="372.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">-2.06</text>
+<line x1="70" y1="289.8" x2="75" y2="289.8" stroke="#374151"/>
+<text x="8.0" y="293.8" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">-0.94</text>
+<line x1="70" y1="211.5" x2="75" y2="211.5" stroke="#374151"/>
+<text x="8.0" y="215.5" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">0.18</text>
+<line x1="70" y1="133.2" x2="75" y2="133.2" stroke="#374151"/>
+<text x="8.0" y="137.2" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">1.30</text>
+<line x1="70" y1="55.0" x2="75" y2="55.0" stroke="#374151"/>
+<text x="8.0" y="59.0" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151">2.42</text>
+<line x1="655" y1="54" x2="677" y2="54" stroke="#1565c0" stroke-width="2.4"/>
+<text x="683.0" y="58.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">input ch0</text>
+<line x1="655" y1="72" x2="677" y2="72" stroke="#1565c0" stroke-width="2.4"/>
+<text x="683.0" y="76.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">input ch1</text>
+<line x1="655" y1="90" x2="677" y2="90" stroke="#1565c0" stroke-width="2.4"/>
+<text x="683.0" y="94.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">input ch2</text>
+<line x1="655" y1="108" x2="677" y2="108" stroke="#c2410c" stroke-width="2.4"/>
+<text x="683.0" y="112.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">target ch0</text>
+<line x1="655" y1="126" x2="677" y2="126" stroke="#c2410c" stroke-width="2.4"/>
+<text x="683.0" y="130.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">target ch1</text>
+<line x1="655" y1="144" x2="677" y2="144" stroke="#c2410c" stroke-width="2.4"/>
+<text x="683.0" y="148.0" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#111827">target ch2</text>
+<polyline fill="none" stroke="#1565c0" stroke-width="2.0" points="75.0,287.5 175.0,287.7 275.0,334.9 375.0,337.7 475.0,289.1 575.0,308.6 675.0,317.3 775.0,304.8"/>
+<polyline fill="none" stroke="#1565c0" stroke-width="2.0" points="75.0,197.5 175.0,214.3 275.0,185.9 375.0,166.4 475.0,160.5 575.0,142.7 675.0,162.6 775.0,175.7"/>
+<polyline fill="none" stroke="#1565c0" stroke-width="2.0" points="75.0,189.2 175.0,126.8 275.0,113.2 375.0,85.3 475.0,147.1 575.0,155.2 675.0,131.9 775.0,177.5"/>
+<polyline fill="none" stroke="#c2410c" stroke-width="2.0" points="175.0,287.7 275.0,334.9 375.0,337.7 475.0,289.1 575.0,308.6 675.0,317.3 775.0,304.8 875.0,294.5"/>
+<polyline fill="none" stroke="#c2410c" stroke-width="2.0" points="175.0,214.3 275.0,185.9 375.0,166.4 475.0,160.5 575.0,142.7 675.0,162.6 775.0,175.7 875.0,164.7"/>
+<polyline fill="none" stroke="#c2410c" stroke-width="2.0" points="175.0,126.8 275.0,113.2 375.0,85.3 475.0,147.1 575.0,155.2 675.0,131.9 775.0,177.5 875.0,164.9"/>
+<text x="75.0" y="402.0" font-family="Arial, sans-serif" font-size="13" font-weight="normal" fill="#7c2d12">linear_ridge features = current window: 8 time samples x 6 channels, flattened</text>
+<text x="75.0" y="420.0" font-family="Arial, sans-serif" font-size="13" font-weight="normal" fill="#7c2d12">target = future window shifted by forecast_horizon=1; most samples overlap at short horizon</text>
+</svg>

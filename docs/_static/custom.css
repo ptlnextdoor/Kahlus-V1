@@ -1,0 +1,33 @@
+.figure-card {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  background: var(--pst-color-surface);
+}
+.figure-card img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.5rem;
+  background: white;
+}
+.schematic-badge,
+.evidence-badge,
+.diagnostic-badge,
+.limit-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.schematic-badge { color: #92400e; background: #fef3c7; border: 1px solid #f59e0b; }
+.evidence-badge { color: #065f46; background: #d1fae5; border: 1px solid #10b981; }
+.diagnostic-badge { color: #1e3a8a; background: #dbeafe; border: 1px solid #3b82f6; }
+.limit-badge { color: #7f1d1d; background: #fee2e2; border: 1px solid #ef4444; }
+.kahlus-lede {
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
