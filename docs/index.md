@@ -48,11 +48,17 @@ limitations
 
 ```{toctree}
 :maxdepth: 2
-:caption: Research figures
+:caption: Figure pages
 
 figures/eeg-v1-ridge-visuals
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Standards and references
+
 figures/visual-standards
-research/eeg_v1_ridge_visuals/eeg_v1_ridge_visual_analysis
+references/reputable-neuroscience-repos
 ```
 
 ```{toctree}
@@ -105,7 +111,6 @@ ROADMAP
 :maxdepth: 2
 :caption: External standards
 
-references/reputable-neuroscience-repos
 licenses/upstream-registry
 ```
 
@@ -113,6 +118,7 @@ licenses/upstream-registry
 :maxdepth: 1
 :caption: Appendix and archived notes
 
+research/eeg_v1_ridge_visuals/eeg_v1_ridge_visual_analysis
 CHAPMAN_A100_LAUNCH
 CHAPMAN_A100_QUICKSTART
 H100_RUNBOOK

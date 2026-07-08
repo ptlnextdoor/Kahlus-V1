@@ -26,6 +26,17 @@
     "persistence": 0.41404632845387795,
     "tiny_ssm": 0.8803292590011219
   },
+  "figure_files": {
+    "baseline_controls_pdf": "fig04_baseline_and_autocorrelation_controls.pdf",
+    "baseline_controls_png": "fig04_baseline_and_autocorrelation_controls.png",
+    "feature_map_pdf": "fig02_ridge_design_matrix_contract.pdf",
+    "feature_map_png": "fig02_ridge_design_matrix_contract.png",
+    "prediction_overlay_pdf": "fig03_prediction_overlay_and_residuals.pdf",
+    "prediction_overlay_png": "fig03_prediction_overlay_and_residuals.png",
+    "window_pdf": "fig01_eeg_window_overlap_diagnostic.pdf",
+    "window_png": "fig01_eeg_window_overlap_diagnostic.png"
+  },
+  "figure_style_source": "/Users/aayu/Downloads/versions/kahlus_v3_cna_master_dossier_2026-06-13_hybrid_visual_rebuild/generate_hybrid_figures.py",
   "forecast_horizon": 1,
   "metrics_by_model": {
     "autoregressive_ridge": {

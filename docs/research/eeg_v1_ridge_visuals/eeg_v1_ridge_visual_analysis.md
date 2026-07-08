@@ -2,6 +2,11 @@
 
 This is not a new benchmark. It visualizes the existing EEG v1 future-window benchmark so the ridge result is easier to inspect.
 
+```{admonition} Figure status
+:class: warning
+These are diagnostic refit figures generated from the synthetic fixture. They are useful for understanding benchmark geometry, not for public EEG or clinical claims.
+```
+
 - dataset: `synthetic_eeg_v1`
 - source: `synthetic_fixture`
 - benchmark_status: `synthetic_fixture_not_public_benchmark`
@@ -10,16 +15,27 @@ This is not a new benchmark. It visualizes the existing EEG v1 future-window ben
 - ridge feature matrix: `[1024, 48]` after flattening input windows
 - ridge target matrix: `[1024, 48]` after flattening future windows
 - same-record shifted overlap correlation for the plotted test window: `0.9999999999999998`
+- figure style source: `/Users/aayu/Downloads/versions/kahlus_v3_cna_master_dossier_2026-06-13_hybrid_visual_rebuild/generate_hybrid_figures.py`
 
-## Diagrams
+## Publication-style diagnostic figures
 
-![Raw EEG input and target window](eeg_v1_ridge_waveform_window.svg)
+![Window overlap diagnostic](fig01_eeg_window_overlap_diagnostic.png)
 
-![Ridge feature map](eeg_v1_ridge_feature_map.svg)
+[PDF version](fig01_eeg_window_overlap_diagnostic.pdf)
 
-![Prediction overlay](eeg_v1_ridge_prediction_overlay.svg)
+![Ridge design matrix contract](fig02_ridge_design_matrix_contract.png)
 
-## Current Benchmark Metrics
+[PDF version](fig02_ridge_design_matrix_contract.pdf)
+
+![Prediction overlay and residuals](fig03_prediction_overlay_and_residuals.png)
+
+[PDF version](fig03_prediction_overlay_and_residuals.pdf)
+
+![Baseline and autocorrelation controls](fig04_baseline_and_autocorrelation_controls.png)
+
+[PDF version](fig04_baseline_and_autocorrelation_controls.pdf)
+
+## Current benchmark metrics
 
 | model | mse | mae | r2 | pearsonr |
 |---|---:|---:|---:|---:|
@@ -28,14 +44,14 @@ This is not a new benchmark. It visualizes the existing EEG v1 future-window ben
 | tiny_ssm | 0.839992 | 0.702251 | 0.619599 | 0.788796 |
 | autoregressive_ridge | 1.05154 | 0.763142 | 0.523797 | 0.724083 |
 
-## Why Ridge Can Look Strong Here
+## Why ridge can look strong here
 
-- `linear_ridge` sees the entire raw EEG input window flattened into scalar time-channel features.
+- `linear_ridge` sees the raw EEG input window flattened into scalar time-channel features.
 - The target is the future EEG window, not a distant label. With `forecast_horizon=1`, most of the target window is the input window shifted by one sample.
 - The synthetic fixture is deliberately smooth/autoregressive, so a linear model is well matched to the data-generating structure.
 - Strong ridge or persistence performance is therefore a sanity-check signal for autocorrelation, short horizon, and overlap; it is not evidence of brain-state understanding.
 
-## Existing Autocorrelation Controls
+## Existing autocorrelation controls
 
 - verdict: `treat_v1_as_baseline_infrastructure_until_harder_controls_are_beaten`
 - persistence_or_ridge_dominates: `True`
