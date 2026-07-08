@@ -137,6 +137,7 @@ research/nfc_falsification_criteria
 research/nfc_implementation_plan
 research/pair_operator_readiness_report
 research/repo_alignment_plan
+research/ridge_eeg_diagnostic_schematics/README
 research/turboquant_retrieval_notes
 research/kahlus_affect_researchdock_roadmap
 research/kahlus_current_math_cs_report

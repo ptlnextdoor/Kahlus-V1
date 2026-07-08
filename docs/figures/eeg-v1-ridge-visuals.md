@@ -54,15 +54,63 @@ Every plotted dot/bar below comes from saved evidence artifacts such as `task_re
 
 </div>
 
+## Restored diagnostic schematic packet
+
+```{admonition} Why these are back
+:class: note
+These are the older high-quality ridge EEG figures from `/Users/aayu/Workspace/developer/Kahlus-V1/docs/analysis/ridge_eeg_figures`. They are visually useful and scientifically pedagogical, but their own README marks them as **schematic demo figures, not benchmark evidence**. Use them to explain what the diagnostics should look like. Use the versions-evidence figures above for claims about saved runs.
+```
+
+<div class="figure-card">
+
+![Schematic ridge input target waveforms](../research/ridge_eeg_diagnostic_schematics/fig1_ridge_input_target_waveforms.png)
+
+**Figure S1. Schematic input/target waveforms and design matrix.** Shows current-window EEG, next-window target, and the channel-feature design matrix for the ridge diagnostic. This is explanatory schematic output, not benchmark evidence. [PDF](../research/ridge_eeg_diagnostic_schematics/fig1_ridge_input_target_waveforms.pdf)
+
+</div>
+
+<div class="figure-card">
+
+![Schematic ridge prediction overlay](../research/ridge_eeg_diagnostic_schematics/fig2_ridge_prediction_overlay.png)
+
+**Figure S2. Schematic ridge prediction overlay.** Actual future EEG, ridge prediction, and residual traces for the schematic demo packet. This is the good visual style to preserve when real prediction arrays are saved. [PDF](../research/ridge_eeg_diagnostic_schematics/fig2_ridge_prediction_overlay.pdf)
+
+</div>
+
+<div class="figure-card">
+
+![Schematic autocorrelation lag structure](../research/ridge_eeg_diagnostic_schematics/fig3_autocorrelation_lag_structure.png)
+
+**Figure S3. Schematic autocorrelation lag structure.** Shows short-horizon autocorrelation and current-vs-next channel correlation, which is exactly the kind of diagnostic needed before interpreting ridge wins. [PDF](../research/ridge_eeg_diagnostic_schematics/fig3_autocorrelation_lag_structure.pdf)
+
+</div>
+
+<div class="figure-card">
+
+![Schematic ridge coefficient channel map](../research/ridge_eeg_diagnostic_schematics/fig4_ridge_coefficient_channel_map.png)
+
+**Figure S4. Schematic ridge coefficient channel map.** Signed and magnitude coefficient matrices for the channel-to-channel ridge map. Useful for explaining model contract and coefficient structure. [PDF](../research/ridge_eeg_diagnostic_schematics/fig4_ridge_coefficient_channel_map.pdf)
+
+</div>
+
+<div class="figure-card">
+
+![Schematic PSD residual diagnostics](../research/ridge_eeg_diagnostic_schematics/fig5_psd_residual_diagnostics.png)
+
+**Figure S5. Schematic PSD and residual diagnostics.** Power spectra for actual, prediction, and residual, plus per-channel predictive quality. This is the target diagnostic style once raw tensors/predictions are exported. [PDF](../research/ridge_eeg_diagnostic_schematics/fig5_psd_residual_diagnostics.pdf)
+
+</div>
+
 ## Interpretation
 
-This page is evidence-led rather than screenshot-led. A good scientific docs page should say “we have these artifacts, here is what they show, and here is what they cannot show yet.” Right now, the evidence supports metrics and audit plots. It does not support raw EEG waveform overlays or per-window prediction examples.
+This page is evidence-led rather than screenshot-led. A good scientific docs page should say “we have these artifacts, here is what they show, and here is what they cannot show yet.” Right now, the versions evidence supports metrics and audit plots. The restored waveform/prediction figures are schematic exemplars showing what the diagnostic view should look like once raw tensors and saved predictions are exported.
 
 ## Evidence boundary
 
 - **Allowed:** “The versions archive contains EEG→EEG task metrics, baseline rankings, leakage audits, and paper-mode gates.”
 - **Allowed:** “The current public figures are generated from saved CSV/JSON evidence artifacts.”
-- **Not allowed:** “The prediction overlay proves ridge understands brain state.” No prediction arrays are saved.
-- **Not allowed:** “These figures show clinical EEG physiology.” No raw EEG tensors or electrode metadata are present in the scanned evidence zips.
+- **Allowed:** “The restored S-series figures are high-quality schematic diagnostics for explaining the ridge workflow.”
+- **Not allowed:** “The schematic prediction overlay proves ridge understands brain state.” The versions archive does not include saved prediction arrays.
+- **Not allowed:** “These figures show clinical EEG physiology.” The real-evidence bundles do not include raw EEG tensors or electrode metadata, and the restored S-series packet is explicitly schematic.
 
-For exact counts, medians, and generated artifact provenance, see [the generated analysis page](../research/eeg_v1_ridge_visuals/eeg_v1_ridge_visual_analysis.md).
+For exact counts, medians, and generated artifact provenance, see [the generated analysis page](../research/eeg_v1_ridge_visuals/eeg_v1_ridge_visual_analysis.md). The restored schematic packet README is available at [ridge_eeg_diagnostic_schematics/README.md](../research/ridge_eeg_diagnostic_schematics/README.md).

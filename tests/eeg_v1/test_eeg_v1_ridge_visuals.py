@@ -63,6 +63,25 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
             self.assertNotIn("synthetic fixture", analysis.lower())
 
+    def test_restored_schematic_diagnostic_packet_is_kept_and_labeled(self):
+        root = Path("docs/research/ridge_eeg_diagnostic_schematics")
+        expected = (
+            "fig1_ridge_input_target_waveforms.png",
+            "fig2_ridge_prediction_overlay.png",
+            "fig3_autocorrelation_lag_structure.png",
+            "fig4_ridge_coefficient_channel_map.png",
+            "fig5_psd_residual_diagnostics.png",
+        )
+        for name in expected:
+            self.assertTrue((root / name).exists(), name)
+            self.assertGreater((root / name).stat().st_size, 100_000, name)
+        readme = (root / "README.md").read_text(encoding="utf-8")
+        self.assertIn("schematic demo figures, not benchmark evidence", readme)
+        page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
+        self.assertIn("Restored diagnostic schematic packet", page)
+        self.assertIn("not benchmark evidence", page)
+        self.assertIn("fig2_ridge_prediction_overlay.png", page)
+
 
 if __name__ == "__main__":
     unittest.main()
