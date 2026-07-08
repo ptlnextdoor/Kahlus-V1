@@ -82,6 +82,10 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             ):
                 self.assertTrue((packet / name).exists(), name)
             assert_standard_figure_packet(self, packet)
+            figure3_svg = (packet / "figures/Figure3_eeg_v1_baseline_ranking.svg").read_text(encoding="utf-8")
+            self.assertIn("winner: Kahlus v1 recovered", figure3_svg)
+            self.assertIn("winner: linear ridge", figure3_svg)
+            self.assertNotIn("Kahlus wins this saved comparison", figure3_svg)
             self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
             summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
             self.assertEqual(summary["source_mode"], "versions_evidence")

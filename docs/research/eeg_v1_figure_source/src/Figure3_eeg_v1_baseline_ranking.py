@@ -51,7 +51,7 @@ HIGHLIGHT = "Kahlus v1 recovered"
 def main() -> None:
     apply_style()
     ranking = read_comparison_rows()
-    fig, axes = plt.subplots(1, 2, figsize=(7.35, 3.75), layout="constrained", sharex=False)
+    fig, axes = plt.subplots(1, 2, figsize=(7.35, 4.05), layout="constrained", sharex=False)
     for ax, task in zip(axes, TASKS, strict=True):
         plot_task_ranking(ax, ranking, task)
     fig.suptitle("Recovered Kahlus v1 versus standard EEG baselines", x=0.01, ha="left", fontsize=10.5, fontweight="bold")
@@ -159,9 +159,9 @@ def read_recovered_kahlus_results() -> pd.DataFrame:
 
 
 def plot_task_ranking(ax: plt.Axes, df: pd.DataFrame, task: str) -> None:
-    ax.set_title(TASK_TITLES[task], loc="left", fontweight="bold")
     task_df = df[df["task_id"].eq(task)].copy()
     if task_df.empty:
+        ax.set_title(TASK_TITLES[task], loc="left", fontweight="bold")
         ax.text(0.5, 0.5, "no rows", ha="center", va="center", transform=ax.transAxes, color="#6B7280")
         ax.set_axis_off()
         return
@@ -177,12 +177,13 @@ def plot_task_ranking(ax: plt.Axes, df: pd.DataFrame, task: str) -> None:
             patch.set_linewidth(1.0)
     winner = task_df.iloc[0]
     if winner["model_label"] == HIGHLIGHT:
-        note = "Kahlus wins this saved comparison"
+        note = "winner: Kahlus v1 recovered"
         color = "#D55E00"
     else:
         note = f"winner: {winner['model_label']}"
         color = "#0072B2"
-    ax.text(0.98, 0.04, note, transform=ax.transAxes, ha="right", va="bottom", fontsize=7.2, color=color, fontweight="bold")
+    ax.set_title(f"{TASK_TITLES[task]}\n{note}", loc="left", fontweight="bold", color=color, pad=8)
+    ax.set_xlim(0, task_df["value"].max() * 1.24)
     ax.set_xlabel("MSE, lower is better")
     ax.set_ylabel("")
     ax.grid(axis="x", color="#E5E7EB")
