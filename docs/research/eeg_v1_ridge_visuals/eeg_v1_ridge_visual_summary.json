@@ -97,14 +97,15 @@
   },
   "eeg_task_result_rows": 12,
   "figure_files": {
-    "audit_pdf": "fig04_leakage_and_gate_audit.pdf",
-    "audit_png": "fig04_leakage_and_gate_audit.png",
-    "baseline_ranking_pdf": "fig03_real_baseline_ranking.pdf",
-    "baseline_ranking_png": "fig03_real_baseline_ranking.png",
-    "inventory_pdf": "fig01_versions_evidence_inventory.pdf",
-    "inventory_png": "fig01_versions_evidence_inventory.png",
-    "task_metrics_pdf": "fig02_eeg_task_metrics_from_versions.pdf",
-    "task_metrics_png": "fig02_eeg_task_metrics_from_versions.png"
+    "audit_matrix_pdf": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.pdf",
+    "audit_matrix_png": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.png",
+    "audit_matrix_svg": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.svg",
+    "baseline_ranking_pdf": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf",
+    "baseline_ranking_png": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png",
+    "baseline_ranking_svg": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg",
+    "benchmark_overview_pdf": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.pdf",
+    "benchmark_overview_png": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.png",
+    "benchmark_overview_svg": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.svg"
   },
   "inventory": {
     "array_like_artifacts": [],

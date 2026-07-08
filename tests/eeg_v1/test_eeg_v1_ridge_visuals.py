@@ -6,6 +6,32 @@ import unittest
 import zipfile
 from pathlib import Path
 
+from PIL import Image
+
+
+STANDARD_FIGURE_STEMS = (
+    "Figure1_eeg_v1_benchmark_overview",
+    "Figure2_eeg_v1_audit_matrix",
+    "Figure3_eeg_v1_baseline_ranking",
+)
+
+
+def assert_standard_figure_packet(testcase: unittest.TestCase, packet: Path) -> None:
+    for stem in STANDARD_FIGURE_STEMS:
+        for ext in ("png", "pdf", "svg"):
+            testcase.assertTrue((packet / f"figures/{stem}.{ext}").exists(), f"{stem}.{ext}")
+        with Image.open(packet / f"figures/{stem}.png") as image:
+            testcase.assertGreaterEqual(image.width, 1200, stem)
+            testcase.assertGreaterEqual(image.height, 700, stem)
+        svg = (packet / f"figures/{stem}.svg").read_text(encoding="utf-8")
+        testcase.assertIn("<text", svg, f"{stem} should keep SVG text selectable")
+
+    for source in (packet / "src").glob("Figure*.py"):
+        text = source.read_text(encoding="utf-8")
+        testcase.assertNotIn("FancyBboxPatch", text, source.name)
+        testcase.assertNotIn("FancyArrowPatch", text, source.name)
+        testcase.assertIn("constrained", text, source.name)
+
 
 class EEGV1RidgeVisualsTests(unittest.TestCase):
     def test_renderer_writes_real_artifact_figures_without_synthetic_overlay(self):
@@ -41,25 +67,29 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-            for name in (
-                "fig01_versions_evidence_inventory.png",
-                "fig01_versions_evidence_inventory.pdf",
-                "fig02_eeg_task_metrics_from_versions.png",
-                "fig02_eeg_task_metrics_from_versions.pdf",
-                "fig03_real_baseline_ranking.png",
-                "fig03_real_baseline_ranking.pdf",
-                "fig04_leakage_and_gate_audit.png",
-                "fig04_leakage_and_gate_audit.pdf",
-                "eeg_v1_ridge_visual_analysis.md",
-                "eeg_v1_ridge_visual_summary.json",
-            ):
+            for name in ("eeg_v1_ridge_visual_analysis.md", "eeg_v1_ridge_visual_summary.json"):
                 self.assertTrue((out / name).exists(), name)
+            packet = Path(tmp) / "eeg_v1_figure_source"
+            for name in (
+                "data/task_results.csv",
+                "data/baseline_ranking.csv",
+                "data/audits.csv",
+                "data/inventory.json",
+                "data/provenance.json",
+            ):
+                self.assertTrue((packet / name).exists(), name)
+            assert_standard_figure_packet(self, packet)
             self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
             summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
             self.assertEqual(summary["source_mode"], "versions_evidence")
             self.assertFalse(summary["raw_tensor_artifacts_found"])
+            self.assertIn("benchmark_overview_png", summary["figure_files"])
+            self.assertIn("audit_matrix_png", summary["figure_files"])
+            self.assertIn("baseline_ranking_png", summary["figure_files"])
             analysis = (out / "eeg_v1_ridge_visual_analysis.md").read_text(encoding="utf-8")
             self.assertIn("Real evidence artifacts", analysis)
+            self.assertIn("CEBRA-style figure-source packet", analysis)
+            self.assertIn("standard matplotlib/seaborn", analysis)
             self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
             self.assertNotIn("synthetic fixture", analysis.lower())
 
@@ -78,7 +108,11 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
         readme = (root / "README.md").read_text(encoding="utf-8")
         self.assertIn("schematic demo figures, not benchmark evidence", readme)
         page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
-        self.assertIn("Restored diagnostic schematic packet", page)
+        self.assertIn("STANDARD MATPLOTLIB/SEABORN FIGURES", page)
+        self.assertIn("Figure1_eeg_v1_benchmark_overview.png", page)
+        self.assertIn("Figure2_eeg_v1_audit_matrix.png", page)
+        self.assertIn("Figure3_eeg_v1_baseline_ranking.png", page)
+        self.assertIn("Restored schematic diagnostic packet", page)
         self.assertIn("not benchmark evidence", page)
         self.assertIn("fig2_ridge_prediction_overlay.png", page)
 

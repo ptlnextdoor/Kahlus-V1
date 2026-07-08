@@ -32,6 +32,7 @@ cluster = [
 ]
 dev = [
   "pytest>=8",
+  "pillow>=10",
 ]
 docs = [
   "sphinx>=7.4",
@@ -42,6 +43,8 @@ docs = [
   "sphinx-gallery>=0.17",
   "numpydoc>=1.7",
   "matplotlib>=3.8",
+  "pandas>=2.2",
+  "seaborn>=0.13",
 ]
 
 [project.scripts]

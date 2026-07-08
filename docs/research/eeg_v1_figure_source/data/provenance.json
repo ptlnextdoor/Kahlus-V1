@@ -1,0 +1,7 @@
+{
+  "evidence_rule": "Only cached CSV/JSON/NPZ artifacts may drive public figures.",
+  "figure_source_root": "docs/research/eeg_v1_figure_source",
+  "renderer": "scripts/render_eeg_v1_ridge_visuals.py",
+  "source_mode": "versions_evidence",
+  "versions_root": "/Users/aayu/Downloads/versions"
+}

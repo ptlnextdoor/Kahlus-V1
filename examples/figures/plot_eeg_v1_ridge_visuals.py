@@ -39,3 +39,5 @@ print(result.stdout.strip())
 print("Generated files:")
 for path in sorted(OUT.glob("eeg_v1_ridge_*")):
     print(f"- {path.relative_to(ROOT)}")
+for path in sorted((ROOT / "docs" / "research" / "eeg_v1_figure_source" / "figures").glob("Figure*.png")):
+    print(f"- {path.relative_to(ROOT)}")

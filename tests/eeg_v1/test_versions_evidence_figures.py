@@ -6,6 +6,8 @@ import unittest
 import zipfile
 from pathlib import Path
 
+from tests.eeg_v1.test_eeg_v1_ridge_visuals import assert_standard_figure_packet
+
 
 class VersionsEvidenceFigureTests(unittest.TestCase):
     def test_renderer_uses_real_evidence_zip_and_does_not_emit_synthetic_overlay(self):
@@ -56,22 +58,24 @@ class VersionsEvidenceFigureTests(unittest.TestCase):
             self.assertEqual(summary["task_result_rows"], 2)
             self.assertEqual(summary["baseline_rows"], 2)
             self.assertFalse(summary["raw_tensor_artifacts_found"])
+            self.assertIn("benchmark_overview_png", summary["figure_files"])
+            self.assertIn("audit_matrix_png", summary["figure_files"])
+            self.assertIn("baseline_ranking_png", summary["figure_files"])
             self.assertNotIn("synthetic_fixture", json.dumps(summary))
             self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
+            packet = Path(tmp) / "eeg_v1_figure_source"
             for name in (
-                "fig01_versions_evidence_inventory.png",
-                "fig01_versions_evidence_inventory.pdf",
-                "fig02_eeg_task_metrics_from_versions.png",
-                "fig02_eeg_task_metrics_from_versions.pdf",
-                "fig03_real_baseline_ranking.png",
-                "fig03_real_baseline_ranking.pdf",
-                "fig04_leakage_and_gate_audit.png",
-                "fig04_leakage_and_gate_audit.pdf",
-                "eeg_v1_ridge_visual_analysis.md",
+                "data/task_results.csv",
+                "data/baseline_ranking.csv",
+                "data/audits.csv",
             ):
-                self.assertTrue((out / name).exists(), name)
+                self.assertTrue((packet / name).exists(), name)
+            assert_standard_figure_packet(self, packet)
+            self.assertTrue((out / "eeg_v1_ridge_visual_analysis.md").exists())
             analysis = (out / "eeg_v1_ridge_visual_analysis.md").read_text(encoding="utf-8")
             self.assertIn("Real evidence artifacts", analysis)
+            self.assertIn("CEBRA-style figure-source packet", analysis)
+            self.assertIn("standard matplotlib/seaborn", analysis)
             self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
             self.assertNotIn("synthetic fixture", analysis.lower())
 

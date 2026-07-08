@@ -4,6 +4,8 @@
 
 Generated from `/Users/aayu/Downloads/versions` by `scripts/render_eeg_v1_ridge_visuals.py --versions-root ...`.
 
+The renderer now writes a CEBRA-style figure-source packet at `docs/research/eeg_v1_figure_source`: cached `data/*.csv` and `data/*.json`, standard matplotlib/seaborn source scripts in `src/`, and rendered PNG/PDF/SVG panels in `figures/`.
+
 - Evidence bundles scanned: **29**
 - Task-result rows: **15**
 - EEG→EEG task rows: **12**
@@ -38,7 +40,6 @@ No raw tensor or prediction-array artifact was found, so this renderer intention
 
 ## Figure files
 
-- `fig01_versions_evidence_inventory.png/.pdf`
-- `fig02_eeg_task_metrics_from_versions.png/.pdf`
-- `fig03_real_baseline_ranking.png/.pdf`
-- `fig04_leakage_and_gate_audit.png/.pdf`
+- `docs/research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.png/.pdf/.svg`
+- `docs/research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.png/.pdf/.svg`
+- `docs/research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png/.pdf/.svg`

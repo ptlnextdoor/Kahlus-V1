@@ -16,18 +16,14 @@ import io
 import json
 import math
 import re
+import runpy
+import shutil
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
-
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch
 
 KBLUE = "#0B3D91"
 KTEAL = "#0F766E"
@@ -40,6 +36,7 @@ KMID = "#6B7280"
 KLINE = "#D1D5DB"
 
 DEFAULT_VERSIONS_ROOT = Path("/Users/aayu/Downloads/versions")
+CANONICAL_FIGURE_SOURCE_ROOT = Path(__file__).resolve().parents[1] / "docs" / "research" / "eeg_v1_figure_source" / "src"
 ARRAY_ARTIFACT_RE = re.compile(
     r"(\.npz$|\.npy$|\.parquet$|\.pkl$|pred|prediction|y_true|y_pred|forecast|tensor|epoch|\.fif$)",
     re.IGNORECASE,
@@ -104,51 +101,24 @@ def main() -> int:
     parser.add_argument("--out-dir", required=True, type=Path)
     args = parser.parse_args()
 
-    apply_publication_style()
     evidence = load_versions_evidence(args.versions_root)
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
+    figure_source_root = args.out_dir.parent / "eeg_v1_figure_source"
+    write_figure_source_packet(evidence, args.versions_root, figure_source_root)
+    run_figure_source_scripts(figure_source_root)
+
     figure_stems = {
-        "inventory": "fig01_versions_evidence_inventory",
-        "task_metrics": "fig02_eeg_task_metrics_from_versions",
-        "baseline_ranking": "fig03_real_baseline_ranking",
-        "audit": "fig04_leakage_and_gate_audit",
+        "benchmark_overview": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview",
+        "audit_matrix": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix",
+        "baseline_ranking": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking",
     }
-    render_inventory_figure(evidence, args.versions_root, args.out_dir / figure_stems["inventory"])
-    render_task_metrics_figure(evidence["task_results"], args.out_dir / figure_stems["task_metrics"])
-    render_baseline_ranking_figure(evidence["baseline_results"], args.out_dir / figure_stems["baseline_ranking"])
-    render_audit_figure(evidence["audits"], evidence["inventory"], args.out_dir / figure_stems["audit"])
 
     summary = build_summary(evidence, args.versions_root, figure_stems)
     write_json(args.out_dir / "eeg_v1_ridge_visual_summary.json", summary)
     (args.out_dir / "eeg_v1_ridge_visual_analysis.md").write_text(analysis_md(summary), encoding="utf-8")
     print(args.out_dir / "eeg_v1_ridge_visual_analysis.md")
     return 0
-
-
-def apply_publication_style() -> None:
-    plt.rcParams.update(
-        {
-            "font.family": "serif",
-            "font.serif": ["Latin Modern Roman", "DejaVu Serif", "Times New Roman"],
-            "mathtext.fontset": "dejavuserif",
-            "font.size": 9.4,
-            "axes.titlesize": 10.8,
-            "axes.labelsize": 8.8,
-            "xtick.labelsize": 7.8,
-            "ytick.labelsize": 7.8,
-            "legend.fontsize": 7.8,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
-            "figure.dpi": 180,
-            "savefig.dpi": 300,
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.edgecolor": KLINE,
-            "grid.color": "#E5E7EB",
-            "grid.linewidth": 0.7,
-        }
-    )
 
 
 def load_versions_evidence(root: Path) -> dict[str, Any]:
@@ -203,6 +173,141 @@ def load_versions_evidence(root: Path) -> dict[str, Any]:
         "baseline_results": baseline_results,
         "audits": audits,
     }
+
+
+def write_figure_source_packet(evidence: dict[str, Any], versions_root: Path, root: Path) -> None:
+    """Write CEBRA-style cached data files consumed by figure source scripts."""
+
+    data_dir = root / "data"
+    figures_dir = root / "figures"
+    src_dir = root / "src"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    src_dir.mkdir(parents=True, exist_ok=True)
+    copy_canonical_figure_sources(src_dir)
+
+    inv: ArtifactInventory = evidence["inventory"]
+    write_json(data_dir / "inventory.json", asdict(inv))
+    write_json(
+        data_dir / "provenance.json",
+        {
+            "versions_root": str(versions_root),
+            "source_mode": "versions_evidence",
+            "renderer": "scripts/render_eeg_v1_ridge_visuals.py",
+            "figure_source_root": str(root),
+            "evidence_rule": "Only cached CSV/JSON/NPZ artifacts may drive public figures.",
+        },
+    )
+    write_rows(
+        data_dir / "task_results.csv",
+        evidence["task_results"],
+        [
+            "bundle",
+            "artifact_path",
+            "task_id",
+            "source_modality",
+            "target_modality",
+            "eval_mse",
+            "eval_mae",
+            "eval_pearsonr",
+            "eval_r2",
+            "test_mse",
+            "best_val_mse",
+        ],
+    )
+    write_rows(
+        data_dir / "baseline_ranking.csv",
+        evidence["baseline_results"],
+        ["bundle", "artifact_path", "task_id", "model_id", "metric", "value", "rank"],
+    )
+    write_rows(
+        data_dir / "audits.csv",
+        evidence["audits"],
+        [
+            "bundle",
+            "artifact_path",
+            "audit_type",
+            "passed",
+            "violations",
+            "warnings",
+            "checked",
+            "observed_seeds",
+            "window_count",
+        ],
+    )
+    (root / "README.md").write_text(figure_source_readme(), encoding="utf-8")
+
+
+def write_rows(path: Path, rows: list[Any], fieldnames: list[str]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        for row in rows:
+            data = asdict(row)
+            normalized = {key: normalize_cell(data.get(key)) for key in fieldnames}
+            writer.writerow(normalized)
+
+
+def normalize_cell(value: Any) -> Any:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return ""
+    return value
+
+
+def run_figure_source_scripts(root: Path) -> None:
+    for script in (
+        root / "src" / "Figure1_eeg_v1_benchmark_overview.py",
+        root / "src" / "Figure2_eeg_v1_audit_matrix.py",
+        root / "src" / "Figure3_eeg_v1_baseline_ranking.py",
+    ):
+        if not script.exists():
+            raise FileNotFoundError(f"missing figure source script: {script}")
+        runpy.run_path(str(script), run_name="__main__")
+
+
+def copy_canonical_figure_sources(target_src_dir: Path) -> None:
+    for name in (
+        "Figure1_eeg_v1_benchmark_overview.py",
+        "Figure2_eeg_v1_audit_matrix.py",
+        "Figure3_eeg_v1_baseline_ranking.py",
+    ):
+        source = CANONICAL_FIGURE_SOURCE_ROOT / name
+        target = target_src_dir / name
+        if source.resolve() == target.resolve():
+            continue
+        if not source.exists():
+            raise FileNotFoundError(f"missing canonical figure source script: {source}")
+        shutil.copy2(source, target)
+
+
+def figure_source_readme() -> str:
+    return """# EEG v1 figure-source packet
+
+This directory follows the CEBRA paper-figure pattern: cached data artifacts live in `data/`, figure source scripts live in `src/`, and rendered figures live in `figures/`.
+
+## Files
+
+- `data/task_results.csv`: normalized rows parsed from versions evidence `task_results.csv` artifacts.
+- `data/baseline_ranking.csv`: normalized rows parsed from `baseline_ranking.csv` artifacts.
+- `data/audits.csv`: leakage, eval, and paper-mode gate rows parsed from JSON artifacts.
+- `data/inventory.json`: counts of evidence artifacts and whether raw tensor/prediction arrays exist.
+- `data/provenance.json`: source root and renderer provenance.
+- `src/Figure1_eeg_v1_benchmark_overview.py`: standard seaborn task metric panels.
+- `src/Figure2_eeg_v1_audit_matrix.py`: compact audit and inventory heatmaps.
+- `src/Figure3_eeg_v1_baseline_ranking.py`: horizontal baseline-ranking dot plot.
+
+## Regenerate
+
+```bash
+PYTHONPATH=src python scripts/render_eeg_v1_ridge_visuals.py \
+  --versions-root /Users/aayu/Downloads/versions \
+  --out-dir docs/research/eeg_v1_ridge_visuals
+```
+
+Public rule: no raw tensor or prediction-array artifact means no waveform overlay, no residual trace, and no clinical/physiology claim figure. Public evidence figures use standard matplotlib/seaborn axes with constrained layout, not hand-drawn box diagrams.
+"""
 
 
 def evidence_zip_paths(root: Path) -> list[Path]:
@@ -490,7 +595,7 @@ def build_summary(evidence: dict[str, Any], versions_root: Path, figure_stems: d
         "eeg_metric_summary": summarize_task_metrics(eeg_rows),
         "baseline_metric_summary": summarize_baselines(baseline_results),
         "audit_summary": summarize_audits(audits),
-        "figure_files": {f"{key}_{ext}": f"{stem}.{ext}" for key, stem in figure_stems.items() for ext in ("png", "pdf")},
+        "figure_files": {f"{key}_{ext}": f"{stem}.{ext}" for key, stem in figure_stems.items() for ext in ("png", "pdf", "svg")},
     }
     return summary
 
@@ -563,6 +668,8 @@ def analysis_md(summary: dict[str, Any]) -> str:
 
 Generated from `{summary['versions_root']}` by `scripts/render_eeg_v1_ridge_visuals.py --versions-root ...`.
 
+The renderer now writes a CEBRA-style figure-source packet at `docs/research/eeg_v1_figure_source`: cached `data/*.csv` and `data/*.json`, standard matplotlib/seaborn source scripts in `src/`, and rendered PNG/PDF/SVG panels in `figures/`.
+
 - Evidence bundles scanned: **{summary['bundle_count']}**
 - Task-result rows: **{summary['task_result_rows']}**
 - EEG→EEG task rows: **{summary['eeg_task_result_rows']}**
@@ -587,10 +694,9 @@ No raw tensor or prediction-array artifact was found, so this renderer intention
 
 ## Figure files
 
-- `fig01_versions_evidence_inventory.png/.pdf`
-- `fig02_eeg_task_metrics_from_versions.png/.pdf`
-- `fig03_real_baseline_ranking.png/.pdf`
-- `fig04_leakage_and_gate_audit.png/.pdf`
+- `docs/research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.png/.pdf/.svg`
+- `docs/research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.png/.pdf/.svg`
+- `docs/research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png/.pdf/.svg`
 """
 
 
