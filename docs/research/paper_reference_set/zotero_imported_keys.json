@@ -1,0 +1,13 @@
+{
+  "imported": [
+    "eegpt_neurips2024",
+    "seeg_electrode_variability_neurips2024",
+    "labram_iclr2024",
+    "population_transformer_2024",
+    "hybrid_ssm_neural_decoding_2025",
+    "braingpt_2024",
+    "reve_eeg_foundation_2025",
+    "csbrain_2025",
+    "cebra_2022"
+  ]
+}
