@@ -89,9 +89,27 @@ The current F1-F4 evidence plots are scientifically honest but visually weak. Th
 4. **One residual/PSD/prediction diagnostic panel** like S5, but only after future runs save `x_test`, `y_test`, and `y_pred` arrays.
 5. **One electrode/montage figure** only when channel names and positions are real.
 
+## GitHub figure-code audit
+
+I also scanned the papers and project pages for official repositories, cloned the inspectable repos, and checked whether they include actual paper-figure generation code.
+
+Read the audit here: [GitHub figure-code audit](github_figure_code_audit.md).
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+
+GitHub figure-code audit <github_figure_code_audit>
+```
+
+The headline finding is that most EEG foundation-model repos ship training/eval code plus static README images, not exact paper panel scripts. The exception worth copying is CEBRA: it uses a separate `cebra-figures` repo with cached HDF5/CSV result artifacts, Jupytext figure scripts, rendered notebooks, and CI.
+
 ## Files in this reference set
 
 - `paper_manifest.json`: source URLs and download status.
 - `zotero_pdf_attachment_verification.json`: Zotero item keys and PDF child keys.
 - `figure_caption_extracts.json`: extracted figure-caption snippets for quick style review.
+- `github_url_extracts.json`: GitHub/code URLs extracted from the downloaded PDFs.
+- `github_figure_code_scan.json`: local scan results for plotting terms across cloned paper repos.
+- `github_figure_code_audit.md`: human-readable audit of which repos actually show how figures are made.
 - `MISSING_PDFS.md`: unresolved/missing PDF tracker.
