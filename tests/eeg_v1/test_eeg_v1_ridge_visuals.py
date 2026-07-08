@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -129,6 +130,38 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
         self.assertIn("Restored schematic diagnostic packet", page)
         self.assertIn("not benchmark evidence", page)
         self.assertIn("fig2_ridge_prediction_overlay.png", page)
+
+    def test_ridge_waveform_sanity_diagrams_are_reproducible_and_labeled(self):
+        script = Path("docs/research/eeg_v1_ridge_sanity_diagrams/src/render_ridge_waveform_sanity.py")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        result = subprocess.run([sys.executable, str(script)], check=False, capture_output=True, text=True, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+        root = Path("docs/research/eeg_v1_ridge_sanity_diagrams")
+        expected = (
+            "FigureS6_ridge_future_window_contract",
+            "FigureS7_ridge_prediction_overlay",
+        )
+        for stem in expected:
+            for ext in ("png", "pdf", "svg"):
+                self.assertTrue((root / f"figures/{stem}.{ext}").exists(), f"{stem}.{ext}")
+            with Image.open(root / f"figures/{stem}.png") as image:
+                self.assertGreaterEqual(image.width, 1200, stem)
+                self.assertGreaterEqual(image.height, 700, stem)
+            svg = (root / f"figures/{stem}.svg").read_text(encoding="utf-8")
+            self.assertIn("<text", svg)
+
+        summary = json.loads((root / "data/ridge_waveform_sanity_summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(summary["contract"]["future_forecasting"], "X = EEG window[:-1], Y = EEG window[1:]")
+        self.assertEqual(summary["x_test_shape"], [9, 7, 6])
+        self.assertIn("not raw EEG evidence", summary["claim_scope"])
+
+        page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
+        self.assertIn("Ridge sanity-check diagrams", page)
+        self.assertIn("does **not** contain raw EEG windows", page)
+        self.assertIn("FigureS6_ridge_future_window_contract.png", page)
+        self.assertIn("FigureS7_ridge_prediction_overlay.png", page)
 
 
 if __name__ == "__main__":

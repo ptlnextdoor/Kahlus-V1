@@ -73,6 +73,36 @@ docs/research/eeg_v1_figure_source/
 
 </div>
 
+## Ridge sanity-check diagrams
+
+```{admonition} Answering Amrith's question without adding benchmarks
+:class: warning
+These diagrams visualize the **existing future-state ridge benchmark contract**: what enters ridge regression and what it predicts. The saved versions evidence archive still does **not** contain raw EEG windows or saved prediction arrays, so these are benchmark-contract diagnostics generated from the in-repo benchmark code path, not raw EEG evidence figures.
+```
+
+<div class="figure-card">
+
+![Ridge future window contract](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS6_ridge_future_window_contract.png)
+
+**Figure S6. What goes into ridge regression.** The future-state task pairs each benchmark window as `X = EEG[t0:t6, channels]` and `Y = EEG[t1:t7, channels]`. Ridge fits the flattened design matrix to the flattened one-step-later target matrix. Source: [`src/render_ridge_waveform_sanity.py`](../research/eeg_v1_ridge_sanity_diagrams/src/render_ridge_waveform_sanity.py). Summary: [`ridge_waveform_sanity_summary.json`](../research/eeg_v1_ridge_sanity_diagrams/data/ridge_waveform_sanity_summary.json). [PDF](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS6_ridge_future_window_contract.pdf) · [SVG](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS6_ridge_future_window_contract.svg)
+
+</div>
+
+<div class="figure-card">
+
+![Ridge prediction overlay](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS7_ridge_prediction_overlay.png)
+
+**Figure S7. What ridge predicts.** One target channel is shown with the input trace, one-step-later target, linear ridge prediction, persistence baseline, and ridge residual. The main sanity-check point is visible: short-horizon smooth signals make recent same-channel values highly informative, so ridge can perform well for a narrow autocorrelation reason. [PDF](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS7_ridge_prediction_overlay.pdf) · [SVG](../research/eeg_v1_ridge_sanity_diagrams/figures/FigureS7_ridge_prediction_overlay.svg)
+
+</div>
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+
+Ridge waveform sanity packet <../research/eeg_v1_ridge_sanity_diagrams/README>
+```
+
 ## What still cannot be claimed
 
 - **Allowed:** “The versions archive contains EEG→EEG task metrics, baseline rankings, leakage audits, eval audits, and paper-mode gates.”
