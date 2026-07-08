@@ -1,63 +1,44 @@
-# EEG v1 Ridge Baseline Visual Sanity Check
+# EEG/ridge versions evidence figures
 
-This is not a new benchmark. It visualizes the existing EEG v1 future-window benchmark so the ridge result is easier to inspect.
+## Real evidence artifacts
 
-```{admonition} Figure status
-:class: warning
-These are diagnostic refit figures generated from the synthetic fixture. They are useful for understanding benchmark geometry, not for public EEG or clinical claims.
-```
+Generated from `/Users/aayu/Downloads/versions` by `scripts/render_eeg_v1_ridge_visuals.py --versions-root ...`.
 
-- dataset: `synthetic_eeg_v1`
-- source: `synthetic_fixture`
-- benchmark_status: `synthetic_fixture_not_public_benchmark`
-- window_length: `8`
-- forecast_horizon: `1`
-- ridge feature matrix: `[1024, 48]` after flattening input windows
-- ridge target matrix: `[1024, 48]` after flattening future windows
-- same-record shifted overlap correlation for the plotted test window: `0.9999999999999998`
-- figure style source: `/Users/aayu/Downloads/versions/kahlus_v3_cna_master_dossier_2026-06-13_hybrid_visual_rebuild/generate_hybrid_figures.py`
+- Evidence bundles scanned: **29**
+- Task-result rows: **15**
+- EEG→EEG task rows: **12**
+- Baseline-ranking rows: **80**
+- Audit rows: **33**
+- Raw tensor or prediction arrays found: **No**
 
-## Publication-style diagnostic figures
+No raw tensor or prediction-array artifact was found, so this renderer intentionally does **not** generate a prediction overlay, waveform trace, or synthetic EEG window figure.
 
-![Window overlap diagnostic](fig01_eeg_window_overlap_diagnostic.png)
+## EEG task metrics
 
-[PDF version](fig01_eeg_window_overlap_diagnostic.pdf)
+- `future_state_forecasting`: n=6, median Pearson r=0.664, median $R^2$=0.478, median test MSE=28
+- `masked_neural_reconstruction`: n=6, median Pearson r=0.415, median $R^2$=0.155, median test MSE=45.3
 
-![Ridge design matrix contract](fig02_ridge_design_matrix_contract.png)
+## Baseline rankings
 
-[PDF version](fig02_ridge_design_matrix_contract.pdf)
+- `linear_ridge`: n=8, median MSE=7.78, median rank=1
+- `autoregressive_ridge`: n=8, median MSE=18.4, median rank=2.5
+- `mlp`: n=8, median MSE=26.1, median rank=3.5
+- `tcn`: n=8, median MSE=29.7, median rank=4.5
+- `persistence`: n=8, median MSE=30.9, median rank=5.5
+- `transformer`: n=8, median MSE=42.4, median rank=5.5
+- `neurotwin`: n=8, median MSE=45, median rank=6.5
+- `ssm_fallback`: n=8, median MSE=46.7, median rank=7.5
+- `train_mean`: n=8, median MSE=53.6, median rank=8.5
+- `random_permutation`: n=8, median MSE=84.6, median rank=10
 
-![Prediction overlay and residuals](fig03_prediction_overlay_and_residuals.png)
+## Audit summary
 
-[PDF version](fig03_prediction_overlay_and_residuals.pdf)
+- Total violations recorded in parsed audits: **0**
+- Total warnings recorded in parsed audits: **0**
 
-![Baseline and autocorrelation controls](fig04_baseline_and_autocorrelation_controls.png)
+## Figure files
 
-[PDF version](fig04_baseline_and_autocorrelation_controls.pdf)
-
-## Current benchmark metrics
-
-| model | mse | mae | r2 | pearsonr |
-|---|---:|---:|---:|---:|
-| linear_ridge | 0.475509 | 0.513796 | 0.78466 | 0.885988 |
-| persistence | 0.516311 | 0.539455 | 0.766182 | 0.883697 |
-| tiny_ssm | 0.839992 | 0.702251 | 0.619599 | 0.788796 |
-| autoregressive_ridge | 1.05154 | 0.763142 | 0.523797 | 0.724083 |
-
-## Why ridge can look strong here
-
-- `linear_ridge` sees the raw EEG input window flattened into scalar time-channel features.
-- The target is the future EEG window, not a distant label. With `forecast_horizon=1`, most of the target window is the input window shifted by one sample.
-- The synthetic fixture is deliberately smooth/autoregressive, so a linear model is well matched to the data-generating structure.
-- Strong ridge or persistence performance is therefore a sanity-check signal for autocorrelation, short horizon, and overlap; it is not evidence of brain-state understanding.
-
-## Existing autocorrelation controls
-
-- verdict: `treat_v1_as_baseline_infrastructure_until_harder_controls_are_beaten`
-- persistence_or_ridge_dominates: `True`
-- short_horizon_best_mse: `0.4755090613404005`
-- long_horizon_delta_vs_short: `1.5335808588401618`
-- non_overlap_delta_vs_short: `0.012912323382852697`
-- shuffled_target_close_to_real_baselines: `False`
-
-Bottom line: this analysis supports caution. The existing result is plausibly explained by local temporal structure and benchmark geometry, so adding more benchmarks would be noisier than first understanding this one.
+- `fig01_versions_evidence_inventory.png/.pdf`
+- `fig02_eeg_task_metrics_from_versions.png/.pdf`
+- `fig03_real_baseline_ranking.png/.pdf`
+- `fig04_leakage_and_gate_audit.png/.pdf`

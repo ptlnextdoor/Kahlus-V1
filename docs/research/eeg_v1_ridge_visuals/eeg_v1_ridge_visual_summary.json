@@ -1,82 +1,124 @@
 {
-  "autocorrelation_summary": {
-    "autocorrelation_warning": "Low short-horizon EEG MSE can be explained by temporal autocorrelation, overlapping windows, normalization scale, or synthetic fixture cleanliness.",
-    "delta_prediction_best_mse": 0.4755151082684584,
-    "delta_prediction_delta_vs_short": 6.046928057890089e-06,
-    "long_horizon_best_mse": 2.0090899201805623,
-    "long_horizon_delta_vs_short": 1.5335808588401618,
-    "non_overlap_best_mse": 0.4884213847232532,
-    "non_overlap_delta_vs_short": 0.012912323382852697,
-    "persistence_or_ridge_dominates": true,
-    "short_horizon_best_mse": 0.4755090613404005,
-    "shuffled_control_degrades": true,
-    "shuffled_target_best_mse": 2.2021805365104257,
-    "shuffled_target_close_to_real_baselines": false,
-    "shuffled_target_control_mse": 2.2021805365104257,
-    "tiny_ssm_mse": 0.8399924812887744,
-    "verdict": "treat_v1_as_baseline_infrastructure_until_harder_controls_are_beaten"
+  "array_like_artifact_examples": [],
+  "audit_rows": 33,
+  "audit_summary": {
+    "by_type": {
+      "eval": {
+        "failed": 0,
+        "n": 15,
+        "passed": 15,
+        "unknown": 0
+      },
+      "leakage": {
+        "failed": 0,
+        "n": 10,
+        "passed": 10,
+        "unknown": 0
+      },
+      "paper_mode_gate": {
+        "failed": 0,
+        "n": 8,
+        "passed": 8,
+        "unknown": 0
+      }
+    },
+    "violations": 0,
+    "warnings": 0
   },
-  "benchmark_status": "synthetic_fixture_not_public_benchmark",
-  "best_baseline": "linear_ridge",
-  "dataset": "synthetic_eeg_v1",
-  "example_index": 0,
-  "example_mse": {
-    "autoregressive_ridge": 1.0260467036361636,
-    "linear_ridge": 0.431158276102756,
-    "persistence": 0.41404632845387795,
-    "tiny_ssm": 0.8803292590011219
-  },
-  "figure_files": {
-    "baseline_controls_pdf": "fig04_baseline_and_autocorrelation_controls.pdf",
-    "baseline_controls_png": "fig04_baseline_and_autocorrelation_controls.png",
-    "feature_map_pdf": "fig02_ridge_design_matrix_contract.pdf",
-    "feature_map_png": "fig02_ridge_design_matrix_contract.png",
-    "prediction_overlay_pdf": "fig03_prediction_overlay_and_residuals.pdf",
-    "prediction_overlay_png": "fig03_prediction_overlay_and_residuals.png",
-    "window_pdf": "fig01_eeg_window_overlap_diagnostic.pdf",
-    "window_png": "fig01_eeg_window_overlap_diagnostic.png"
-  },
-  "figure_style_source": "/Users/aayu/Downloads/versions/kahlus_v3_cna_master_dossier_2026-06-13_hybrid_visual_rebuild/generate_hybrid_figures.py",
-  "forecast_horizon": 1,
-  "metrics_by_model": {
+  "baseline_metric_summary": {
     "autoregressive_ridge": {
-      "mae": 0.7631424160710681,
-      "mse": 1.051538106475556,
-      "pearsonr": 0.7240830653787679,
-      "r2": 0.5237974957988464
+      "median_mse": 18.397737776469018,
+      "median_rank": 2.5,
+      "n": 8
     },
     "linear_ridge": {
-      "mae": 0.5137959718082256,
-      "mse": 0.4755090613404005,
-      "pearsonr": 0.8859879595180644,
-      "r2": 0.784659629179209
+      "median_mse": 7.776308101660009,
+      "median_rank": 1.0,
+      "n": 8
+    },
+    "mlp": {
+      "median_mse": 26.05089491921742,
+      "median_rank": 3.5,
+      "n": 8
+    },
+    "neurotwin": {
+      "median_mse": 45.03531159326102,
+      "median_rank": 6.5,
+      "n": 8
     },
     "persistence": {
-      "mae": 0.539455139205605,
-      "mse": 0.5163109817028686,
-      "pearsonr": 0.8836968817746149,
-      "r2": 0.7661819567742147
+      "median_mse": 30.907965991257104,
+      "median_rank": 5.5,
+      "n": 8
     },
-    "tiny_ssm": {
-      "mae": 0.7022508060833843,
-      "mse": 0.8399924812887744,
-      "pearsonr": 0.788796197153394,
-      "r2": 0.6195986425631703
+    "random_permutation": {
+      "median_mse": 84.64349225418027,
+      "median_rank": 10.0,
+      "n": 8
+    },
+    "ssm_fallback": {
+      "median_mse": 46.72907555808758,
+      "median_rank": 7.5,
+      "n": 8
+    },
+    "tcn": {
+      "median_mse": 29.708501332066277,
+      "median_rank": 4.5,
+      "n": 8
+    },
+    "train_mean": {
+      "median_mse": 53.61547614353063,
+      "median_rank": 8.5,
+      "n": 8
+    },
+    "transformer": {
+      "median_mse": 42.379501780709376,
+      "median_rank": 5.5,
+      "n": 8
     }
   },
-  "n_test_windows": 256,
-  "n_train_windows": 1024,
-  "ridge_feature_shape": [
-    1024,
-    48
-  ],
-  "ridge_target_shape": [
-    1024,
-    48
-  ],
-  "same_record_overlap_corr": 0.9999999999999998,
-  "sampling_rate_hz": 128.0,
-  "seed": 0,
-  "source": "synthetic_fixture",
-  "window_length": 8
+  "baseline_rows": 80,
+  "bundle_count": 29,
+  "eeg_metric_summary": {
+    "future_state_forecasting": {
+      "median_best_val_mse": 21.751845630688802,
+      "median_eval_pearsonr": 0.6635025241704565,
+      "median_eval_r2": 0.4784211673219172,
+      "median_test_mse": 27.97121961249688,
+      "n": 6
+    },
+    "masked_neural_reconstruction": {
+      "median_best_val_mse": 39.61267305581792,
+      "median_eval_pearsonr": 0.4149499861757453,
+      "median_eval_r2": 0.1547510825910695,
+      "median_test_mse": 45.32992115236112,
+      "n": 6
+    }
+  },
+  "eeg_task_result_rows": 12,
+  "figure_files": {
+    "audit_pdf": "fig04_leakage_and_gate_audit.pdf",
+    "audit_png": "fig04_leakage_and_gate_audit.png",
+    "baseline_ranking_pdf": "fig03_real_baseline_ranking.pdf",
+    "baseline_ranking_png": "fig03_real_baseline_ranking.png",
+    "inventory_pdf": "fig01_versions_evidence_inventory.pdf",
+    "inventory_png": "fig01_versions_evidence_inventory.png",
+    "task_metrics_pdf": "fig02_eeg_task_metrics_from_versions.pdf",
+    "task_metrics_png": "fig02_eeg_task_metrics_from_versions.png"
+  },
+  "inventory": {
+    "array_like_artifacts": [],
+    "baseline_ranking_csv": 9,
+    "bundle_count": 29,
+    "eval_audit_json": 15,
+    "leakage_report_json": 10,
+    "metric_summary_json": 7,
+    "metrics_csv": 10,
+    "paper_mode_gate_json": 8,
+    "task_results_csv": 7
+  },
+  "raw_tensor_artifacts_found": false,
+  "source_mode": "versions_evidence",
+  "task_result_rows": 15,
+  "versions_root": "/Users/aayu/Downloads/versions"
 }

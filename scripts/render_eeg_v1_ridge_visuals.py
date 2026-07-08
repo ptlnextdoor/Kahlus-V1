@@ -1,38 +1,33 @@
 #!/usr/bin/env python3
-"""Render publication-style EEG v1 ridge-baseline diagnostic figures.
+"""Render real artifact-driven EEG/ridge evidence figures from versions bundles.
 
-The figures are grounded in the existing EEG v1 future-window benchmark. The
-committed default uses the synthetic fixture so the docs can build everywhere.
-Do not commit outputs produced from local public/raw EEG paths.
+This script intentionally avoids synthetic traces and hand-drawn prediction overlays.
+It inventories evidence zips under /Users/aayu/Downloads/versions, normalizes the
+CSV/JSON artifacts that are actually present, and renders figures only from those
+artifacts. If raw tensor or prediction arrays are absent, the generated report says
+so instead of inventing a waveform.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
+import math
+import re
+import zipfile
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
-from matplotlib.colors import LinearSegmentedColormap
-
-from _bootstrap import ensure_src_import_path
-
-ensure_src_import_path(__file__)
-
-from neurotwin.benchmarks.baseline_suite import EXECUTABLE_BASELINE_RUNNERS  # noqa: E402
-from neurotwin.eeg_v1 import (  # noqa: E402
-    build_future_forecasting_task,
-    load_hbn_eeg_local_dataset,
-    make_synthetic_eeg_v1_dataset,
-    run_eeg_v1_autocorrelation_diagnostics,
-    run_eeg_v1_baselines,
-)
+from matplotlib.patches import FancyBboxPatch
 
 KBLUE = "#0B3D91"
 KTEAL = "#0F766E"
@@ -43,140 +38,270 @@ KGRAY = "#F5F7FA"
 KINK = "#1F2937"
 KMID = "#6B7280"
 KLINE = "#D1D5DB"
-BLACK = "#111827"
 
-STYLE_SOURCE = "/Users/aayu/Downloads/versions/kahlus_v3_cna_master_dossier_2026-06-13_hybrid_visual_rebuild/generate_hybrid_figures.py"
+DEFAULT_VERSIONS_ROOT = Path("/Users/aayu/Downloads/versions")
+ARRAY_ARTIFACT_RE = re.compile(
+    r"(\.npz$|\.npy$|\.parquet$|\.pkl$|pred|prediction|y_true|y_pred|forecast|tensor|epoch|\.fif$)",
+    re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
+class TaskResult:
+    bundle: str
+    artifact_path: str
+    task_id: str
+    source_modality: str
+    target_modality: str
+    eval_mse: float
+    eval_mae: float
+    eval_pearsonr: float
+    eval_r2: float
+    test_mse: float
+    best_val_mse: float
+
+
+@dataclass(frozen=True)
+class BaselineResult:
+    bundle: str
+    artifact_path: str
+    task_id: str
+    model_id: str
+    metric: str
+    value: float
+    rank: float
+
+
+@dataclass(frozen=True)
+class AuditResult:
+    bundle: str
+    artifact_path: str
+    audit_type: str
+    passed: bool | None
+    violations: int
+    warnings: int
+    checked: int
+    observed_seeds: int | None = None
+    window_count: int | None = None
+
+
+@dataclass(frozen=True)
+class ArtifactInventory:
+    bundle_count: int
+    task_results_csv: int
+    baseline_ranking_csv: int
+    metrics_csv: int
+    metric_summary_json: int
+    leakage_report_json: int
+    eval_audit_json: int
+    paper_mode_gate_json: int
+    array_like_artifacts: list[str]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", choices=("synthetic_fixture", "hbn_eeg"), default="synthetic_fixture")
-    parser.add_argument("--data-root", default=None)
-    parser.add_argument("--out-dir", required=True)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--window-length", type=int, default=8)
-    parser.add_argument("--forecast-horizon", type=int, default=1)
-    parser.add_argument("--train-steps", type=int, default=5)
-    parser.add_argument("--example-index", type=int, default=0)
+    parser.add_argument("--versions-root", type=Path, default=DEFAULT_VERSIONS_ROOT)
+    parser.add_argument("--out-dir", required=True, type=Path)
     args = parser.parse_args()
 
     apply_publication_style()
-    dataset = (
-        make_synthetic_eeg_v1_dataset(seed=args.seed)
-        if args.dataset == "synthetic_fixture"
-        else load_hbn_eeg_local_dataset(args.data_root, seed=args.seed)
-    )
-    task = build_future_forecasting_task(
-        dataset,
-        window_length=args.window_length,
-        forecast_horizon=args.forecast_horizon,
-    )
-    out = Path(args.out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-
-    predictions = _predictions(task, seed=args.seed, train_steps=args.train_steps)
-    result = run_eeg_v1_baselines(
-        task,
-        seed=args.seed,
-        train_steps=args.train_steps,
-        model_ids=("persistence", "linear_ridge", "autoregressive_ridge", "tiny_ssm"),
-    )
-    autocorr = run_eeg_v1_autocorrelation_diagnostics(
-        dataset,
-        seed=args.seed,
-        window_length=args.window_length,
-        forecast_horizon=args.forecast_horizon,
-        train_steps=args.train_steps,
-        model_ids=("persistence", "linear_ridge", "tiny_ssm"),
-    )
-
-    idx = min(max(0, int(args.example_index)), int(task.x_test.shape[0]) - 1)
-    summary = _summary(args, task, result, autocorr, predictions, idx)
+    evidence = load_versions_evidence(args.versions_root)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
 
     figure_stems = {
-        "window": "fig01_eeg_window_overlap_diagnostic",
-        "feature_map": "fig02_ridge_design_matrix_contract",
-        "prediction_overlay": "fig03_prediction_overlay_and_residuals",
-        "baseline_controls": "fig04_baseline_and_autocorrelation_controls",
+        "inventory": "fig01_versions_evidence_inventory",
+        "task_metrics": "fig02_eeg_task_metrics_from_versions",
+        "baseline_ranking": "fig03_real_baseline_ranking",
+        "audit": "fig04_leakage_and_gate_audit",
     }
-    render_window_figure(task, idx, out / figure_stems["window"])
-    render_feature_contract_figure(task, summary, out / figure_stems["feature_map"])
-    render_prediction_overlay_figure(task, predictions, summary, idx, out / figure_stems["prediction_overlay"])
-    render_baseline_controls_figure(summary, out / figure_stems["baseline_controls"])
+    render_inventory_figure(evidence, args.versions_root, args.out_dir / figure_stems["inventory"])
+    render_task_metrics_figure(evidence["task_results"], args.out_dir / figure_stems["task_metrics"])
+    render_baseline_ranking_figure(evidence["baseline_results"], args.out_dir / figure_stems["baseline_ranking"])
+    render_audit_figure(evidence["audits"], evidence["inventory"], args.out_dir / figure_stems["audit"])
 
-    paths: dict[str, str] = {}
-    for key, stem in figure_stems.items():
-        paths[f"{key}_png"] = f"{stem}.png"
-        paths[f"{key}_pdf"] = f"{stem}.pdf"
-    summary["figure_files"] = paths
-    summary["figure_style_source"] = STYLE_SOURCE
-
-    (out / "eeg_v1_ridge_visual_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (out / "eeg_v1_ridge_visual_analysis.md").write_text(_analysis_md(summary), encoding="utf-8")
-    print(out / "eeg_v1_ridge_visual_analysis.md")
+    summary = build_summary(evidence, args.versions_root, figure_stems)
+    write_json(args.out_dir / "eeg_v1_ridge_visual_summary.json", summary)
+    (args.out_dir / "eeg_v1_ridge_visual_analysis.md").write_text(analysis_md(summary), encoding="utf-8")
+    print(args.out_dir / "eeg_v1_ridge_visual_analysis.md")
     return 0
 
 
 def apply_publication_style() -> None:
-    """Use the polished Kahlus dossier figure style from the versions archive."""
     plt.rcParams.update(
         {
             "font.family": "serif",
             "font.serif": ["Latin Modern Roman", "DejaVu Serif", "Times New Roman"],
             "mathtext.fontset": "dejavuserif",
-            "font.size": 9.3,
-            "axes.titlesize": 10.5,
+            "font.size": 9.4,
+            "axes.titlesize": 10.8,
             "axes.labelsize": 8.8,
-            "xtick.labelsize": 8,
-            "ytick.labelsize": 8,
-            "legend.fontsize": 8,
+            "xtick.labelsize": 7.8,
+            "ytick.labelsize": 7.8,
+            "legend.fontsize": 7.8,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
             "figure.dpi": 180,
-            "savefig.dpi": 260,
+            "savefig.dpi": 300,
             "axes.spines.top": False,
             "axes.spines.right": False,
+            "axes.edgecolor": KLINE,
+            "grid.color": "#E5E7EB",
+            "grid.linewidth": 0.7,
         }
     )
 
 
-def _predictions(task: Any, *, seed: int, train_steps: int) -> dict[str, np.ndarray]:
-    wanted = {"persistence", "linear_ridge", "autoregressive_ridge", "tiny_ssm"}
-    out: dict[str, np.ndarray] = {}
-    for spec in EXECUTABLE_BASELINE_RUNNERS:
-        if spec.model_id not in wanted or not spec.supports(task):
-            continue
-        out[spec.model_id] = np.asarray(spec.predict(task, seed, train_steps), dtype=np.float64)
-    return out
-
-
-def _summary(args: argparse.Namespace, task: Any, result: dict[str, Any], autocorr: dict[str, Any], predictions: dict[str, np.ndarray], idx: int) -> dict[str, Any]:
-    x = np.asarray(task.x_test[idx], dtype=np.float64)
-    y = np.asarray(task.y_test[idx], dtype=np.float64)
-    h = int(task.metadata["forecast_horizon"])
-    overlap_corr = float(np.corrcoef(x[h:].ravel(), y[:-h].ravel())[0, 1]) if h < x.shape[0] else None
-    return {
-        "dataset": str(task.metadata.get("dataset_id")),
-        "source": str(task.metadata.get("source")),
-        "benchmark_status": str(task.metadata.get("benchmark_status")),
-        "seed": int(args.seed),
-        "example_index": int(idx),
-        "window_length": int(task.metadata["window_length"]),
-        "forecast_horizon": h,
-        "sampling_rate_hz": task.metadata.get("sampling_rate_hz"),
-        "n_train_windows": int(task.x_train.shape[0]),
-        "n_test_windows": int(task.x_test.shape[0]),
-        "ridge_feature_shape": list(np.asarray(task.x_train).reshape(task.x_train.shape[0], -1).shape),
-        "ridge_target_shape": list(np.asarray(task.y_train).reshape(task.y_train.shape[0], -1).shape),
-        "same_record_overlap_corr": overlap_corr,
-        "metrics_by_model": result["metrics_by_model"],
-        "best_baseline": result["best_baseline"],
-        "autocorrelation_summary": autocorr["summary"],
-        "example_mse": {
-            model: float(np.mean((pred[idx] - y) ** 2))
-            for model, pred in predictions.items()
-        },
+def load_versions_evidence(root: Path) -> dict[str, Any]:
+    zip_paths = evidence_zip_paths(root)
+    inventory_counts = {
+        "task_results_csv": 0,
+        "baseline_ranking_csv": 0,
+        "metrics_csv": 0,
+        "metric_summary_json": 0,
+        "leakage_report_json": 0,
+        "eval_audit_json": 0,
+        "paper_mode_gate_json": 0,
     }
+    array_like: list[str] = []
+    task_results: list[TaskResult] = []
+    baseline_results: list[BaselineResult] = []
+    audits: list[AuditResult] = []
+
+    for zip_path in zip_paths:
+        try:
+            with zipfile.ZipFile(zip_path) as zf:
+                names = zf.namelist()
+                array_like.extend(f"{zip_path.name}:{name}" for name in names if ARRAY_ARTIFACT_RE.search(name))
+                for name in names:
+                    lower = name.lower()
+                    if lower.endswith("task_results.csv"):
+                        inventory_counts["task_results_csv"] += 1
+                        task_results.extend(read_task_results(zf, name, zip_path.name))
+                    elif lower.endswith("baseline_ranking.csv"):
+                        inventory_counts["baseline_ranking_csv"] += 1
+                        baseline_results.extend(read_baseline_ranking(zf, name, zip_path.name))
+                    elif lower.endswith("metrics.csv"):
+                        inventory_counts["metrics_csv"] += 1
+                    elif lower.endswith("metric_summary.json"):
+                        inventory_counts["metric_summary_json"] += 1
+                    elif lower.endswith("leakage_report.json"):
+                        inventory_counts["leakage_report_json"] += 1
+                        audits.append(read_audit(zf, name, zip_path.name, "leakage"))
+                    elif lower.endswith("eval_audit.json"):
+                        inventory_counts["eval_audit_json"] += 1
+                        audits.append(read_audit(zf, name, zip_path.name, "eval"))
+                    elif lower.endswith("paper_mode_gate.json"):
+                        inventory_counts["paper_mode_gate_json"] += 1
+                        audits.append(read_audit(zf, name, zip_path.name, "paper_mode_gate"))
+        except zipfile.BadZipFile:
+            continue
+
+    inventory = ArtifactInventory(bundle_count=len(zip_paths), array_like_artifacts=sorted(array_like), **inventory_counts)
+    return {
+        "inventory": inventory,
+        "task_results": task_results,
+        "baseline_results": baseline_results,
+        "audits": audits,
+    }
+
+
+def evidence_zip_paths(root: Path) -> list[Path]:
+    candidates = [root / "_organized_index" / "artifact_views" / "evidence_zips", root]
+    paths: list[Path] = []
+    for base in candidates:
+        if base.exists():
+            paths.extend(p for p in base.rglob("*.zip") if p.is_file())
+    dedup = {p.resolve(): p for p in paths}
+    return sorted(dedup.values())
+
+
+def read_csv_from_zip(zf: zipfile.ZipFile, name: str) -> list[dict[str, str]]:
+    text = zf.read(name).decode("utf-8", errors="replace")
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def read_json_from_zip(zf: zipfile.ZipFile, name: str) -> dict[str, Any]:
+    data = json.loads(zf.read(name).decode("utf-8", errors="replace"))
+    return data if isinstance(data, dict) else {}
+
+
+def read_task_results(zf: zipfile.ZipFile, name: str, bundle: str) -> list[TaskResult]:
+    rows: list[TaskResult] = []
+    for row in read_csv_from_zip(zf, name):
+        try:
+            rows.append(
+                TaskResult(
+                    bundle=bundle,
+                    artifact_path=name,
+                    task_id=row.get("task_id", "unknown"),
+                    source_modality=row.get("source_modality", "unknown"),
+                    target_modality=row.get("target_modality", "unknown"),
+                    eval_mse=to_float(row.get("eval_mse")),
+                    eval_mae=to_float(row.get("eval_mae")),
+                    eval_pearsonr=to_float(row.get("eval_pearsonr")),
+                    eval_r2=to_float(row.get("eval_r2")),
+                    test_mse=to_float(row.get("test_mse")),
+                    best_val_mse=to_float(row.get("best_val_mse")),
+                )
+            )
+        except ValueError:
+            continue
+    return rows
+
+
+def read_baseline_ranking(zf: zipfile.ZipFile, name: str, bundle: str) -> list[BaselineResult]:
+    rows: list[BaselineResult] = []
+    for row in read_csv_from_zip(zf, name):
+        if not row.get("model_id"):
+            continue
+        try:
+            rows.append(
+                BaselineResult(
+                    bundle=bundle,
+                    artifact_path=name,
+                    task_id=row.get("task_id", "unknown"),
+                    model_id=row.get("model_id", "unknown"),
+                    metric=row.get("metric", "unknown"),
+                    value=to_float(row.get("value")),
+                    rank=to_float(row.get("rank")),
+                )
+            )
+        except ValueError:
+            continue
+    return rows
+
+
+def read_audit(zf: zipfile.ZipFile, name: str, bundle: str, audit_type: str) -> AuditResult:
+    data = read_json_from_zip(zf, name)
+    return AuditResult(
+        bundle=bundle,
+        artifact_path=name,
+        audit_type=audit_type,
+        passed=data.get("passed") if isinstance(data.get("passed"), bool) else None,
+        violations=count_items(data.get("violations")),
+        warnings=count_items(data.get("warnings")),
+        checked=count_items(data.get("checked") or data.get("checked_keys")),
+        observed_seeds=count_items(data.get("observed_seeds")) if "observed_seeds" in data else None,
+        window_count=int(data["window_count"]) if isinstance(data.get("window_count"), int) else None,
+    )
+
+
+def to_float(value: Any) -> float:
+    if value is None or value == "":
+        return float("nan")
+    return float(value)
+
+
+def count_items(value: Any) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, (list, tuple, set, dict)):
+        return len(value)
+    return 1
+
+
+def finite(values: Iterable[float]) -> list[float]:
+    return [float(v) for v in values if math.isfinite(float(v))]
 
 
 def save_figure(fig: plt.Figure, stem: Path) -> None:
@@ -186,265 +311,297 @@ def save_figure(fig: plt.Figure, stem: Path) -> None:
 
 
 def panel_label(ax: plt.Axes, label: str) -> None:
-    ax.text(-0.08, 1.05, label, transform=ax.transAxes, fontsize=12, fontweight="bold", color=KINK, va="top")
+    ax.text(-0.08, 1.06, label, transform=ax.transAxes, fontsize=12, fontweight="bold", color=KINK, va="top")
 
 
-def clean(ax: plt.Axes) -> None:
-    ax.set_xticks([])
-    ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    ax.set_facecolor("white")
-
-
-def card(ax: plt.Axes, xy: tuple[float, float], wh: tuple[float, float], text: str, *, fc: str = KGRAY, ec: str = KBLUE, color: str = KINK, fontsize: float = 8.4, weight: str = "normal") -> None:
-    x, y = xy
-    w, h = wh
-    patch = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.025,rounding_size=0.035", fc=fc, ec=ec, lw=1.0)
+def card(ax: plt.Axes, x: float, y: float, w: float, h: float, text: str, *, fc: str, ec: str, color: str = KINK, weight: str = "normal") -> None:
+    patch = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.03", fc=fc, ec=ec, lw=1.0)
     ax.add_patch(patch)
-    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fontsize, color=color, weight=weight, linespacing=1.15)
+    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=8.6, color=color, weight=weight, linespacing=1.18)
 
 
-def arrow(ax: plt.Axes, start: tuple[float, float], end: tuple[float, float], *, color: str = KBLUE, lw: float = 1.4, rad: float = 0.0) -> None:
-    ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=11, lw=lw, color=color, connectionstyle=f"arc3,rad={rad}"))
-
-
-def render_window_figure(task: Any, idx: int, stem: Path) -> None:
-    x = np.asarray(task.x_test[idx], dtype=np.float64)
-    y = np.asarray(task.y_test[idx], dtype=np.float64)
-    h = int(task.metadata["forecast_horizon"])
-    fs = float(task.metadata.get("sampling_rate_hz") or 1.0)
-    channels = list(range(min(5, x.shape[1])))
-    tx = np.arange(x.shape[0]) / fs
-    ty = (np.arange(y.shape[0]) + h) / fs
-
-    fig = plt.figure(figsize=(7.45, 4.8))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.45, 1.0], width_ratios=[1.2, 0.95], hspace=0.34, wspace=0.28)
-    ax = fig.add_subplot(gs[0, :])
-    panel_label(ax, "A")
-    scale = np.nanstd(np.concatenate([x[:, channels], y[:, channels]], axis=0)) or 1.0
-    for row, ch in enumerate(channels):
-        offset = row * 2.4
-        ax.plot(tx, x[:, ch] / scale + offset, color=KBLUE, lw=1.1, label="input" if row == 0 else None)
-        ax.plot(ty, y[:, ch] / scale + offset, color=KRED, lw=1.1, label="target" if row == 0 else None)
-        ax.text(-0.006, offset, f"ch{ch}", ha="right", va="center", fontsize=7.8, color=KINK)
-    ax.axvspan(tx[0], tx[-1], color=KBLUE, alpha=0.07)
-    ax.axvspan(ty[0], ty[-1], color=KRED, alpha=0.07)
-    ax.axvline(ty[0], color=KINK, ls="--", lw=0.8)
-    ax.set_title("Short-horizon EEG window geometry", color=KBLUE, weight="bold")
-    ax.set_xlabel("seconds from input-window start")
-    ax.set_yticks([])
-    ax.legend(loc="upper right", frameon=False, ncol=2)
-
-    ax2 = fig.add_subplot(gs[1, 0])
-    panel_label(ax2, "B")
-    vmax = np.nanpercentile(np.abs(np.r_[x[:, channels].ravel(), y[:, channels].ravel()]), 98) or 1.0
-    im = ax2.imshow(x[:, channels].T, aspect="auto", cmap="RdBu_r", vmin=-vmax, vmax=vmax)
-    ax2.set_title("Input matrix $X_t$", color=KINK)
-    ax2.set_xlabel("time sample")
-    ax2.set_ylabel("channel")
-    ax2.set_yticks(range(len(channels)), [f"ch{c}" for c in channels])
-    fig.colorbar(im, ax=ax2, fraction=0.046, label="amplitude")
-
-    ax3 = fig.add_subplot(gs[1, 1])
-    clean(ax3)
-    panel_label(ax3, "C")
-    ax3.set_xlim(0, 1)
-    ax3.set_ylim(0, 1)
-    card(ax3, (0.05, 0.64), (0.90, 0.22), f"forecast horizon = {h} sample", fc="#FEF3C7", ec=KGOLD, weight="bold")
-    card(ax3, (0.05, 0.35), (0.90, 0.22), f"overlap corr = {np.corrcoef(x[h:].ravel(), y[:-h].ravel())[0, 1]:.3f}", fc="#FEE2E2", ec=KRED, weight="bold")
-    card(ax3, (0.05, 0.06), (0.90, 0.22), "interpret as diagnostic\nnot brain-state proof", fc="#DBEAFE", ec=KBLUE)
-    ax3.text(0.0, -0.18, "Diagnostic refit. Synthetic fixture. Style derived from archived Kahlus dossier figures.", transform=ax3.transAxes, fontsize=7.2, color=KMID)
-    save_figure(fig, stem)
-
-
-def render_feature_contract_figure(task: Any, summary: dict[str, Any], stem: Path) -> None:
-    w = int(task.x_train.shape[1])
-    c = int(task.x_train.shape[2])
-    fig, ax = plt.subplots(figsize=(7.55, 3.75))
-    clean(ax)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.text(0.02, 0.94, "What linear_ridge receives", color=KBLUE, weight="bold", fontsize=11)
-    card(ax, (0.05, 0.56), (0.22, 0.22), f"EEG window\n{w} time × {c} channels", fc="#DBEAFE", ec=KBLUE, weight="bold")
-    card(ax, (0.39, 0.56), (0.22, 0.22), f"flatten\n{w*c} scalar features", fc=KGRAY, ec=KINK)
-    card(ax, (0.73, 0.56), (0.22, 0.22), f"future target\n{w*c} scalar outputs", fc="#FEE2E2", ec=KRED, weight="bold")
-    arrow(ax, (0.28, 0.67), (0.38, 0.67))
-    arrow(ax, (0.62, 0.67), (0.72, 0.67), color=KRED)
-    ax.add_patch(Rectangle((0.07, 0.17), 0.18, 0.23, fc="#DBEAFE", ec=KBLUE, lw=1.0))
-    for i in range(min(w, 8)):
-        ax.plot([0.07 + i * 0.18 / max(w, 1), 0.07 + i * 0.18 / max(w, 1)], [0.17, 0.40], color="white", lw=0.8)
-    for j in range(min(c, 6)):
-        ax.plot([0.07, 0.25], [0.17 + j * 0.23 / max(c, 1), 0.17 + j * 0.23 / max(c, 1)], color="white", lw=0.8)
-    ax.text(0.16, 0.125, "$X_t$", ha="center", color=KBLUE, weight="bold")
-    for i in range(min(w * c, 24)):
-        x0 = 0.395 + (i % 12) * 0.016
-        y0 = 0.24 + (i // 12) * 0.035
-        ax.add_patch(Rectangle((x0, y0), 0.010, 0.022, fc="#DBEAFE", ec=KBLUE, lw=0.25))
-    ax.text(0.50, 0.125, f"feature shape {summary['ridge_feature_shape']}", ha="center", color=KINK, fontsize=8)
-    ax.add_patch(Rectangle((0.75, 0.17), 0.18, 0.23, fc="#FEE2E2", ec=KRED, lw=1.0))
-    ax.text(0.84, 0.125, f"target shape {summary['ridge_target_shape']}", ha="center", color=KRED, fontsize=8)
-    ax.text(0.02, 0.02, "Class B diagnostic refit. This is a matrix contract figure, not benchmark evidence or a clinical claim.", fontsize=7.5, color=KMID)
-    save_figure(fig, stem)
-
-
-def render_prediction_overlay_figure(task: Any, predictions: dict[str, np.ndarray], summary: dict[str, Any], idx: int, stem: Path) -> None:
-    y = np.asarray(task.y_test[idx], dtype=np.float64)
-    fs = float(task.metadata.get("sampling_rate_hz") or 1.0)
-    h = int(task.metadata["forecast_horizon"])
-    t = (np.arange(y.shape[0]) + h) / fs
-    fig = plt.figure(figsize=(7.5, 4.8))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.45, 1.0], wspace=0.28, hspace=0.34)
-    ax = fig.add_subplot(gs[0, :])
-    panel_label(ax, "A")
-    ch = 0
-    ax.plot(t, y[:, ch], color=BLACK, lw=1.45, label="target")
-    colors = {"persistence": KBLUE, "linear_ridge": KGREEN, "autoregressive_ridge": KGOLD, "tiny_ssm": KRED}
-    for model in ("persistence", "linear_ridge", "autoregressive_ridge", "tiny_ssm"):
-        if model in predictions:
-            ax.plot(t, predictions[model][idx, :, ch], color=colors[model], lw=1.05, alpha=0.9, label=model)
-    ax.set_title("Held-out synthetic fixture prediction overlay", color=KBLUE, weight="bold")
-    ax.set_xlabel("seconds from input-window start")
-    ax.set_ylabel("EEG amplitude (benchmark units)")
-    ax.legend(frameon=False, ncol=3, loc="upper right")
-
-    ax2 = fig.add_subplot(gs[1, 0])
-    panel_label(ax2, "B")
-    for model in ("persistence", "linear_ridge", "autoregressive_ridge", "tiny_ssm"):
-        if model in predictions:
-            residual = y[:, ch] - predictions[model][idx, :, ch]
-            ax2.plot(t, residual, color=colors[model], lw=0.95, alpha=0.8, label=model)
-    ax2.axhline(0, color=KLINE, lw=0.8)
-    ax2.set_title("Residuals, channel 0")
-    ax2.set_xlabel("time (s)")
-    ax2.set_ylabel("target - prediction")
-
-    ax3 = fig.add_subplot(gs[1, 1])
-    panel_label(ax3, "C")
-    items = sorted(summary["example_mse"].items(), key=lambda x: x[1])
-    labels = [k.replace("_", "\n") for k, _ in items]
-    vals = [v for _, v in items]
-    ax3.bar(np.arange(len(vals)), vals, color=[colors.get(k, KMID) for k, _ in items], alpha=0.88)
-    ax3.set_xticks(np.arange(len(vals)), labels, rotation=0)
-    ax3.set_ylabel("MSE")
-    ax3.set_title("Example-window error")
-    ax3.text(0.0, -0.35, "Lower is better. One example window only; use aggregate metrics for claims.", transform=ax3.transAxes, fontsize=7.2, color=KMID)
-    save_figure(fig, stem)
-
-
-def render_baseline_controls_figure(summary: dict[str, Any], stem: Path) -> None:
-    fig = plt.figure(figsize=(7.55, 4.2))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.1, 1.0], wspace=0.34)
+def render_inventory_figure(evidence: dict[str, Any], versions_root: Path, stem: Path) -> None:
+    inv: ArtifactInventory = evidence["inventory"]
+    counts = {
+        "task\nresults": inv.task_results_csv,
+        "baseline\nrankings": inv.baseline_ranking_csv,
+        "metrics\nCSV": inv.metrics_csv,
+        "metric\nsummary": inv.metric_summary_json,
+        "leakage\nreports": inv.leakage_report_json,
+        "eval\naudits": inv.eval_audit_json,
+        "paper\ngates": inv.paper_mode_gate_json,
+    }
+    fig = plt.figure(figsize=(7.4, 4.4))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.35, 1.0], wspace=0.25)
     ax = fig.add_subplot(gs[0, 0])
     panel_label(ax, "A")
-    metrics = summary["metrics_by_model"]
-    items = sorted(metrics.items(), key=lambda x: x[1]["mse"])
-    labels = [k.replace("_", "\n") for k, _ in items]
-    mse = [v["mse"] for _, v in items]
-    r2 = [v["r2"] for _, v in items]
-    x = np.arange(len(items))
-    ax.bar(x - 0.18, mse, width=0.36, color=KBLUE, alpha=0.85, label="MSE")
-    ax2 = ax.twinx()
-    ax2.plot(x + 0.18, r2, color=KRED, marker="o", lw=1.4, label="$R^2$")
-    ax.set_xticks(x, labels)
-    ax.set_ylabel("MSE", color=KBLUE)
-    ax2.set_ylabel("$R^2$", color=KRED)
-    ax.set_title("Aggregate baseline comparison", color=KBLUE, weight="bold")
-    lines, labs = ax.get_legend_handles_labels()
-    lines2, labs2 = ax2.get_legend_handles_labels()
-    ax.legend(lines + lines2, labs + labs2, frameon=False, loc="upper right")
+    labels = list(counts)
+    vals = list(counts.values())
+    colors = [KBLUE, KTEAL, KBLUE, KTEAL, KGOLD, KGREEN, KRED]
+    ax.bar(labels, vals, color=colors, alpha=0.86)
+    ax.set_title("Evidence artifact inventory", color=KBLUE, weight="bold")
+    ax.set_ylabel("files found in evidence zips")
+    ax.grid(axis="y", alpha=0.8)
+    ax.tick_params(axis="x", rotation=0)
+    for i, v in enumerate(vals):
+        ax.text(i, v + max(vals + [1]) * 0.02, str(v), ha="center", va="bottom", fontsize=8, color=KINK)
 
-    axc = fig.add_subplot(gs[0, 1])
-    clean(axc)
-    panel_label(axc, "B")
-    axc.set_xlim(0, 1)
-    axc.set_ylim(0, 1)
-    ac = summary["autocorrelation_summary"]
-    rows = [
-        ("best short-horizon MSE", f"{ac.get('short_horizon_best_mse'):.3g}", KBLUE),
-        ("long-horizon delta", f"+{ac.get('long_horizon_delta_vs_short'):.3g}", KRED),
-        ("non-overlap delta", f"+{ac.get('non_overlap_delta_vs_short'):.3g}", KGOLD),
-        ("shuffled control degrades", str(ac.get("shuffled_control_degrades")), KGREEN),
-    ]
-    y = 0.80
-    for label, value, color in rows:
-        card(axc, (0.05, y - 0.08), (0.90, 0.12), f"{label}\n{value}", fc="white", ec=color, color=KINK, fontsize=8.2, weight="bold" if color in (KRED, KBLUE) else "normal")
-        y -= 0.18
-    axc.text(0.05, 0.06, "Verdict: treat v1 as baseline infrastructure until harder controls are beaten.", fontsize=8.1, color=KRED, weight="bold", wrap=True)
+    ax2 = fig.add_subplot(gs[0, 1])
+    panel_label(ax2, "B")
+    ax2.set_axis_off()
+    ax2.set_xlim(0, 1)
+    ax2.set_ylim(0, 1)
+    card(ax2, 0.05, 0.72, 0.90, 0.18, f"{inv.bundle_count} evidence bundles\nscanned", fc="#DBEAFE", ec=KBLUE, weight="bold")
+    card(ax2, 0.05, 0.49, 0.90, 0.18, f"{len(evidence['task_results'])} task rows\n{len(evidence['baseline_results'])} baseline rows", fc="#ECFDF5", ec=KTEAL, weight="bold")
+    tensor_text = "raw tensors found" if inv.array_like_artifacts else "no raw tensor arrays\nfound in bundles"
+    tensor_fc = "#FEE2E2" if not inv.array_like_artifacts else "#ECFDF5"
+    tensor_ec = KRED if not inv.array_like_artifacts else KGREEN
+    card(ax2, 0.05, 0.26, 0.90, 0.18, tensor_text, fc=tensor_fc, ec=tensor_ec, weight="bold")
+    ax2.text(0.05, 0.09, f"source root:\n{versions_root}", fontsize=7.2, color=KMID, va="top", family="monospace")
     save_figure(fig, stem)
 
 
-def _analysis_md(summary: dict[str, Any]) -> str:
-    metrics = summary["metrics_by_model"]
-    ac = summary["autocorrelation_summary"]
-    figs = summary["figure_files"]
-    lines = [
-        "# EEG v1 Ridge Baseline Visual Sanity Check",
-        "",
-        "This is not a new benchmark. It visualizes the existing EEG v1 future-window benchmark so the ridge result is easier to inspect.",
-        "",
-        "```{admonition} Figure status",
-        ":class: warning",
-        "These are diagnostic refit figures generated from the synthetic fixture. They are useful for understanding benchmark geometry, not for public EEG or clinical claims.",
-        "```",
-        "",
-        f"- dataset: `{summary['dataset']}`",
-        f"- source: `{summary['source']}`",
-        f"- benchmark_status: `{summary['benchmark_status']}`",
-        f"- window_length: `{summary['window_length']}`",
-        f"- forecast_horizon: `{summary['forecast_horizon']}`",
-        f"- ridge feature matrix: `{summary['ridge_feature_shape']}` after flattening input windows",
-        f"- ridge target matrix: `{summary['ridge_target_shape']}` after flattening future windows",
-        f"- same-record shifted overlap correlation for the plotted test window: `{summary['same_record_overlap_corr']}`",
-        f"- figure style source: `{summary['figure_style_source']}`",
-        "",
-        "## Publication-style diagnostic figures",
-        "",
-        f"![Window overlap diagnostic]({figs['window_png']})",
-        "",
-        f"[PDF version]({figs['window_pdf']})",
-        "",
-        f"![Ridge design matrix contract]({figs['feature_map_png']})",
-        "",
-        f"[PDF version]({figs['feature_map_pdf']})",
-        "",
-        f"![Prediction overlay and residuals]({figs['prediction_overlay_png']})",
-        "",
-        f"[PDF version]({figs['prediction_overlay_pdf']})",
-        "",
-        f"![Baseline and autocorrelation controls]({figs['baseline_controls_png']})",
-        "",
-        f"[PDF version]({figs['baseline_controls_pdf']})",
-        "",
-        "## Current benchmark metrics",
-        "",
-        "| model | mse | mae | r2 | pearsonr |",
-        "|---|---:|---:|---:|---:|",
+def render_task_metrics_figure(task_results: list[TaskResult], stem: Path) -> None:
+    eeg = [r for r in task_results if r.source_modality == "eeg" and r.target_modality == "eeg"]
+    fig = plt.figure(figsize=(7.4, 4.8))
+    gs = fig.add_gridspec(2, 2, hspace=0.42, wspace=0.33)
+    metrics = [
+        ("eval_pearsonr", "Pearson r", KBLUE),
+        ("eval_r2", "$R^2$", KTEAL),
+        ("test_mse", "test MSE", KRED),
+        ("best_val_mse", "best val MSE", KGOLD),
     ]
-    for model_id, row in sorted(metrics.items(), key=lambda item: item[1]["mse"]):
-        lines.append(f"| {model_id} | {row['mse']:.6g} | {row['mae']:.6g} | {row['r2']:.6g} | {row['pearsonr']:.6g} |")
-    lines += [
-        "",
-        "## Why ridge can look strong here",
-        "",
-        "- `linear_ridge` sees the raw EEG input window flattened into scalar time-channel features.",
-        "- The target is the future EEG window, not a distant label. With `forecast_horizon=1`, most of the target window is the input window shifted by one sample.",
-        "- The synthetic fixture is deliberately smooth/autoregressive, so a linear model is well matched to the data-generating structure.",
-        "- Strong ridge or persistence performance is therefore a sanity-check signal for autocorrelation, short horizon, and overlap; it is not evidence of brain-state understanding.",
-        "",
-        "## Existing autocorrelation controls",
-        "",
-        f"- verdict: `{ac.get('verdict')}`",
-        f"- persistence_or_ridge_dominates: `{ac.get('persistence_or_ridge_dominates')}`",
-        f"- short_horizon_best_mse: `{ac.get('short_horizon_best_mse')}`",
-        f"- long_horizon_delta_vs_short: `{ac.get('long_horizon_delta_vs_short')}`",
-        f"- non_overlap_delta_vs_short: `{ac.get('non_overlap_delta_vs_short')}`",
-        f"- shuffled_target_close_to_real_baselines: `{ac.get('shuffled_target_close_to_real_baselines')}`",
-        "",
-        "Bottom line: this analysis supports caution. The existing result is plausibly explained by local temporal structure and benchmark geometry, so adding more benchmarks would be noisier than first understanding this one.",
-        "",
-    ]
-    return "\n".join(lines)
+    tasks = sorted({r.task_id for r in eeg}) or ["no_eeg_rows"]
+    for ax_i, (field, label, color) in enumerate(metrics):
+        ax = fig.add_subplot(gs[ax_i // 2, ax_i % 2])
+        panel_label(ax, chr(ord("A") + ax_i))
+        for x, task in enumerate(tasks):
+            vals = finite(getattr(r, field) for r in eeg if r.task_id == task)
+            if vals:
+                jitter = np.linspace(-0.08, 0.08, len(vals)) if len(vals) > 1 else [0.0]
+                ax.scatter(np.full(len(vals), x) + jitter, vals, s=30, color=color, alpha=0.75, edgecolor="white", linewidth=0.5)
+                ax.plot([x - 0.18, x + 0.18], [np.median(vals), np.median(vals)], color=KINK, lw=1.2)
+            else:
+                ax.text(x, 0.5, "no data", ha="center", va="center", color=KMID, transform=ax.get_xaxis_transform())
+        ax.set_title(label, color=KINK)
+        ax.set_xticks(range(len(tasks)), [short_task(t) for t in tasks], rotation=18, ha="right")
+        ax.grid(axis="y", alpha=0.8)
+        if "mse" in field:
+            ax.set_ylabel("lower is better")
+        else:
+            ax.set_ylabel("higher is better")
+    fig.suptitle("[Benchmark evidence] EEG task metrics from versions artifacts", color=KBLUE, weight="bold", y=1.02)
+    save_figure(fig, stem)
+
+
+def render_baseline_ranking_figure(rows: list[BaselineResult], stem: Path) -> None:
+    mse_rows = [r for r in rows if r.metric.lower() == "mse" and math.isfinite(r.value)]
+    by_model: dict[str, list[float]] = {}
+    for row in mse_rows:
+        by_model.setdefault(row.model_id, []).append(row.value)
+    models = sorted(by_model, key=lambda m: np.median(by_model[m]))[:8]
+
+    fig = plt.figure(figsize=(7.4, 4.25))
+    ax = fig.add_subplot(111)
+    panel_label(ax, "A")
+    if models:
+        for x, model in enumerate(models):
+            vals = by_model[model]
+            jitter = np.linspace(-0.10, 0.10, len(vals)) if len(vals) > 1 else [0.0]
+            ax.scatter(np.full(len(vals), x) + jitter, vals, s=36, color=KBLUE if "ridge" in model else KTEAL, alpha=0.78, edgecolor="white", linewidth=0.5)
+            ax.plot([x - 0.22, x + 0.22], [np.median(vals), np.median(vals)], color=KINK, lw=1.3)
+        ax.set_xticks(range(len(models)), [m.replace("_", "\n") for m in models])
+        ax.set_ylabel("MSE across saved baseline-ranking artifacts")
+        ax.grid(axis="y", alpha=0.85)
+    else:
+        ax.text(0.5, 0.5, "No non-empty baseline_ranking.csv rows found", ha="center", va="center", transform=ax.transAxes, color=KMID)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    ax.set_title("[Benchmark evidence] Real baseline ranking rows", color=KBLUE, weight="bold")
+    ax.text(0.01, -0.20, "Dots are individual evidence bundles. Black bars are medians. No synthetic model overlays are plotted.", transform=ax.transAxes, fontsize=7.6, color=KMID)
+    save_figure(fig, stem)
+
+
+def render_audit_figure(audits: list[AuditResult], inv: ArtifactInventory, stem: Path) -> None:
+    fig = plt.figure(figsize=(7.4, 4.5))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.15, 1.0], wspace=0.28)
+    ax = fig.add_subplot(gs[0, 0])
+    panel_label(ax, "A")
+    audit_types = ["leakage", "eval", "paper_mode_gate"]
+    passed = [sum(1 for a in audits if a.audit_type == t and a.passed is True) for t in audit_types]
+    failed = [sum(1 for a in audits if a.audit_type == t and a.passed is False) for t in audit_types]
+    unknown = [sum(1 for a in audits if a.audit_type == t and a.passed is None) for t in audit_types]
+    x = np.arange(len(audit_types))
+    ax.bar(x, passed, color=KGREEN, label="passed")
+    ax.bar(x, failed, bottom=passed, color=KRED, label="failed")
+    ax.bar(x, unknown, bottom=np.array(passed) + np.array(failed), color=KMID, label="unknown")
+    ax.set_xticks(x, [t.replace("_", "\n") for t in audit_types])
+    ax.set_ylabel("audit artifacts")
+    ax.set_title("Leakage and paper-mode audit status", color=KBLUE, weight="bold")
+    ax.grid(axis="y", alpha=0.8)
+    ax.legend(frameon=False, loc="upper left")
+
+    ax2 = fig.add_subplot(gs[0, 1])
+    panel_label(ax2, "B")
+    ax2.set_axis_off()
+    ax2.set_xlim(0, 1)
+    ax2.set_ylim(0, 1)
+    violations = sum(a.violations for a in audits)
+    warnings = sum(a.warnings for a in audits)
+    seeds = [a.observed_seeds for a in audits if a.observed_seeds is not None]
+    windows = finite(a.window_count for a in audits if a.window_count is not None)
+    card(ax2, 0.05, 0.72, 0.90, 0.18, f"violations logged\n{violations}", fc="#ECFDF5" if violations == 0 else "#FEE2E2", ec=KGREEN if violations == 0 else KRED, weight="bold")
+    card(ax2, 0.05, 0.49, 0.90, 0.18, f"warnings logged\n{warnings}", fc="#FEF3C7" if warnings else "#ECFDF5", ec=KGOLD if warnings else KGREEN, weight="bold")
+    seed_text = f"paper-mode seeds\nmedian n={int(np.median(seeds))}" if seeds else "paper-mode seeds\nnot found"
+    card(ax2, 0.05, 0.26, 0.90, 0.18, seed_text, fc="#DBEAFE", ec=KBLUE, weight="bold")
+    tensor_text = "No raw tensor or prediction-array artifact was found; waveform overlays are intentionally omitted." if not inv.array_like_artifacts else f"{len(inv.array_like_artifacts)} tensor-like artifacts found."
+    ax2.text(0.05, 0.11, tensor_text, fontsize=8.1, color=KRED if not inv.array_like_artifacts else KGREEN, va="top", wrap=True)
+    if windows:
+        ax2.text(0.05, 0.02, f"median audited windows: {int(np.median(windows)):,}", fontsize=7.4, color=KMID)
+    save_figure(fig, stem)
+
+
+def short_task(task: str) -> str:
+    mapping = {
+        "future_state_forecasting": "future\nforecast",
+        "masked_neural_reconstruction": "masked\nrecon",
+        "stimulus_to_fmri_response": "stimulus\n→ fMRI",
+    }
+    return mapping.get(task, task.replace("_", "\n"))
+
+
+def build_summary(evidence: dict[str, Any], versions_root: Path, figure_stems: dict[str, str]) -> dict[str, Any]:
+    inv: ArtifactInventory = evidence["inventory"]
+    task_results: list[TaskResult] = evidence["task_results"]
+    baseline_results: list[BaselineResult] = evidence["baseline_results"]
+    audits: list[AuditResult] = evidence["audits"]
+    eeg_rows = [r for r in task_results if r.source_modality == "eeg" and r.target_modality == "eeg"]
+    summary: dict[str, Any] = {
+        "source_mode": "versions_evidence",
+        "versions_root": str(versions_root),
+        "bundle_count": inv.bundle_count,
+        "task_result_rows": len(task_results),
+        "eeg_task_result_rows": len(eeg_rows),
+        "baseline_rows": len(baseline_results),
+        "audit_rows": len(audits),
+        "raw_tensor_artifacts_found": bool(inv.array_like_artifacts),
+        "array_like_artifact_examples": inv.array_like_artifacts[:20],
+        "inventory": asdict(inv),
+        "eeg_metric_summary": summarize_task_metrics(eeg_rows),
+        "baseline_metric_summary": summarize_baselines(baseline_results),
+        "audit_summary": summarize_audits(audits),
+        "figure_files": {f"{key}_{ext}": f"{stem}.{ext}" for key, stem in figure_stems.items() for ext in ("png", "pdf")},
+    }
+    return summary
+
+
+def summarize_task_metrics(rows: list[TaskResult]) -> dict[str, dict[str, float | int]]:
+    out: dict[str, dict[str, float | int]] = {}
+    for task in sorted({r.task_id for r in rows}):
+        task_rows = [r for r in rows if r.task_id == task]
+        out[task] = {
+            "n": len(task_rows),
+            "median_eval_pearsonr": median_or_nan(r.eval_pearsonr for r in task_rows),
+            "median_eval_r2": median_or_nan(r.eval_r2 for r in task_rows),
+            "median_test_mse": median_or_nan(r.test_mse for r in task_rows),
+            "median_best_val_mse": median_or_nan(r.best_val_mse for r in task_rows),
+        }
+    return out
+
+
+def summarize_baselines(rows: list[BaselineResult]) -> dict[str, dict[str, float | int]]:
+    mse_rows = [r for r in rows if r.metric.lower() == "mse" and math.isfinite(r.value)]
+    out: dict[str, dict[str, float | int]] = {}
+    for model in sorted({r.model_id for r in mse_rows}):
+        model_rows = [r for r in mse_rows if r.model_id == model]
+        out[model] = {"n": len(model_rows), "median_mse": median_or_nan(r.value for r in model_rows), "median_rank": median_or_nan(r.rank for r in model_rows)}
+    return out
+
+
+def summarize_audits(rows: list[AuditResult]) -> dict[str, Any]:
+    out: dict[str, Any] = {"violations": sum(r.violations for r in rows), "warnings": sum(r.warnings for r in rows), "by_type": {}}
+    for audit_type in sorted({r.audit_type for r in rows}):
+        typed = [r for r in rows if r.audit_type == audit_type]
+        out["by_type"][audit_type] = {
+            "n": len(typed),
+            "passed": sum(1 for r in typed if r.passed is True),
+            "failed": sum(1 for r in typed if r.passed is False),
+            "unknown": sum(1 for r in typed if r.passed is None),
+        }
+    return out
+
+
+def median_or_nan(values: Iterable[float]) -> float:
+    vals = finite(values)
+    return float(np.median(vals)) if vals else float("nan")
+
+
+def write_json(path: Path, value: dict[str, Any]) -> None:
+    path.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=True) + "\n", encoding="utf-8")
+
+
+def analysis_md(summary: dict[str, Any]) -> str:
+    tensors = "Yes" if summary["raw_tensor_artifacts_found"] else "No"
+    metric_lines = []
+    for task, vals in summary["eeg_metric_summary"].items():
+        metric_lines.append(
+            f"- `{task}`: n={vals['n']}, median Pearson r={fmt(vals['median_eval_pearsonr'])}, "
+            f"median $R^2$={fmt(vals['median_eval_r2'])}, median test MSE={fmt(vals['median_test_mse'])}"
+        )
+    if not metric_lines:
+        metric_lines.append("- No EEG→EEG task-result rows were found in the scanned evidence bundles.")
+
+    baseline_lines = []
+    for model, vals in sorted(summary["baseline_metric_summary"].items(), key=lambda kv: kv[1]["median_mse"]):
+        baseline_lines.append(f"- `{model}`: n={vals['n']}, median MSE={fmt(vals['median_mse'])}, median rank={fmt(vals['median_rank'])}")
+    if not baseline_lines:
+        baseline_lines.append("- No non-empty baseline-ranking rows were found.")
+
+    return f"""# EEG/ridge versions evidence figures
+
+## Real evidence artifacts
+
+Generated from `{summary['versions_root']}` by `scripts/render_eeg_v1_ridge_visuals.py --versions-root ...`.
+
+- Evidence bundles scanned: **{summary['bundle_count']}**
+- Task-result rows: **{summary['task_result_rows']}**
+- EEG→EEG task rows: **{summary['eeg_task_result_rows']}**
+- Baseline-ranking rows: **{summary['baseline_rows']}**
+- Audit rows: **{summary['audit_rows']}**
+- Raw tensor or prediction arrays found: **{tensors}**
+
+No raw tensor or prediction-array artifact was found, so this renderer intentionally does **not** generate a prediction overlay, waveform trace, or synthetic EEG window figure.
+
+## EEG task metrics
+
+{chr(10).join(metric_lines)}
+
+## Baseline rankings
+
+{chr(10).join(baseline_lines)}
+
+## Audit summary
+
+- Total violations recorded in parsed audits: **{summary['audit_summary']['violations']}**
+- Total warnings recorded in parsed audits: **{summary['audit_summary']['warnings']}**
+
+## Figure files
+
+- `fig01_versions_evidence_inventory.png/.pdf`
+- `fig02_eeg_task_metrics_from_versions.png/.pdf`
+- `fig03_real_baseline_ranking.png/.pdf`
+- `fig04_leakage_and_gate_audit.png/.pdf`
+"""
+
+
+def fmt(value: Any) -> str:
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return "nan"
+    if not math.isfinite(v):
+        return "nan"
+    return f"{v:.3g}"
 
 
 if __name__ == "__main__":

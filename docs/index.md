@@ -25,15 +25,15 @@ Equations, implementation details, baselines, failure modes, and what the curren
 :::{grid-item-card} Reviewer path
 :link: figures/eeg-v1-ridge-visuals
 :link-type: doc
-Figures, provenance, benchmark caveats, visual standards, and exact scripts used to render the diagnostics.
+Figures, provenance, benchmark caveats, visual standards, and exact scripts used to render evidence artifacts.
 :::
 
 ::::
 
 ## What to read first
 
-- [EEG v1 ridge visual sanity check](figures/eeg-v1-ridge-visuals.md): the current visual packet for explaining why ridge regression can look strong.
-- [Ridge baseline method note](methods/ridge-baseline.md): beginner-to-expert explanation with equations and caveats.
+- [EEG/ridge evidence figures from versions](figures/eeg-v1-ridge-visuals.md): artifact-first plots generated from saved CSV/JSON evidence bundles.
+- [Ridge baseline evidence note](methods/ridge-baseline.md): beginner-to-expert explanation with equations, artifact boundaries, and caveats.
 - [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization versus AI-generated slop.
 - [Reputable neuroscience repo patterns](references/reputable-neuroscience-repos.md): what MNE, MOABB, Braindecode, CEBRA, NeuroML, and Nilearn teach us.
 - [Limitations](limitations.md): explicit claim boundaries.

@@ -1,8 +1,11 @@
 """
-Render EEG v1 ridge visual diagnostics
-======================================
+Render EEG/ridge versions evidence figures
+==========================================
 
-This executable example regenerates the synthetic EEG v1 ridge visual packet. It is intentionally a diagnostic refit, not a public EEG benchmark.
+This executable example regenerates the evidence-driven EEG/ridge figure packet.
+It scans the local `/Users/aayu/Downloads/versions` evidence bundles, normalizes
+saved CSV/JSON artifacts, and refuses to render waveform or prediction overlays
+unless real tensor/prediction arrays exist.
 """
 from __future__ import annotations
 
@@ -21,12 +24,13 @@ def find_repo_root() -> Path:
 
 ROOT = find_repo_root()
 OUT = ROOT / "docs" / "research" / "eeg_v1_ridge_visuals"
+VERSIONS_ROOT = Path("/Users/aayu/Downloads/versions")
 
 cmd = [
     sys.executable,
     str(ROOT / "scripts" / "render_eeg_v1_ridge_visuals.py"),
-    "--dataset",
-    "synthetic_fixture",
+    "--versions-root",
+    str(VERSIONS_ROOT),
     "--out-dir",
     str(OUT),
 ]

@@ -7,31 +7,41 @@ import zipfile
 from pathlib import Path
 
 
-class EEGV1RidgeVisualsTests(unittest.TestCase):
-    def test_renderer_writes_real_artifact_figures_without_synthetic_overlay(self):
+class VersionsEvidenceFigureTests(unittest.TestCase):
+    def test_renderer_uses_real_evidence_zip_and_does_not_emit_synthetic_overlay(self):
         with tempfile.TemporaryDirectory() as tmp:
-            versions = Path(tmp) / "versions"
-            zipdir = versions / "_organized_index" / "artifact_views" / "evidence_zips"
+            root = Path(tmp) / "versions"
+            zipdir = root / "_organized_index" / "artifact_views" / "evidence_zips"
             zipdir.mkdir(parents=True)
-            with zipfile.ZipFile(zipdir / "sample-evidence.zip", "w") as zf:
+            with zipfile.ZipFile(zipdir / "sample-moabb-evidence.zip", "w") as zf:
                 zf.writestr(
                     "sample/run/tables/task_results.csv",
                     "task_id,source_modality,target_modality,eval_mse,eval_mae,eval_pearsonr,eval_r2,test_mse,best_val_mse\n"
-                    "future_state_forecasting,eeg,eeg,12.5,2.1,0.81,0.62,12.5,6.0\n",
+                    "future_state_forecasting,eeg,eeg,12.5,2.1,0.81,0.62,12.5,6.0\n"
+                    "masked_neural_reconstruction,eeg,eeg,15.0,2.5,0.72,0.50,15.0,8.5\n",
                 )
                 zf.writestr(
                     "sample/run/tables/baseline_ranking.csv",
-                    "task_id,model_id,metric,value,rank\nfuture_state_forecasting,linear_ridge,mse,7.7,1\n",
+                    "task_id,model_id,metric,value,rank\n"
+                    "future_state_forecasting,linear_ridge,mse,7.7,1\n"
+                    "future_state_forecasting,persistence,mse,8.2,2\n",
                 )
-                zf.writestr("sample/prepared/leakage_report.json", json.dumps({"passed": True, "violations": []}))
+                zf.writestr(
+                    "sample/prepared/leakage_report.json",
+                    json.dumps({"passed": True, "checked_keys": ["subject_id"], "violations": []}),
+                )
+                zf.writestr(
+                    "sample/run/paper_mode_gate.json",
+                    json.dumps({"passed": True, "observed_seeds": [0, 1, 2], "violations": []}),
+                )
 
-            out = Path(tmp) / "figures"
+            out = Path(tmp) / "out"
             result = subprocess.run(
                 [
                     sys.executable,
                     "scripts/render_eeg_v1_ridge_visuals.py",
                     "--versions-root",
-                    str(versions),
+                    str(root),
                     "--out-dir",
                     str(out),
                 ],
@@ -41,6 +51,13 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(summary["source_mode"], "versions_evidence")
+            self.assertEqual(summary["task_result_rows"], 2)
+            self.assertEqual(summary["baseline_rows"], 2)
+            self.assertFalse(summary["raw_tensor_artifacts_found"])
+            self.assertNotIn("synthetic_fixture", json.dumps(summary))
+            self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
             for name in (
                 "fig01_versions_evidence_inventory.png",
                 "fig01_versions_evidence_inventory.pdf",
@@ -51,13 +68,8 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
                 "fig04_leakage_and_gate_audit.png",
                 "fig04_leakage_and_gate_audit.pdf",
                 "eeg_v1_ridge_visual_analysis.md",
-                "eeg_v1_ridge_visual_summary.json",
             ):
                 self.assertTrue((out / name).exists(), name)
-            self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
-            summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
-            self.assertEqual(summary["source_mode"], "versions_evidence")
-            self.assertFalse(summary["raw_tensor_artifacts_found"])
             analysis = (out / "eeg_v1_ridge_visual_analysis.md").read_text(encoding="utf-8")
             self.assertIn("Real evidence artifacts", analysis)
             self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
