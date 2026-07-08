@@ -45,6 +45,7 @@ docs = [
   "matplotlib>=3.8",
   "pandas>=2.2",
   "seaborn>=0.13",
+  "tueplots>=0.2.0",
 ]
 
 [project.scripts]

@@ -53,7 +53,7 @@ docs/research/eeg_v1_figure_source/
 
 ![EEG v1 benchmark overview](../research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.png)
 
-**Figure 1. EEG v1 benchmark overview.** Standard seaborn strip/median panels rendered from `task_results.csv`. The figure shows held-out EEG→EEG Pearson r, R2, test MSE, and best validation MSE by task. Source: [`src/Figure1_eeg_v1_benchmark_overview.py`](../research/eeg_v1_figure_source/src/Figure1_eeg_v1_benchmark_overview.py). Data: [`task_results.csv`](../research/eeg_v1_figure_source/data/task_results.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.svg)
+**Figure 1. EEG v1 benchmark trajectory.** Standard matplotlib/seaborn/tueplots-style line plots rendered from `task_results.csv`. The figure shows how held-out EEG→EEG test MSE and future-forecasting Pearson/R² changed across saved evidence bundles, with the best saved MSE row annotated. Source: [`src/Figure1_eeg_v1_benchmark_overview.py`](../research/eeg_v1_figure_source/src/Figure1_eeg_v1_benchmark_overview.py). Data: [`task_results.csv`](../research/eeg_v1_figure_source/data/task_results.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.svg)
 
 </div>
 
@@ -61,7 +61,7 @@ docs/research/eeg_v1_figure_source/
 
 ![EEG v1 audit matrix](../research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.png)
 
-**Figure 2. Audit and artifact matrix.** Standard seaborn heatmaps rendered from `audits.csv` and `inventory.json`. The figure summarizes pass/fail/unknown audit counts and which cached artifact families are present. Source: [`src/Figure2_eeg_v1_audit_matrix.py`](../research/eeg_v1_figure_source/src/Figure2_eeg_v1_audit_matrix.py). Data: [`audits.csv`](../research/eeg_v1_figure_source/data/audits.csv), [`inventory.json`](../research/eeg_v1_figure_source/data/inventory.json). [PDF](../research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.svg)
+**Figure 2. Audit and artifact coverage.** Standard matplotlib/seaborn stacked bars and horizontal counts rendered from `audits.csv` and `inventory.json`. The figure summarizes audit pass/fail/unknown counts and makes the key evidence limitation visible: cached tensor/prediction arrays are absent, so waveform overlays stay out of the public evidence figures. Source: [`src/Figure2_eeg_v1_audit_matrix.py`](../research/eeg_v1_figure_source/src/Figure2_eeg_v1_audit_matrix.py). Data: [`audits.csv`](../research/eeg_v1_figure_source/data/audits.csv), [`inventory.json`](../research/eeg_v1_figure_source/data/inventory.json). [PDF](../research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.svg)
 
 </div>
 
@@ -69,7 +69,7 @@ docs/research/eeg_v1_figure_source/
 
 ![EEG v1 baseline ranking](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png)
 
-**Figure 3. Recovered Kahlus v1 versus baselines.** Standard horizontal seaborn dot/median plot rendered by joining recovered Kahlus rows from `task_results.csv` with baseline rows from `baseline_ranking.csv`. This makes the honest story visible: recovered Kahlus v1 beats linear ridge on EEG future forecasting, while ridge remains stronger on masked reconstruction. Source: [`src/Figure3_eeg_v1_baseline_ranking.py`](../research/eeg_v1_figure_source/src/Figure3_eeg_v1_baseline_ranking.py). Data: [`task_results.csv`](../research/eeg_v1_figure_source/data/task_results.csv), [`baseline_ranking.csv`](../research/eeg_v1_figure_source/data/baseline_ranking.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg)
+**Figure 3. Recovered Kahlus v1 versus standard baselines.** Standard horizontal matplotlib/seaborn bar plots rendered by joining recovered Kahlus rows from `task_results.csv` with baseline rows from `baseline_ranking.csv`. This makes the honest story visible: recovered Kahlus v1 beats linear ridge on EEG future forecasting, while ridge remains stronger on masked reconstruction. Source: [`src/Figure3_eeg_v1_baseline_ranking.py`](../research/eeg_v1_figure_source/src/Figure3_eeg_v1_baseline_ranking.py). Data: [`task_results.csv`](../research/eeg_v1_figure_source/data/task_results.csv), [`baseline_ranking.csv`](../research/eeg_v1_figure_source/data/baseline_ranking.csv). [PDF](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf) · [SVG](../research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg)
 
 </div>
 
@@ -77,7 +77,7 @@ docs/research/eeg_v1_figure_source/
 
 - **Allowed:** “The versions archive contains EEG→EEG task metrics, baseline rankings, leakage audits, eval audits, and paper-mode gates.”
 - **Allowed:** “The public figures are generated from cached CSV/JSON artifacts, with source scripts checked into the docs tree.”
-- **Allowed:** “Linear ridge ranks best by median MSE in the saved baseline-ranking rows.”
+- **Allowed:** “Linear ridge ranks best on saved masked-reconstruction baseline rows, but recovered Kahlus v1 beats ridge on the saved EEG future-forecasting comparison.”
 - **Not allowed:** “The current waveform overlay proves a biological signal forecast.” No real `prediction_examples.npz` exists yet.
 - **Not allowed:** “These figures show clinical EEG physiology.” No raw EEG tensors, montage metadata, or physiological units are present in the versions evidence bundles.
 

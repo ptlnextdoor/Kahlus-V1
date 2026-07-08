@@ -9,9 +9,9 @@ This directory follows the CEBRA paper-figure pattern: cached data artifacts liv
 - `data/audits.csv`: leakage, eval, and paper-mode gate rows parsed from JSON artifacts.
 - `data/inventory.json`: counts of evidence artifacts and whether raw tensor/prediction arrays exist.
 - `data/provenance.json`: source root and renderer provenance.
-- `src/Figure1_eeg_v1_benchmark_overview.py`: standard seaborn task metric panels.
-- `src/Figure2_eeg_v1_audit_matrix.py`: compact audit and inventory heatmaps.
-- `src/Figure3_eeg_v1_baseline_ranking.py`: horizontal baseline-ranking dot plot.
+- `src/Figure1_eeg_v1_benchmark_overview.py`: matplotlib/seaborn/tueplots-style EEG metric trajectory plots.
+- `src/Figure2_eeg_v1_audit_matrix.py`: compact audit-status and artifact-coverage plots.
+- `src/Figure3_eeg_v1_baseline_ranking.py`: task-wise recovered-Kahlus-versus-baseline MSE bar plots.
 
 ## Regenerate
 
@@ -19,4 +19,4 @@ This directory follows the CEBRA paper-figure pattern: cached data artifacts liv
 PYTHONPATH=src python scripts/render_eeg_v1_ridge_visuals.py   --versions-root /Users/aayu/Downloads/versions   --out-dir docs/research/eeg_v1_ridge_visuals
 ```
 
-Public rule: no raw tensor or prediction-array artifact means no waveform overlay, no residual trace, and no clinical/physiology claim figure. Public evidence figures use standard matplotlib/seaborn axes with constrained layout, not hand-drawn box diagrams.
+Public rule: no raw tensor or prediction-array artifact means no waveform overlay, no residual trace, and no clinical/physiology claim figure. Public evidence figures use standard matplotlib/seaborn/tueplots-style axes with constrained layout, not hand-drawn box diagrams.

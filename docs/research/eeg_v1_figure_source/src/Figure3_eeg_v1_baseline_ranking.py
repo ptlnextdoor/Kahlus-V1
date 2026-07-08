@@ -6,10 +6,10 @@
 #       format_name: light
 #       format_version: '1.5'
 # ---
-"""Figure 3: EEG v1 recovered Kahlus versus baselines.
+"""Figure 3: EEG v1 Kahlus versus standard baselines.
 
-Reference-derived design: long model names and benchmark rankings should use
-horizontal dot/summary plots, not crowded vertical bars or diagrams.
+Task-wise MSE comparison using horizontal seaborn barplots. The recovered
+Kahlus v1 row is joined with saved baseline_ranking.csv rows from the archive.
 """
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -29,35 +28,75 @@ DATA = ROOT / "data"
 FIGURES = ROOT / "figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
 
+TASKS = ["future_state_forecasting", "masked_neural_reconstruction"]
+TASK_TITLES = {
+    "future_state_forecasting": "A. Future forecasting",
+    "masked_neural_reconstruction": "B. Masked reconstruction",
+}
+TASK_LABELS = {
+    "future_state_forecasting": "future forecasting",
+    "masked_neural_reconstruction": "masked reconstruction",
+}
+MODEL_RENAME = {
+    "linear_ridge": "linear ridge",
+    "autoregressive_ridge": "autoregressive ridge",
+    "random_permutation": "random permutation",
+    "train_mean": "train mean",
+    "ssm_fallback": "SSM fallback",
+    "Kahlus v1 recovered": "Kahlus v1 recovered",
+}
+HIGHLIGHT = "Kahlus v1 recovered"
+
 
 def main() -> None:
     apply_style()
     ranking = read_comparison_rows()
-    fig, ax = plt.subplots(figsize=(7.2, 4.2), layout="constrained")
-    plot_baseline_ranking(ax, ranking)
-    fig.suptitle("EEG v1 recovered Kahlus v1 versus baselines", x=0.02, ha="left", fontsize=11, fontweight="bold")
+    fig, axes = plt.subplots(1, 2, figsize=(7.35, 3.75), layout="constrained", sharex=False)
+    for ax, task in zip(axes, TASKS, strict=True):
+        plot_task_ranking(ax, ranking, task)
+    fig.suptitle("Recovered Kahlus v1 versus standard EEG baselines", x=0.01, ha="left", fontsize=10.5, fontweight="bold")
+    fig.text(0.01, -0.015, "Bars are median MSE after de-duplicating repeated baseline-ranking artifacts. Lower is better.", fontsize=7.4, color="#4B5563")
     save(fig, FIGURES / "Figure3_eeg_v1_baseline_ranking")
 
 
 def apply_style() -> None:
+    rc: dict[str, object] = {}
+    try:
+        from tueplots import bundles  # type: ignore
+
+        for name in ("neurips2024", "neurips2023", "icml2022"):
+            factory = getattr(bundles, name, None)
+            if factory is None:
+                continue
+            for kwargs in ({"usetex": False}, {}):
+                try:
+                    rc = factory(**kwargs)
+                    break
+                except TypeError:
+                    continue
+            if rc:
+                break
+    except Exception:
+        rc = {}
+    mpl.rcParams.update(rc)
     mpl.rcParams.update(
         {
             "font.family": "DejaVu Sans",
-            "font.size": 8.5,
-            "axes.titlesize": 9.5,
-            "axes.labelsize": 8.5,
-            "xtick.labelsize": 7.5,
-            "ytick.labelsize": 7.5,
-            "legend.fontsize": 7.4,
+            "font.size": 8.0,
+            "axes.titlesize": 9.0,
+            "axes.labelsize": 8.0,
+            "xtick.labelsize": 7.0,
+            "ytick.labelsize": 7.0,
+            "legend.fontsize": 7.0,
             "axes.spines.top": False,
             "axes.spines.right": False,
             "axes.edgecolor": "#C7CDD4",
             "grid.color": "#E5E7EB",
-            "grid.linewidth": 0.7,
+            "grid.linewidth": 0.65,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
             "svg.fonttype": "none",
-            "svg.hashsalt": "kahlus-eeg-v1",
+            "svg.hashsalt": "kahlus-eeg-v1-paper",
             "savefig.dpi": 300,
         }
     )
@@ -67,14 +106,13 @@ def apply_style() -> None:
 def read_comparison_rows() -> pd.DataFrame:
     baselines = read_baselines()
     kahlus = read_recovered_kahlus_results()
-    if baselines.empty and kahlus.empty:
-        return pd.DataFrame()
     df = pd.concat([baselines, kahlus], ignore_index=True)
     if df.empty:
         return df
-    df["task_label"] = df["task_id"].map(short_task)
-    order = df.groupby("model_label")["value"].median().sort_values().index.tolist()[:10]
-    return df[df["model_label"].isin(order)].copy()
+    df = df[df["task_id"].isin(TASKS)].copy()
+    df["task_label"] = df["task_id"].map(TASK_LABELS)
+    df["is_kahlus"] = df["model_label"].eq(HIGHLIGHT)
+    return df
 
 
 def read_baselines() -> pd.DataFrame:
@@ -88,10 +126,9 @@ def read_baselines() -> pd.DataFrame:
     df = df[df["metric"].astype(str).str.lower().eq("mse") & df["value"].notna()].copy()
     if df.empty:
         return pd.DataFrame(columns=["task_id", "model_label", "value", "source"])
-    df["model_label"] = df["model_id"].map(lambda x: str(x).replace("_", " "))
-    # The evidence bundles can contain both BASELINE_RANKING.csv and
-    # tables/baseline_ranking.csv copies. Median them so duplicated files do not
-    # overweight the visual comparison.
+    df["model_label"] = df["model_id"].map(format_model)
+    # The archive contains duplicate BASELINE_RANKING.csv and tables/baseline_ranking.csv files.
+    # Median aggregation prevents repeated copies from visually overweighting a model.
     deduped = df.groupby(["task_id", "model_label"], as_index=False)["value"].median()
     deduped["source"] = "baseline_ranking.csv"
     return deduped
@@ -116,58 +153,44 @@ def read_recovered_kahlus_results() -> pd.DataFrame:
     else:
         idx = recovered.groupby("task_id")["value"].idxmin()
         recovered = recovered.loc[idx].copy()
-    recovered["model_label"] = "Kahlus v1 recovered"
+    recovered["model_label"] = HIGHLIGHT
     recovered["source"] = "task_results.csv"
     return recovered[["task_id", "model_label", "value", "source"]]
 
 
-def plot_baseline_ranking(ax: plt.Axes, df: pd.DataFrame) -> None:
-    ax.set_title("A. MSE by model, sorted by median", loc="left", fontweight="bold")
-    if df.empty:
-        ax.text(0.5, 0.5, "no baseline-ranking rows", ha="center", va="center", transform=ax.transAxes, color="#6B7280")
+def plot_task_ranking(ax: plt.Axes, df: pd.DataFrame, task: str) -> None:
+    ax.set_title(TASK_TITLES[task], loc="left", fontweight="bold")
+    task_df = df[df["task_id"].eq(task)].copy()
+    if task_df.empty:
+        ax.text(0.5, 0.5, "no rows", ha="center", va="center", transform=ax.transAxes, color="#6B7280")
         ax.set_axis_off()
         return
-    order = df.groupby("model_label")["value"].median().sort_values().index.tolist()
-    sns.stripplot(
-        data=df,
-        x="value",
-        y="model_label",
-        hue="task_label",
-        order=order,
-        dodge=False,
-        jitter=0.18,
-        size=4.4,
-        linewidth=0.35,
-        edgecolor="white",
-        alpha=0.82,
-        palette="colorblind",
-        ax=ax,
-    )
-    sns.pointplot(
-        data=df,
-        x="value",
-        y="model_label",
-        order=order,
-        estimator=np.median,
-        errorbar=None,
-        color="#111827",
-        markers="D",
-        linestyles="none",
-        markersize=3.8,
-        ax=ax,
-    )
+    task_df = task_df.sort_values("value", ascending=True).head(10).copy()
+    order = task_df["model_label"].tolist()
+    colors = {model: ("#D55E00" if model == HIGHLIGHT else "#0072B2" if "ridge" in model.lower() else "#6B7280") for model in order}
+    sns.barplot(data=task_df, x="value", y="model_label", hue="model_label", order=order, palette=colors, dodge=False, legend=False, ax=ax)
+    for patch, (_, row) in zip(ax.patches, task_df.iterrows(), strict=True):
+        width = patch.get_width()
+        ax.text(width + task_df["value"].max() * 0.015, patch.get_y() + patch.get_height() / 2, f"{width:.2f}", va="center", fontsize=7.1, color="#111827")
+        if row["model_label"] == HIGHLIGHT:
+            patch.set_edgecolor("#111827")
+            patch.set_linewidth(1.0)
+    winner = task_df.iloc[0]
+    if winner["model_label"] == HIGHLIGHT:
+        note = "Kahlus wins this saved comparison"
+        color = "#D55E00"
+    else:
+        note = f"winner: {winner['model_label']}"
+        color = "#0072B2"
+    ax.text(0.98, 0.04, note, transform=ax.transAxes, ha="right", va="bottom", fontsize=7.2, color=color, fontweight="bold")
     ax.set_xlabel("MSE, lower is better")
     ax.set_ylabel("")
-    ax.legend(title="task", frameon=False, loc="lower right")
     ax.grid(axis="x", color="#E5E7EB")
 
 
-def short_task(value: str) -> str:
-    return {
-        "future_state_forecasting": "future forecast",
-        "masked_neural_reconstruction": "masked recon",
-        "stimulus_to_fmri_response": "stimulus → fMRI",
-    }.get(str(value), str(value).replace("_", " ")[:24])
+def format_model(model: str) -> str:
+    text = str(model)
+    return MODEL_RENAME.get(text, text.replace("_", " "))
 
 
 def save(fig: plt.Figure, stem: Path) -> None:
