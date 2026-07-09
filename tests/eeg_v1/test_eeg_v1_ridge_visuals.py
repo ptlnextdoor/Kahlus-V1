@@ -18,6 +18,12 @@ STANDARD_FIGURE_STEMS = (
 
 
 def assert_standard_figure_packet(testcase: unittest.TestCase, packet: Path) -> None:
+    style_file = packet / "src/_figure_style.py"
+    testcase.assertTrue(style_file.exists(), "shared style layer")
+    style_text = style_file.read_text(encoding="utf-8")
+    testcase.assertIn("tueplots", style_text)
+    testcase.assertIn("svg.fonttype", style_text)
+
     for stem in STANDARD_FIGURE_STEMS:
         for ext in ("png", "pdf", "svg"):
             testcase.assertTrue((packet / f"figures/{stem}.{ext}").exists(), f"{stem}.{ext}")
@@ -31,6 +37,8 @@ def assert_standard_figure_packet(testcase: unittest.TestCase, packet: Path) -> 
         text = source.read_text(encoding="utf-8")
         testcase.assertNotIn("FancyBboxPatch", text, source.name)
         testcase.assertNotIn("FancyArrowPatch", text, source.name)
+        testcase.assertNotIn("rcParams", text, source.name)
+        testcase.assertIn("import _figure_style as style", text, source.name)
         testcase.assertIn("constrained", text, source.name)
 
 
@@ -124,6 +132,7 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
         self.assertIn("schematic demo figures, not benchmark evidence", readme)
         page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
         self.assertIn("STANDARD MATPLOTLIB/SEABORN FIGURES", page)
+        self.assertIn("matplotlib/seaborn/tueplots", page)
         self.assertIn("Figure1_eeg_v1_benchmark_overview.png", page)
         self.assertIn("Figure2_eeg_v1_audit_matrix.png", page)
         self.assertIn("Figure3_eeg_v1_baseline_ranking.png", page)
@@ -162,6 +171,19 @@ class EEGV1RidgeVisualsTests(unittest.TestCase):
         self.assertIn("does **not** contain raw EEG windows", page)
         self.assertIn("FigureS6_ridge_future_window_contract.png", page)
         self.assertIn("FigureS7_ridge_prediction_overlay.png", page)
+
+        style_file = root / "src/_figure_style.py"
+        self.assertTrue(style_file.exists())
+        self.assertIn("tueplots", style_file.read_text(encoding="utf-8"))
+
+    def test_visual_standards_route_figures_to_domain_tools(self):
+        text = Path("docs/figures/visual-standards.md").read_text(encoding="utf-8")
+        self.assertIn("Tool routing by figure type", text)
+        self.assertIn("MNE-Python", text)
+        self.assertIn("nilearn", text)
+        self.assertIn("pyNeuroML", text)
+        self.assertIn("CEBRA figure-source pattern", text)
+        self.assertIn("Never use `jet`", text)
 
 
 if __name__ == "__main__":

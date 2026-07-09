@@ -23,10 +23,12 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _figure_style as style  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[2]
@@ -42,65 +44,13 @@ DATA = ROOT / "data"
 FIGURES.mkdir(parents=True, exist_ok=True)
 DATA.mkdir(parents=True, exist_ok=True)
 
-BLUE = "#0072B2"
-ORANGE = "#D55E00"
-GREEN = "#009E73"
-GRAY = "#6B7280"
-INK = "#111827"
-LIGHT_BLUE = "#DBEAFE"
-LIGHT_ORANGE = "#FFEDD5"
-
 
 def main() -> None:
-    apply_style()
+    style.apply_style()
     bundle = make_example_bundle(seed=0, sample_index=0, channel_index=0)
     plot_future_window_contract(bundle, FIGURES / "FigureS6_ridge_future_window_contract")
     plot_prediction_overlay(bundle, FIGURES / "FigureS7_ridge_prediction_overlay")
     write_summary(bundle)
-
-
-def apply_style() -> None:
-    rc: dict[str, object] = {}
-    try:
-        from tueplots import bundles  # type: ignore
-
-        for name in ("neurips2024", "neurips2023", "icml2022"):
-            factory = getattr(bundles, name, None)
-            if factory is None:
-                continue
-            for kwargs in ({"usetex": False}, {}):
-                try:
-                    rc = factory(**kwargs)
-                    break
-                except TypeError:
-                    continue
-            if rc:
-                break
-    except Exception:
-        rc = {}
-    mpl.rcParams.update(rc)
-    mpl.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "font.size": 8.0,
-            "axes.titlesize": 9.0,
-            "axes.labelsize": 8.0,
-            "xtick.labelsize": 7.0,
-            "ytick.labelsize": 7.0,
-            "legend.fontsize": 7.0,
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.edgecolor": "#C7CDD4",
-            "grid.color": "#E5E7EB",
-            "grid.linewidth": 0.65,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
-            "svg.fonttype": "none",
-            "svg.hashsalt": "kahlus-ridge-sanity",
-            "savefig.dpi": 300,
-        }
-    )
-    sns.set_theme(context="paper", style="whitegrid", rc={"font.family": "DejaVu Sans"})
 
 
 def make_example_bundle(seed: int, sample_index: int, channel_index: int) -> dict[str, object]:
@@ -145,27 +95,27 @@ def plot_future_window_contract(bundle: dict[str, object], stem: Path) -> None:
     gs = fig.add_gridspec(2, 2, height_ratios=[1.25, 1.0], width_ratios=[1, 1])
     ax = fig.add_subplot(gs[0, :])
     ax.set_title("A. Future-state task: previous EEG time rows become ridge features", loc="left", fontweight="bold")
-    ax.axvspan(-0.25, x.shape[0] - 0.75, color=LIGHT_BLUE, alpha=0.88, label="X input rows")
-    ax.axvspan(0.75, n_time - 0.75, color=LIGHT_ORANGE, alpha=0.82, label="Y next-state rows")
+    ax.axvspan(-0.25, x.shape[0] - 0.75, color=style.LIGHT_BLUE, alpha=0.88, label="X input rows")
+    ax.axvspan(0.75, n_time - 0.75, color=style.LIGHT_ORANGE, alpha=0.82, label="Y next-state rows")
     for idx in range(show_channels):
-        ax.plot(time, full[:, idx] + offsets[idx], color=INK, linewidth=1.0)
-        ax.scatter(np.arange(x.shape[0]), x[:, idx] + offsets[idx], s=14, color=BLUE, zorder=3)
-        ax.scatter(np.arange(1, n_time), y[:, idx] + offsets[idx], s=14, color=ORANGE, zorder=3)
-        ax.text(-0.45, offsets[idx], f"ch {idx}", ha="right", va="center", fontsize=7.2, color=GRAY)
+        ax.plot(time, full[:, idx] + offsets[idx], color=style.INK, linewidth=1.0)
+        ax.scatter(np.arange(x.shape[0]), x[:, idx] + offsets[idx], s=14, color=style.BLUE, zorder=3)
+        ax.scatter(np.arange(1, n_time), y[:, idx] + offsets[idx], s=14, color=style.ORANGE, zorder=3)
+        ax.text(-0.45, offsets[idx], f"ch {idx}", ha="right", va="center", fontsize=7.2, color=style.GRAY)
     ax.annotate(
         "ridge sees these rows\nX = EEG[t0:t6, channels]",
         xy=(2.2, offsets[0] + 1.3),
         xytext=(0.2, offsets[0] + 5.0),
-        arrowprops={"arrowstyle": "->", "lw": 0.8, "color": BLUE},
-        color=BLUE,
+        arrowprops={"arrowstyle": "->", "lw": 0.8, "color": style.BLUE},
+        color=style.BLUE,
         fontsize=7.2,
     )
     ax.annotate(
         "target is one step later\nY = EEG[t1:t7, channels]",
         xy=(5.5, offsets[-1] - 1.0),
         xytext=(3.2, offsets[-1] - 5.0),
-        arrowprops={"arrowstyle": "->", "lw": 0.8, "color": ORANGE},
-        color=ORANGE,
+        arrowprops={"arrowstyle": "->", "lw": 0.8, "color": style.ORANGE},
+        color=style.ORANGE,
         fontsize=7.2,
     )
     ax.set_xlim(-0.65, n_time - 0.35)
@@ -173,23 +123,23 @@ def plot_future_window_contract(bundle: dict[str, object], stem: Path) -> None:
     ax.set_yticks([])
     ax.set_xlabel("time index inside one benchmark window")
     ax.legend(frameon=False, loc="upper right", ncol=2)
-    ax.grid(axis="x", color="#E5E7EB")
+    ax.grid(axis="x", color=style.LIGHT)
 
     ax_x = fig.add_subplot(gs[1, 0])
     ax_y = fig.add_subplot(gs[1, 1])
     vmax = float(np.nanmax(np.abs(np.concatenate([x, y])))) or 1.0
-    sns.heatmap(x, ax=ax_x, cmap="vlag", center=0, vmin=-vmax, vmax=vmax, cbar=False, linewidths=0.4, linecolor="white")
-    sns.heatmap(y, ax=ax_y, cmap="vlag", center=0, vmin=-vmax, vmax=vmax, cbar=True, cbar_kws={"label": "amplitude, a.u."}, linewidths=0.4, linecolor="white")
-    ax_x.set_title("B. Design matrix slice X", loc="left", fontweight="bold", color=BLUE)
-    ax_y.set_title("C. Target matrix slice Y", loc="left", fontweight="bold", color=ORANGE)
+    sns.heatmap(x, ax=ax_x, cmap="cividis", center=0, vmin=-vmax, vmax=vmax, cbar=False, linewidths=0.4, linecolor="white")
+    sns.heatmap(y, ax=ax_y, cmap="cividis", center=0, vmin=-vmax, vmax=vmax, cbar=True, cbar_kws={"label": "amplitude, a.u."}, linewidths=0.4, linecolor="white")
+    ax_x.set_title("B. Design matrix slice X", loc="left", fontweight="bold", color=style.BLUE)
+    ax_y.set_title("C. Target matrix slice Y", loc="left", fontweight="bold", color=style.ORANGE)
     for matrix_ax, label in ((ax_x, "feature rows t0:t6"), (ax_y, "target rows t1:t7")):
         matrix_ax.set_xlabel("channel")
         matrix_ax.set_ylabel(label)
         matrix_ax.set_xticklabels([f"ch {i}" for i in range(x.shape[1])], rotation=0)
         matrix_ax.set_yticklabels([f"r{i}" for i in range(x.shape[0])], rotation=0)
     fig.suptitle("Ridge input/target geometry from the existing benchmark code path", x=0.01, ha="left", fontsize=10.5, fontweight="bold")
-    fig.text(0.01, -0.01, "Diagnostic note: generated from baseline_suite._make_paired_windows(seed=0). The versions evidence archive does not currently save raw EEG windows.", fontsize=7.2, color=GRAY)
-    save(fig, stem)
+    fig.text(0.01, -0.01, "Diagnostic note: generated from baseline_suite._make_paired_windows(seed=0). The versions evidence archive does not currently save raw EEG windows.", fontsize=7.2, color=style.GRAY)
+    style.save(fig, stem)
 
 
 def plot_prediction_overlay(bundle: dict[str, object], stem: Path) -> None:
@@ -204,27 +154,27 @@ def plot_prediction_overlay(bundle: dict[str, object], stem: Path) -> None:
     fig, axes = plt.subplots(2, 1, figsize=(7.35, 4.2), layout="constrained", height_ratios=[1.45, 0.75], sharex=False)
     ax = axes[0]
     ax.set_title("A. What ridge predicts for one channel", loc="left", fontweight="bold")
-    ax.plot(input_time, x[:, ch], color=BLUE, linewidth=1.2, marker="o", markersize=3.2, label="input feature: EEG[t0:t6]")
-    ax.plot(target_time, y[:, ch], color=ORANGE, linewidth=1.5, marker="o", markersize=3.2, label="true target: EEG[t1:t7]")
-    ax.plot(target_time, ridge[:, ch], color=GREEN, linewidth=1.4, linestyle="--", marker="s", markersize=3.0, label="linear ridge prediction")
-    ax.plot(target_time, persistence[:, ch], color=GRAY, linewidth=1.0, linestyle=":", label="persistence baseline")
-    ax.axvspan(-0.2, x.shape[0] - 0.8, color=LIGHT_BLUE, alpha=0.55)
-    ax.axvspan(0.8, y.shape[0] + 0.2, color=LIGHT_ORANGE, alpha=0.42)
-    ax.annotate("same-channel recent value is highly informative\nfor a one-step/smooth target", xy=(3.0, x[3, ch]), xytext=(0.2, np.max(y[:, ch]) + 1.8), arrowprops={"arrowstyle": "->", "lw": 0.8, "color": INK}, fontsize=7.2, color=INK)
+    ax.plot(input_time, x[:, ch], color=style.BLUE, linewidth=1.2, marker="o", markersize=3.2, label="input feature: EEG[t0:t6]")
+    ax.plot(target_time, y[:, ch], color=style.ORANGE, linewidth=1.5, marker="o", markersize=3.2, label="true target: EEG[t1:t7]")
+    ax.plot(target_time, ridge[:, ch], color=style.TEAL, linewidth=1.4, linestyle="--", marker="s", markersize=3.0, label="linear ridge prediction")
+    ax.plot(target_time, persistence[:, ch], color=style.GRAY, linewidth=1.0, linestyle=":", label="persistence baseline")
+    ax.axvspan(-0.2, x.shape[0] - 0.8, color=style.LIGHT_BLUE, alpha=0.55)
+    ax.axvspan(0.8, y.shape[0] + 0.2, color=style.LIGHT_ORANGE, alpha=0.42)
+    ax.annotate("same-channel recent value is highly informative\nfor a one-step/smooth target", xy=(3.0, x[3, ch]), xytext=(0.2, np.max(y[:, ch]) + 1.8), arrowprops={"arrowstyle": "->", "lw": 0.8, "color": style.INK}, fontsize=7.2, color=style.INK)
     ax.set_ylabel("amplitude, a.u.")
     ax.set_xticks(np.arange(0, y.shape[0] + 1), [f"t{i}" for i in range(y.shape[0] + 1)])
     ax.legend(frameon=False, loc="lower left", ncol=2)
-    ax.grid(axis="both", color="#E5E7EB")
+    ax.grid(axis="both", color=style.LIGHT)
 
     residual = y[:, ch] - ridge[:, ch]
     ax_resid = axes[1]
     ax_resid.set_title("B. Ridge residual on this example target channel", loc="left", fontweight="bold")
-    ax_resid.axhline(0, color=INK, linewidth=0.8)
-    ax_resid.bar(target_time, residual, color=np.where(residual >= 0, ORANGE, GREEN), alpha=0.78, width=0.62)
+    ax_resid.axhline(0, color=style.INK, linewidth=0.8)
+    ax_resid.bar(target_time, residual, color=np.where(residual >= 0, style.ORANGE, style.TEAL), alpha=0.78, width=0.62)
     ax_resid.set_xlabel("target time index")
     ax_resid.set_ylabel("true - pred")
     ax_resid.set_xticks(target_time, [f"t{i}" for i in target_time])
-    ax_resid.grid(axis="y", color="#E5E7EB")
+    ax_resid.grid(axis="y", color=style.LIGHT)
 
     metrics = (
         f"synthetic benchmark arrays, seed={bundle['seed']} | "
@@ -232,8 +182,8 @@ def plot_prediction_overlay(bundle: dict[str, object], stem: Path) -> None:
         f"persistence MSE={bundle['persistence_mse']:.3f}, r={bundle['persistence_pearsonr']:.3f}"
     )
     fig.suptitle("Ridge sanity check: prediction follows one-step EEG window geometry", x=0.01, ha="left", fontsize=10.5, fontweight="bold")
-    fig.text(0.01, -0.01, metrics + ". Not raw EEG evidence from saved versions bundles.", fontsize=7.2, color=GRAY)
-    save(fig, stem)
+    fig.text(0.01, -0.01, metrics + ". Not raw EEG evidence from saved versions bundles.", fontsize=7.2, color=style.GRAY)
+    style.save(fig, stem)
 
 
 def write_summary(bundle: dict[str, object]) -> None:
@@ -255,12 +205,6 @@ def write_summary(bundle: dict[str, object]) -> None:
         },
     }
     (DATA / "ridge_waveform_sanity_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-
-
-def save(fig: plt.Figure, stem: Path) -> None:
-    for ext in ("png", "pdf", "svg"):
-        fig.savefig(stem.with_suffix(f".{ext}"), bbox_inches="tight", pad_inches=0.04, facecolor="white")
-    plt.close(fig)
 
 
 if __name__ == "__main__":

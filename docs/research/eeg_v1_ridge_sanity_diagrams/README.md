@@ -8,6 +8,7 @@ The saved versions evidence archive does **not** contain raw EEG windows or save
 
 ## Files
 
+- `src/_figure_style.py`: shared matplotlib/tueplots style and PNG/PDF/SVG save helper.
 - `src/render_ridge_waveform_sanity.py`: matplotlib/seaborn/tueplots-style renderer.
 - `data/ridge_waveform_sanity_summary.json`: exact source, shapes, and metrics for the rendered example.
 - `figures/FigureS6_ridge_future_window_contract.{png,pdf,svg}`: shows `X = EEG[t0:t6, channels]` and `Y = EEG[t1:t7, channels]`.

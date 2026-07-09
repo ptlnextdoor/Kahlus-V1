@@ -3,7 +3,7 @@
 <span class="benchmark-badge">BENCHMARK EVIDENCE</span>
 <span class="diagnostic-badge">STANDARD MATPLOTLIB/SEABORN FIGURES</span>
 
-This page keeps the CEBRA-style reproducible packet layout: cached result artifacts live in `data/`, figure source scripts live in `src/`, and rendered PNG/PDF/SVG assets live in `figures/`. The public figures now use standard matplotlib/seaborn plot types with constrained layout. They do **not** use hand-drawn boxes, arrows, or fixed-coordinate text diagrams.
+This page keeps the CEBRA-style reproducible packet layout: cached result artifacts live in `data/`, figure source scripts live in `src/`, and rendered PNG/PDF/SVG assets live in `figures/`. The public figures now use standard matplotlib/seaborn/tueplots plot types with constrained layout and built-in perceptual colormaps. They do **not** use hand-drawn boxes, arrows, or fixed-coordinate text diagrams.
 
 ```{admonition} Bottom line
 :class: important
@@ -38,6 +38,7 @@ docs/research/eeg_v1_figure_source/
 │   ├── inventory.json
 │   └── provenance.json
 ├── src/
+│   ├── _figure_style.py
 │   ├── Figure1_eeg_v1_benchmark_overview.py
 │   ├── Figure2_eeg_v1_audit_matrix.py
 │   └── Figure3_eeg_v1_baseline_ranking.py
