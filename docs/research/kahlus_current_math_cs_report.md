@@ -848,4 +848,3 @@ Next best sprint:
 5. Audit returned evidence before interpreting numbers.
 
 That is the shortest path from "compute stress package" to "scientifically useful cluster run."
-

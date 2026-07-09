@@ -1,0 +1,3082 @@
+[
+  {
+    "year": 2025,
+    "title": "Identifying interactions across brain areas while accounting for individual-neuron dynamics with a Transformer-based variational autoencoder",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/ac643478c07baa8432690555e4702b65-Abstract-Conference.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27968-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/ac643478c07baa8432690555e4702b65-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/ac643478c07baa8432690555e4702b65-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/ac643478c07baa8432690555e4702b65-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Inference of Whole Brain Electrophysiological Networks Through Multimodal Integration of Simultaneous Scalp and Intracranial EEG",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/82a6afb1f666daaeec8da4d775452bc7-Abstract-Conference.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31909-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/82a6afb1f666daaeec8da4d775452bc7-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/82a6afb1f666daaeec8da4d775452bc7-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/82a6afb1f666daaeec8da4d775452bc7-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Long-term Intracortical Neural activity and Kinematics (LINK): An intracortical neural dataset for chronic brain-machine interfaces, neuroscience, and machine learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/cb463f73a35802996546ac8e8b1b2743-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/33148-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/cb463f73a35802996546ac8e8b1b2743-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/cb463f73a35802996546ac8e8b1b2743-Supplemental-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/cb463f73a35802996546ac8e8b1b2743-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/cb463f73a35802996546ac8e8b1b2743-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/cb463f73a35802996546ac8e8b1b2743-Supplemental-Datasets_and_Benchmarks_Track.pdf",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Multiplication-Free Parallelizable Spiking Neurons with Efficient Spatio-Temporal Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5f40a99efedc1148a061d80201949c84-Abstract-Conference.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31273-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5f40a99efedc1148a061d80201949c84-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5f40a99efedc1148a061d80201949c84-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5f40a99efedc1148a061d80201949c84-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5f40a99efedc1148a061d80201949c84-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5f40a99efedc1148a061d80201949c84-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "OMiSO: Adaptive optimization of state-dependent brain stimulation to shape neural population states",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1c1f61023dca672117b58f813a12d99-Abstract-Conference.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27682-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1c1f61023dca672117b58f813a12d99-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1c1f61023dca672117b58f813a12d99-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1c1f61023dca672117b58f813a12d99-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Bounds on the computational complexity of neurons due to dendritic morphology",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d9e56606b1bd3095fbb4241c4e15e420-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/29228-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d9e56606b1bd3095fbb4241c4e15e420-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d9e56606b1bd3095fbb4241c4e15e420-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d9e56606b1bd3095fbb4241c4e15e420-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d9e56606b1bd3095fbb4241c4e15e420-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d9e56606b1bd3095fbb4241c4e15e420-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "BrainOmni: A Brain Foundation Model for Unified EEG and MEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3aef4a18c2646b9d11d9ab4d9bec72c8-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31326-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3aef4a18c2646b9d11d9ab4d9bec72c8-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3aef4a18c2646b9d11d9ab4d9bec72c8-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3aef4a18c2646b9d11d9ab4d9bec72c8-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Bridging Brains and Concepts: Interpretable Visual Decoding from fMRI with Semantic Bottlenecks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7da6e0e00702c60607a6ae05c802ef85-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28803-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7da6e0e00702c60607a6ae05c802ef85-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7da6e0e00702c60607a6ae05c802ef85-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7da6e0e00702c60607a6ae05c802ef85-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7da6e0e00702c60607a6ae05c802ef85-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7da6e0e00702c60607a6ae05c802ef85-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "CSBrain: A Cross-scale Spatiotemporal Brain Foundation Model for EEG Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7e199ad8ae40eb19b2980f61f659cb07-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28057-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7e199ad8ae40eb19b2980f61f659cb07-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7e199ad8ae40eb19b2980f61f659cb07-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/7e199ad8ae40eb19b2980f61f659cb07-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "CogPhys: Assessing Cognitive Load via Multimodal Remote and Contact-based Physiological Sensing",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/014e80b61aca7a85630e6da5d63427c6-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/33264-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/014e80b61aca7a85630e6da5d63427c6-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/014e80b61aca7a85630e6da5d63427c6-Supplemental-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/014e80b61aca7a85630e6da5d63427c6-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/014e80b61aca7a85630e6da5d63427c6-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/014e80b61aca7a85630e6da5d63427c6-Supplemental-Datasets_and_Benchmarks_Track.pdf",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Dendritic Resonate-and-Fire Neuron for Effective and Efficient Long Sequence Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9a6ca401f890aeb2c272d2bb26196d3f-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28260-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9a6ca401f890aeb2c272d2bb26196d3f-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9a6ca401f890aeb2c272d2bb26196d3f-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9a6ca401f890aeb2c272d2bb26196d3f-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9a6ca401f890aeb2c272d2bb26196d3f-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9a6ca401f890aeb2c272d2bb26196d3f-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Edit Less, Achieve More: Dynamic Sparse Neuron Masking for Lifelong Knowledge Editing in LLMs",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1bfaf1bbefb344df643997689b46613-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/29934-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1bfaf1bbefb344df643997689b46613-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1bfaf1bbefb344df643997689b46613-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1bfaf1bbefb344df643997689b46613-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1bfaf1bbefb344df643997689b46613-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d1bfaf1bbefb344df643997689b46613-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "EvoBrain: Dynamic Multi-Channel EEG Graph Modeling for Time-Evolving Brain Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d51ce6040fe3dafd260411593f05a1fa-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32004-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d51ce6040fe3dafd260411593f05a1fa-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d51ce6040fe3dafd260411593f05a1fa-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d51ce6040fe3dafd260411593f05a1fa-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Generalized and Invariant Single-Neuron In-Vivo Activity Representation Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/38ec60a949c3538e5cbb337b1b386dcf-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/29861-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/38ec60a949c3538e5cbb337b1b386dcf-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/38ec60a949c3538e5cbb337b1b386dcf-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/38ec60a949c3538e5cbb337b1b386dcf-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "High-dimensional neuronal activity from low-dimensional latent dynamics: a solvable model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aba2ac76b4b5df7a7b833c87c9012860-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31185-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aba2ac76b4b5df7a7b833c87c9012860-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aba2ac76b4b5df7a7b833c87c9012860-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aba2ac76b4b5df7a7b833c87c9012860-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aba2ac76b4b5df7a7b833c87c9012860-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aba2ac76b4b5df7a7b833c87c9012860-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Know Thyself by Knowing Others: Learning Neuron Identity from Population Context",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/8f7dc9855bb4ae8ae4f2d649f3f4efe6-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31022-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/8f7dc9855bb4ae8ae4f2d649f3f4efe6-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/8f7dc9855bb4ae8ae4f2d649f3f4efe6-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/8f7dc9855bb4ae8ae4f2d649f3f4efe6-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Learning to cluster neuronal function",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c94d79c4037c33fddf3efb7c740bac94-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32206-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c94d79c4037c33fddf3efb7c740bac94-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c94d79c4037c33fddf3efb7c740bac94-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c94d79c4037c33fddf3efb7c740bac94-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Local-Global Coupling Spiking Graph Transformer for Brain Disorders Diagnosis from Two Perspectives",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4c454d34f3a4c8d6b4ca85a918e5d7ba-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27849-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/4c454d34f3a4c8d6b4ca85a918e5d7ba-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4c454d34f3a4c8d6b4ca85a918e5d7ba-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/4c454d34f3a4c8d6b4ca85a918e5d7ba-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Measure gradients, not activations! Enhancing neuronal activity in deep reinforcement learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/722f3f9298a961d2639eadd3f14a2816-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32371-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/722f3f9298a961d2639eadd3f14a2816-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/722f3f9298a961d2639eadd3f14a2816-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/722f3f9298a961d2639eadd3f14a2816-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "MoRE-Brain: Routed Mixture of Experts for Interpretable and Generalizable Cross-Subject fMRI Visual Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/50ea4dbd1cff6bd3daef939eff10c092-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28746-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/50ea4dbd1cff6bd3daef939eff10c092-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/50ea4dbd1cff6bd3daef939eff10c092-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/50ea4dbd1cff6bd3daef939eff10c092-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "NeuroGenPoisoning: Neuron-Guided Attacks on Retrieval-Augmented Generation of LLM via Genetic Optimization of External Knowledge",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6a24ef95843833b1af4fc6499a213b7d-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/29049-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/6a24ef95843833b1af4fc6499a213b7d-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6a24ef95843833b1af4fc6499a213b7d-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/6a24ef95843833b1af4fc6499a213b7d-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "NeuroH-TGL: Neuro-Heterogeneity Guided Temporal Graph Learning Strategy for Brain Disease Diagnosis",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9d87a0c38431d0ec8d8b8ece95198c04-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31692-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9d87a0c38431d0ec8d8b8ece95198c04-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9d87a0c38431d0ec8d8b8ece95198c04-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9d87a0c38431d0ec8d8b8ece95198c04-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9d87a0c38431d0ec8d8b8ece95198c04-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/9d87a0c38431d0ec8d8b8ece95198c04-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Neurons as Detectors of Coherent Sets in Sensory Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e9182ece81ae942ee1c1f292c2dd7f89-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30914-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e9182ece81ae942ee1c1f292c2dd7f89-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e9182ece81ae942ee1c1f292c2dd7f89-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e9182ece81ae942ee1c1f292c2dd7f89-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e9182ece81ae942ee1c1f292c2dd7f89-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e9182ece81ae942ee1c1f292c2dd7f89-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "S$^2$M-Former: Spiking Symmetric Mixing Branchformer for Brain Auditory Attention Detection",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b8330f5b70b3c53172417deac6f057b1-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31052-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b8330f5b70b3c53172417deac6f057b1-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b8330f5b70b3c53172417deac6f057b1-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b8330f5b70b3c53172417deac6f057b1-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "STSBench: A Large-Scale Dataset for Modeling Neuronal Activity in the Dorsal Stream of Primate Visual Cortex",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/89aef049455db7b0eb7162c9e733d589-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32797-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/89aef049455db7b0eb7162c9e733d589-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/89aef049455db7b0eb7162c9e733d589-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/89aef049455db7b0eb7162c9e733d589-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Spectral Analysis of Representational Similarity with Limited Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/22feecdb160d57ef82b858d5058891e4-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30371-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/22feecdb160d57ef82b858d5058891e4-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/22feecdb160d57ef82b858d5058891e4-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/22feecdb160d57ef82b858d5058891e4-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "SymRTLO: Enhancing RTL Code Optimization with LLMs and Neuron-Inspired Symbolic Reasoning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/479922a6341a8035f75bcc11598ae1a9-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32263-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/479922a6341a8035f75bcc11598ae1a9-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/479922a6341a8035f75bcc11598ae1a9-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/479922a6341a8035f75bcc11598ae1a9-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "THD-BAR: Topology Hierarchical Derived Brain Autoregressive Modeling for EEG Generic Representations",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dcf75ae771b21d642c98ce056e745ae7-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30681-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dcf75ae771b21d642c98ce056e745ae7-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dcf75ae771b21d642c98ce056e745ae7-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dcf75ae771b21d642c98ce056e745ae7-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dcf75ae771b21d642c98ce056e745ae7-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dcf75ae771b21d642c98ce056e745ae7-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Task-Specific Data Selection for Instruction Tuning via Monosemantic Neuronal Activations",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c971ffd786876d5927caf482b06bcba5-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27792-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c971ffd786876d5927caf482b06bcba5-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c971ffd786876d5927caf482b06bcba5-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c971ffd786876d5927caf482b06bcba5-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c971ffd786876d5927caf482b06bcba5-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/c971ffd786876d5927caf482b06bcba5-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Towards Understanding Safety Alignment: A Mechanistic Perspective from Safety Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/12a00d85a76fe258e1242c3aced03250-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28054-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/12a00d85a76fe258e1242c3aced03250-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/12a00d85a76fe258e1242c3aced03250-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/12a00d85a76fe258e1242c3aced03250-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/12a00d85a76fe258e1242c3aced03250-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/12a00d85a76fe258e1242c3aced03250-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "VLM in a flash: I/O-Efficient Sparsification of Vision-Language Model via Neuron Chunking",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/29ba217edaef1492a7f648a29b656a55-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31301-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/29ba217edaef1492a7f648a29b656a55-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/29ba217edaef1492a7f648a29b656a55-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/29ba217edaef1492a7f648a29b656a55-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "ZEBRA: Towards Zero-Shot Cross-Subject Generalization for Universal Brain Visual Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/01c561df365429f33fcd7a7faa44c985-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27969-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/01c561df365429f33fcd7a7faa44c985-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/01c561df365429f33fcd7a7faa44c985-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/01c561df365429f33fcd7a7faa44c985-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/01c561df365429f33fcd7a7faa44c985-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/01c561df365429f33fcd7a7faa44c985-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "A Multimodal BiMamba Network with Test-Time Adaptation for Emotion Recognition Based on Physiological Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d616a353c711f11c722e3f28d2d9e956-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30719-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d616a353c711f11c722e3f28d2d9e956-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d616a353c711f11c722e3f28d2d9e956-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d616a353c711f11c722e3f28d2d9e956-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Brain-Inspired fMRI-to-Text Decoding via Incremental and Wrap-Up Language Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dca63f2650fe9e88956c1b68440b8ee9-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32388-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dca63f2650fe9e88956c1b68440b8ee9-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dca63f2650fe9e88956c1b68440b8ee9-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/dca63f2650fe9e88956c1b68440b8ee9-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "BrainMoE: Cognition Joint Embedding via Mixture-of-Expert Towards Robust Brain Foundation Model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/061238f13b8e65ce435c4a691ff5d7f1-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27863-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/061238f13b8e65ce435c4a691ff5d7f1-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/061238f13b8e65ce435c4a691ff5d7f1-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/061238f13b8e65ce435c4a691ff5d7f1-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "FAPEX: Fractional Amplitude-Phase Expressor for Robust Cross-Subject Seizure Prediction",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b7de1556bc4be01966c6bc56fb2da6e0-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32539-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b7de1556bc4be01966c6bc56fb2da6e0-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b7de1556bc4be01966c6bc56fb2da6e0-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b7de1556bc4be01966c6bc56fb2da6e0-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b7de1556bc4be01966c6bc56fb2da6e0-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b7de1556bc4be01966c6bc56fb2da6e0-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "FEEL: Quantifying Heterogeneity in Physiological Signals for Generalizable Emotion Recognition",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e560a0b22e4432003d0dba63ff8dc457-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32883-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e560a0b22e4432003d0dba63ff8dc457-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e560a0b22e4432003d0dba63ff8dc457-Supplemental-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e560a0b22e4432003d0dba63ff8dc457-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e560a0b22e4432003d0dba63ff8dc457-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e560a0b22e4432003d0dba63ff8dc457-Supplemental-Datasets_and_Benchmarks_Track.pdf",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Is Limited Participant Diversity Impeding EEG-based Machine Learning?",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aa5642fb7d78a1bca9ceba3d8bd564f4-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/31700-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aa5642fb7d78a1bca9ceba3d8bd564f4-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aa5642fb7d78a1bca9ceba3d8bd564f4-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aa5642fb7d78a1bca9ceba3d8bd564f4-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aa5642fb7d78a1bca9ceba3d8bd564f4-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/aa5642fb7d78a1bca9ceba3d8bd564f4-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Joint Modeling of fMRI and EEG Imaging Using Ordinary Differential Equation-Based Hypergraph Neural Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d29921d606226cdcf0fc8325f2fc1b99-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27918-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d29921d606226cdcf0fc8325f2fc1b99-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d29921d606226cdcf0fc8325f2fc1b99-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d29921d606226cdcf0fc8325f2fc1b99-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d29921d606226cdcf0fc8325f2fc1b99-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/d29921d606226cdcf0fc8325f2fc1b99-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "LUNA: Efficient and Topology-Agnostic Foundation Model for EEG Signal Analysis",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/66969a9e6bd7a26dfeccea7227178ca7-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28391-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/66969a9e6bd7a26dfeccea7227178ca7-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/66969a9e6bd7a26dfeccea7227178ca7-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/66969a9e6bd7a26dfeccea7227178ca7-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Listening to the Brain: Multi-Band sEEG Auditory Reconstruction via Dynamic Spatio-Temporal Hypergraphs",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/bbc6396ae4b4dbf78ce328aa8beafd27-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32988-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/bbc6396ae4b4dbf78ce328aa8beafd27-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/bbc6396ae4b4dbf78ce328aa8beafd27-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/bbc6396ae4b4dbf78ce328aa8beafd27-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "Multi-dataset Joint Pre-training of Emotional EEG Enables Generalizable Affective Computing",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f1b8d443042f376aa3654b6c68de6297-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28423-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f1b8d443042f376aa3654b6c68de6297-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f1b8d443042f376aa3654b6c68de6297-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f1b8d443042f376aa3654b6c68de6297-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "MyoChallenge 2024: A New Benchmark for Physiological Dexterity and Agility in Bionic Humans",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5a8f69523f9511a5706568c552de0ebb-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/32823-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5a8f69523f9511a5706568c552de0ebb-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5a8f69523f9511a5706568c552de0ebb-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/5a8f69523f9511a5706568c552de0ebb-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "NEED: Cross-Subject and Cross-Task Generalization for Video and Image Reconstruction from EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fca83589e85cb061631b7ebc5db5d6bd-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28035-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/fca83589e85cb061631b7ebc5db5d6bd-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fca83589e85cb061631b7ebc5db5d6bd-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/fca83589e85cb061631b7ebc5db5d6bd-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "PhysDrive: A Multimodal Remote Physiological Measurement Dataset for In-vehicle Driver Monitoring",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3446e07569081f0f8a144e68bfa7afdf-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/33128-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3446e07569081f0f8a144e68bfa7afdf-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3446e07569081f0f8a144e68bfa7afdf-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3446e07569081f0f8a144e68bfa7afdf-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f7a7bb369e48f10e85fce85b67d8c516-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/28636-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f7a7bb369e48f10e85fce85b67d8c516-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f7a7bb369e48f10e85fce85b67d8c516-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f7a7bb369e48f10e85fce85b67d8c516-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f7a7bb369e48f10e85fce85b67d8c516-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/f7a7bb369e48f10e85fce85b67d8c516-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "REFED: A Subject Real-time Dynamic Labeled EEG-fNIRS Synchronized Recorded Emotion Dataset",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2bf0ed7c35d9d84128e7f7c72ab76402-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/33014-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/2bf0ed7c35d9d84128e7f7c72ab76402-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2bf0ed7c35d9d84128e7f7c72ab76402-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/2bf0ed7c35d9d84128e7f7c72ab76402-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "REVE: A Foundation Model for EEG - Adapting to Any Setup with Large-Scale Pretraining on 25,000 Subjects",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/20a917f77773ac0fa8bea2bdd6606b66-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/29910-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/20a917f77773ac0fa8bea2bdd6606b66-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/20a917f77773ac0fa8bea2bdd6606b66-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/20a917f77773ac0fa8bea2bdd6606b66-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "SPICED: A Synaptic Homeostasis-Inspired Framework for Unsupervised Continual EEG Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e09a895d25a6444b6bb4b565465e02f0-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30585-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e09a895d25a6444b6bb4b565465e02f0-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e09a895d25a6444b6bb4b565465e02f0-Supplemental-Conference.zip"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e09a895d25a6444b6bb4b565465e02f0-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e09a895d25a6444b6bb4b565465e02f0-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/e09a895d25a6444b6bb4b565465e02f0-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "SynBrain: Enhancing Visual-to-fMRI Synthesis via Probabilistic Representation Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2a095b46705d7e6f81fc50270fe770c2-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/30737-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/2a095b46705d7e6f81fc50270fe770c2-Paper-Conference.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2a095b46705d7e6f81fc50270fe770c2-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/2a095b46705d7e6f81fc50270fe770c2-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2025,
+    "title": "egoEMOTION: Egocentric Vision and Physiological Signals for Emotion and Personality Recognition in Real-world Tasks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b9784f4c3685bebeacd387c4e680b5b2-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/33108-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b9784f4c3685bebeacd387c4e680b5b2-Paper-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b9784f4c3685bebeacd387c4e680b5b2-Supplemental-Datasets_and_Benchmarks_Track.pdf"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b9784f4c3685bebeacd387c4e680b5b2-Abstract-Datasets_and_Benchmarks_Track.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b9784f4c3685bebeacd387c4e680b5b2-Paper-Datasets_and_Benchmarks_Track.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2025/file/b9784f4c3685bebeacd387c4e680b5b2-Supplemental-Datasets_and_Benchmarks_Track.pdf",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "MiSO: Optimizing brain stimulation to create neural population activity states",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/2af641762dc02035c31a9314b2d090b6-Abstract-Conference.html",
+    "score": 8,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/24254-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/2af641762dc02035c31a9314b2d090b6-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-0760",
+        "url": "https://doi.org/10.52202/079017-0760"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/2af641762dc02035c31a9314b2d090b6-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/2af641762dc02035c31a9314b2d090b6-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "NeuroBOLT: Resting-state EEG-to-fMRI Synthesis with Multi-dimensional Feature Mapping",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/29c294ddc628c94cd2c636383ef106c1-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/25107-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/29c294ddc628c94cd2c636383ef106c1-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-0736",
+        "url": "https://doi.org/10.52202/079017-0736"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/29c294ddc628c94cd2c636383ef106c1-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/29c294ddc628c94cd2c636383ef106c1-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Visual Decoding and Reconstruction via EEG Embeddings with Guided Diffusion",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/ba5f1233efa77787ff9ec015877dbd1f-Abstract-Conference.html",
+    "score": 7,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/24990-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/ba5f1233efa77787ff9ec015877dbd1f-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-3266",
+        "url": "https://doi.org/10.52202/079017-3266"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/ba5f1233efa77787ff9ec015877dbd1f-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/ba5f1233efa77787ff9ec015877dbd1f-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "DMNet: Self-comparison Driven Model for Subject-independent Seizure Detection",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3192aa37a2227627d7f8cbf582c075f3-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/26747-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3192aa37a2227627d7f8cbf582c075f3-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3192aa37a2227627d7f8cbf582c075f3-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-0886",
+        "url": "https://doi.org/10.52202/079017-0886"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3192aa37a2227627d7f8cbf582c075f3-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3192aa37a2227627d7f8cbf582c075f3-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3192aa37a2227627d7f8cbf582c075f3-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "EEG2Video: Towards Decoding Dynamic Visual Perception from EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/84bad835faaf48f24d990072bb5b80ee-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/23672-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/84bad835faaf48f24d990072bb5b80ee-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/84bad835faaf48f24d990072bb5b80ee-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-2306",
+        "url": "https://doi.org/10.52202/079017-2306"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/84bad835faaf48f24d990072bb5b80ee-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/84bad835faaf48f24d990072bb5b80ee-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/84bad835faaf48f24d990072bb5b80ee-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/4540d267eeec4e5dbd9dae9448f0b739-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/23048-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4540d267eeec4e5dbd9dae9448f0b739-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4540d267eeec4e5dbd9dae9448f0b739-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-1239",
+        "url": "https://doi.org/10.52202/079017-1239"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/4540d267eeec4e5dbd9dae9448f0b739-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4540d267eeec4e5dbd9dae9448f0b739-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4540d267eeec4e5dbd9dae9448f0b739-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Geodesic Optimization for Predictive Shift Adaptation on EEG data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/399888844ffc8fa95c2db196f3f1b60b-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/23474-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/399888844ffc8fa95c2db196f3f1b60b-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/399888844ffc8fa95c2db196f3f1b60b-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-1033",
+        "url": "https://doi.org/10.52202/079017-1033"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/399888844ffc8fa95c2db196f3f1b60b-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/399888844ffc8fa95c2db196f3f1b60b-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/399888844ffc8fa95c2db196f3f1b60b-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Learning Place Cell Representations and Context-Dependent Remapping",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0098a92f5f4e2d96c6db471e0c5507a8-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/26816-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/0098a92f5f4e2d96c6db471e0c5507a8-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-0008",
+        "url": "https://doi.org/10.52202/079017-0008"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0098a92f5f4e2d96c6db471e0c5507a8-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/0098a92f5f4e2d96c6db471e0c5507a8-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Neural decoding from stereotactic EEG: accounting for electrode variability across subjects",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/c473b9c8897f50203fa23570687c6b30-Abstract-Conference.html",
+    "score": 6,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/24612-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/c473b9c8897f50203fa23570687c6b30-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-3448",
+        "url": "https://doi.org/10.52202/079017-3448"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/c473b9c8897f50203fa23570687c6b30-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/c473b9c8897f50203fa23570687c6b30-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Towards a \"Universal Translator\" for Neural Dynamics at Single-Cell, Single-Spike Resolution",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/934eb45b99eff8f16b5cb8e4d3cb5641-Abstract-Conference.html",
+    "score": 3,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/23849-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/934eb45b99eff8f16b5cb8e4d3cb5641-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/934eb45b99eff8f16b5cb8e4d3cb5641-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-2559",
+        "url": "https://doi.org/10.52202/079017-2559"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/934eb45b99eff8f16b5cb8e4d3cb5641-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/934eb45b99eff8f16b5cb8e4d3cb5641-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/934eb45b99eff8f16b5cb8e4d3cb5641-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Active learning of neural population dynamics using two-photon holographic optogenetics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/381efefc0d765e680451978c0392f637-Abstract-Conference.html",
+    "score": 1,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27336-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/381efefc0d765e680451978c0392f637-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-0994",
+        "url": "https://doi.org/10.52202/079017-0994"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/381efefc0d765e680451978c0392f637-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/381efefc0d765e680451978c0392f637-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Exploring Behavior-Relevant and Disentangled Neural Dynamics with Generative Diffusion Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3d55170799265c03b37993e02b71b2cc-Abstract-Conference.html",
+    "score": 1,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/25414-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3d55170799265c03b37993e02b71b2cc-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3d55170799265c03b37993e02b71b2cc-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-1095",
+        "url": "https://doi.org/10.52202/079017-1095"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3d55170799265c03b37993e02b71b2cc-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3d55170799265c03b37993e02b71b2cc-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3d55170799265c03b37993e02b71b2cc-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Modeling Latent Neural Dynamics with Gaussian Process Switching Linear Dynamical Systems",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3b64416915026a6744bf10a819571041-Abstract-Conference.html",
+    "score": 1,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/27306-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3b64416915026a6744bf10a819571041-Paper-Conference.pdf"
+      },
+      {
+        "text": "10.52202/079017-1065",
+        "url": "https://doi.org/10.52202/079017-1065"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3b64416915026a6744bf10a819571041-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/3b64416915026a6744bf10a819571041-Paper-Conference.pdf",
+    "supplemental": null,
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Partial observation can induce mechanistic mismatches in data-constrained models of neural dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7caf9d251b546bc78078b35b4a6f3b7e-Abstract-Conference.html",
+    "score": 1,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/26646-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/7caf9d251b546bc78078b35b4a6f3b7e-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/7caf9d251b546bc78078b35b4a6f3b7e-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-2154",
+        "url": "https://doi.org/10.52202/079017-2154"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7caf9d251b546bc78078b35b4a6f3b7e-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/7caf9d251b546bc78078b35b4a6f3b7e-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/7caf9d251b546bc78078b35b4a6f3b7e-Supplemental-Conference.zip",
+    "github_search": []
+  },
+  {
+    "year": 2024,
+    "title": "Probabilistic Decomposed Linear Dynamical Systems for Robust Discovery of Latent Neural Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bcf26768143c94bd36e363cd4bf5daf0-Abstract-Conference.html",
+    "score": 1,
+    "page_links": [
+      {
+        "text": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/login/?next=/admin/"
+      },
+      {
+        "text": "",
+        "url": "https://proceedings.neurips.cc/admin/logout/?nextp=/admin"
+      },
+      {
+        "text": "Advances in Neural Information Processing Systems 37 (NeurIPS 2024)",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024"
+      },
+      {
+        "text": "Bibtex",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/24976-/bibtex"
+      },
+      {
+        "text": "Paper",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/bcf26768143c94bd36e363cd4bf5daf0-Paper-Conference.pdf"
+      },
+      {
+        "text": "Supplemental",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/bcf26768143c94bd36e363cd4bf5daf0-Supplemental-Conference.zip"
+      },
+      {
+        "text": "10.52202/079017-3318",
+        "url": "https://doi.org/10.52202/079017-3318"
+      },
+      {
+        "text": "Report an Issue",
+        "url": "https://neurips.cc/Help/Contact?select=Conference"
+      },
+      {
+        "text": "Name Change Policy",
+        "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bcf26768143c94bd36e363cd4bf5daf0-Abstract-Conference.html"
+      }
+    ],
+    "github_links": [],
+    "paper_pdf": "https://proceedings.neurips.cc/paper_files/paper/2024/file/bcf26768143c94bd36e363cd4bf5daf0-Paper-Conference.pdf",
+    "supplemental": "https://proceedings.neurips.cc/paper_files/paper/2024/file/bcf26768143c94bd36e363cd4bf5daf0-Supplemental-Conference.zip",
+    "github_search": []
+  }
+]

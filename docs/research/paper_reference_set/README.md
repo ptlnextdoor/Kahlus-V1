@@ -95,11 +95,14 @@ I also scanned the papers and project pages for official repositories, cloned th
 
 Read the audit here: [GitHub figure-code audit](github_figure_code_audit.md).
 
+Recent NeurIPS scrape: [Recent NeurIPS neuro/brain code-link reality check](neurips_recent_code_reality_check.md).
+
 ```{toctree}
 :hidden:
 :maxdepth: 1
 
 GitHub figure-code audit <github_figure_code_audit>
+Recent NeurIPS code-link reality check <neurips_recent_code_reality_check>
 ```
 
 The headline finding is that most EEG foundation-model repos ship training/eval code plus static README images, not exact paper panel scripts. The exception worth copying is CEBRA: it uses a separate `cebra-figures` repo with cached HDF5/CSV result artifacts, Jupytext figure scripts, rendered notebooks, and CI.
@@ -112,4 +115,8 @@ The headline finding is that most EEG foundation-model repos ship training/eval 
 - `github_url_extracts.json`: GitHub/code URLs extracted from the downloaded PDFs.
 - `github_figure_code_scan.json`: local scan results for plotting terms across cloned paper repos.
 - `github_figure_code_audit.md`: human-readable audit of which repos actually show how figures are made.
+- `neurips_neuro_title_harvest.json`: broad NeurIPS 2024/2025 neuro-keyword title harvest.
+- `neurips_brain_relevant_harvest.json`: narrowed brain/neuro/EEG/physiology NeurIPS title harvest.
+- `neurips_recent_code_link_audit.json`: code-link audit for high-priority recent NeurIPS neuro/brain papers.
+- `neurips_recent_code_reality_check.md`: summary of what the NeurIPS scrape found and how Kahlus should match it.
 - `MISSING_PDFS.md`: unresolved/missing PDF tracker.
