@@ -465,7 +465,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertNotIn("scripts/slurm/train_a100.sh", run_full_sbatch)
         self.assertNotIn("\nsbatch ", run_full_sbatch)
         self.assertIn("scripts/train_a100_inner.sh", run_full_sbatch)
-        self.assertIn("#SBATCH --time=02:00:00", run_full_sbatch)
+        self.assertIn("#SBATCH --time=12:00:00", run_full_sbatch)
         for dependency in ("python=3.10", "pytorch-cuda=12.1", "moabb", "mne", "scikit-learn"):
             self.assertIn(dependency, environment)
 
