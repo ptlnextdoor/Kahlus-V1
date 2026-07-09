@@ -59,7 +59,8 @@ export DOCKER_IMAGE=neurotwin-a100-runner:local
 
 ## Full 7-GPU Run
 
-The default 7-GPU handoff command runs the full `configs/train/moabb_a100.yaml` lane. Short diagnostics should use `scripts/run_smoke.sh` or a one-GPU diagnostic explicitly:
+The default 7-GPU handoff command runs the full `configs/train/moabb_a100.yaml` lane. Short diagnostics should use `scripts/run_smoke.sh` or a one-GPU diagnostic explicitly. Short diagnostic runs ending in a few hours are normal and do not mean the 12-hour deep lane was exercised.
+
 
 ```bash
 export HOST_GPU_IDS=0,1,2,3,4,5,6
