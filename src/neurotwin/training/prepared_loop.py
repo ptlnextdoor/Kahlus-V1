@@ -13,7 +13,7 @@ from neurotwin.models.pair_operator import NeuroTwinPairOperatorConfig
 from neurotwin.models.nfc import NeuralFieldCompilerConfig
 from neurotwin.models.torch_models import NeuralStateSpaceTranslatorConfig
 from neurotwin.repro import append_jsonl
-from neurotwin.runtime.distributed import unwrap_model, wrap_ddp_if_initialized
+from neurotwin.runtime.distributed import distributed_any, unwrap_model, wrap_ddp_if_initialized
 from neurotwin.training.prepared_checkpoints import load_task_resume, save_task_checkpoint
 from neurotwin.training.prepared_metrics import batched_loss, evaluate_task, mse_loss, predict
 from neurotwin.training.prepared_types import (
@@ -164,8 +164,9 @@ def _run_task_training_loop(
             "source_modality": task.source_modality,
             "target_modality": task.target_modality,
         },
+        runtime=runtime,
     )
-    if not math.isfinite(float(initial_loss)):
+    if distributed_any(not math.isfinite(float(initial_loss)), device=runtime.device):
         _append_task_metric(
             runtime.paths.metrics_jsonl_path,
             {
@@ -175,6 +176,7 @@ def _run_task_training_loop(
                 "loss": initial_loss,
                 "optimizer_step_skipped": True,
             },
+            runtime=runtime,
         )
         return initial_loss, float("nan")
 
@@ -190,7 +192,7 @@ def _run_task_training_loop(
             yb = tensors.y_train.index_select(0, index_tensor)
             loss = (mse_loss(predict(model, task, xb, precision=config.precision), yb) * objective_weight) / config.gradient_accumulation_steps
             loss_value = float(loss.detach())
-            if not math.isfinite(loss_value):
+            if distributed_any(not math.isfinite(loss_value), device=runtime.device):
                 optimizer.zero_grad(set_to_none=True)
                 _append_task_metric(
                     runtime.paths.metrics_jsonl_path,
@@ -202,12 +204,13 @@ def _run_task_training_loop(
                         "loss": loss_value,
                         "optimizer_step_skipped": True,
                     },
+                    runtime=runtime,
                 )
                 return initial_loss, float("nan")
             loss.backward()
             accumulated_loss += loss_value
         grad_norm = _clip_or_measure_grad_norm(model, config.max_grad_norm)
-        if grad_norm is not None and not math.isfinite(grad_norm):
+        if distributed_any(grad_norm is not None and not math.isfinite(grad_norm), device=runtime.device):
             optimizer.zero_grad(set_to_none=True)
             _append_task_metric(
                 runtime.paths.metrics_jsonl_path,
@@ -218,6 +221,7 @@ def _run_task_training_loop(
                     "grad_norm": grad_norm,
                     "optimizer_step_skipped": True,
                 },
+                runtime=runtime,
             )
             return initial_loss, float("nan")
         optimizer.step()
@@ -237,8 +241,14 @@ def _run_task_training_loop(
             _append_task_metric(
                 runtime.paths.metrics_jsonl_path,
                 {"task_id": task.task_id, "step": completed_step, "phase": "eval", "selection_split": tensors.selection_split, **val_snapshot},
+                runtime=runtime,
             )
-        if config.checkpoint_every_steps and runtime.checkpoint_dir is not None and completed_step % config.checkpoint_every_steps == 0:
+        if (
+            config.checkpoint_every_steps
+            and runtime.dist_info.is_rank_zero
+            and runtime.checkpoint_dir is not None
+            and completed_step % config.checkpoint_every_steps == 0
+        ):
             save_task_checkpoint(
                 runtime.checkpoint_dir / f"checkpoint_{task.task_id}_step_{completed_step}.pt",
                 status="periodic_prepared_training",
@@ -299,6 +309,7 @@ def _finalize_task_result(
             **selected_val_metrics,
             **test_metrics,
         },
+        runtime=runtime,
     )
     return TaskTrainingArtifacts(
         result=result,
@@ -467,9 +478,12 @@ def _normalize_model_type(value: str) -> str:
     return normalize_architecture_type(value)
 
 
-def _append_task_metric(path: str | None, row: dict[str, Any]) -> None:
+def _append_task_metric(path: str | None, row: dict[str, Any], *, runtime: PreparedRuntimeContext) -> None:
     if path is not None:
-        append_jsonl(path, _json_safe_metric_row(row))
+        enriched = dict(row)
+        enriched.setdefault("rank", runtime.dist_info.rank)
+        enriched.setdefault("world_size", runtime.dist_info.world_size)
+        append_jsonl(path, _json_safe_metric_row(enriched))
 
 
 def _json_safe_metric_row(row: dict[str, Any]) -> dict[str, Any]:
