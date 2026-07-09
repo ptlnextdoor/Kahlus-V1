@@ -21,12 +21,16 @@ moabb = [
   "moabb>=1.1",
   "mne>=1.6",
 ]
+edf = [
+  "edfio>=0.4.13",
+]
 bids = []
 algonauts = [
   "h5py>=3.10",
 ]
 h100 = []
 cluster = [
+  "edfio>=0.4.13",
   "h5py>=3.10",
 ]
 dev = [
