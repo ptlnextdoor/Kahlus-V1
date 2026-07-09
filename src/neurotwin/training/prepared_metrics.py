@@ -20,13 +20,22 @@ def predict_output(model: nn.Module, task: Any, x: torch.Tensor, precision: str 
         return task_model.forward_task(
             {task.source_modality: x},
             target_modality=task.target_modality,
-            task="forecast" if task.task_id == "future_state_forecasting" else "reconstruction",
+            task=_task_mode(task),
         )
 
 
 def predict(model: nn.Module, task: Any, x: torch.Tensor, precision: str = "fp32") -> torch.Tensor:
-    output = predict_output(model, task, x, precision=precision)
-    return output["prediction"]
+    enabled = precision == "bf16" and x.device.type in {"cuda", "cpu"}
+    with torch.autocast(device_type=x.device.type, dtype=torch.bfloat16, enabled=enabled):
+        return model(
+            {task.source_modality: x},
+            target_modality=task.target_modality,
+            task=_task_mode(task),
+        )
+
+
+def _task_mode(task: Any) -> str:
+    return "forecast" if task.task_id == "future_state_forecasting" else "reconstruction"
 
 
 def mse_loss(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:

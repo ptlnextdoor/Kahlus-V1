@@ -135,7 +135,12 @@ class NeuralFieldCompiler(nn.Module):
         )
         self.uncertainty_head = UncertaintyMapHead(resolved.latent_dim, pair_uncertainty=resolved.use_pair_kernel)
 
-    def forward(self, batch: dict[str, torch.Tensor], target_modality: str, **kwargs: Any) -> torch.Tensor:
+    def forward(
+        self,
+        batch: dict[str, torch.Tensor],
+        target_modality: str,
+        **kwargs: Any,
+    ) -> torch.Tensor:
         return self.forward_task(batch, target_modality=target_modality, **kwargs)["prediction"]
 
     def forward_task(

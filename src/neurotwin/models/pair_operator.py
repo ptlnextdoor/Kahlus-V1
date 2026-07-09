@@ -142,8 +142,14 @@ class NeuroTwinPairOperator(nn.Module):
             nn.Linear(resolved.latent_dim, resolved.projection_dim),
         )
 
-    def forward(self, batch: dict[str, torch.Tensor], target_modality: str, **_: Any) -> torch.Tensor:
-        return self.forward_task(batch, target_modality=target_modality, task="readout")["prediction"]
+    def forward(
+        self,
+        batch: dict[str, torch.Tensor],
+        target_modality: str,
+        task: str = "readout",
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        return self.forward_task(batch, target_modality=target_modality, task=task, **kwargs)["prediction"]
 
     def forward_task(
         self,

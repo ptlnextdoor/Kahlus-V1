@@ -61,6 +61,16 @@ def barrier_if_distributed() -> None:
         torch.distributed.barrier()
 
 
+def distributed_any(value: bool, *, device: torch.device | None = None) -> bool:
+    if not torch.distributed.is_available() or not torch.distributed.is_initialized():
+        return bool(value)
+    if device is None:
+        device = torch.device("cuda", torch.cuda.current_device()) if torch.cuda.is_available() else torch.device("cpu")
+    flag = torch.tensor(1 if value else 0, dtype=torch.int32, device=device)
+    torch.distributed.all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
+    return bool(flag.item())
+
+
 def cleanup_process_group() -> None:
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         try:
