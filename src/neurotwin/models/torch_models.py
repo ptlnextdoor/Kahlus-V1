@@ -214,11 +214,16 @@ class NeuralStateSpaceTranslator(nn.Module):
         metadata: torch.Tensor | None = None,
         geometry: dict[str, torch.Tensor] | None = None,
         subject_ids: torch.Tensor | None = None,
+        task: str = "readout",
     ) -> torch.Tensor:
-        if target_modality not in self.readouts:
-            raise ValueError(f"Unknown target modality {target_modality!r}")
-        latent = self.encode(batch, metadata=metadata, geometry=geometry, subject_ids=subject_ids)
-        return self.readouts[target_modality](latent)
+        return self.forward_task(
+            batch,
+            target_modality=target_modality,
+            task=task,
+            metadata=metadata,
+            geometry=geometry,
+            subject_ids=subject_ids,
+        )["prediction"]
 
     def encode(
         self,
