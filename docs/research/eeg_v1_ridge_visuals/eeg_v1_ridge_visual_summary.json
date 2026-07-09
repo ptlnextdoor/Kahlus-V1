@@ -1,0 +1,137 @@
+{
+  "array_like_artifact_examples": [],
+  "audit_rows": 33,
+  "audit_summary": {
+    "by_type": {
+      "eval": {
+        "failed": 0,
+        "n": 15,
+        "passed": 15,
+        "unknown": 0
+      },
+      "leakage": {
+        "failed": 0,
+        "n": 10,
+        "passed": 10,
+        "unknown": 0
+      },
+      "paper_mode_gate": {
+        "failed": 0,
+        "n": 8,
+        "passed": 8,
+        "unknown": 0
+      }
+    },
+    "violations": 0,
+    "warnings": 0
+  },
+  "baseline_metric_summary": {
+    "autoregressive_ridge": {
+      "median_mse": 18.397737776469018,
+      "median_rank": 2.5,
+      "n": 8
+    },
+    "linear_ridge": {
+      "median_mse": 7.776308101660009,
+      "median_rank": 1.0,
+      "n": 8
+    },
+    "mlp": {
+      "median_mse": 26.05089491921742,
+      "median_rank": 3.5,
+      "n": 8
+    },
+    "neurotwin": {
+      "median_mse": 45.03531159326102,
+      "median_rank": 6.5,
+      "n": 8
+    },
+    "persistence": {
+      "median_mse": 30.907965991257104,
+      "median_rank": 5.5,
+      "n": 8
+    },
+    "random_permutation": {
+      "median_mse": 84.64349225418027,
+      "median_rank": 10.0,
+      "n": 8
+    },
+    "ssm_fallback": {
+      "median_mse": 46.72907555808758,
+      "median_rank": 7.5,
+      "n": 8
+    },
+    "tcn": {
+      "median_mse": 29.708501332066277,
+      "median_rank": 4.5,
+      "n": 8
+    },
+    "train_mean": {
+      "median_mse": 53.61547614353063,
+      "median_rank": 8.5,
+      "n": 8
+    },
+    "transformer": {
+      "median_mse": 42.379501780709376,
+      "median_rank": 5.5,
+      "n": 8
+    }
+  },
+  "baseline_rows": 80,
+  "bundle_count": 29,
+  "eeg_metric_summary": {
+    "future_state_forecasting": {
+      "median_best_val_mse": 21.751845630688802,
+      "median_eval_pearsonr": 0.6635025241704565,
+      "median_eval_r2": 0.4784211673219172,
+      "median_test_mse": 27.97121961249688,
+      "n": 6
+    },
+    "masked_neural_reconstruction": {
+      "median_best_val_mse": 39.61267305581792,
+      "median_eval_pearsonr": 0.4149499861757453,
+      "median_eval_r2": 0.1547510825910695,
+      "median_test_mse": 45.32992115236112,
+      "n": 6
+    }
+  },
+  "eeg_task_result_rows": 12,
+  "figure_files": {
+    "audit_matrix_pdf": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.pdf",
+    "audit_matrix_png": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.png",
+    "audit_matrix_svg": "../eeg_v1_figure_source/figures/Figure2_eeg_v1_audit_matrix.svg",
+    "baseline_ranking_pdf": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.pdf",
+    "baseline_ranking_png": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png",
+    "baseline_ranking_svg": "../eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.svg",
+    "benchmark_overview_pdf": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.pdf",
+    "benchmark_overview_png": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.png",
+    "benchmark_overview_svg": "../eeg_v1_figure_source/figures/Figure1_eeg_v1_benchmark_overview.svg"
+  },
+  "inventory": {
+    "array_like_artifacts": [],
+    "baseline_ranking_csv": 9,
+    "bundle_count": 29,
+    "eval_audit_json": 15,
+    "leakage_report_json": 10,
+    "metric_summary_json": 7,
+    "metrics_csv": 10,
+    "paper_mode_gate_json": 8,
+    "task_results_csv": 7
+  },
+  "raw_tensor_artifacts_found": false,
+  "recovered_kahlus_vs_ridge": {
+    "future_state_forecasting": {
+      "kahlus_v1_recovered_mse": 3.11607456072082,
+      "linear_ridge_mse": 7.7452734660906435,
+      "winner": "kahlus_v1_recovered"
+    },
+    "masked_neural_reconstruction": {
+      "kahlus_v1_recovered_mse": 53.977131681115935,
+      "linear_ridge_mse": 7.807342737229374,
+      "winner": "linear_ridge"
+    }
+  },
+  "source_mode": "versions_evidence",
+  "task_result_rows": 15,
+  "versions_root": "/Users/aayu/Downloads/versions"
+}

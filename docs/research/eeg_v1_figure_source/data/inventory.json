@@ -1,0 +1,11 @@
+{
+  "array_like_artifacts": [],
+  "baseline_ranking_csv": 9,
+  "bundle_count": 29,
+  "eval_audit_json": 15,
+  "leakage_report_json": 10,
+  "metric_summary_json": 7,
+  "metrics_csv": 10,
+  "paper_mode_gate_json": 8,
+  "task_results_csv": 7
+}

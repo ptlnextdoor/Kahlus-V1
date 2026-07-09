@@ -1,0 +1,181 @@
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+
+from PIL import Image
+
+
+STANDARD_FIGURE_STEMS = (
+    "Figure1_eeg_v1_benchmark_overview",
+    "Figure2_eeg_v1_audit_matrix",
+    "Figure3_eeg_v1_baseline_ranking",
+)
+
+
+def assert_standard_figure_packet(testcase: unittest.TestCase, packet: Path) -> None:
+    style_file = packet / "src/_figure_style.py"
+    testcase.assertTrue(style_file.exists(), "shared style layer")
+    style_text = style_file.read_text(encoding="utf-8")
+    testcase.assertIn("tueplots", style_text)
+    testcase.assertIn("svg.fonttype", style_text)
+
+    for stem in STANDARD_FIGURE_STEMS:
+        for ext in ("png", "pdf", "svg"):
+            testcase.assertTrue((packet / f"figures/{stem}.{ext}").exists(), f"{stem}.{ext}")
+        with Image.open(packet / f"figures/{stem}.png") as image:
+            testcase.assertGreaterEqual(image.width, 1200, stem)
+            testcase.assertGreaterEqual(image.height, 700, stem)
+        svg = (packet / f"figures/{stem}.svg").read_text(encoding="utf-8")
+        testcase.assertIn("<text", svg, f"{stem} should keep SVG text selectable")
+
+    for source in (packet / "src").glob("Figure*.py"):
+        text = source.read_text(encoding="utf-8")
+        testcase.assertNotIn("FancyBboxPatch", text, source.name)
+        testcase.assertNotIn("FancyArrowPatch", text, source.name)
+        testcase.assertNotIn("rcParams", text, source.name)
+        testcase.assertIn("import _figure_style as style", text, source.name)
+        testcase.assertIn("constrained", text, source.name)
+
+
+class EEGV1RidgeVisualsTests(unittest.TestCase):
+    def test_renderer_writes_real_artifact_figures_without_synthetic_overlay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            versions = Path(tmp) / "versions"
+            zipdir = versions / "_organized_index" / "artifact_views" / "evidence_zips"
+            zipdir.mkdir(parents=True)
+            with zipfile.ZipFile(zipdir / "sample-evidence.zip", "w") as zf:
+                zf.writestr(
+                    "sample/run/tables/task_results.csv",
+                    "task_id,source_modality,target_modality,eval_mse,eval_mae,eval_pearsonr,eval_r2,test_mse,best_val_mse\n"
+                    "future_state_forecasting,eeg,eeg,3.11607456072082,1.29685807808655,0.9721078350075555,0.9418946133048665,3.11607456072082,2.2286510506462704\n"
+                    "masked_neural_reconstruction,eeg,eeg,53.977132,5.690621,-0.012507,-0.006490,53.977132,47.425705\n",
+                )
+                zf.writestr(
+                    "sample/run/tables/baseline_ranking.csv",
+                    "task_id,model_id,metric,value,rank\n"
+                    "future_state_forecasting,linear_ridge,mse,7.7,1\n"
+                    "masked_neural_reconstruction,linear_ridge,mse,7.8,1\n",
+                )
+                zf.writestr("sample/prepared/leakage_report.json", json.dumps({"passed": True, "violations": []}))
+
+            out = Path(tmp) / "figures"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/render_eeg_v1_ridge_visuals.py",
+                    "--versions-root",
+                    str(versions),
+                    "--out-dir",
+                    str(out),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            for name in ("eeg_v1_ridge_visual_analysis.md", "eeg_v1_ridge_visual_summary.json"):
+                self.assertTrue((out / name).exists(), name)
+            packet = Path(tmp) / "eeg_v1_figure_source"
+            for name in (
+                "data/task_results.csv",
+                "data/baseline_ranking.csv",
+                "data/audits.csv",
+                "data/inventory.json",
+                "data/provenance.json",
+            ):
+                self.assertTrue((packet / name).exists(), name)
+            assert_standard_figure_packet(self, packet)
+            figure3_svg = (packet / "figures/Figure3_eeg_v1_baseline_ranking.svg").read_text(encoding="utf-8")
+            self.assertIn("winner: Kahlus v1 recovered", figure3_svg)
+            self.assertIn("winner: linear ridge", figure3_svg)
+            self.assertNotIn("Kahlus wins this saved comparison", figure3_svg)
+            self.assertFalse((out / "fig03_prediction_overlay_and_residuals.png").exists())
+            summary = json.loads((out / "eeg_v1_ridge_visual_summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(summary["source_mode"], "versions_evidence")
+            self.assertFalse(summary["raw_tensor_artifacts_found"])
+            comparison = summary["recovered_kahlus_vs_ridge"]
+            self.assertAlmostEqual(comparison["future_state_forecasting"]["kahlus_v1_recovered_mse"], 3.11607456072082)
+            self.assertAlmostEqual(comparison["future_state_forecasting"]["linear_ridge_mse"], 7.7)
+            self.assertEqual(comparison["future_state_forecasting"]["winner"], "kahlus_v1_recovered")
+            self.assertEqual(comparison["masked_neural_reconstruction"]["winner"], "linear_ridge")
+            self.assertIn("benchmark_overview_png", summary["figure_files"])
+            self.assertIn("audit_matrix_png", summary["figure_files"])
+            self.assertIn("baseline_ranking_png", summary["figure_files"])
+            analysis = (out / "eeg_v1_ridge_visual_analysis.md").read_text(encoding="utf-8")
+            self.assertIn("Real evidence artifacts", analysis)
+            self.assertIn("CEBRA-style figure-source packet", analysis)
+            self.assertIn("standard matplotlib/seaborn", analysis)
+            self.assertIn("Kahlus v1 recovered beats linear ridge on future_state_forecasting", analysis)
+            self.assertIn("linear ridge beats Kahlus v1 recovered on masked_neural_reconstruction", analysis)
+            self.assertIn("No raw tensor or prediction-array artifact was found", analysis)
+            self.assertNotIn("synthetic fixture", analysis.lower())
+
+    def test_old_schematic_diagnostic_packet_is_not_reintroduced(self):
+        root = Path("docs/research/ridge_eeg_diagnostic_schematics")
+        self.assertFalse(root.exists())
+        page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
+        self.assertIn("STANDARD MATPLOTLIB/SEABORN FIGURES", page)
+        self.assertIn("matplotlib/seaborn/tueplots", page)
+        self.assertIn("Figure1_eeg_v1_benchmark_overview.png", page)
+        self.assertIn("Figure2_eeg_v1_audit_matrix.png", page)
+        self.assertIn("Figure3_eeg_v1_baseline_ranking.png", page)
+        self.assertIn("Ridge sanity-check diagrams", page)
+        self.assertIn("FigureS6_ridge_future_window_contract.png", page)
+        self.assertIn("FigureS7_ridge_prediction_overlay.png", page)
+        self.assertNotIn("Restored schematic diagnostic packet", page)
+        self.assertNotIn("ridge_eeg_diagnostic_schematics", page)
+
+    def test_ridge_waveform_sanity_diagrams_are_reproducible_and_labeled(self):
+        script = Path("docs/research/eeg_v1_ridge_sanity_diagrams/src/render_ridge_waveform_sanity.py")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = "src"
+        result = subprocess.run([sys.executable, str(script)], check=False, capture_output=True, text=True, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+        root = Path("docs/research/eeg_v1_ridge_sanity_diagrams")
+        expected = (
+            "FigureS6_ridge_future_window_contract",
+            "FigureS7_ridge_prediction_overlay",
+        )
+        for stem in expected:
+            for ext in ("png", "pdf", "svg"):
+                self.assertTrue((root / f"figures/{stem}.{ext}").exists(), f"{stem}.{ext}")
+            with Image.open(root / f"figures/{stem}.png") as image:
+                self.assertGreaterEqual(image.width, 1200, stem)
+                self.assertGreaterEqual(image.height, 700, stem)
+            svg = (root / f"figures/{stem}.svg").read_text(encoding="utf-8")
+            self.assertIn("<text", svg)
+
+        summary = json.loads((root / "data/ridge_waveform_sanity_summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(summary["contract"]["future_forecasting"], "X = EEG window[:-1], Y = EEG window[1:]")
+        self.assertEqual(summary["x_test_shape"], [9, 7, 6])
+        self.assertIn("not raw EEG evidence", summary["claim_scope"])
+
+        page = Path("docs/figures/eeg-v1-ridge-visuals.md").read_text(encoding="utf-8")
+        self.assertIn("Ridge sanity-check diagrams", page)
+        self.assertIn("does **not** contain raw EEG windows", page)
+        self.assertIn("FigureS6_ridge_future_window_contract.png", page)
+        self.assertIn("FigureS7_ridge_prediction_overlay.png", page)
+
+        style_file = root / "src/_figure_style.py"
+        self.assertTrue(style_file.exists())
+        self.assertIn("tueplots", style_file.read_text(encoding="utf-8"))
+
+    def test_visual_standards_route_figures_to_domain_tools(self):
+        text = Path("docs/figures/visual-standards.md").read_text(encoding="utf-8")
+        self.assertIn("Tool routing by figure type", text)
+        self.assertIn("MNE-Python", text)
+        self.assertIn("nilearn", text)
+        self.assertIn("pyNeuroML", text)
+        self.assertIn("CEBRA figure-source pattern", text)
+        self.assertIn("Never use `jet`", text)
+
+
+if __name__ == "__main__":
+    unittest.main()

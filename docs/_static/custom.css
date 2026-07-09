@@ -1,30 +1,33 @@
-:root {
-  --kahlus-blue: #2563eb;
-  --kahlus-red: #dc2626;
-  --kahlus-ink: #111827;
-  --kahlus-muted: #6b7280;
-}
 .figure-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.75rem;
   padding: 1rem;
-  margin: 1rem 0;
-  background: #fff;
+  margin: 1.25rem 0;
+  background: var(--pst-color-surface);
 }
 .figure-card img {
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.5rem;
   background: white;
 }
-.evidence-badge, .schematic-badge, .todo-badge {
+.schematic-badge,
+.evidence-badge,
+.diagnostic-badge,
+.limit-badge {
   display: inline-block;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  padding: 0.15rem 0.55rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
-.evidence-badge { color: #065f46; background: #d1fae5; }
-.schematic-badge { color: #92400e; background: #fef3c7; }
-.todo-badge { color: #1e3a8a; background: #dbeafe; }
-.caption-note { color: var(--kahlus-muted); font-size: 0.9rem; }
+.schematic-badge { color: #92400e; background: #fef3c7; border: 1px solid #f59e0b; }
+.evidence-badge { color: #065f46; background: #d1fae5; border: 1px solid #10b981; }
+.diagnostic-badge { color: #1e3a8a; background: #dbeafe; border: 1px solid #3b82f6; }
+.limit-badge { color: #7f1d1d; background: #fee2e2; border: 1px solid #ef4444; }
+.kahlus-lede {
+  font-size: 1.1rem;
+  line-height: 1.7;
+}

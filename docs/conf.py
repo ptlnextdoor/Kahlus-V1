@@ -6,6 +6,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 project = "Kahlus / NeuroTwin"
 author = "Kahlus contributors"
@@ -23,16 +24,12 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
+    "sphinx_design",
+    "sphinx_gallery.gen_gallery",
+    "numpydoc",
 ]
 
-try:
-    import sphinx_autodoc_typehints  # noqa: F401
-except Exception:
-    pass
-else:
-    extensions.append("sphinx_autodoc_typehints")
-
-source_suffix = [".md", ".rst"]
+source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 master_doc = "index"
 exclude_patterns = [
     "_build",
@@ -52,7 +49,7 @@ myst_enable_extensions = [
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
-html_extra_path = ["CNAME", ".nojekyll"]
+html_extra_path = ["CNAME", ".nojekyll"] if (ROOT / "docs" / "CNAME").exists() else [".nojekyll"]
 html_css_files = ["custom.css"]
 html_title = "Kahlus / NeuroTwin Research Docs"
 html_theme_options = {
@@ -62,6 +59,20 @@ html_theme_options = {
     "logo": {"text": "Kahlus / NeuroTwin"},
 }
 
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",
+    "gallery_dirs": "auto_examples",
+    "filename_pattern": r"plot_.*\.py",
+    "download_all_examples": False,
+    "within_subsection_order": "FileNameSortKey",
+    "remove_config_comments": True,
+}
+
+autosummary_generate = True
+numpydoc_show_class_members = False
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -69,6 +80,5 @@ intersphinx_mapping = {
     "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 
-autosummary_generate = True
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
+# Legacy Markdown pages contain fenced `math`/`txt` blocks that are rendered as code.
+suppress_warnings = ["misc.highlighting_failure"]

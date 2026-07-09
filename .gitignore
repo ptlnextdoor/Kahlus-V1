@@ -1,19 +1,20 @@
 __pycache__/
-*.egg-info/
 *.py[cod]
 .DS_Store
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .desloppify/
-docs/_build/
 
 graphify-out/cache/
 graphify-out/.graphify_detect.json
 graphify-out/.graphify_python
 runs/
 outputs/
-dist/
-apps/KahlusLabglass/.build/
 neurotwin-a100-results-*/
 external/vendor/
+
+# Sphinx build outputs
+docs/_build/
+docs/auto_examples/
+docs/sg_execution_times.rst

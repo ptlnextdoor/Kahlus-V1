@@ -1,43 +1,86 @@
-# Kahlus / NeuroTwin research documentation
+# Kahlus / NeuroTwin research docs
 
 Kahlus is a research codebase for leakage-safe neural translation benchmarks and NeuroTwin/NFC model development. These docs are organized like a scientific Python project: tutorials, methods, evidence, figures, API references, and paper-facing notes.
 
 ```{admonition} Current scientific posture
 :class: important
-The repo should not claim a new brain foundation model or clinical digital twin. The defensible target is careful neural translation, missing-modality reconstruction, future-state forecasting, and subject/site generalization under leakage-safe splits.
+Kahlus should not claim a new brain foundation model, a clinical digital twin, or a clinical decision system. The defensible target is careful neural translation, missing-modality reconstruction, future-state forecasting, and subject/site/dataset generalization under leakage-safe splits.
 ```
+
+::::{grid} 1 1 3 3
+:gutter: 3
+
+:::{grid-item-card} Beginner path
+:link: overview/concepts
+:link-type: doc
+What is EEG? What is a forecast? Why do leakage-safe splits matter? Start here if you are curious about brains but do not know the jargon yet.
+:::
+
+:::{grid-item-card} Methods path
+:link: methods/ridge-baseline
+:link-type: doc
+Equations, implementation details, baselines, failure modes, and what the current ridge result does and does not prove.
+:::
+
+:::{grid-item-card} Reviewer path
+:link: figures/eeg-v1-ridge-visuals
+:link-type: doc
+Figures, provenance, benchmark caveats, visual standards, and exact scripts used to render evidence artifacts.
+:::
+
+::::
 
 ## What to read first
 
-- [Ridge EEG diagnostics for Amrith](figures/ridge-eeg-diagnostics.md): the current visual packet for explaining why ridge regression can look strong.
-- [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization vs AI-generated slop.
+- [EEG/ridge evidence figures from versions](figures/eeg-v1-ridge-visuals.md): artifact-first plots generated from saved CSV/JSON evidence bundles.
+- [Ridge baseline evidence note](methods/ridge-baseline.md): beginner-to-expert explanation with equations, artifact boundaries, and caveats.
+- [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization versus AI-generated slop.
 - [Reputable neuroscience repo patterns](references/reputable-neuroscience-repos.md): what MNE, MOABB, Braindecode, CEBRA, NeuroML, and Nilearn teach us.
-- [Benchmark protocol](paper/benchmark_protocol.md): existing reviewer-facing benchmark rules.
-- [Leakage-proof evaluation](methods/leakage-proof-evaluation.md): split and audit logic.
-
-## Documentation map
+- [Limitations](limitations.md): explicit claim boundaries.
 
 ```{toctree}
 :maxdepth: 2
-:caption: Research figures
+:caption: Start here
 
-figures/ridge-eeg-diagnostics
+overview/concepts
+limitations
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Figure pages
+
+figures/eeg-v1-ridge-visuals
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Standards and references
+
 figures/visual-standards
-analysis/ridge_eeg_interpretability_plan
-analysis/neuroscience_figure_stack
+references/reputable-neuroscience-repos
 ```
 
 ```{toctree}
 :maxdepth: 2
 :caption: Methods and evidence
 
+methods/ridge-baseline
 methods/leakage-proof-evaluation
+research/best_supported_stats/README
 paper/benchmark_protocol
 paper/methods
 paper/experiments
 paper/limitations
 evidence/moabb_paper_audit_v1
 results/a100-run-history
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Executable examples
+
+auto_examples/index
 ```
 
 ```{toctree}
@@ -69,21 +112,19 @@ ROADMAP
 :maxdepth: 2
 :caption: External standards
 
-references/reputable-neuroscience-repos
 licenses/upstream-registry
 ```
-
 
 ```{toctree}
 :maxdepth: 1
 :caption: Appendix and archived notes
 
+research/eeg_v1_ridge_visuals/eeg_v1_ridge_visual_analysis
 CHAPMAN_A100_LAUNCH
 CHAPMAN_A100_QUICKSTART
 H100_RUNBOOK
 LICENSE_REUSE
 RUNPOD_A100_REHEARSAL
-analysis/ridge_eeg_figures/README
 maintenance/repo-knowledge-graph
 paper/abstract
 paper/outline
@@ -97,13 +138,11 @@ research/nfc_falsification_criteria
 research/nfc_implementation_plan
 research/pair_operator_readiness_report
 research/repo_alignment_plan
+research/paper_reference_set/README
+research/paper_reference_set/MISSING_PDFS
 research/turboquant_retrieval_notes
-roadmap/coding_sprint_0_14_days
-roadmap/kahlus_implementation_status
-roadmap/sprint_ledger
 research/kahlus_affect_researchdock_roadmap
 research/kahlus_current_math_cs_report
-research/kahlus_neural_casp_general_plan
 research/kahlus_neurovisual_dataset_registry
 research/kahlus_neurovisual_epilepsy_roadmap
 research/kahlus_neurovisual_symptom_ontology
@@ -111,12 +150,11 @@ research/kahlus_pathway_matrix
 research/kahlus_root_technical_spec
 research/kahlus_stf_benchmark_math_note
 research/kahlus_stf_public_dataset_review
-research/m4_sleep_edf_preanalysis_plan
-research/overnight_log
-research/overnight_proposals
-research/overnight_result
+roadmap/coding_sprint_0_14_days
 roadmap/kahlus_biomedical_execution_plan
+roadmap/kahlus_implementation_status
 roadmap/kahlus_thread_sprint_summary
 roadmap/kahlus_v1_eeg_baseline_plan
 roadmap/kahlus_v1_fewshot_adaptation_plan
+roadmap/sprint_ledger
 ```

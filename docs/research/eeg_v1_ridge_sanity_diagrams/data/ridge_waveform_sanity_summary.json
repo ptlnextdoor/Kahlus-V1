@@ -1,0 +1,29 @@
+{
+  "source": "neurotwin.benchmarks.baseline_suite._make_paired_windows(seed=0)",
+  "claim_scope": "benchmark-contract diagnostic, not raw EEG evidence from versions bundles",
+  "raw_generator_shape": [
+    30,
+    8,
+    6
+  ],
+  "x_test_shape": [
+    9,
+    7,
+    6
+  ],
+  "y_test_shape": [
+    9,
+    7,
+    6
+  ],
+  "sample_index": 0,
+  "channel_index": 0,
+  "ridge_mse": 5.347604390508322,
+  "ridge_pearsonr": 0.45295790205787484,
+  "persistence_mse": 6.8705080347202445,
+  "persistence_pearsonr": 0.4901254060237002,
+  "contract": {
+    "future_forecasting": "X = EEG window[:-1], Y = EEG window[1:]",
+    "linear_ridge": "fit(flatten_time(X_train), flatten_time(Y_train)); reshape predictions to [sample, time, channel]"
+  }
+}
