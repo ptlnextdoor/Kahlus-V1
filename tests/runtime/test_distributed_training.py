@@ -1,4 +1,6 @@
+import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
@@ -7,6 +9,12 @@ from pathlib import Path
 from unittest import mock
 
 from neurotwin.runtime.distributed import cleanup_process_group, get_distributed_info, maybe_init_process_group
+
+
+def _free_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
 
 
 class DistributedTrainingRuntimeTests(unittest.TestCase):
@@ -112,3 +120,102 @@ class DistributedTrainingRuntimeTests(unittest.TestCase):
 
             self.assertIn("run_dir=", result.stdout)
             self.assertTrue((run_root / "prepared_synthetic" / "split_manifest.json").exists())
+
+    def test_torchrun_prepared_ddp_keeps_rank_metrics_in_lockstep(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            prep_dir = tmp_path / "prepared"
+            run_root = tmp_path / "runs"
+            self.run_cli(
+                "data",
+                "prepare",
+                "--dataset",
+                "synthetic",
+                "--split",
+                "subject",
+                "--out-dir",
+                str(prep_dir),
+            )
+            config = tmp_path / "ddp_config.yaml"
+            config.write_text(
+                "\n".join(
+                    [
+                        "experiment: ddp_probe",
+                        "dataset: prepared_manifest",
+                        "task: neural_translation_v1",
+                        "split: subject",
+                        f"event_manifest: {prep_dir / 'event_manifest.json'}",
+                        f"split_manifest: {prep_dir / 'split_manifest.json'}",
+                        "seed: 0",
+                        "steps: 2",
+                        "batch_size: 4",
+                        "window_size: 8",
+                        "stride: 8",
+                        "precision: fp32",
+                        "gradient_accumulation_steps: 2",
+                        "eval_every_steps: 1",
+                        "checkpoint_every_steps: 1",
+                        "model:",
+                        "  type: NeuralStateSpaceTranslator",
+                        "  latent_dim: 16",
+                        "  n_layers: 1",
+                        "  backbone: ssm_fallback",
+                        "  encoder: auto",
+                        "  subject_adapter_dim: 4",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            env = dict(os.environ)
+            env["PYTHONPATH"] = "src"
+            env["OMP_NUM_THREADS"] = "1"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "torch.distributed.run",
+                    "--nnodes=1",
+                    "--node_rank=0",
+                    "--master_addr=127.0.0.1",
+                    f"--master_port={_free_tcp_port()}",
+                    "--nproc_per_node=2",
+                    "-m",
+                    "neurotwin.cli",
+                    "train",
+                    "--config",
+                    str(config),
+                    "--run-root",
+                    str(run_root),
+                ],
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            run_dir = run_root / "ddp_probe"
+            rank_rows = {
+                rank: [
+                    json.loads(line)
+                    for line in (run_dir / f"metrics.rank{rank}.jsonl").read_text(encoding="utf-8").splitlines()
+                ]
+                for rank in (0, 1)
+            }
+            self.assertEqual(
+                [(row["task_id"], row["phase"], row["step"]) for row in rank_rows[0]],
+                [(row["task_id"], row["phase"], row["step"]) for row in rank_rows[1]],
+            )
+            for rank, rows in rank_rows.items():
+                self.assertTrue(rows)
+                self.assertTrue(all(row["rank"] == rank for row in rows))
+                self.assertTrue(all(row["world_size"] == 2 for row in rows))
+            finals = {
+                rank: {row["task_id"]: row for row in rows if row["phase"] == "final"}
+                for rank, rows in rank_rows.items()
+            }
+            self.assertEqual(finals[0].keys(), finals[1].keys())
+            for task_id in finals[0]:
+                for metric in ("val_mse", "test_mse", "best_val_mse", "final_val_mse"):
+                    self.assertAlmostEqual(finals[0][task_id][metric], finals[1][task_id][metric], places=6)
