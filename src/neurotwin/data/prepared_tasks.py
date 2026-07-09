@@ -136,9 +136,12 @@ def build_future_forecasting_task_from_windows(
     modality = first_prepared_modality_with_splits(windows_by_split)
     if modality is None:
         return None
-    train = [window.signal for window in windows_by_split["train"] if window.modality == modality]
-    val = [window.signal for window in windows_by_split["val"] if window.modality == modality]
-    test = [window.signal for window in windows_by_split["test"] if window.modality == modality]
+    train_windows = [window for window in windows_by_split["train"] if window.modality == modality]
+    val_windows = [window for window in windows_by_split["val"] if window.modality == modality]
+    test_windows = [window for window in windows_by_split["test"] if window.modality == modality]
+    train = [window.signal for window in train_windows]
+    val = [window.signal for window in val_windows]
+    test = [window.signal for window in test_windows]
     x_train, y_train = _future_xy(train)
     x_val, y_val = _future_xy(val)
     x_test, y_test = _future_xy(test)
@@ -155,6 +158,7 @@ def build_future_forecasting_task_from_windows(
         x_val=x_val,
         y_val=y_val,
         notes=notes or (f"prepared {modality} next-state windows",),
+        metadata=_nuisance_metadata(train_windows, val_windows, test_windows),
     )
 
 
@@ -198,6 +202,11 @@ def _masked_task_from_windows(
         y_val=val if val.size else None,
         val_metric_mask=val_mask,
         notes=(f"prepared {modality} masked reconstruction",),
+        metadata=_nuisance_metadata(
+            [window for window in windows_by_split["train"] if window.modality == modality],
+            [window for window in windows_by_split["val"] if window.modality == modality],
+            [window for window in windows_by_split["test"] if window.modality == modality],
+        ),
     )
 
 
@@ -270,6 +279,26 @@ def _future_xy(signals: list[np.ndarray]) -> tuple[np.ndarray | None, np.ndarray
     if not usable:
         return None, None
     return np.asarray([signal[:-1] for signal in usable], dtype=np.float32), np.asarray([signal[1:] for signal in usable], dtype=np.float32)
+
+
+def _nuisance_metadata(
+    train_windows: list[NeuralEventBatch] | list[np.ndarray],
+    val_windows: list[NeuralEventBatch] | list[np.ndarray],
+    test_windows: list[NeuralEventBatch] | list[np.ndarray],
+) -> dict[str, object]:
+    if not train_windows or not isinstance(train_windows[0], NeuralEventBatch):
+        return {}
+    return {
+        "nuisance_group_type": "dataset_subject_session",
+        "train_nuisance_groups": [_nuisance_group(window) for window in train_windows if window.signal.shape[0] >= 2],
+        "val_nuisance_groups": [_nuisance_group(window) for window in val_windows if isinstance(window, NeuralEventBatch) and window.signal.shape[0] >= 2],
+        "test_nuisance_groups": [_nuisance_group(window) for window in test_windows if isinstance(window, NeuralEventBatch) and window.signal.shape[0] >= 2],
+    }
+
+
+def _nuisance_group(window: NeuralEventBatch) -> str:
+    patient = window.metadata.get("patient_id") or window.subject_id
+    return f"{window.dataset}|{patient}|{window.session_id}"
 
 
 def _paired_windows(

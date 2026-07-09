@@ -71,7 +71,7 @@ class EstimateConfigTests(unittest.TestCase):
         self.assertEqual(estimate["network_blocks"], 7)
         self.assertGreater(float(estimate["estimated_pair_state_mb"]), 0.0)
         self.assertGreater(float(estimate["estimated_1xa100_runtime_mb"]), 0.0)
-        self.assertGreater(float(estimate["estimated_6xa100_ddp_per_gpu_mb"]), 0.0)
+        self.assertGreater(float(estimate["estimated_7xa100_ddp_per_gpu_mb"]), 0.0)
 
     def test_pair_operator_no_pair_estimate_marks_update_path_disabled(self):
         estimate = estimate_config(

@@ -10,6 +10,7 @@ from neurotwin.em import (
     artifact_severity_summary,
     build_stage0_report,
     contamination_map,
+    format_stage0_report_md,
     run_artifact_audit,
     synthesize_idle_recording,
     write_stage0_report,

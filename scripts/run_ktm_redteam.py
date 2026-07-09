@@ -10,6 +10,7 @@ generalization. No real data, no cluster job, no model-superiority claim.
 from __future__ import annotations
 
 import argparse
+import sys
 
 from _bootstrap import ensure_src_import_path
 

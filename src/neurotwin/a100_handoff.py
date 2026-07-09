@@ -9,16 +9,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import zipfile
+from typing import Iterable
 
 
-EXPECTED_GPU_COUNT = 7
-GPU_LABEL = "7xA100"
+DEFAULT_GPU_COUNT = 7
 FORBIDDEN_SUFFIXES = (
     ".pt",
     ".pth",
@@ -42,34 +43,23 @@ FORBIDDEN_PARTS = {".git", ".env", ".ds_store", "__macosx", "__pycache__", "grap
 FORBIDDEN_MARKERS = ("secret", "password", "passwd", "api_key", "apikey", "ssh_key", "raw_private")
 
 RUNNER_PATHS = (
-    "README_RUN.md",
-    "README_AGENT_DEPLOY.md",
-    "Dockerfile.a100",
     "pyproject.toml",
     "environment-a100.yml",
     "requirements/cluster-a100.txt",
+    "configs/train/kahlus_multidataset_a100_evidence.yaml",
     "configs/train/moabb_a100.yaml",
     "configs/train/moabb_a100_smoke.yaml",
-    "configs/train/prepared_synthetic_debug.yaml",
     "docs/research/kahlus_stf_public_dataset_review.md",
     "scripts/_bootstrap.py",
     "scripts/audit_ktm_a100_evidence.py",
-    "scripts/docker_a100_inner.sh",
     "scripts/docker_gpu_preflight.py",
+    "scripts/fetch_kahlus_public_edf_datasets.py",
     "scripts/fetch_chb_mit_smoke_subset.py",
     "scripts/package_a100_evidence_bundle.py",
-    "scripts/package_a100_evidence_bundle.sh",
-    "scripts/prepare_moabb_benchmark.sh",
-    "scripts/run_docker_7gpu.sh",
-    "scripts/run_docker_6gpu.sh",
-    "scripts/run_full.sh",
-    "scripts/run_full.sbatch",
-    "scripts/run_smoke.sh",
+    "scripts/prepare_multidataset_a100_evidence.sh",
     "scripts/run_stf_chb_mit_smoke.py",
     "scripts/run_stf_public_data_audit.py",
     "scripts/run_stf_synthetic_smoke.py",
-    "scripts/slurm/_train_a100_inner.sh",
-    "scripts/train_a100_inner.sh",
     "scripts/run_researchdock_synthetic.py",
     "scripts/smoke_a100_runner.py",
     "src/neurotwin/__init__.py",
@@ -96,6 +86,7 @@ RUNNER_PATHS = (
     "src/neurotwin/transition_gym",
     "src/neurotwin/upstreams.py",
     "tests/researchdock",
+    "tests/data",
     "tests/stf",
 )
 
@@ -114,6 +105,12 @@ class A100HandoffPackage:
 
 
 def package_kahlus_a100_7x_handoff(repo_root: str | Path, out_dir: str | Path) -> A100HandoffPackage:
+    return package_kahlus_a100_handoff(repo_root, out_dir, gpu_count=DEFAULT_GPU_COUNT)
+
+
+def package_kahlus_a100_handoff(repo_root: str | Path, out_dir: str | Path, *, gpu_count: int = DEFAULT_GPU_COUNT) -> A100HandoffPackage:
+    if gpu_count < 1:
+        raise A100HandoffError("gpu_count must be at least 1")
     repo = Path(repo_root).resolve()
     out = Path(out_dir).resolve()
     commit = _git(repo, "rev-parse", "HEAD")
@@ -122,11 +119,11 @@ def package_kahlus_a100_7x_handoff(repo_root: str | Path, out_dir: str | Path) -
         raise A100HandoffError("A100 handoff requires a clean worktree before packaging")
 
     short = commit[:7]
-    root_name = f"kahlus-a100-7x-handoff-{short}"
-    runner_name = f"kahlus-a100-7x-runner-{short}.tar.gz"
+    root_name = f"kahlus-a100-{gpu_count}x-handoff-{short}"
+    runner_name = f"kahlus-a100-{gpu_count}x-runner-{short}.tar.gz"
     out.mkdir(parents=True, exist_ok=True)
     zip_path = out / f"{root_name}.zip"
-    manifest = _manifest(commit, runner_name)
+    manifest = _manifest(commit, runner_name, gpu_count=gpu_count)
 
     with tempfile.TemporaryDirectory() as tmp:
         stage_root = Path(tmp) / root_name
@@ -144,6 +141,7 @@ def package_kahlus_a100_7x_handoff(repo_root: str | Path, out_dir: str | Path) -
             encoding="utf-8",
         )
         (stage_root / "README_A100_7X_HANDOFF.md").write_text(_readme(manifest), encoding="utf-8")
+        (stage_root / "README_RUN.md").write_text(_readme_run(manifest), encoding="utf-8")
         _write_checksums(stage_root, "SHA256SUMS")
         _assert_safe_tree(stage_root)
 
@@ -160,13 +158,15 @@ def package_kahlus_a100_7x_handoff(repo_root: str | Path, out_dir: str | Path) -
     )
 
 
-def _manifest(commit: str, runner_name: str) -> dict[str, object]:
+def _manifest(commit: str, runner_name: str, *, gpu_count: int) -> dict[str, object]:
+    gpu_label = f"{gpu_count}xA100"
     return {
-        "package": "kahlus_a100_7x_handoff",
+        "package": f"kahlus_a100_{gpu_count}x_handoff",
+        "evidence_package": "kahlus-multidataset-a100-evidence",
         "commit_hash": commit,
         "clean_worktree_required": True,
-        "expected_gpu_count": EXPECTED_GPU_COUNT,
-        "gpu_label": GPU_LABEL,
+        "expected_gpu_count": gpu_count,
+        "gpu_label": gpu_label,
         "runner_tarball": runner_name,
         "cpu_smoke_command": "PYTHONPATH=src python3 -m unittest discover -s tests/researchdock -v",
         "stf_cpu_smoke_command": "PYTHONPATH=src python3 -m unittest discover -s tests/stf -v",
@@ -178,6 +178,14 @@ def _manifest(commit: str, runner_name: str) -> dict[str, object]:
             "PYTHONPATH=src python3 scripts/fetch_chb_mit_smoke_subset.py "
             "--dataset chb_mit_physionet --out-root /tmp/kahlus_chbmit_smoke_subset "
             "--patients 2 --records-per-patient 2"
+        ),
+        "public_edf_smoke_fetch_command": (
+            "python3 scripts/fetch_kahlus_public_edf_datasets.py "
+            "--out-root /data/kahlus/raw --max-records-per-dataset 16"
+        ),
+        "public_edf_full_fetch_command": (
+            "python3 scripts/fetch_kahlus_public_edf_datasets.py "
+            "--out-root /data/kahlus/raw --full"
         ),
         "stf_public_audit_command": (
             "PYTHONPATH=src python3 scripts/run_stf_public_data_audit.py "
@@ -193,10 +201,22 @@ def _manifest(commit: str, runner_name: str) -> dict[str, object]:
         "runner_checksum_command": "shasum -a 256 -c RUNNER_SHA256SUMS",
         "runner_self_smoke_command": "PYTHONPATH=src python3 scripts/smoke_a100_runner.py",
         "gpu_count_verification_command": (
-            "test \"$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l | tr -d ' ')\" = \"7\""
+            f"test \"$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l | tr -d ' ')\" = \"{gpu_count}\""
+        ),
+        "multidataset_prepare_command": (
+            "MULTIDATASET_ROOT=/data/kahlus/raw PYTHONPATH=src "
+            "bash scripts/prepare_multidataset_a100_evidence.sh /data/kahlus/prepared/kahlus_multidataset_a100_evidence"
+        ),
+        "multidataset_dry_run_command": (
+            "PYTHONPATH=src python3 -m neurotwin.cli train --dry-run "
+            "--config /data/kahlus/prepared/kahlus_multidataset_a100_evidence/configs/kahlus_multidataset_a100_evidence.materialized.yaml"
+        ),
+        "multidataset_ddp_torchrun_command": (
+            f"torchrun --standalone --nproc_per_node={gpu_count} -m neurotwin.cli train "
+            "--config /data/kahlus/prepared/kahlus_multidataset_a100_evidence/configs/kahlus_multidataset_a100_evidence.materialized.yaml"
         ),
         "ddp_torchrun_command": (
-            "torchrun --standalone --nproc_per_node=7 -m neurotwin.cli train "
+            f"torchrun --standalone --nproc_per_node={gpu_count} -m neurotwin.cli train "
             "--config configs/train/moabb_a100_smoke.yaml"
         ),
         "stf_cluster_public_smoke_command": (
@@ -207,9 +227,13 @@ def _manifest(commit: str, runner_name: str) -> dict[str, object]:
         ),
         "evidence_bundle_writer": "python3 scripts/package_a100_evidence_bundle.py",
         "audit_script": "python3 scripts/audit_ktm_a100_evidence.py",
+        "raw_data_archive_policy": (
+            "Raw EDFs are not included in the code handoff zip. Use the official PhysioNet downloader, "
+            "or pass --include-raw-data-root to scripts/package_kahlus_a100_7x_handoff.py to create a separate large raw-data archive."
+        ),
         "audit_command": (
             "PYTHONPATH=src python3 scripts/audit_ktm_a100_evidence.py "
-            "--evidence <returned-evidence.zip> --out-dir <audit-out> --expected-gpus 7"
+            f"--evidence <returned-evidence.zip> --out-dir <audit-out> --expected-gpus {gpu_count}"
         ),
         "claim_boundary": "infrastructure_handoff_only_no_clinical_or_model_superiority_claims",
         "exclusions": [
@@ -223,8 +247,8 @@ def _manifest(commit: str, runner_name: str) -> dict[str, object]:
 
 def _readme(manifest: dict[str, object]) -> str:
     return (
-        "# Kahlus 7xA100 Handoff\n\n"
-        "This package is a local handoff artifact for a 7xA100 cluster. Packaging it does not launch "
+        f"# Kahlus {manifest['gpu_label']} Handoff\n\n"
+        f"This package is a local handoff artifact for a {manifest['gpu_label']} cluster. Packaging it does not launch "
         "A100, Slurm, Docker, or torchrun jobs.\n\n"
         f"- commit: {manifest['commit_hash']}\n"
         f"- GPU label: {manifest['gpu_label']}\n"
@@ -260,6 +284,32 @@ def _readme(manifest: dict[str, object]) -> str:
         "```bash\n"
         f"{manifest['ddp_torchrun_command']}\n"
         "```\n\n"
+        "## Multi-Dataset Evidence Package\n\n"
+        "Fetch official public EDF roots from PhysioNet outside the repo. For a quick smoke subset:\n\n"
+        "```bash\n"
+        f"{manifest['public_edf_smoke_fetch_command']}\n"
+        "```\n\n"
+        "For the full public EDF download:\n\n"
+        "```bash\n"
+        f"{manifest['public_edf_full_fetch_command']}\n"
+        "```\n\n"
+        "`MULTIDATASET_ROOT` should contain exactly these reusable subdirectories: "
+        "`sleep-edf`, `chb-mit`, `eegmmi`, and `siena`. You may alternatively set `SLEEP_EDF_ROOT`, "
+        "`CHB_MIT_ROOT`, `EEGMMI_ROOT`, and `SIENA_ROOT` individually.\n\n"
+        "**Do not delete raw dataset roots after a run.** Treat them as a persistent shared cache so future "
+        "A100 runs can reuse the same downloads. Delete only derived outputs under the prepared output directory "
+        "when you intentionally want to rerun preprocessing.\n\n"
+        "The code handoff zip does not include raw EDF data. If a raw bundle is explicitly needed, create a "
+        "separate archive with `scripts/package_kahlus_a100_7x_handoff.py --include-raw-data-root <path>`; "
+        "full raw EDF bundles may be tens of GB.\n\n"
+        "```bash\n"
+        f"{manifest['multidataset_prepare_command']}\n"
+        f"{manifest['multidataset_dry_run_command']}\n"
+        "```\n\n"
+        f"The full multi-dataset run uses the same honest {manifest['expected_gpu_count']}-GPU allocation label:\n\n"
+        "```bash\n"
+        f"{manifest['multidataset_ddp_torchrun_command']}\n"
+        "```\n\n"
         "## STF Public Smoke On Cluster\n\n"
         "Set `CHB_MIT_ROOT` to an external CHB-MIT root. Do not place raw EDF files in the repo.\n\n"
         "```bash\n"
@@ -281,13 +331,101 @@ def _readme(manifest: dict[str, object]) -> str:
     )
 
 
+def _readme_run(manifest: dict[str, object]) -> str:
+    return (
+        "# README_RUN: Kahlus Multi-Dataset A100 Evidence\n\n"
+        "## What This Run Does\n\n"
+        "Prepares public EDF EEG datasets into Kahlus event manifests, runs leakage audits and brutal baselines, "
+        f"then provides a materialized config for a {manifest['gpu_label']} torchrun training job.\n\n"
+        "## Persistent Dataset Rule\n\n"
+        "**Never delete the raw dataset directory.** Keep Sleep-EDF, CHB-MIT, EEGMMI, and Siena under a persistent "
+        "cluster path such as `/data/kahlus/raw` or `/scratch/kahlus/raw`. Future runs should reuse those files. "
+        "Only delete prepared outputs under `/data/kahlus/prepared/...` when intentionally rerunning preprocessing.\n\n"
+        "## Setup\n\n"
+        "```bash\n"
+        "tar -xzf kahlus-a100-7x-runner-*.tar.gz\n"
+        "cd runner\n"
+        "python3 -m pip install --upgrade pip\n"
+        "python3 -m pip install -e '.[moabb,cluster]'\n"
+        "```\n\n"
+        "Install CUDA PyTorch first if the cluster image does not already provide it.\n\n"
+        "## Dataset Layout\n\n"
+        "```bash\n"
+        "# Official PhysioNet download, smoke subset:\n"
+        f"{manifest['public_edf_smoke_fetch_command']}\n"
+        "# Or full download:\n"
+        f"{manifest['public_edf_full_fetch_command']}\n"
+        "export MULTIDATASET_ROOT=/data/kahlus/raw\n"
+        "# Expected reusable subdirs:\n"
+        "# $MULTIDATASET_ROOT/sleep-edf\n"
+        "# $MULTIDATASET_ROOT/chb-mit\n"
+        "# $MULTIDATASET_ROOT/eegmmi\n"
+        "# $MULTIDATASET_ROOT/siena\n"
+        "```\n\n"
+        "Official PhysioNet sources are the provenance ground truth. Kaggle mirrors are acceptable only as exact "
+        "verified mirrors, never as the source of truth. Do not commit raw EDF files. The code handoff zip does "
+        "not include raw EDF data; use a separate raw-data archive only when explicitly requested.\n\n"
+        "## Smoke / Prepare Command\n\n"
+        "```bash\n"
+        "export PREPARED=/data/kahlus/prepared/kahlus_multidataset_a100_evidence\n"
+        "MAX_RECORDS_PER_DATASET=16 MAX_WINDOWS_PER_SPLIT=128 \\\n"
+        "  MULTIDATASET_ROOT=$MULTIDATASET_ROOT PYTHONPATH=src \\\n"
+        "  bash scripts/prepare_multidataset_a100_evidence.sh $PREPARED\n"
+        "```\n\n"
+        "## Full Prepare Command\n\n"
+        "```bash\n"
+        "export PREPARED=/data/kahlus/prepared/kahlus_multidataset_a100_evidence_full\n"
+        "MAX_RECORDS_PER_DATASET=999999 MAX_WINDOWS_PER_SPLIT=4096 \\\n"
+        "  MULTIDATASET_ROOT=$MULTIDATASET_ROOT PYTHONPATH=src \\\n"
+        "  bash scripts/prepare_multidataset_a100_evidence.sh $PREPARED\n"
+        "```\n\n"
+        "## Dry Run\n\n"
+        "```bash\n"
+        "PYTHONPATH=src python3 -m neurotwin.cli train --dry-run \\\n"
+        "  --config $PREPARED/configs/kahlus_multidataset_a100_evidence.materialized.yaml\n"
+        "```\n\n"
+        f"## Full {manifest['gpu_label']} Run\n\n"
+        "```bash\n"
+        f"{manifest['gpu_count_verification_command']}\n"
+        f"torchrun --standalone --nproc_per_node={manifest['expected_gpu_count']} -m neurotwin.cli train \\\n"
+        "  --config $PREPARED/configs/kahlus_multidataset_a100_evidence.materialized.yaml\n"
+        "```\n\n"
+        "## Expected Outputs\n\n"
+        "```text\n"
+        "$PREPARED/event_manifest.json\n"
+        "$PREPARED/split_manifest.json\n"
+        "$PREPARED/multidataset_evidence_gate.json\n"
+        "$PREPARED/baseline_suite/prepared_baseline_suite.json\n"
+        "$PREPARED/configs/kahlus_multidataset_a100_evidence.materialized.yaml\n"
+        "runs/<run-id>/summary.json\n"
+        "runs/<run-id>/metrics.json\n"
+        "```\n\n"
+        "## Success Condition\n\n"
+        "Preparation succeeds when `gate_passed=True`, eval audit passes, and the baseline suite writes "
+        "`prepared_baseline_suite.json`. Training succeeds when `runs/<run-id>/summary.json` exists and reports "
+        "completed prepared training.\n\n"
+        "## Resume / Rerun\n\n"
+        "Reuse the same raw dataset root. Rerun preprocessing into a new `$PREPARED` directory, or delete only the "
+        "old prepared directory. Do not delete `/data/kahlus/raw` or equivalent raw dataset storage.\n\n"
+        "## Boundaries\n\n"
+        "No clinical seizure prediction, sleep diagnosis, treatment prediction, recovery claim, or brain foundation "
+        "model claim is allowed from this handoff alone.\n"
+    )
+
+
 def _write_runner_tarball(repo: Path, tarball: Path, commit: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         runner_root = Path(tmp) / "runner"
         runner_root.mkdir(parents=True)
         (runner_root / "COMMIT_HASH.txt").write_text(commit + "\n", encoding="utf-8")
         (runner_root / "README_A100_7X_RUNNER.md").write_text(
-            "Run only after local checks pass and the 7xA100 allocation is confirmed.\n",
+            "Run only after local checks pass and the requested A100 allocation is confirmed.\n",
+            encoding="utf-8",
+        )
+        (runner_root / "README_RUN.md").write_text(
+            "Fetch public EDFs with scripts/fetch_kahlus_public_edf_datasets.py from official PhysioNet sources. "
+            "Keep raw datasets in a persistent cluster directory. Never delete that raw dataset cache; delete only "
+            "prepared outputs when rerunning preprocessing. See the top-level README_RUN.md before launch.\n",
             encoding="utf-8",
         )
         for rel in RUNNER_PATHS:

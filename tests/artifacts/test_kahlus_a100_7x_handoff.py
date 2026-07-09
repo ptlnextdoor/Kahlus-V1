@@ -75,6 +75,7 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
                 "CLEAN_WORKTREE.txt",
                 "A100_HANDOFF_MANIFEST.json",
                 "README_A100_7X_HANDOFF.md",
+                "README_RUN.md",
                 "SHA256SUMS",
             ):
                 self.assertIn(f"{root_name}/{rel}", names)
@@ -83,9 +84,12 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
             self.assertEqual(len(runner_archives), 1)
             manifest = json.loads((root / "A100_HANDOFF_MANIFEST.json").read_text(encoding="utf-8"))
             readme = (root / "README_A100_7X_HANDOFF.md").read_text(encoding="utf-8")
+            run_readme = (root / "README_RUN.md").read_text(encoding="utf-8")
             self.assertEqual(manifest["expected_gpu_count"], 7)
             self.assertEqual(manifest["gpu_label"], "7xA100")
             self.assertIn("--nproc_per_node=7", manifest["ddp_torchrun_command"])
+            self.assertIn("/data/kahlus/raw", manifest["multidataset_prepare_command"])
+            self.assertIn("/data/kahlus/prepared/kahlus_multidataset_a100_evidence", manifest["multidataset_dry_run_command"])
             self.assertNotIn("--require-pass", manifest["ddp_torchrun_command"])
             self.assertIn("nvidia-smi", manifest["gpu_count_verification_command"])
             self.assertIn('"7"', manifest["gpu_count_verification_command"])
@@ -96,6 +100,10 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
             self.assertIn("tests/stf", manifest["stf_cpu_smoke_command"])
             self.assertIn("run_stf_synthetic_smoke.py", manifest["stf_synthetic_smoke_command"])
             self.assertIn("fetch_chb_mit_smoke_subset.py", manifest["stf_subset_fetch_command"])
+            self.assertIn("fetch_kahlus_public_edf_datasets.py", manifest["public_edf_smoke_fetch_command"])
+            self.assertIn("--max-records-per-dataset 16", manifest["public_edf_smoke_fetch_command"])
+            self.assertIn("fetch_kahlus_public_edf_datasets.py", manifest["public_edf_full_fetch_command"])
+            self.assertIn("--full", manifest["public_edf_full_fetch_command"])
             self.assertIn("run_stf_public_data_audit.py", manifest["stf_public_audit_command"])
             self.assertIn("run_stf_chb_mit_smoke.py", manifest["stf_public_smoke_command"])
             self.assertEqual(manifest["runner_checksum_command"], "shasum -a 256 -c RUNNER_SHA256SUMS")
@@ -111,6 +119,14 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
             self.assertIn("## STF Local Checks", readme)
             self.assertIn("run_stf_chb_mit_smoke.py", readme)
             self.assertIn("RUNNER_SHA256SUMS", readme)
+            self.assertIn("Never delete the raw dataset directory", run_readme)
+            self.assertIn("Official PhysioNet sources are the provenance ground truth", run_readme)
+            self.assertIn("Kaggle mirrors are acceptable only as exact", run_readme)
+            self.assertIn("never as the source of truth", run_readme)
+            self.assertIn("$MULTIDATASET_ROOT/sleep-edf", run_readme)
+            self.assertIn("$MULTIDATASET_ROOT/chb-mit", run_readme)
+            self.assertIn("MAX_RECORDS_PER_DATASET=999999", run_readme)
+            self.assertIn("prepared_baseline_suite.json", run_readme)
             self.assertIn("## Runner Self-Smoke", readme)
             self.assertIn("scripts/smoke_a100_runner.py", readme)
             self.assertIn("nvidia-smi", readme)
@@ -128,8 +144,10 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
                 runner_extract = Path(tmp) / "runner_extract"
                 tar.extractall(runner_extract, filter="data")
             self.assertIn("runner/COMMIT_HASH.txt", runner_names)
+            self.assertIn("runner/README_RUN.md", runner_names)
             self.assertIn("runner/scripts/_bootstrap.py", runner_names)
             self.assertIn("runner/scripts/smoke_a100_runner.py", runner_names)
+            self.assertIn("runner/scripts/fetch_kahlus_public_edf_datasets.py", runner_names)
             self.assertIn("runner/scripts/fetch_chb_mit_smoke_subset.py", runner_names)
             self.assertIn("runner/scripts/run_stf_chb_mit_smoke.py", runner_names)
             self.assertIn("runner/scripts/run_stf_public_data_audit.py", runner_names)
@@ -339,6 +357,37 @@ class KahlusA100SevenGpuHandoffTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("symlink", result.stderr + result.stdout)
+
+    def test_package_can_be_built_for_3x_a100_without_manual_edits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _copy_current_worktree_to_clean_git(tmp)
+            out_dir = Path(tmp) / "out"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/package_kahlus_a100_7x_handoff.py",
+                    "--gpu-count",
+                    "3",
+                    "--out-dir",
+                    str(out_dir),
+                ],
+                cwd=repo,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            zips = sorted(out_dir.glob("kahlus-a100-3x-handoff-*.zip"))
+            self.assertEqual(len(zips), 1)
+            with zipfile.ZipFile(zips[0], "r") as archive:
+                root = archive.namelist()[0].split("/", 1)[0]
+                manifest = json.loads(archive.read(f"{root}/A100_HANDOFF_MANIFEST.json"))
+                run_readme = archive.read(f"{root}/README_RUN.md").decode("utf-8")
+            self.assertEqual(manifest["expected_gpu_count"], 3)
+            self.assertEqual(manifest["gpu_label"], "3xA100")
+            self.assertIn("--nproc_per_node=3", manifest["multidataset_ddp_torchrun_command"])
+            self.assertIn('"3"', manifest["gpu_count_verification_command"])
+            self.assertIn("--expected-gpus 3", manifest["audit_command"])
+            self.assertIn("Full 3xA100 Run", run_readme)
 
 
 if __name__ == "__main__":

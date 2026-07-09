@@ -1,0 +1,1289 @@
+[
+  {
+    "key": "eegpt_neurips2024",
+    "repo_url": "https://github.com/BINE022/EEGPT",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/eegpt_neurips2024",
+    "commit": "a0e0a8f",
+    "file_count_scanned": 74,
+    "plot_match_count": 9,
+    "top_matches": [
+      {
+        "path": "downstream/Modules/dn3/transforms/channels.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          "imshow"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 539,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 540,
+            "text": "plt.imshow(output)"
+          },
+          {
+            "line": 541,
+            "text": "plt.show()"
+          }
+        ],
+        "size": 16230
+      },
+      {
+        "path": "downstream/Modules/dn3/utils.py",
+        "extension": ".py",
+        "term_hits": [
+          "scatter"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 150,
+            "text": "true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)"
+          }
+        ],
+        "size": 5006
+      },
+      {
+        "path": "downstream/Modules/dn3/trainable/processes.py",
+        "extension": ".py",
+        "term_hits": [
+          "scatter"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 815,
+            "text": "index.scatter_(1, target.data.view(-1, 1), 1)"
+          }
+        ],
+        "size": 46383
+      },
+      {
+        "path": "figures/EEGPT.jpg",
+        "extension": ".jpg",
+        "term_hits": [],
+        "name_hits": [
+          "Figure",
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 499291
+      },
+      {
+        "path": "downstream/Modules/dn3/configuratron/config.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 36967
+      },
+      {
+        "path": "downstream/Modules/dn3/configuratron/config_printinfo.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 37874
+      },
+      {
+        "path": "downstream/Modules/dn3/configuratron/__init__.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 52
+      },
+      {
+        "path": "downstream/Modules/dn3/configuratron/extensions.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 1757
+      },
+      {
+        "path": "pretrain/configs.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 2745
+      }
+    ],
+    "readme_head": "# EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals\n\nThis repository is the official implementation of EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals. \n![image](figures/EEGPT.jpg)\n\nEEGPT, a novel 10-million-parameter pretrained transformer model designed for universal EEG feature extraction. In EEGPT, a mask-based dual self-supervised learning method for efficient feature extraction is designed. Compared to other mask-based self-supervised learning methods, it adds spatio-temporal representation alignment, constructing a self-supervised task on EEG representations with high SNR and rich semantic information instead of raw signals, thus avoiding poor feature quality extracted from low SNR signals.\n\n## Requirements\n\nTo install requirements:\n\n```bash\npip install -r requirements.txt\n```\n\n\n## Datasets\n\nFollow the instructions in the [datasets/pretrain/readme.md](datasets/pretrain/readme.md) to download the pre-training EEG dataset.\nThen run the following command to preprocess the data:\n\n```bash\ncd datasets/pretrain\npython prepare_pretrain_dataset.py\n```\nNote: If the script encounters an error when running, you can try running it again.\n\nFor downstream tasks, follow the instructions in the [datasets/downstream/readme.md](datasets/downstream/readme.md) to download and preprocess the downstream EEG datasets.\n\n## Pretrained Models\n\nYou can download pretrained models here:\n\n- [EEG_large](https://figshare.com/s/e37df4f8a907a866df4b) (in the 'Files/EEGPT/checkpoint/eegpt_mcae_58chs_4s_large4E.ckpt') trained on mixed dataset (58-channels, 256Hz, 4s time length EEG) using patch size 64. \n\nFor downstream tasks, you should place it into `checkpoint` folder as file name \"checkpoint/eegpt_mcae_58chs_4s_large4E.ckpt\". To use the model, simply load the checkpoint and pass it to the `EEGPTClassifier` class in \"downstream/Modules/models/EEGPT_mcae_finetune.py\".\n\nOther pretrained models:\n\n- [BENDR](https://github.com/SPOClab-ca/BENDR) should be placed into `downstream/Modules/models/encoder.pt`.\n- [BIOT](https://github.com/ycq091044/BIOT/tree/main/pretrained-models) should be placed into `downstream/Modules/BIOT/EEG-PREST-16-channels.ckpt`,`downstream/Modules/BIOT/EEG-SHHS+PREST-18-channels.ckpt`,`downstream/Modules/BIOT/EEG-six-datasets-18-channels.ckpt`.\n- [LaBraM](https://github.com/935963004/LaBraM) should be placed into `downstream/Modules/LaBraM/labram-base.pth`.\n\n## PRETRAINING TASK\n\nTo pretrain "
+  },
+  {
+    "key": "seeg_electrode_variability_neurips2024",
+    "repo_url": "https://github.com/gmentz/seegnificant",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/seeg_electrode_variability_neurips2024",
+    "commit": "4e1e98c",
+    "file_count_scanned": 13,
+    "plot_match_count": 2,
+    "top_matches": [
+      {
+        "path": "example.ipynb",
+        "extension": ".ipynb",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          ".plot(",
+          "scatter",
+          "colorbar",
+          "figsize"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 3,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 169,
+            "text": "fig, axs = plt.subplots(n_rows, n_cols, figsize=(15, 10))  # Adjust the figure size if needed"
+          },
+          {
+            "line": 181,
+            "text": "fig.colorbar(pcm, ax=axs[j])"
+          },
+          {
+            "line": 183,
+            "text": "axs[j].scatter((respRT_sorted) / 1000, np.arange(len(order)), label='RT', color='k')"
+          },
+          {
+            "line": 190,
+            "text": "plt.suptitle(f'{part} | Subplots of color-change responsive electrodes')"
+          },
+          {
+            "line": 191,
+            "text": "plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for suptitle"
+          },
+          {
+            "line": 192,
+            "text": "plt.show()"
+          },
+          {
+            "line": 194,
+            "text": "# plt.show()"
+          }
+        ],
+        "size": 1119042
+      },
+      {
+        "path": "Signal_Processing/utils.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          "plot_",
+          ".plot(",
+          "ax."
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 4,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 49,
+            "text": "def plot_epochs(self, trials_to_plot: list, channels_to_plot: list, plot_mean=True, plot_individual_epochs=True):"
+          },
+          {
+            "line": 56,
+            "text": "fig = plt.figure()"
+          },
+          {
+            "line": 58,
+            "text": "if plot_individual_epochs:"
+          },
+          {
+            "line": 60,
+            "text": "plt.plot(timestamps_sec, self.eeg_data[trial, :, channels_to_plot[0]])"
+          },
+          {
+            "line": 62,
+            "text": "if plot_mean:"
+          },
+          {
+            "line": 63,
+            "text": "plt.plot(timestamps_sec, np.mean(self.eeg_data[trials_to_plot, :, channels_to_plot[0]], 0), color='k', linewidth=3)"
+          },
+          {
+            "line": 66,
+            "text": "plt.axvline(0.5, color='k')"
+          }
+        ],
+        "size": 11107
+      }
+    ],
+    "readme_head": "# Neural decoding from stereotactic EEG: accounting for electrode variability across subjects\n\nIn this work, we introduce a training framework and architecture that can be used for multi-subject neural decoding\nbased on stereotactic electroencephalography (sEEG). We use our framework  to decode the trial-wise response time\nof subjects performing a behavioral task solely from their neural data. For more information, please refer to our \n[project page](https://gmentz.github.io/seegnificant).\n\nTo protect the privacy of the people that kindly shared their sEEG data with us (and to compy with HIPAA regulations),\nwe cannot make our dataset public. To help you structure your data in a way that can be processed by our framework,\nwe provide synthetic (fake) sEEG data for 3 \"subjects\".  You can find the synthetic data \n[here](https://drive.google.com/drive/folders/1UFSRT3wGNYZAXdpndDyRHr-CmjRQPlbM?usp=sharing).\n\n## Installation\n\nIn a clean virtual environment with python 3.8.10, run the following to clone the repository and download the synthetic data:\n\n```\ngit clone https://github.com/gmentz/seegnificant.git\ncd seegnificant\npip install -e .\ngdown --folder https://drive.google.com/drive/folders/1UFSRT3wGNYZAXdpndDyRHr-CmjRQPlbM -O data\n```\n\n## Getting started\n\nFor an easy-to-follow introduction to our framework, please follow along the `example.ipynb`. \n\nAlternatively, you can run individual components of the framework by running:\n- `python3 -m Signal_Processing.harmonize`\n- `python3 -m Signal_Processing.FDR_correction`\n- `python3 -m Model_and_Training.sEEGDataset`\n- `python3 -m Model_and_Training.SingleSubjectTrain`\n- `python3 -m Model_and_Training.MultiSubjectTrain`\n- `python3 -m Model_and_Training.TransferPreTrained`\n\n## Pretrained weights\nThe pretrained weights of seegnificant, trained on the combined data from 21 subjects across 5 different data splits, are available in the ```models``` folder. For completeness, each set of saved weights includes the subject-specific ```TaskHeads``` used during pretraining (refer to Section 4.3 of the paper). To load the model weights for any number of subjects, use the following code:\n```\nmodel = seegnificant(2, 1, XX)  # XX is the number of subjects in your study\nmodel.load_state_dict(torch.load('./models/pretrained_seegnificant_21_subjets_seed_YY.pt'), strict=False) # YY is the seed from {0, 1, 2, 3, 4} \n```\nCaution: Unless you are replicating the results reported in Section 4.3 of our paper, the weights of the ```taskHeads`"
+  },
+  {
+    "key": "labram_iclr2024",
+    "repo_url": "https://github.com/935963004/LaBraM",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/labram_iclr2024",
+    "commit": "c431221",
+    "file_count_scanned": 22,
+    "plot_match_count": 1,
+    "top_matches": [
+      {
+        "path": "norm_ema_quantizer.py",
+        "extension": ".py",
+        "term_hits": [
+          "scatter"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 53,
+            "text": "new_means.scatter_add_(0, repeat(buckets, 'n -> n d', d = dim), samples)"
+          }
+        ],
+        "size": 8280
+      }
+    ],
+    "readme_head": "# LaBraM\n\nOfficial implementation of our ICLR 2024 paper:\n[**Large Brain Model for Learning Generic Representations with Tremendous EEG Data in BCI**](https://openreview.net/forum?id=QzTpTRVtrP)\n\n![labram](labram.png)\n\n## Abstract\n\nThe current electroencephalogram (EEG) based deep learning models are typically designed for specific datasets and applications in brain-computer interaction (BCI), limiting the scale of the models and thus diminishing their perceptual capabilities and generalizability. Recently, Large Language Models (LLMs) have achieved unprecedented success in text processing, prompting us to explore the capabilities of Large EEG Models (LEMs). We hope that LEMs can break through the limitations of different task types of EEG datasets, and obtain universal perceptual capabilities of EEG signals through unsupervised pre-training. Then the models can be fine-tuned for different downstream tasks. However, compared to text data, the volume of EEG datasets is generally small and the format varies widely. For example, there can be mismatched numbers of electrodes, unequal length data samples, varied task designs, and low signal-to-noise ratio. To overcome these challenges, we propose a unified foundation model for EEG called Large Brain Model (LaBraM). LaBraM enables cross-dataset learning by segmenting the EEG signals into EEG channel patches. Vector-quantized neural spectrum prediction is used to train a semantically rich neural tokenizer that encodes continuous raw EEG channel patches into compact neural codes. We then pre-train neural Transformers by predicting the original neural codes for the masked EEG channel patches. The LaBraMs were pre-trained on about 2,500 hours of various types of EEG signals from around 20 datasets and validated on multiple different types of downstream tasks. Experiments on abnormal detection, event type classification, emotion recognition, and gait prediction show that our LaBraM outperforms all compared SOTA methods in their respective fields.\n\n---\n\n## Environment Setup\n\nCreate the environment and install dependencies:\n\n```bash\nconda create -n labram python=3.11\nconda activate labram\nconda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia\nconda install tensorboardX\npip install -r requirements.txt\n```\n\n---\n\n## [IMPORTANT] Fine-tune on Your Own Dataset\n\nYou can adapt LaBraM to your own datasets by following the fine-tuning scripts provided for TUAB and TUEV. Simply r"
+  },
+  {
+    "key": "population_transformer_2024",
+    "repo_url": "https://github.com/czlwang/PopulationTransformer",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/population_transformer_2024",
+    "commit": "dadb55b",
+    "file_count_scanned": 48,
+    "plot_match_count": 4,
+    "top_matches": [
+      {
+        "path": "util/tensorboard_utils.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          "plot_",
+          ".plot(",
+          "imshow",
+          "colorbar",
+          "figsize",
+          "ax."
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 1,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 4,
+            "text": "def plot_tensorboard_line(wav, title=None):"
+          },
+          {
+            "line": 9,
+            "text": "fig, ax = plt.subplots(figsize=(12, 3))"
+          },
+          {
+            "line": 10,
+            "text": "im = ax.plot(wav)"
+          },
+          {
+            "line": 11,
+            "text": "plt.xlabel(\"time\")"
+          },
+          {
+            "line": 12,
+            "text": "plt.ylabel(\"voltage\")"
+          },
+          {
+            "line": 14,
+            "text": "plt.title(title)"
+          },
+          {
+            "line": 15,
+            "text": "plt.tight_layout()"
+          }
+        ],
+        "size": 1771
+      },
+      {
+        "path": "preprocessors/superlet.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          ".plot(",
+          "imshow",
+          "colorbar",
+          "figsize"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 389,
+            "text": "import matplotlib.pyplot as ppl"
+          },
+          {
+            "line": 415,
+            "text": "figsize=(6, 6))"
+          },
+          {
+            "line": 417,
+            "text": "ax1.plot(np.arange(signal.size) / fs, signal, c='cornflowerblue')"
+          },
+          {
+            "line": 421,
+            "text": "im = ax2.imshow(ampls, cmap=\"magma\", aspect=\"auto\", extent=extent, origin='lower')"
+          },
+          {
+            "line": 423,
+            "text": "ppl.colorbar(im,ax = ax2, orientation='horizontal',"
+          },
+          {
+            "line": 426,
+            "text": "ax2.plot([0, len(signal) / fs], [20, 20], \"--\", c='0.5')"
+          },
+          {
+            "line": 427,
+            "text": "ax2.plot([0, len(signal) / fs], [40, 40], \"--\", c='0.5')"
+          },
+          {
+            "line": 428,
+            "text": "ax2.plot([0, len(signal) / fs], [60, 60], \"--\", c='0.5')"
+          }
+        ],
+        "size": 12914
+      },
+      {
+        "path": "tasks/pt_feature_extract_coords.py",
+        "extension": ".py",
+        "term_hits": [
+          "plot_"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 9,
+            "text": "from util.tensorboard_utils import plot_tensorboard_line"
+          },
+          {
+            "line": 65,
+            "text": "#tb_image = plot_tensorboard_line(image, title=label)"
+          }
+        ],
+        "size": 2720
+      },
+      {
+        "path": "tasks/nsp_replace_only_pretrain.py",
+        "extension": ".py",
+        "term_hits": [
+          "plot_"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 9,
+            "text": "from util.tensorboard_utils import plot_tensorboard_line"
+          },
+          {
+            "line": 81,
+            "text": "#tb_image = plot_tensorboard_line(image, title=label)"
+          }
+        ],
+        "size": 3660
+      }
+    ],
+    "readme_head": "# PopulationTransformer\nThis is the code for the [PopulationTransformer](https://arxiv.org/abs/2406.03044). \n\n[![Paper](https://img.shields.io/badge/arXiv-2406.03044-red)](https://arxiv.org/abs/2406.03044)\n[![Website](https://img.shields.io/badge/Website-blue)](https://glchau.github.io/population-transformer/)\n[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-yellow)](https://huggingface.co/PopulationTransformer/popt_brainbert_stft)\n[![Dataset](https://img.shields.io/badge/Dataset-teal)](https://braintreebank.dev/)\n\n<p align=\"left\">\n    &nbsp;<a href=\"#quick-start\">Quick Start</a>\n    | &nbsp;<a href=\"#prerequisites\">Prerequisites</a>\n    | &nbsp;<a href=\"#data\">Data</a>\n    | &nbsp;<a href=\"#pretraining\">Pretraining</a>\n    | &nbsp;<a href=\"#fine-tuning\">Fine-tuning</a>\n    | &nbsp;<a href=\"#citation\">Citation</a>\n</p>\n\n## Quick Start\nWith the [requirements](#prerequisites) and [data](#data) installed, run these scripts for their desired outcomes: \n\n| Script    | Outcome |\n| -------- | ------- |\n| `0_write_pretraining_data.sh`  | Write pretraining data |\n| `1_create_pretraining_manifest.sh` | Create the pretraining manifest file |\n| `2_run_pretraining.sh`    | Run pretraining |\n| `3_write_finetuning_data.sh`    | Write fine-tuning data |\n| `4_create_finetuning_manifest.sh`    | Create fine-tuning manifest file |\n| `5_run_finetuning.sh`    | Run fine-tuning |\n\nMore details about each script in [pretraining](#pretraining) and [fine-tuning](#fine-tuning) sections below. \n\n## Prerequisites\nRequirements:\n- pytorch >= 1.13.1\n```bash\npip install -r requirements.txt\n```\n\n## Data\nIf using the data from the Brain Treebank, the data can be downloaded from [braintreebank.dev](https://braintreebank.dev).\n\nThe following commands expects the Brain Treebank data to have the following structure:\n```\n/braintreebank_data\n  |_electrode_labels\n  |_subject_metadata\n  |_localization\n  |_all_subject_data\n    |_sub_*_trial*.h5\n```\n\n## Pretraining\n<details>\n  <summary>Details</summary>\n  \nThe below commands assume that you will be using the PopulationTransformer in conjunction with BrainBERT. \nIf you are, you will need to download the [BrainBERT](https://github.com/czlwang/BrainBERT) weights.\n\nFirst, we write the BrainBERT features for pre-training. This command takes a list of brain recordings (see below) and creates a training dataset from their BrainBERT representations:\n```bash\nREPO_DIR=\"/path/to/PopulationTransformer\"\nBRAINTREEBANK_DIR=\"/path/t"
+  },
+  {
+    "key": "reve_eeg_foundation_2025",
+    "repo_url": "https://github.com/elouayas/reve_eeg",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/reve_eeg_foundation_2025",
+    "commit": "06a7059",
+    "file_count_scanned": 74,
+    "plot_match_count": 39,
+    "top_matches": [
+      {
+        "path": "src/configs/validate.py",
+        "extension": ".py",
+        "term_hits": [
+          "ax."
+        ],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [
+          {
+            "line": 32,
+            "text": "parent.add(rich.syntax.Syntax(f\"{key}: {value}\", \"yaml\", line_numbers=False, word_wrap=True))"
+          }
+        ],
+        "size": 1627
+      },
+      {
+        "path": "preprocessing/preprocessing_mumtaz.py",
+        "extension": ".py",
+        "term_hits": [
+          "plot_"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 121,
+            "text": "# raw.plot_psd(average=True)"
+          }
+        ],
+        "size": 4052
+      },
+      {
+        "path": "hf/reve-base/configuration_reve.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 769
+      },
+      {
+        "path": "hf/reve-base/config.json",
+        "extension": ".json",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 428
+      },
+      {
+        "path": "hf/reve-positions/config.json",
+        "extension": ".json",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 7719
+      },
+      {
+        "path": "hf/reve-positions/configuration_bank.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 277
+      },
+      {
+        "path": "src/configs/config_train.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 1358
+      },
+      {
+        "path": "src/configs/config_dt.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 969
+      },
+      {
+        "path": "src/configs/README.md",
+        "extension": ".md",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 7466
+      },
+      {
+        "path": "src/configs/resolver.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 1858
+      },
+      {
+        "path": "src/configs/init/cls_wrapper.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 121
+      },
+      {
+        "path": "src/configs/init/mae.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 226
+      },
+      {
+        "path": "src/configs/optimizer/stable_adamw_distributed.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 207
+      },
+      {
+        "path": "src/configs/optimizer/stable_adamw.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 109
+      },
+      {
+        "path": "src/configs/optimizer/adam.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 95
+      },
+      {
+        "path": "src/configs/optimizer/sgd.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 94
+      },
+      {
+        "path": "src/configs/optimizer/adamw.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 96
+      },
+      {
+        "path": "src/configs/encoder/small.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 170
+      },
+      {
+        "path": "src/configs/encoder/large.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 173
+      },
+      {
+        "path": "src/configs/encoder/tiny.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 170
+      },
+      {
+        "path": "src/configs/encoder/base.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 171
+      },
+      {
+        "path": "src/configs/decoder/base.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 151
+      },
+      {
+        "path": "src/configs/scheduler/plateau_acc.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 86
+      },
+      {
+        "path": "src/configs/scheduler/plateau.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 86
+      },
+      {
+        "path": "src/configs/scheduler/trapezoid.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 149
+      }
+    ],
+    "readme_head": "# REVE: A Foundation Model for EEG - Adapting to Any Setup with Large-Scale Pretraining on 25,000 Subjects\n\n[![arXiv](https://img.shields.io/badge/arXiv-2510.21585-B31B1B?logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.21585)\n[![Website](https://img.shields.io/badge/Website-brain--bzh.github.io-0A66C2?logo=github&logoColor=white)](https://brain-bzh.github.io/reve/)\n[![Colab](https://img.shields.io/badge/Google%20Colab-Tutorial-orange?logo=google-colab&logoColor=orange)](https://colab.research.google.com/drive/13wMytamrucmU9c2OIc-TcoEIj6xSqPGo?usp=sharing)\n[![Hugging%20Face](https://img.shields.io/badge/Hugging%20Face-REVE%20Models-FFD21E?logo=huggingface&logoColor=yellow)](https://huggingface.co/collections/brain-bzh/reve)\n\n\nCodebase for REVE (EEG foundation model):\n- Foundation pretraining (MAE-style) in `src/train.py`\n- Downstream linear probing / fine-tuning in `src/dt.py`\n- Optuna search for downstream hyperparameters in `src/dt_opt.py`\n- Evaluation utility in `src/eval_dt.py`\n\n## Repository layout\n\n- `src/`: training, downstream, models, and utilities\n- `src/configs/`: Hydra configuration tree for all runs\n- `preprocessing/`: dataset conversion/preparation scripts\n- `hf/`: Hugging Face export artifacts and wrappers\n- `.scripts/`: helper launch scripts\n\nDetailed docs:\n- [Configs guide](src/configs/README.md)\n- [Downstream tasks guide](src/downstream_tasks/README.md)\n- [Preprocessing guide](preprocessing/README.md)\n- [Hugging Face export notes](hf/README.md)\n\n## Environment setup\n\nPython requirement comes from `pyproject.toml` (`>=3.11`).\n\nUsing `uv`:\n\n```bash\nuv sync\n```\n\nUsing `pip` (alternative):\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate\npip install -e .\n```\n\nThen run scripts directly with `python`, `accelerate`, or `torchrun`.\n\n## How runs are configured\n\nAll training/eval scripts use Hydra configs from `src/configs`.\n\n- Pretraining root config: `src/configs/config_train.yaml`\n- Downstream root config: `src/configs/config_dt.yaml`\n\nRead the full config documentation here:\n- [src/configs/README.md](src/configs/README.md)\n\n## Running scripts\n\n### 1) Pretraining\n\nMain entrypoint:\n\n```bash\naccelerate launch src/train.py --config-name config_train.yaml\n```\n\nCommon overrides:\n\n```bash\naccelerate launch src/train.py --config-name config_train.yaml \\\n  data.path=/path/to/preprocessed_foundation_data \\\n  checkpointing.path=/path/to/checkpoints \\\n  trainer.batch_size=256 \\\n  trainer.lr=3e-4\n```\n\nSwitch encoder variant:\n\n```bash\naccelerat"
+  },
+  {
+    "key": "cebra_2022",
+    "repo_url": "https://github.com/AdaptiveMotorControlLab/CEBRA",
+    "local_path": "/tmp/kahlus-paper-repos-20260708/cebra_2022",
+    "commit": "d1842cc",
+    "file_count_scanned": 128,
+    "plot_match_count": 21,
+    "top_matches": [
+      {
+        "path": "cebra/integrations/matplotlib.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          "plot_",
+          ".plot(",
+          "imshow",
+          "scatter",
+          "heatmap",
+          "colorbar",
+          "figsize",
+          "ax."
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 22,
+            "text": "\"\"\"Matplotlib interface to CEBRA.\"\"\""
+          },
+          {
+            "line": 27,
+            "text": "import matplotlib.axes"
+          },
+          {
+            "line": 28,
+            "text": "import matplotlib.cm"
+          },
+          {
+            "line": 29,
+            "text": "import matplotlib.colors"
+          },
+          {
+            "line": 30,
+            "text": "import matplotlib.figure"
+          },
+          {
+            "line": 31,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 48,
+            "text": "if \"cebra\" not in matplotlib.colormaps:"
+          },
+          {
+            "line": 49,
+            "text": "matplotlib.colormaps.register("
+          }
+        ],
+        "size": 48144
+      },
+      {
+        "path": "tests/test_plot.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "pyplot",
+          "plt.",
+          "plot_",
+          ".plot(",
+          "scatter",
+          "colorbar",
+          "figsize"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 25,
+            "text": "import matplotlib"
+          },
+          {
+            "line": 26,
+            "text": "import matplotlib.pyplot as plt"
+          },
+          {
+            "line": 33,
+            "text": "import cebra.integrations.matplotlib as cebra_plot"
+          },
+          {
+            "line": 60,
+            "text": "def test_plot_imports():"
+          },
+          {
+            "line": 64,
+            "text": "assert hasattr(cebra, \"plot_embedding\")"
+          },
+          {
+            "line": 65,
+            "text": "assert hasattr(cebra, \"plot_temperature\")"
+          },
+          {
+            "line": 66,
+            "text": "assert hasattr(cebra, \"plot_loss\")"
+          },
+          {
+            "line": 67,
+            "text": "assert hasattr(cebra, \"plot_overview\")"
+          }
+        ],
+        "size": 21182
+      },
+      {
+        "path": "cebra/integrations/plotly.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plotly",
+          "plot_",
+          ".plot(",
+          "scatter",
+          "figsize"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 22,
+            "text": "\"\"\"Plotly interface to CEBRA.\"\"\""
+          },
+          {
+            "line": 25,
+            "text": "import matplotlib.cm"
+          },
+          {
+            "line": 26,
+            "text": "import matplotlib.colors"
+          },
+          {
+            "line": 29,
+            "text": "import plotly.graph_objects"
+          },
+          {
+            "line": 30,
+            "text": "import plotly.graph_objects as go"
+          },
+          {
+            "line": 33,
+            "text": "from cebra.integrations.matplotlib import _EmbeddingPlot"
+          },
+          {
+            "line": 37,
+            "text": "\"\"\"Convert matplotlib colormap to plotly colorscale."
+          },
+          {
+            "line": 40,
+            "text": "cmap: A registered colormap name from matplotlib."
+          }
+        ],
+        "size": 9438
+      },
+      {
+        "path": "tests/test_plotly.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plotly",
+          "plot_",
+          "scatter"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 22,
+            "text": "import matplotlib"
+          },
+          {
+            "line": 24,
+            "text": "import plotly.graph_objects as go"
+          },
+          {
+            "line": 26,
+            "text": "from plotly.subplots import make_subplots"
+          },
+          {
+            "line": 28,
+            "text": "import cebra.integrations.plotly as cebra_plotly"
+          },
+          {
+            "line": 34,
+            "text": "cmap = matplotlib.colormaps.get_cmap(cmap)"
+          },
+          {
+            "line": 35,
+            "text": "colorscale = cebra_plotly._convert_cmap2colorscale(cmap)"
+          },
+          {
+            "line": 41,
+            "text": "def test_plot_embedding(output_dimension, idx_order):"
+          },
+          {
+            "line": 54,
+            "text": "fig = cebra_plotly.plot_embedding_interactive(embedding=embedding,"
+          }
+        ],
+        "size": 4156
+      },
+      {
+        "path": "cebra/grid_search.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plot_"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 29,
+            "text": "import matplotlib.axes"
+          },
+          {
+            "line": 36,
+            "text": "import cebra.integrations.matplotlib as cebra_matplotlib"
+          },
+          {
+            "line": 437,
+            "text": "def plot_loss_comparison(self,"
+          },
+          {
+            "line": 439,
+            "text": "**kwargs) -> matplotlib.axes.Axes:"
+          },
+          {
+            "line": 450,
+            "text": "A ``matplotlib.axes.Axes`` on which to generate the plot."
+          },
+          {
+            "line": 470,
+            "text": ">>> ax = grid_search.plot_loss_comparison()"
+          },
+          {
+            "line": 483,
+            "text": "ax = cebra_matplotlib.compare_models(models=list(self.models.values()),"
+          },
+          {
+            "line": 488,
+            "text": "def plot_transform(self):"
+          }
+        ],
+        "size": 22442
+      },
+      {
+        "path": "cebra/__init__.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plotly"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 40,
+            "text": "is_matplotlib_available = False"
+          },
+          {
+            "line": 42,
+            "text": "from cebra.integrations.matplotlib import *"
+          },
+          {
+            "line": 44,
+            "text": "is_matplotlib_available = True"
+          },
+          {
+            "line": 49,
+            "text": "is_plotly_available = False"
+          },
+          {
+            "line": 51,
+            "text": "from cebra.integrations.plotly import *"
+          },
+          {
+            "line": 53,
+            "text": "is_plotly_available = True"
+          }
+        ],
+        "size": 4416
+      },
+      {
+        "path": "docs/source/conf.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plotly"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 69,
+            "text": "\"https://cdn.plot.ly/plotly-latest.min.js\",  # Add Plotly.js"
+          },
+          {
+            "line": 116,
+            "text": "\"matplotlib\": (\"https://matplotlib.org/stable/\", None),"
+          },
+          {
+            "line": 120,
+            "text": "\"plotly\": (\"https://plotly.com/python-api-reference/\", None)"
+          },
+          {
+            "line": 130,
+            "text": "\"torch\", \"nlb_tools\", \"tqdm\", \"h5py\", \"pandas\", \"matplotlib\", \"plotly\","
+          },
+          {
+            "line": 318,
+            "text": "# Configure nbsphinx to properly render Plotly plots"
+          }
+        ],
+        "size": 11513
+      },
+      {
+        "path": "cebra/integrations/__init__.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib",
+          "plotly"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 28,
+            "text": "`matplotlib <https://matplotlib.org/>`_ and `threejs <https://threejs.org/>`_ and `plotly <https://plotly.com/>`_."
+          }
+        ],
+        "size": 1657
+      },
+      {
+        "path": "tests/test_load.py",
+        "extension": ".py",
+        "term_hits": [
+          "matplotlib"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 633,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 643,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 653,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 663,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 674,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 683,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 692,
+            "text": "\"\"\"Older matplotlib arrays have their own format.\"\"\""
+          },
+          {
+            "line": 700,
+            "text": "\"\"\"Newer matplotlib formats are just h5 files\"\"\""
+          }
+        ],
+        "size": 28054
+      },
+      {
+        "path": "cebra/datasets/allen/single_session_ca.py",
+        "extension": ".py",
+        "term_hits": [
+          "pca"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 43,
+            "text": "from sklearn.decomposition import PCA"
+          },
+          {
+            "line": 87,
+            "text": "pca: bool = False,"
+          },
+          {
+            "line": 91,
+            "text": "if pca:"
+          },
+          {
+            "line": 92,
+            "text": "pca_ = PCA()"
+          },
+          {
+            "line": 93,
+            "text": "neural = pca_.fit_transform("
+          },
+          {
+            "line": 142,
+            "text": "pca: bool = False,"
+          },
+          {
+            "line": 146,
+            "text": "if pca:"
+          },
+          {
+            "line": 147,
+            "text": "pca_ = PCA()"
+          }
+        ],
+        "size": 16573
+      },
+      {
+        "path": "docs/source/api/integrations/plotly.rst",
+        "extension": ".rst",
+        "term_hits": [
+          "plotly"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 1,
+            "text": "Plotting with ``plotly``"
+          },
+          {
+            "line": 4,
+            "text": ".. automodule:: cebra.integrations.plotly"
+          }
+        ],
+        "size": 133
+      },
+      {
+        "path": "docs/source/api/integrations/matplotlib.rst",
+        "extension": ".rst",
+        "term_hits": [
+          "matplotlib"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 1,
+            "text": "Plotting with ``matplotlib``"
+          },
+          {
+            "line": 4,
+            "text": ".. automodule:: cebra.integrations.matplotlib"
+          }
+        ],
+        "size": 141
+      },
+      {
+        "path": "cebra/datasets/allen/ca_movie.py",
+        "extension": ".py",
+        "term_hits": [
+          "pca"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 45,
+            "text": "from sklearn.decomposition import PCA"
+          },
+          {
+            "line": 82,
+            "text": "pca=False,"
+          },
+          {
+            "line": 94,
+            "text": "if pca:"
+          },
+          {
+            "line": 96,
+            "text": "pca_ = PCA()"
+          },
+          {
+            "line": 97,
+            "text": "neural = pca_.fit_transform(sampled_neural.transpose(1,"
+          }
+        ],
+        "size": 8879
+      },
+      {
+        "path": "cebra/io.py",
+        "extension": ".py",
+        "term_hits": [
+          "pca"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 200,
+            "text": "pca = sklearn.decomposition.PCA(num_components)"
+          },
+          {
+            "line": 202,
+            "text": "pca.fit(data)"
+          },
+          {
+            "line": 208,
+            "text": "i = np.where(np.cumsum(pca.explained_variance_ratio_) > ratio)[0][0]"
+          },
+          {
+            "line": 209,
+            "text": "return pca.transform(data)[:, :i]"
+          }
+        ],
+        "size": 9480
+      },
+      {
+        "path": "third_party/pivae/pivae_code/datasets.py",
+        "extension": ".py",
+        "term_hits": [
+          "pca"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 13,
+            "text": "from sklearn.decomposition import PCA"
+          }
+        ],
+        "size": 12644
+      },
+      {
+        "path": "cebra/integrations/sklearn/cebra.py",
+        "extension": ".py",
+        "term_hits": [
+          "plot_"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 465,
+            "text": ":py:func:`~.plot_loss` to display the model loss over training). Make sure to pick a number"
+          }
+        ],
+        "size": 68533
+      },
+      {
+        "path": "cebra/distributions/continuous.py",
+        "extension": ".py",
+        "term_hits": [
+          "pca"
+        ],
+        "name_hits": [],
+        "sample_lines": [
+          {
+            "line": 218,
+            "text": "distance is used in the search). A simple solution is to perform a PCA"
+          }
+        ],
+        "size": 12700
+      },
+      {
+        "path": "docs/source/figures.rst",
+        "extension": ".rst",
+        "term_hits": [],
+        "name_hits": [
+          "Figure",
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 3057
+      },
+      {
+        "path": ".pre-commit-config.yaml",
+        "extension": ".yaml",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 672
+      },
+      {
+        "path": ".yapfignore",
+        "extension": "",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 13
+      },
+      {
+        "path": "cebra/config.py",
+        "extension": ".py",
+        "term_hits": [],
+        "name_hits": [
+          "fig"
+        ],
+        "sample_lines": [],
+        "size": 7528
+      }
+    ],
+    "readme_head": "<div align=\"center\">\n\n\n<p align=\"center\">\n<img src=\"https://images.squarespace-cdn.com/content/v1/57f6d51c9f74566f55ecf271/6f3943a1-b76d-4674-9df9-87aebd33e517/cebralogo.png?format=2500w\" width=\"95%\">\n</p>\n\n\n\n[📚Documentation](https://cebra.ai/docs/) |\n[💡DEMOS](https://cebra.ai/docs/demos.html) |\n[🛠️ Installation](https://cebra.ai/docs/installation.html) |\n[🌎 Home Page](https://www.cebra.ai) |\n[🚨 News](https://cebra.ai/docs/index.html) |\n[🪲 Reporting Issues](https://github.com/AdaptiveMotorControlLab/CEBRA)\n\n\n[![Downloads](https://static.pepy.tech/badge/cebra)](https://pepy.tech/project/cebra)\n[![Downloads](https://static.pepy.tech/badge/cebra/month)](https://pepy.tech/project/cebra)\n[![PyPI version](https://badge.fury.io/py/cebra.svg)](https://badge.fury.io/py/cebra)\n![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-red)\n[![Twitter Follow](https://img.shields.io/twitter/follow/CEBRAAI.svg?label=CEBRAai&style=social)](https://twitter.com/CEBRAAI)\n\n\n\n</div>\n\n# Welcome! 👋\n\n**CEBRA** is a library for estimating **C**onsistent **E**m**B**eddings of high-dimensional **R**ecordings using **A**uxiliary variables. It contains self-supervised learning algorithms implemented in PyTorch, and has support for a variety of different datasets common in biology and neuroscience.\n\nTo receive updates on code releases, please 👀 watch or ⭐️ star this repository!\n\n``cebra`` is a patented self-supervised method for non-linear clustering that allows for label-informed time series analysis.\nIt can jointly use behavioral and neural data in a hypothesis- or discovery-driven manner to produce consistent, high-performance latent spaces. While it is not specific to neural and behavioral data, this is the first domain we used the tool in. This application case is to obtain a consistent representation of latent variables driving activity and behavior, improving decoding accuracy of behavioral variables over standard supervised learning, and obtaining embeddings which are robust to domain shifts.\n\n\n# References\n\n- 📄 **Publication April 2025**:\n  [Time-series attribution maps with regularized contrastive learning.](https://arxiv.org/abs/2502.12977)\nSteffen Schneider, Rodrigo González Laiz, Anastasiia Filipova, Markus Frey, Mackenzie Weygandt Mathis. AISTATS 2025.\n\n\n- 📄 **Publication May 2023**:\n  [Learnable latent embeddings for joint behavioural and neural analysis.](https://doi.org/10.1038/s41586-023-06031-6)\n  Steffen Schneider*, Jin Hwa Lee* and Mackenzie Weygandt "
+  }
+]

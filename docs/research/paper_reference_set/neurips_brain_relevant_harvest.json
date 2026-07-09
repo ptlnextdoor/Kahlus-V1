@@ -1,0 +1,1100 @@
+[
+  {
+    "year": 2025,
+    "title": "Identifying interactions across brain areas while accounting for individual-neuron dynamics with a Transformer-based variational autoencoder",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/ac643478c07baa8432690555e4702b65-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2025,
+    "title": "Inference of Whole Brain Electrophysiological Networks Through Multimodal Integration of Simultaneous Scalp and Intracranial EEG",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/82a6afb1f666daaeec8da4d775452bc7-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2025,
+    "title": "Long-term Intracortical Neural activity and Kinematics (LINK): An intracortical neural dataset for chronic brain-machine interfaces, neuroscience, and machine learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/cb463f73a35802996546ac8e8b1b2743-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 8
+  },
+  {
+    "year": 2025,
+    "title": "Multiplication-Free Parallelizable Spiking Neurons with Efficient Spatio-Temporal Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5f40a99efedc1148a061d80201949c84-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2025,
+    "title": "OMiSO: Adaptive optimization of state-dependent brain stimulation to shape neural population states",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1c1f61023dca672117b58f813a12d99-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2025,
+    "title": "Bounds on the computational complexity of neurons due to dendritic morphology",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d9e56606b1bd3095fbb4241c4e15e420-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "BrainOmni: A Brain Foundation Model for Unified EEG and MEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3aef4a18c2646b9d11d9ab4d9bec72c8-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Bridging Brains and Concepts: Interpretable Visual Decoding from fMRI with Semantic Bottlenecks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7da6e0e00702c60607a6ae05c802ef85-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "CSBrain: A Cross-scale Spatiotemporal Brain Foundation Model for EEG Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7e199ad8ae40eb19b2980f61f659cb07-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "CogPhys: Assessing Cognitive Load via Multimodal Remote and Contact-based Physiological Sensing",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/014e80b61aca7a85630e6da5d63427c6-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Dendritic Resonate-and-Fire Neuron for Effective and Efficient Long Sequence Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9a6ca401f890aeb2c272d2bb26196d3f-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Edit Less, Achieve More: Dynamic Sparse Neuron Masking for Lifelong Knowledge Editing in LLMs",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d1bfaf1bbefb344df643997689b46613-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "EvoBrain: Dynamic Multi-Channel EEG Graph Modeling for Time-Evolving Brain Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d51ce6040fe3dafd260411593f05a1fa-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Generalized and Invariant Single-Neuron In-Vivo Activity Representation Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/38ec60a949c3538e5cbb337b1b386dcf-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "High-dimensional neuronal activity from low-dimensional latent dynamics: a solvable model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aba2ac76b4b5df7a7b833c87c9012860-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Know Thyself by Knowing Others: Learning Neuron Identity from Population Context",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/8f7dc9855bb4ae8ae4f2d649f3f4efe6-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Learning to cluster neuronal function",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c94d79c4037c33fddf3efb7c740bac94-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Local-Global Coupling Spiking Graph Transformer for Brain Disorders Diagnosis from Two Perspectives",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4c454d34f3a4c8d6b4ca85a918e5d7ba-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Measure gradients, not activations! Enhancing neuronal activity in deep reinforcement learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/722f3f9298a961d2639eadd3f14a2816-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "MoRE-Brain: Routed Mixture of Experts for Interpretable and Generalizable Cross-Subject fMRI Visual Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/50ea4dbd1cff6bd3daef939eff10c092-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "NeuroGenPoisoning: Neuron-Guided Attacks on Retrieval-Augmented Generation of LLM via Genetic Optimization of External Knowledge",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6a24ef95843833b1af4fc6499a213b7d-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "NeuroH-TGL: Neuro-Heterogeneity Guided Temporal Graph Learning Strategy for Brain Disease Diagnosis",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/9d87a0c38431d0ec8d8b8ece95198c04-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Neurons as Detectors of Coherent Sets in Sensory Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e9182ece81ae942ee1c1f292c2dd7f89-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "S$^2$M-Former: Spiking Symmetric Mixing Branchformer for Brain Auditory Attention Detection",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b8330f5b70b3c53172417deac6f057b1-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "STSBench: A Large-Scale Dataset for Modeling Neuronal Activity in the Dorsal Stream of Primate Visual Cortex",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/89aef049455db7b0eb7162c9e733d589-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Spectral Analysis of Representational Similarity with Limited Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/22feecdb160d57ef82b858d5058891e4-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "SymRTLO: Enhancing RTL Code Optimization with LLMs and Neuron-Inspired Symbolic Reasoning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/479922a6341a8035f75bcc11598ae1a9-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "THD-BAR: Topology Hierarchical Derived Brain Autoregressive Modeling for EEG Generic Representations",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dcf75ae771b21d642c98ce056e745ae7-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Task-Specific Data Selection for Instruction Tuning via Monosemantic Neuronal Activations",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c971ffd786876d5927caf482b06bcba5-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "Towards Understanding Safety Alignment: A Mechanistic Perspective from Safety Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/12a00d85a76fe258e1242c3aced03250-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "VLM in a flash: I/O-Efficient Sparsification of Vision-Language Model via Neuron Chunking",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/29ba217edaef1492a7f648a29b656a55-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "ZEBRA: Towards Zero-Shot Cross-Subject Generalization for Universal Brain Visual Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/01c561df365429f33fcd7a7faa44c985-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2025,
+    "title": "A Multimodal BiMamba Network with Test-Time Adaptation for Emotion Recognition Based on Physiological Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d616a353c711f11c722e3f28d2d9e956-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "A learnability analysis on neuro-symbolic learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7aa320d2b4b8f6400b18f6f77b6c1535-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "BaRISTA: Brain Scale Informed Spatiotemporal Representation of Human Intracranial Neural Activity",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f42926b257ef16923f08bbf3b59fe214-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Beyond Pairwise Connections: Extracting High-Order Functional Brain Network Structures under Global Constraints",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fa86a9c7b9f341716ccb679d1aeb9afa-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain Harmony: A Multimodal Foundation Model Unifying Morphology and Function into 1D Tokens",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b0832cc57899cfd2d3fedeb3f330ba80-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain network science modelling of sparse neural networks enables Transformers and LLMs to perform as fully connected",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/44f9b7b8a39e67eca18600ec6d2c303c-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain-Informed Fine-Tuning for Improved Multilingual Understanding in Language Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/df311d51f4f1a3d0adc9d3f1725d0850-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain-Inspired fMRI-to-Text Decoding via Incremental and Wrap-Up Language Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/dca63f2650fe9e88956c1b68440b8ee9-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain-Like Processing Pathways Form in Models With Heterogeneous Experts",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/785977c0dfa9f8ab90f35bbc1d920a91-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain-like Variational Inference",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/efa0939caa8a906fd0a61a9c60e46e8b-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Brain-tuning Improves Generalizability and Efficiency of Brain Alignment in Speech Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b0dfbc465fa47c7c31cbfc0f454df460-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "BrainEC-LLM: Brain Effective Connectivity Estimation by Multiscale Mixing LLM",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b273c97f005db33b15b9514f2bd42431-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "BrainFlow: A Holistic Pathway of Dynamic Neural System on Manifold",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2e098001625a8b8f22bf6c1aef09c4e5-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "BrainMoE: Cognition Joint Embedding via Mixture-of-Expert Towards Robust Brain Foundation Model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/061238f13b8e65ce435c4a691ff5d7f1-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "BrainODE: Neural Shape Dynamics for Age- and Disease-aware Brain Trajectories",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/abdc8c031aa6c6917c3b593166e5e340-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "CTSketch: Compositional Tensor Sketching for Scalable Neurosymbolic Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6d53193a098b982229340a7c3eb0ecbf-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Creativity or Brute Force? Using Brainteasers as a Window into the Problem-Solving Abilities of Large Language Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d8029bd38eed88a26e343220d0aeeb7e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "DCA: Graph-Guided Deep Embedding Clustering for Brain Atlases",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/954729c2c57c32cab97c4f868dbb4d3e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Decomposing motor units through elimination for real-time intention driven assistive neurotechnology",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b213d870740582dd6af77bbdaed900c9-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Dimensionality Mismatch Between Brains and Artificial Neural Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3e3a01d1c012b4a3eff3d8102929b442-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Disentangling Superpositions: Interpretable Brain Encoding Model with Sparse Concept Atoms",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/8a1bc250c372e0310d3d50892002b69b-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Embracing Trustworthy Brain-Agent Collaboration as Paradigm Extension for Intelligent Assistive Technologies",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d711287dd632d0d83ab8f0bee25eab30-Abstract-Position_Paper_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Explicitly Modeling Subcortical Vision with a Neuro-Inspired Front-End Improves CNN Robustness",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/71be00e0727f9a254c7fd392b5d5efb1-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "FAPEX: Fractional Amplitude-Phase Expressor for Robust Cross-Subject Seizure Prediction",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b7de1556bc4be01966c6bc56fb2da6e0-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "FEEL: Quantifying Heterogeneity in Physiological Signals for Generalizable Emotion Recognition",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e560a0b22e4432003d0dba63ff8dc457-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Far from the Shallow: Brain-Predictive Reasoning Embedding through Residual Disentanglement",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/66e1ce5eb3fc0581f06116fa99447f44-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Fully Autonomous Neuromorphic Navigation and Dynamic Obstacle Avoidance",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/50ee6db59fca8643dc625829d4a0eab9-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "GeoDynamics: A Geometric State\u2011Space Neural Network for Understanding Brain Dynamics on Riemannian Manifolds",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6a8449c080c3d27e5e16995e82beaade-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Hierarchical Frequency Tagging Probe (HFTP): A Unified Approach to Investigate Syntactic Structure Representations in Large Language Models and the Human Brain",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/56d436e4080f4a84d20a1c58ac35faf2-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Imbalances in Neurosymbolic Learning: Characterization and Mitigating Strategies",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/df46fcdb724ab86d36e5822b4d657ea9-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "In Silico Mapping of Visual Categorical Selectivity Across the Whole Brain",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f0990f6e98785d38035a607e7c2de2ae-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Inpainting the Neural Picture: Inferring Unrecorded Brain Area Dynamics from Multi-Animal Datasets",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7195b4ffa1803de9eb34447032f94234-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Intrinsic Goals for Autonomous Agents: Model-Based Exploration in Virtual Zebrafish Predicts Ethological Behavior and Whole-Brain Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/334507d67dd7a310e563eecafbd5fee6-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Is Limited Participant Diversity Impeding EEG-based Machine Learning?",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/aa5642fb7d78a1bca9ceba3d8bd564f4-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Joint Modeling of fMRI and EEG Imaging Using Ordinary Differential Equation-Based Hypergraph Neural Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d29921d606226cdcf0fc8325f2fc1b99-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "LUNA: Efficient and Topology-Agnostic Foundation Model for EEG Signal Analysis",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/66969a9e6bd7a26dfeccea7227178ca7-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Learning to Plan Like the Human Brain via Visuospatial Perception and Semantic-Episodic Synergistic Decision-Making",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4c7912516fdb339b12bad45eefda523c-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Let Brain Rhythm Shape Machine Intelligence for Connecting Dots on Graphs",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/1130af851aa296ac3764686c22e4b98a-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "LibriBrain: Over 50 Hours of Within-Subject MEG to Improve Speech Decoding Methods at Scale",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/1637243965fcef6af6f01f84ea0d97fd-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Listening to the Brain: Multi-Band sEEG Auditory Reconstruction via Dynamic Spatio-Temporal Hypergraphs",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/bbc6396ae4b4dbf78ce328aa8beafd27-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Multi-dataset Joint Pre-training of Emotional EEG Enables Generalizable Affective Computing",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f1b8d443042f376aa3654b6c68de6297-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "MyoChallenge 2024: A New Benchmark for Physiological Dexterity and Agility in Bionic Humans",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5a8f69523f9511a5706568c552de0ebb-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NEED: Cross-Subject and Cross-Task Generalization for Video and Image Reconstruction from EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fca83589e85cb061631b7ebc5db5d6bd-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NOVA: A Benchmark for Rare Anomaly Localization and Clinical Reasoning in Brain MRI",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/96a9caf416c8951812a666eca742e050-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NeSyPr: Neurosymbolic Proceduralization For Efficient Embodied Reasoning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fee6424a319905353c3d7ffdfcfeee67-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NeuSymEA: Neuro-symbolic Entity Alignment via Variational Inference",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/85632be2cd69e9a0ef4ba054c096fac9-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Neuro-Spectral Architectures for Causal Physics-Informed Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4e52bbb99690d1e05c7ef7b4c8b3569a-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NeuroPath: Neurobiology-Inspired Path Tracking and Reflection for Semantically Coherent Retrieval",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7d1043b688002734b49b766cc2fc478d-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "NeuroRenderedFake: A Challenging Benchmark to Detect Fake Images Generated by Advanced Neural Rendering Methods",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/56bdf726a96d43ee1e66172d14c63a61-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Neurosymbolic Diffusion Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/c60bd92a01804b7df0540ed7ca2f7c05-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "PaceLLM: Brain-Inspired Large Language Models for Long-Context Understanding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7b9ebf1a1c149960c3452dc94cbd158e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "PhysDrive: A Multimodal Remote Physiological Measurement Dataset for In-vehicle Driver Monitoring",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3446e07569081f0f8a144e68bfa7afdf-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f7a7bb369e48f10e85fce85b67d8c516-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Place Cells as Multi-Scale Position Embeddings: Random Walk Transition Kernels for Path Planning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/151f36090cd4bc7f6ef860b706374945-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Predicting Functional Brain Connectivity with Context-Aware Deep Neural Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/7f09298fd090c13c5583549d22ec1158-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "REFED: A Subject Real-time Dynamic Labeled EEG-fNIRS Synchronized Recorded Emotion Dataset",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2bf0ed7c35d9d84128e7f7c72ab76402-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "REVE: A Foundation Model for EEG - Adapting to Any Setup with Large-Scale Pretraining on 25,000 Subjects",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/20a917f77773ac0fa8bea2bdd6606b66-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Riemannian Flow Matching for Brain Connectivity Matrices via Pullback Geometry",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5616112a0120c15bf7d47a6bccc21bc3-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Right for the Right Reasons: Avoiding Reasoning Shortcuts via Prototypical Neurosymbolic AI",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e6bb63d00f597c380c012bd99c68b0c1-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "SPICED: A Synaptic Homeostasis-Inspired Framework for Unsupervised Continual EEG Decoding",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e09a895d25a6444b6bb4b565465e02f0-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Scaling and context steer LLMs along the same computational path as the human brain",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4d61054c13fb29ef36028f18353df40e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Shortcuts and Identifiability in Concept-based Models from a Neuro-Symbolic Lens",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/fcdccd419c4dc471fa3b73ec97b53789-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Skill-Driven Neurosymbolic State Abstractions",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/0fa694fb9f1e265117e8da75966820fe-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "SynBrain: Enhancing Visual-to-fMRI Synthesis via Probabilistic Representation Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2a095b46705d7e6f81fc50270fe770c2-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "TRACE: Contrastive learning for multi-trial time series data in neuroscience",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/728e11c3b1d0fc7e13f85f661b62dcbb-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Task-Optimized Convolutional Recurrent Networks Align with Tactile Processing in the Rodent Brain",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/639fa41231488ce73d8c4d6bb2886e81-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Towards Reliable Code-as-Policies: A Neuro-Symbolic Framework for Embodied Task Planning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6d13ce54347c65845614d01ced1dbe23-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Transformer brain encoders explain human high-level visual responses",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5236f6de5c7f15e76978a5c492966aa7-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Vector Quantization in the Brain: Grid-like Codes in World Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/f18d5002b0c1e18d371805ea363d430b-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "WALL-E: World Alignment by NeuroSymbolic Learning improves World Model-based LLM Agents",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5e772a13ccba5255331240dcd99aa38b-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "egoEMOTION: Egocentric Vision and Physiological Signals for Emotion and Personality Recognition in Real-world Tasks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b9784f4c3685bebeacd387c4e680b5b2-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2025,
+    "title": "Bridging Scales: Spectral Theory Reveals How Local Connectivity Rules Sculpt Global Neural Dynamics in Spatially Extended Networks",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5f63999aa6b4011a3615c2508c622821-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "ChromFound: Towards A Universal Foundation Model for Single-Cell Chromatin Accessibiltiy Data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6f4c216895c2c424ee328fcdde9cc314-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Cross-Modal Representational Knowledge Distillation for Enhanced Spike-informed LFP Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4d69c1c057a8bd570ba4a7b71aae8331-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "GeneFlow: Translation of Single-cell Gene Expression to Histopathological Images via Rectified Flow",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/40ae6c3a8dea3b20ea2352b33f52243f-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "HiPoNet: A Multi-View Simplicial Complex Network for High Dimensional Point-Cloud and Single-Cell data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b284aad9fb5c6d74b9535a30ece69e1c-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "High Dynamic Range Imaging with Time-Encoding Spike Camera",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/835a0185f61867a1ea0f86155489839a-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Joint Velocity-Growth Flow Matching for Single-Cell Dynamics Modeling",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/eb1bad7a84ef68a64f1afd6577725d45-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Learning Crossmodal Interaction Patterns via Attributed Bipartite Graphs for Single-Cell Omics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/825a4f180970ce8e7c4205f24f90c24a-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "PRESCRIBE: Predicting Single-Cell Responses with Bayesian Estimation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/d6383e7643415842b48a5077a1b09c98-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "SimSort: A Data-Driven Framework for Spike Sorting by Large-Scale Electrophysiology Simulation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/a741b3864dbe6f0f588f2bb2a97e5e8e-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Spike-timing-dependent Hebbian learning as noisy gradient descent",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/994a9663c3bef2439e605acf340f3bef-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Spike4DGS: Towards High-Speed Dynamic Scene Rendering with 4D Gaussian Splatting via a Spike Camera Array",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/2985b700b5187b252d2f863bf43fbe32-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "Tabula: A Tabular Self-Supervised Foundation Model for Single-Cell Transcriptomics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/95d590995a8722259c61e094b62b25ac-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "scMRDR: A scalable and flexible framework for unpaired single-cell multi-omics data integration",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e34d214dfb5b80212ac1b565aa41af55-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2025,
+    "title": "scPilot: Large Language Model Reasoning Toward Automated Single-Cell Analysis and Discovery",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/01dde7941bce255c2a061eef4fbb7fad-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "MiSO: Optimizing brain stimulation to create neural population activity states",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/2af641762dc02035c31a9314b2d090b6-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2024,
+    "title": "Neuronal Competition Groups with Supervised STDP for Spike-Based Classification",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bfe593e151614c691323c08c0079c1f6-Abstract-Conference.html",
+    "score": 8
+  },
+  {
+    "year": 2024,
+    "title": "BAN: Detecting Backdoors Activated by Adversarial Neuron Noise",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/cfaccbd9b5e62562779351ebcb140c94-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Binding in hippocampal-entorhinal circuits enables compositionality in cognitive maps",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/4526cfacdbca6b6e184568dac91bf070-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "CoSy: Evaluating Textual Explanations of Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3d4c0a618d0acd7921493e4f30395c22-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Confidence Regulation Neurons in Language Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/e21955c93dede886af1d0d362c756757-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Finding NeMo: Localizing Neurons Responsible For Memorization in Diffusion Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/a102dd5931da01e1b40205490513304c-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "IRCAN: Mitigating Knowledge Conflicts in LLM Generation via Identifying and Reweighting Context-Aware Neurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/08a9e28c96d016dd63903ab51cd085b0-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Learning a Single Neuron Robustly to Distributional Shifts and Adversarial Label Noise",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7c8c0db90a14c7a2db9475e52dc343a9-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Neuro-Vision to Language: Enhancing Brain Recording-based Visual Reconstruction and Language Interaction",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/b1c62bdeee97b38c34dcda152c829511-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "NeuroBOLT: Resting-state EEG-to-fMRI Synthesis with Multi-dimensional Feature Mapping",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/29c294ddc628c94cd2c636383ef106c1-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Robust Sleep Staging over Incomplete Multimodal Physiological Signals via Contrastive Imagination",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/cb0f9020c00fc52a9f6c9dbfacc6ac58-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Shaping the distribution of neural responses with interneurons in a recurrent circuit model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3c215225324f9988858602dc92219615-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Spike-based Neuromorphic Model for Sound Source Localization",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/ce953d71deeb33d9ffa2c879b518d273-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "The Bayesian sampling in a canonical recurrent circuit with a diversity of inhibitory interneurons",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/f463d31ed2fdd7b0ec585c041ec1baa8-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "The Dormant Neuron Phenomenon in Multi-Agent Reinforcement Learning Value Factorization",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3eec5006051d9544e717067de3220198-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Towards Neuron Attributions in Multi-Modal Large Language Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/de076d0485c1fba8326500a860fe9274-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "Visual Decoding and Reconstruction via EEG Embeddings with Guided Diffusion",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/ba5f1233efa77787ff9ec015877dbd1f-Abstract-Conference.html",
+    "score": 7
+  },
+  {
+    "year": 2024,
+    "title": "$\\textit{NeuroPath}$: A Neural Pathway Transformer for Joining the Dots of Human Connectomes",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7d60f19a8e5766910fd1798dc953869a-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "A Neuro-Symbolic Benchmark Suite for Concept Quality and Reasoning Shortcuts",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/d1d11bf8299334d354949ba8738e8301-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "A scalable generative model for dynamical system reconstruction from neuroimaging data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/9304fe9848ca4db73c79ac0bac414aef-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Brain Treebank: Large-scale intracranial recordings from naturalistic language stimuli",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/aefa2385b3f33abf1526ae4e2c208cd9-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Brain-JEPA: Brain Dynamics Foundation Model with Gradient Positioning and Spatiotemporal Masking",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/9c3828adf1500f5de3c56f6550dfe43c-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "BrainBits: How Much of the Brain are Generative Reconstruction Methods Using?",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/61c00c07e6d27285e4b952e96cc65666-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Crafting Interpretable Embeddings for Language Neuroscience by Asking LLMs Questions",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/e06f8704aca42f1ed8619165892e1195-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "DMNet: Self-comparison Driven Model for Subject-independent Seizure Detection",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3192aa37a2227627d7f8cbf582c075f3-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Divergences between Language Models and Human Brains",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/f96839fc751b67492e17e70f5c9730e4-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "DreamCatcher: A Wearer-aware Multi-modal Sleep Event Dataset Based on Earables in Non-restrictive Environments",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/9ab8bb568825d49ce31aa87b7e2f4ad7-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "EEG2Video: Towards Decoding Dynamic Visual Perception from EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/84bad835faaf48f24d990072bb5b80ee-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/4540d267eeec4e5dbd9dae9448f0b739-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "EEVR: A Dataset of Paired Physiological Signals and Textual Descriptions for Joint Emotion Representation Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/1cba8502063fab9df252a63968691768-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Exploring the trade-off between deep-learning and explainable models for brain-machine interfaces",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/f1cf02ce09757f57c3b93c0db83181e0-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "FactorizePhys: Matrix Factorization for Multidimensional Attention in Remote Physiological Sensing",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/af1c61e4dd59596f033d826419870602-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Geodesic Optimization for Predictive Shift Adaptation on EEG data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/399888844ffc8fa95c2db196f3f1b60b-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Goal Reduction with Loop-Removal Accelerates RL and Models Human Brain Activity in Goal-Directed Learning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/05b2ea5d57ed04c1dc105658e87b137e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "HippoRAG: Neurobiologically Inspired Long-Term Memory for Large Language Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/6ddc001d07ca4f319af96a3024f6dbd1-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Learning Place Cell Representations and Context-Dependent Remapping",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0098a92f5f4e2d96c6db471e0c5507a8-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "LogiCity: Advancing Neuro-Symbolic AI with Abstract Urban Simulation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/8196be81e68289d7a9ece21ed7f5750a-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Long-range Brain Graph Transformer",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/2bd3ffba268a2699c212a233ed2907f1-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "NeuRodin: A Two-stage Framework for High-Fidelity Neural Surface Reconstruction",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bade15648d6c71df84988cfe042be5d8-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Neural decoding from stereotactic EEG: accounting for electrode variability across subjects",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/c473b9c8897f50203fa23570687c6b30-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Neuro-Symbolic Data Generation for Math Reasoning",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/29d319f7c1513c9ecd81d3a6e9632a6e-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "NeuroClips: Towards High-fidelity and Smooth fMRI-to-Video Reconstruction",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/5c594bf6223b67109441c9e0c97542ed-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Physics-Regularized Multi-Modal Image Assimilation for Brain Tumor Localization",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/49fb58cfd482a33619d48a5c5910cf3c-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "SleeperNets: Universal Backdoor Poisoning Attacks Against Reinforcement Learning Agents",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/cb03b5108f1c3a38c990ef0b45bc8b31-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "The Iterative Optimal Brain Surgeon: Faster Sparse Recovery by Leveraging Second-Order Information",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/fc1dce23e0ba01d3b691789cfd4f65c3-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "fMRI predictors based on language models of increasing complexity recover brain left lateralization",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/e28e19d00b23fe0265f433fa05a96b06-Abstract-Conference.html",
+    "score": 6
+  },
+  {
+    "year": 2024,
+    "title": "Towards a \"Universal Translator\" for Neural Dynamics at Single-Cell, Single-Spike Resolution",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/934eb45b99eff8f16b5cb8e4d3cb5641-Abstract-Conference.html",
+    "score": 3
+  },
+  {
+    "year": 2024,
+    "title": "Cell ontology guided transcriptome foundation model",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0be40478ab6ee0006ee3b38b158bbc8f-Abstract-Conference.html",
+    "score": 2
+  },
+  {
+    "year": 2024,
+    "title": "A versatile informative diffusion model for single-cell ATAC-seq data generation and analysis",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/50d277e84b2bcbaadcd84548a87e8cc4-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Active learning of neural population dynamics using two-photon holographic optogenetics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/381efefc0d765e680451978c0392f637-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Continuous Spatiotemporal Events Decoupling through Spike-based Bayesian Computation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/4fe1859112230a032c7143a9adc3be78-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Exploring Behavior-Relevant and Disentangled Neural Dynamics with Generative Diffusion Models",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3d55170799265c03b37993e02b71b2cc-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "FEDMEKI: A Benchmark for Scaling Medical Foundation Models via Federated Knowledge Injection",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0235cbb8cd6425d0b55daefce388fc0b-Abstract-Datasets_and_Benchmarks_Track.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "GENOT: Entropic (Gromov) Wasserstein Flow Matching with Applications to Single-Cell Genomics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bc46e29f91e676747c584ca181cb0ea1-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Gene-Gene Relationship Modeling Based on Genetic Evidence for Single-Cell RNA-Seq Data Imputation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/21b7e46991301ad2126c3e39384df6ed-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Latent Diffusion for Neural Spiking Data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/d60b6b7f0ba6bf07d975b3bbdacea702-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Modeling Latent Neural Dynamics with Gaussian Process Switching Linear Dynamical Systems",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/3b64416915026a6744bf10a819571041-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Partial observation can induce mechanistic mismatches in data-constrained models of neural dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7caf9d251b546bc78078b35b4a6f3b7e-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Probabilistic Decomposed Linear Dynamical Systems for Robust Discovery of Latent Neural Dynamics",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/bcf26768143c94bd36e363cd4bf5daf0-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Semi-supervised Knowledge Transfer Across Multi-omic Single-cell Data",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/47f30d67bce3e9824928267e9355420f-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "SpGesture: Source-Free Domain-adaptive sEMG-based Gesture Recognition with Jaccard Attentive Spiking Neural Network",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/409334f42cbb57d07aa152f2d0433ec7-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "SpikeReveal: Unlocking Temporal Sequences from Real Blurry Inputs with Spike Streams",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7280f65ed571b7b28321f2c7cf4c60c8-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "SpikedAttention: Training-Free and Fully Spike-Driven Transformer-to-SNN Conversion with Winner-Oriented Spike Shift for Softmax Operation",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/7c9341ad0263428b5057d92f4d88dfa0-Abstract-Conference.html",
+    "score": 1
+  },
+  {
+    "year": 2024,
+    "title": "Statistical Estimation in the Spiked Tensor Model via the Quantum Approximate Optimization Algorithm",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/32133a6a24d6554263d3584e3ac10faa-Abstract-Conference.html",
+    "score": 1
+  }
+]

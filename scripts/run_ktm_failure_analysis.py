@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from _bootstrap import ensure_src_import_path
 

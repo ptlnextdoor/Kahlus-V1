@@ -12,10 +12,10 @@ _CFG = KTMTrainConfig(mode="cpu_smoke", n_episodes=16, seed=0)
 
 class KTMObjectiveTests(unittest.TestCase):
     def _batch(self):
-        batch, length, channels, horizon = 4, _CFG.history_len, _CFG.eeg_channels, _CFG.horizon
-        history = torch.randn(batch, length, channels)
-        k = torch.zeros(batch, dtype=torch.long)
-        target = torch.randn(batch, horizon, channels)
+        b, l, c, h = 4, _CFG.history_len, _CFG.eeg_channels, _CFG.horizon
+        history = torch.randn(b, l, c)
+        k = torch.zeros(b, dtype=torch.long)
+        target = torch.randn(b, h, c)
         return history, k, target
 
     def test_loss_finite_with_components(self):

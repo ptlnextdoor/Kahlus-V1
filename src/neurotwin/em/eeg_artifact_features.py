@@ -9,11 +9,6 @@ from __future__ import annotations
 import numpy as np
 
 
-def _integrate(y: np.ndarray, x: np.ndarray, *, axis: int) -> np.ndarray:
-    trapezoid = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
-    return trapezoid(y, x, axis=axis)
-
-
 def compute_psd(signal: np.ndarray, fs_hz: float) -> tuple[np.ndarray, np.ndarray]:
     """Return ``(freqs, psd)`` for a ``(n_channels, n_samples)`` signal.
 
@@ -39,14 +34,14 @@ def band_power(freqs: np.ndarray, psd: np.ndarray, low: float, high: float) -> n
     mask = (freqs >= low) & (freqs < high)
     if not mask.any():
         return np.zeros(psd.shape[0], dtype=np.float64)
-    return _integrate(psd[:, mask], freqs[mask], axis=1)
+    return np.trapz(psd[:, mask], freqs[mask], axis=1)
 
 
 def line_noise_ratio(freqs: np.ndarray, psd: np.ndarray, line_freq_hz: float, bandwidth_hz: float = 2.0) -> np.ndarray:
     """Per-channel ratio of mains-line band power to total power (artifact indicator)."""
 
     line = band_power(freqs, psd, line_freq_hz - bandwidth_hz, line_freq_hz + bandwidth_hz)
-    total = _integrate(psd, freqs, axis=1)
+    total = np.trapz(psd, freqs, axis=1)
     total = np.where(total <= 0.0, 1.0, total)
     return line / total
 
@@ -68,7 +63,7 @@ def channel_artifact_features(signal: np.ndarray, fs_hz: float, line_freq_hz: fl
     signal = np.asarray(signal, dtype=np.float64)
     freqs, psd = compute_psd(signal, fs_hz)
     rms = np.sqrt(np.mean(signal ** 2, axis=1))
-    broadband = _integrate(psd, freqs, axis=1)
+    broadband = np.trapz(psd, freqs, axis=1)
     return {
         "rms": rms,
         "broadband_power": broadband,

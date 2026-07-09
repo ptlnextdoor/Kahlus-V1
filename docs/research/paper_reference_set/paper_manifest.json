@@ -1,0 +1,83 @@
+[
+  {
+    "key": "eegpt_neurips2024",
+    "title": "EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals",
+    "venue": "NeurIPS 2024",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4540d267eeec4e5dbd9dae9448f0b739-Paper-Conference.pdf",
+    "filename": "eegpt_neurips2024.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "seeg_electrode_variability_neurips2024",
+    "title": "Neural decoding from stereotactic EEG: accounting for electrode variability across subjects",
+    "venue": "NeurIPS 2024",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/c473b9c8897f50203fa23570687c6b30-Paper-Conference.pdf",
+    "filename": "seeg_electrode_variability_neurips2024.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "labram_iclr2024",
+    "title": "Large Brain Model for Learning Generic Representations with Tremendous EEG Data in BCI",
+    "venue": "ICLR 2024 spotlight",
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2024/file/47393e8594c82ce8fd83adc672cf9872-Paper-Conference.pdf",
+    "filename": "labram_iclr2024.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "population_transformer_2024",
+    "title": "Population Transformer: Learning Population-level Representations of Neural Activity",
+    "venue": "arXiv 2024 / neural population modeling",
+    "url": "https://arxiv.org/pdf/2406.03044",
+    "filename": "population_transformer_2024.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "hybrid_ssm_neural_decoding_2025",
+    "title": "Generalizable, real-time neural decoding with hybrid state-space models",
+    "venue": "arXiv 2025 / real-time decoding",
+    "url": "https://arxiv.org/pdf/2506.05320",
+    "filename": "hybrid_ssm_neural_decoding_2025.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "braingpt_2024",
+    "title": "BrainGPT: Unleashing the Potential of EEG Generalist Foundation Model by Autoregressive Pre-training",
+    "venue": "arXiv 2024 / EEG foundation model",
+    "url": "https://arxiv.org/pdf/2410.19779",
+    "filename": "braingpt_2024.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "reve_eeg_foundation_2025",
+    "title": "REVE: A Foundation Model for EEG -- Adapting to Any Setup with Large-Scale Pretraining on 25,000 Subjects",
+    "venue": "arXiv 2025 / EEG foundation model",
+    "url": "https://arxiv.org/pdf/2510.21585",
+    "filename": "reve_eeg_foundation_2025.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "csbrain_2025",
+    "title": "CSBrain: A Cross-scale Spatiotemporal Brain Foundation Model for EEG Decoding",
+    "venue": "arXiv 2025 / EEG foundation model",
+    "url": "https://arxiv.org/pdf/2506.23075",
+    "filename": "csbrain_2025.pdf",
+    "status": "downloaded",
+    "error": ""
+  },
+  {
+    "key": "cebra_2022",
+    "title": "Learnable latent embeddings for joint behavioral and neural analysis",
+    "venue": "Nature 2023 / arXiv 2022",
+    "url": "https://arxiv.org/pdf/2204.00673",
+    "filename": "cebra_2022.pdf",
+    "status": "downloaded",
+    "error": ""
+  }
+]

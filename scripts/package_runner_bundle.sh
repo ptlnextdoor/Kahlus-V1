@@ -48,7 +48,6 @@ ARCHIVE_PATHS=(
   configs/train/algonauts_field_compiler_debug.yaml
   configs/train/moabb_field_compiler_debug.yaml
   scripts/run_smoke.sh
-  scripts/run_docker_7gpu.sh
   scripts/run_docker_6gpu.sh
   scripts/docker_a100_inner.sh
   scripts/docker_gpu_preflight.py

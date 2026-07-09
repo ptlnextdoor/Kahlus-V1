@@ -448,6 +448,28 @@ def _predict_random_permutation(y_train: np.ndarray, target_shape: tuple[int, ..
     return (y_flat[indices] + noise).reshape(target_shape).astype(np.float32)
 
 
+def _predict_time_shift_control(y_train: np.ndarray, target_shape: tuple[int, ...], seed: int) -> np.ndarray:
+    prediction = _predict_random_permutation(y_train, target_shape, seed=seed)
+    if prediction.ndim >= 3 and prediction.shape[1] > 1:
+        return np.roll(prediction, shift=1, axis=1).astype(np.float32)
+    return prediction
+
+
+def _predict_patient_session_nuisance(task: SupervisedWindowTask) -> np.ndarray:
+    train_groups = tuple(str(group) for group in task.metadata.get("train_nuisance_groups", ()))
+    test_groups = tuple(str(group) for group in task.metadata.get("test_nuisance_groups", ()))
+    if len(train_groups) != int(task.y_train.shape[0]) or len(test_groups) != int(task.y_test.shape[0]):
+        raise ValueError("patient_session_nuisance requires train/test nuisance groups aligned to target windows")
+    global_mean = np.mean(np.asarray(task.y_train, dtype=np.float32), axis=0, keepdims=False)
+    group_means: dict[str, np.ndarray] = {}
+    for group in sorted(set(train_groups)):
+        indices = [idx for idx, value in enumerate(train_groups) if value == group]
+        if indices:
+            group_means[group] = np.mean(task.y_train[indices], axis=0)
+    predictions = [group_means.get(group, global_mean) for group in test_groups]
+    return np.asarray(predictions, dtype=np.float32)
+
+
 def _fit_ridge(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> np.ndarray:
     model = NumpyRidgeBaseline(alpha=1e-2)
     model.fit(_flatten_time(x_train), _flatten_time(y_train))
@@ -645,6 +667,8 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
     ExecutableBaselineRunner("persistence", lambda task, seed, steps: _predict_persistence(task)),
     ExecutableBaselineRunner("train_mean", lambda task, seed, steps: _predict_train_mean(task.y_train, task.y_test.shape)),
     ExecutableBaselineRunner("random_permutation", lambda task, seed, steps: _predict_random_permutation(task.y_train, task.y_test.shape, seed=seed + 101)),
+    ExecutableBaselineRunner("time_shift_control", lambda task, seed, steps: _predict_time_shift_control(task.y_train, task.y_test.shape, seed=seed + 202)),
+    ExecutableBaselineRunner("patient_session_nuisance", lambda task, seed, steps: _predict_patient_session_nuisance(task)),
     ExecutableBaselineRunner("linear_ridge", lambda task, seed, steps: _fit_ridge(task.x_train, task.y_train, task.x_test)),
     ExecutableBaselineRunner("gbm", lambda task, seed, steps: _fit_gbm(task, seed=seed + 21)),
     ExecutableBaselineRunner("autoregressive_ridge", lambda task, seed, steps: _fit_autoregressive_ridge(task)),

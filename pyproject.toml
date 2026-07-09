@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.24",
   "PyYAML>=6.0",
-  "scikit-learn==1.7.2",
+  "scikit-learn==1.8.0",
   "torch>=2.2",
   "typing_extensions>=4.5",
 ]
@@ -28,19 +28,24 @@ algonauts = [
 h100 = []
 cluster = [
   "h5py>=3.10",
+  "edfio>=0.4",
 ]
 dev = [
   "pytest>=8",
+  "pillow>=10",
 ]
 docs = [
-  "matplotlib>=3.8",
   "sphinx>=7.4",
   "myst-parser>=3.0",
   "pydata-sphinx-theme>=0.15",
   "sphinx-copybutton>=0.5",
-  "sphinx-autodoc-typehints>=2.0",
-  "scipy>=1.11",
-  "SciencePlots>=2.1",
+  "sphinx-design>=0.6",
+  "sphinx-gallery>=0.17",
+  "numpydoc>=1.7",
+  "matplotlib>=3.8",
+  "pandas>=2.2",
+  "seaborn>=0.13",
+  "tueplots>=0.2.0",
 ]
 
 [project.scripts]

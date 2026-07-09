@@ -1,0 +1,438 @@
+{
+  "task_results_count": 15,
+  "baseline_rows_count": 80,
+  "best_by_task": [
+    {
+      "bundle": "2026-06-01_neurotwin-algonauts2025-v1-evidence.zip",
+      "path": "neurotwin-algonauts2025-v1-evidence/run/tables/task_results.csv",
+      "task_id": "future_state_forecasting",
+      "source_modality": "fmri",
+      "target_modality": "fmri",
+      "eval_mse": 0.3704057158577742,
+      "eval_mae": 0.47702833497262387,
+      "eval_pearsonr": 0.021147489604090967,
+      "eval_r2": 0.00022823194044319095,
+      "test_mse": 0.3704057158577742,
+      "best_val_mse": 0.3722508785371101
+    },
+    {
+      "bundle": "2026-06-01_neurotwin-algonauts2025-v1-evidence.zip",
+      "path": "neurotwin-algonauts2025-v1-evidence/run/tables/task_results.csv",
+      "task_id": "stimulus_to_fmri_response",
+      "source_modality": "stimulus",
+      "target_modality": "fmri",
+      "eval_mse": 0.3700777378938426,
+      "eval_mae": 0.47685055091881146,
+      "eval_pearsonr": 0.031562457078157746,
+      "eval_r2": 0.0009851610724053161,
+      "test_mse": 0.3700777378938426,
+      "best_val_mse": 0.3726290665003816
+    },
+    {
+      "bundle": "neurotwin-6621642-ddpfix-resume-handoff.zip",
+      "path": "neurotwin-a100-results-6621642-evidence/run/tables/task_results.csv",
+      "task_id": "future_state_forecasting",
+      "source_modality": "eeg",
+      "target_modality": "eeg",
+      "eval_mse": 3.11607456072082,
+      "eval_mae": 1.29685807808655,
+      "eval_pearsonr": 0.9721078350075555,
+      "eval_r2": 0.9418946133048665,
+      "test_mse": 3.11607456072082,
+      "best_val_mse": 2.2286510506462704,
+      "final_val_mse": "2.2286510506462704",
+      "best_step": "100000"
+    },
+    {
+      "bundle": "2026-06-02_neurotwin-a100-results-e9de1d2-paper-audit-v1-evidence.zip",
+      "path": "neurotwin-a100-results-e9de1d2-evidence/run/tables/task_results.csv",
+      "task_id": "masked_neural_reconstruction",
+      "source_modality": "eeg",
+      "target_modality": "eeg",
+      "eval_mse": 13.666385313467636,
+      "eval_mae": 2.79474194578787,
+      "eval_pearsonr": 0.864414321272169,
+      "eval_r2": 0.745168376704751,
+      "test_mse": 13.666385313467636,
+      "best_val_mse": 6.377687089520153,
+      "final_val_mse": "8.249870235656012",
+      "best_step": "24000"
+    }
+  ],
+  "baseline_summary": [
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "linear_ridge",
+      "n": 4,
+      "median_mse": 7.7452734660906435,
+      "best_mse": 7.7452734660906435
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "persistence",
+      "n": 4,
+      "median_mse": 8.204278465653019,
+      "best_mse": 8.204278465653019
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "autoregressive_ridge",
+      "n": 4,
+      "median_mse": 25.713067855246333,
+      "best_mse": 25.713067855246333
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "mlp",
+      "n": 4,
+      "median_mse": 26.99304956115498,
+      "best_mse": 26.99304956115498
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "tcn",
+      "n": 4,
+      "median_mse": 30.646183125700095,
+      "best_mse": 30.646183125700095
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "transformer",
+      "n": 4,
+      "median_mse": 42.84464891175085,
+      "best_mse": 42.84464891175085
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "neurotwin",
+      "n": 4,
+      "median_mse": 44.905225248180805,
+      "best_mse": 44.905225248180805
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "ssm_fallback",
+      "n": 4,
+      "median_mse": 47.46691886295597,
+      "best_mse": 47.46691886295597
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "train_mean",
+      "n": 4,
+      "median_mse": 53.62361887076796,
+      "best_mse": 53.62361887076796
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "model_id": "random_permutation",
+      "n": 4,
+      "median_mse": 84.59324898160732,
+      "best_mse": 84.59324898160732
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "linear_ridge",
+      "n": 4,
+      "median_mse": 7.807342737229374,
+      "best_mse": 7.807342737229374
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "autoregressive_ridge",
+      "n": 4,
+      "median_mse": 11.082407697691705,
+      "best_mse": 11.082407697691705
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "mlp",
+      "n": 4,
+      "median_mse": 25.10874027727986,
+      "best_mse": 25.10874027727986
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "tcn",
+      "n": 4,
+      "median_mse": 28.77081953843246,
+      "best_mse": 28.77081953843246
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "transformer",
+      "n": 4,
+      "median_mse": 41.91435464966791,
+      "best_mse": 41.91435464966791
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "neurotwin",
+      "n": 4,
+      "median_mse": 45.165397938341236,
+      "best_mse": 45.165397938341236
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "ssm_fallback",
+      "n": 4,
+      "median_mse": 45.99123225321919,
+      "best_mse": 45.99123225321919
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "train_mean",
+      "n": 4,
+      "median_mse": 53.607333416293294,
+      "best_mse": 53.607333416293294
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "persistence",
+      "n": 4,
+      "median_mse": 53.61165351686119,
+      "best_mse": 53.61165351686119
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "model_id": "random_permutation",
+      "n": 4,
+      "median_mse": 84.69373552675324,
+      "best_mse": 84.69373552675324
+    }
+  ],
+  "comparisons_vs_linear_ridge": [
+    {
+      "task_id": "future_state_forecasting",
+      "source_modality": "eeg",
+      "target_modality": "eeg",
+      "kahlus_best_mse": 3.11607456072082,
+      "kahlus_pearsonr": 0.9721078350075555,
+      "kahlus_r2": 0.9418946133048665,
+      "kahlus_bundle": "neurotwin-6621642-ddpfix-resume-handoff.zip",
+      "ridge_median_mse": 7.7452734660906435,
+      "ridge_best_mse": 7.7452734660906435,
+      "winner_vs_ridge": "kahlus"
+    },
+    {
+      "task_id": "future_state_forecasting",
+      "source_modality": "fmri",
+      "target_modality": "fmri",
+      "kahlus_best_mse": 0.3704057158577742,
+      "kahlus_pearsonr": 0.021147489604090967,
+      "kahlus_r2": 0.00022823194044319095,
+      "kahlus_bundle": "2026-06-01_neurotwin-algonauts2025-v1-evidence.zip",
+      "ridge_median_mse": 7.7452734660906435,
+      "ridge_best_mse": 7.7452734660906435,
+      "winner_vs_ridge": "kahlus"
+    },
+    {
+      "task_id": "masked_neural_reconstruction",
+      "source_modality": "eeg",
+      "target_modality": "eeg",
+      "kahlus_best_mse": 13.666385313467636,
+      "kahlus_pearsonr": 0.864414321272169,
+      "kahlus_r2": 0.745168376704751,
+      "kahlus_bundle": "2026-06-02_neurotwin-a100-results-e9de1d2-paper-audit-v1-evidence.zip",
+      "ridge_median_mse": 7.807342737229374,
+      "ridge_best_mse": 7.807342737229374,
+      "winner_vs_ridge": "ridge"
+    }
+  ],
+  "paper_gates": [
+    {
+      "bundle": "2026-06-02_neurotwin-a100-results-e9de1d2-paper-audit-v1-evidence.zip",
+      "path": "neurotwin-a100-results-e9de1d2-evidence/paper_mode_eval/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "2026-06-02_neurotwin-a100-results-e9de1d2-paper-audit-v1-evidence.zip",
+      "path": "neurotwin-a100-results-e9de1d2-evidence/run/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "neurotwin-6621642-ddpfix-resume-handoff.zip",
+      "path": "neurotwin-a100-results-6621642-evidence/run/evidence_gate_provisional.json",
+      "passed": false,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-ddpfix-resume-handoff.zip",
+      "path": "neurotwin-a100-results-6621642-evidence/run/evidence_gate.json",
+      "passed": false,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-ddpfix-resume-handoff.zip",
+      "path": "neurotwin-a100-results-6621642-evidence/run/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "kahlus-ktm-a100-results-7915929-gpu7-evidence.zip",
+      "path": "kahlus-ktm-a100-results-7915929-gpu7-evidence/run/evidence_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": true,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "kahlus-ktm-a100-results-dc94c5a-gpu7-evidence.zip",
+      "path": "kahlus-ktm-a100-results-dc94c5a-gpu7-evidence/run/evidence_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": true,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "2026-06-04_neurotwin-algonauts2025-v2-evidence.zip",
+      "path": "evidence/baseline/algonauts2025_v2_baseline_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": null,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-diagnostic-handoff.zip",
+      "path": "neurotwin-nfc-synthetic-6621642/evidence_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-diagnostic-handoff.zip",
+      "path": "neurotwin-6621642-phase1/eval/moabb_paper_mode/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "2026-06-01_neurotwin-a100-results-822a80e-evidence.zip",
+      "path": "neurotwin-a100-results-822a80e-evidence/paper_mode_eval/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "2026-06-01_neurotwin-a100-results-822a80e-failure-evidence.zip",
+      "path": "neurotwin-a100-results-822a80e-failure-evidence/paper_mode_eval/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "kahlus-ktm-a100-results-66ec27e-gpu7-evidence.zip",
+      "path": "kahlus-ktm-a100-results-66ec27e-gpu7-evidence/run/evidence_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": true,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-recovered-evidence.zip",
+      "path": "neurotwin-6621642-3gpu-batchmatched-recovery/runs/moabb_a100_3gpu_batchmatched_recovered/evidence_gate_provisional.json",
+      "passed": false,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-recovered-evidence.zip",
+      "path": "neurotwin-6621642-3gpu-batchmatched-recovery/runs/moabb_a100_3gpu_batchmatched_recovered/evidence_gate.json",
+      "passed": false,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-recovered-evidence.zip",
+      "path": "neurotwin-6621642-3gpu-batchmatched-recovery/runs/moabb_a100_3gpu_batchmatched_recovered/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-recovered-evidence.zip",
+      "path": "neurotwin-nfc-synthetic-6621642/evidence_gate.json",
+      "passed": null,
+      "scientific_claim_allowed": false,
+      "observed_seeds": null,
+      "violations": null,
+      "warnings": null
+    },
+    {
+      "bundle": "neurotwin-6621642-batchmatched-recovered-evidence.zip",
+      "path": "neurotwin-6621642-phase1/eval/moabb_paper_mode/paper_mode_gate.json",
+      "passed": true,
+      "scientific_claim_allowed": null,
+      "observed_seeds": [
+        0,
+        1,
+        2
+      ],
+      "violations": [],
+      "warnings": []
+    }
+  ]
+}

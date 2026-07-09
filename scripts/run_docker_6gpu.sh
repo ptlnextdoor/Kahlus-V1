@@ -7,12 +7,12 @@ usage: scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-<short_sha> [hos
 
 Examples:
   bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
-  HOST_GPU_IDS=0,1,2,3,4,5,6 bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
+  HOST_GPU_IDS=2,3,4,5,6,7 bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
   A100_CONFIG_TEMPLATE=configs/train/moabb_a100.yaml bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
   GPU_COUNT=1 NPROC_PER_NODE=1 HOST_GPU_IDS=0 CONTAINER_CUDA_VISIBLE_DEVICES=0 bash scripts/run_docker_6gpu.sh /raid/scratch/$USER/neurotwin-abc1234
 
 Runs the A100 handoff inside Docker with the runner mounted at /workspace/repo.
-The default path requires exactly 7 visible CUDA devices. Use the one-GPU form only for diagnostics.
+The default path requires exactly 6 visible CUDA devices. Use the one-GPU form only for diagnostics.
 EOF
 }
 
@@ -25,8 +25,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INPUT_ROOT=$1
 DOCKER_IMAGE=${DOCKER_IMAGE:-pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel}
-GPU_COUNT=${GPU_COUNT:-7}
-HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5,6}}
+GPU_COUNT=${GPU_COUNT:-6}
+HOST_GPU_IDS=${HOST_GPU_IDS:-${2:-0,1,2,3,4,5}}
 NPROC_PER_NODE=${NPROC_PER_NODE:-$GPU_COUNT}
 NEUROTWIN_DOCKER_DRY_RUN=${NEUROTWIN_DOCKER_DRY_RUN:-0}
 A100_CONFIG_TEMPLATE=${A100_CONFIG_TEMPLATE:-configs/train/moabb_a100_smoke.yaml}

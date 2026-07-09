@@ -1,0 +1,110 @@
+[
+  {
+    "key": "eegpt_neurips2024",
+    "title": "EEGPT: Pretrained Transformer for Universal and Reliable Representation of EEG Signals",
+    "attached_matches": [
+      {
+        "itemKey": "XDD849A9",
+        "childKeys": [
+          "8GFC3432"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "seeg_electrode_variability_neurips2024",
+    "title": "Neural decoding from stereotactic EEG: accounting for electrode variability across subjects",
+    "attached_matches": [
+      {
+        "itemKey": "CS6NIJZ6",
+        "childKeys": [
+          "XU3BZVS6"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "labram_iclr2024",
+    "title": "Large Brain Model for Learning Generic Representations with Tremendous EEG Data in BCI",
+    "attached_matches": [
+      {
+        "itemKey": "CEANPB8C",
+        "childKeys": [
+          "WFRTFFI7"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "population_transformer_2024",
+    "title": "Population Transformer: Learning Population-level Representations of Neural Activity",
+    "attached_matches": [
+      {
+        "itemKey": "GKWNQARC",
+        "childKeys": [
+          "SSE7J5LB"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "hybrid_ssm_neural_decoding_2025",
+    "title": "Generalizable, real-time neural decoding with hybrid state-space models",
+    "attached_matches": [
+      {
+        "itemKey": "DFXWD6TE",
+        "childKeys": [
+          "58AHX26B"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "braingpt_2024",
+    "title": "BrainGPT: Unleashing the Potential of EEG Generalist Foundation Model by Autoregressive Pre-training",
+    "attached_matches": [
+      {
+        "itemKey": "IWAIZGZR",
+        "childKeys": [
+          "TVSJJLUV"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reve_eeg_foundation_2025",
+    "title": "REVE: A Foundation Model for EEG -- Adapting to Any Setup with Large-Scale Pretraining on 25,000 Subjects",
+    "attached_matches": [
+      {
+        "itemKey": "WWUNPDBH",
+        "childKeys": [
+          "7E38GBW9"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "csbrain_2025",
+    "title": "CSBrain: A Cross-scale Spatiotemporal Brain Foundation Model for EEG Decoding",
+    "attached_matches": [
+      {
+        "itemKey": "33RCE6ZF",
+        "childKeys": [
+          "UFT6TCLN"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "cebra_2022",
+    "title": "Learnable latent embeddings for joint behavioral and neural analysis",
+    "attached_matches": [
+      {
+        "itemKey": "T5I3R7FH",
+        "childKeys": [
+          "3EJQ7A6X"
+        ]
+      }
+    ]
+  }
+]
