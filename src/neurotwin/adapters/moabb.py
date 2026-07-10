@@ -45,22 +45,32 @@ def load_moabb_trials(
     require_moabb()
     dataset_cls = _resolve_moabb_dataset(dataset_name)
     dataset = dataset_cls()
-    paradigm_obj = _build_moabb_paradigm(paradigm)
-    x, labels, metadata = paradigm_obj.get_data(dataset=dataset, subjects=list(subjects) if subjects else None)
+    paradigm_obj = _build_moabb_paradigm(paradigm, resample=sampling_rate)
+    x, labels, metadata = paradigm_obj.get_data(
+        dataset=dataset,
+        subjects=list(subjects) if subjects else None,
+        return_epochs=True,
+    )
+    signal, resolved_sampling_rate, channel_names, signal_unit = _epoch_array_metadata(
+        x,
+        dataset=dataset,
+        sampling_rate=sampling_rate,
+    )
     trials = []
-    for idx, signal in enumerate(x):
+    for idx, trial_signal in enumerate(signal):
         if max_trials is not None and len(trials) >= max_trials:
             break
         meta = _metadata_row(metadata, idx)
         trials.append(
             {
-                "signal": np.asarray(signal, dtype=np.float32),
+                "signal": np.asarray(trial_signal, dtype=np.float32),
                 "subject": meta.get("subject", meta.get("subject_id", "unknown")),
                 "session": meta.get("session", meta.get("session_id", "0")),
                 "run": meta.get("run", meta.get("run_id", str(idx))),
                 "label": labels[idx] if idx < len(labels) else None,
-                "sampling_rate": float(sampling_rate or getattr(dataset, "sfreq", 1.0) or 1.0),
-                "channel_names": _listlike(getattr(dataset, "channels", None)) or _listlike(meta.get("channel_names")) or [],
+                "sampling_rate": resolved_sampling_rate,
+                "channel_names": channel_names,
+                "signal_unit": signal_unit,
                 "metadata": meta,
             }
         )
@@ -156,6 +166,7 @@ def trials_to_recordings(trials: Iterable[dict[str, Any]] | None, dataset_id: st
                     "adapter": "moabb",
                     "run_id": run_id,
                     "sampling_rate": sampling_rate,
+                    "signal_unit": str(trial.get("signal_unit", "unknown")),
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
                 },
@@ -193,6 +204,7 @@ def trials_to_event_batches(trials: Iterable[dict[str, Any]], dataset_id: str, s
                     "source_record_id": record_id,
                     "run_id": run_id,
                     "sampling_rate": sampling_rate,
+                    "signal_unit": str(trial.get("signal_unit", "unknown")),
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
                 },
@@ -241,12 +253,53 @@ def _resolve_moabb_dataset(dataset_name: str) -> Any:
     return getattr(datasets, dataset_name)
 
 
-def _build_moabb_paradigm(name: str) -> Any:
+def _build_moabb_paradigm(name: str, *, resample: float | None = None) -> Any:
     import moabb.paradigms as paradigms
 
     if not hasattr(paradigms, name):
         raise ValueError(f"Unknown MOABB paradigm {name!r}")
-    return getattr(paradigms, name)()
+    kwargs = {"resample": float(resample)} if resample is not None else {}
+    return getattr(paradigms, name)(**kwargs)
+
+
+def _epoch_array_metadata(
+    data: Any,
+    *,
+    dataset: Any,
+    sampling_rate: float | None,
+) -> tuple[np.ndarray, float, list[str], str]:
+    """Extract MOABB epoch arrays with their true sampling rate and signal unit.
+
+    MOABB's regular array path scales MNE epoch data by ``dataset.unit_factor``
+    (normally 1e6) into microvolts. This adapter requests epochs so it can
+    retain the sampling rate and channel names, then performs that same
+    documented scaling explicitly.
+    """
+
+    if hasattr(data, "get_data") and hasattr(data, "info"):
+        array = np.asarray(data.get_data(), dtype=np.float32)
+        info = getattr(data, "info")
+        info_rate = float(info["sfreq"])
+        if sampling_rate is not None and not np.isclose(info_rate, float(sampling_rate), rtol=0.0, atol=1e-8):
+            raise RuntimeError(
+                f"MOABB resampling requested {sampling_rate} Hz but epochs report {info_rate} Hz"
+            )
+        return (
+            array * float(getattr(dataset, "unit_factor", 1e6)),
+            info_rate,
+            _listlike(getattr(data, "ch_names", None)),
+            "uV",
+        )
+
+    # This fallback exists for simple test doubles and nonstandard MOABB-like
+    # objects. It cannot establish physical units, so downstream figure code
+    # must not label it as real microvolt data.
+    return (
+        np.asarray(data, dtype=np.float32),
+        float(sampling_rate or getattr(dataset, "sfreq", 1.0) or 1.0),
+        _listlike(getattr(dataset, "channels", None)),
+        "unknown",
+    )
 
 
 def _metadata_row(metadata: Any, idx: int) -> dict[str, Any]:
