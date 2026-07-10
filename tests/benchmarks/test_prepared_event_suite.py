@@ -23,6 +23,7 @@ from neurotwin.benchmarks.prepared_suite import (
     run_prepared_baseline_suite,
 )
 from neurotwin.data.prepared_tasks import prepared_windows_by_split
+from neurotwin.data.forecast_contract import FORECAST_PROTOCOL_V2_NONOVERLAP, ForecastTaskSpec
 from neurotwin.data.event_io import event_manifest_summary, load_event_batches, save_event_batches
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import build_split_manifest
@@ -138,6 +139,38 @@ class PreparedEventSuiteTests(unittest.TestCase):
         self.assertEqual(payload["prepared_data"]["max_windows_per_split"], 3)
         report = format_prepared_baseline_report(payload)
         self.assertIn("max_windows_per_split=3", report)
+
+    def test_prepared_baseline_suite_records_v2_forecast_protocol(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prep_dir = Path(tmp) / "prepared"
+            records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+            batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg",), n_time=72)
+            for batch in batches:
+                batch.metadata["sampling_rate"] = 128.0
+            split = build_split_manifest(records, policy="subject", seed=0)
+            save_split_manifest(split, prep_dir / "split_manifest.json")
+            save_event_batches(batches, prep_dir)
+
+            payload = run_prepared_baseline_suite(
+                PreparedSuiteConfig(
+                    event_manifest=prep_dir / "event_manifest.json",
+                    split_manifest=prep_dir / "split_manifest.json",
+                    train_steps=1,
+                    model_ids=("train_mean",),
+                    forecast_task=ForecastTaskSpec(
+                        protocol_id=FORECAST_PROTOCOL_V2_NONOVERLAP,
+                        schema_version=2,
+                        context_seconds=8 / 128,
+                        target_seconds=4 / 128,
+                        gap_seconds=2 / 128,
+                        stride_seconds=8 / 128,
+                        claim_eligible=True,
+                    ),
+                )
+            )
+
+        self.assertEqual(payload["prepared_data"]["forecast_protocol_id"], FORECAST_PROTOCOL_V2_NONOVERLAP)
+        self.assertTrue(payload["prepared_data"]["claim_eligible"])
 
     def test_prepared_baseline_suite_can_filter_models_for_debug_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

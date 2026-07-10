@@ -105,6 +105,7 @@ def _load_and_select_prepared_tasks(resolved: PreparedTrainingConfig) -> Prepare
         window_length=suite_config.window_length,
         stride=suite_config.stride,
         seed=resolved.seed,
+        forecast_task=suite_config.forecast_task,
     )
     selected_tasks = _select_tasks(tasks, resolved.requested_task)
     if not selected_tasks:

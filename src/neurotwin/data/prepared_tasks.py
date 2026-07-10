@@ -7,9 +7,15 @@ from typing import Any
 
 import numpy as np
 
-from neurotwin.data.forecast_contract import ResolvedForecastTaskSpec, WindowExampleProvenance
+from neurotwin.data.forecast_contract import (
+    FORECAST_PROTOCOL_V2_NONOVERLAP,
+    ForecastProtocolError,
+    ForecastTaskSpec,
+    ResolvedForecastTaskSpec,
+    WindowExampleProvenance,
+)
 from neurotwin.data.schemas import NeuralEventBatch
-from neurotwin.data.split_manifest import SplitManifest
+from neurotwin.data.split_manifest import RecordingRecord, SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
 
 
@@ -24,6 +30,7 @@ class PreparedSuiteConfig:
     require_ci: bool = True
     max_windows_per_split: int | None = None
     model_ids: tuple[str, ...] | None = None
+    forecast_task: ForecastTaskSpec | None = None
 
 
 @dataclass(frozen=True)
@@ -77,6 +84,7 @@ def build_prepared_window_tasks(
     stride: int,
     seed: int = 0,
     max_windows_per_split: int | None = None,
+    forecast_task: ForecastTaskSpec | None = None,
 ) -> tuple[tuple[SupervisedWindowTask, ...], list[dict[str, str]]]:
     skipped: list[dict[str, str]] = []
     windows_by_split = prepared_windows_by_split(
@@ -92,7 +100,16 @@ def build_prepared_window_tasks(
             skipped.append({"task_id": "all", "reason": f"event not present in split manifest: {_record_id(batch)}"})
 
     tasks: list[SupervisedWindowTask] = []
-    future = _future_task_from_windows(windows_by_split)
+    future = (
+        _nonoverlapping_future_task_from_batches(
+            batches,
+            split,
+            forecast_task=forecast_task,
+            max_windows_per_split=max_windows_per_split,
+        )
+        if forecast_task is not None
+        else _future_task_from_windows(windows_by_split)
+    )
     if future is not None:
         tasks.append(future)
     else:
@@ -167,9 +184,9 @@ def build_future_forecasting_task_from_windows(
     train = [window.signal for window in windows_by_split["train"] if window.modality == modality]
     val = [window.signal for window in windows_by_split["val"] if window.modality == modality]
     test = [window.signal for window in windows_by_split["test"] if window.modality == modality]
-    x_train, y_train = _future_xy(train)
-    x_val, y_val = _future_xy(val)
-    x_test, y_test = _future_xy(test)
+    x_train, y_train = _legacy_overlapping_future_xy(train)
+    x_val, y_val = _legacy_overlapping_future_xy(val)
+    x_test, y_test = _legacy_overlapping_future_xy(test)
     if x_train is None or x_test is None or y_train is None or y_test is None:
         return None
     return SupervisedWindowTask(
@@ -188,6 +205,156 @@ def build_future_forecasting_task_from_windows(
 
 def _future_task_from_windows(windows_by_split: dict[str, list[NeuralEventBatch]]) -> SupervisedWindowTask | None:
     return build_future_forecasting_task_from_windows(windows_by_split)
+
+
+def _nonoverlapping_future_task_from_batches(
+    batches: list[NeuralEventBatch],
+    split: SplitManifest,
+    *,
+    forecast_task: ForecastTaskSpec,
+    max_windows_per_split: int | None,
+) -> SupervisedWindowTask | None:
+    """Build v2 forecast pairs directly from recordings, before any window slicing."""
+
+    if forecast_task.protocol_id != FORECAST_PROTOCOL_V2_NONOVERLAP:
+        raise ForecastProtocolError("the direct prepared-data builder only accepts the v2 non-overlap protocol")
+
+    split_keys = _split_record_keys(split)
+    available_by_split: dict[str, set[str]] = {"train": set(), "val": set(), "test": set()}
+    for batch in batches:
+        split_name = split_keys.get(_record_id(batch))
+        if split_name is not None:
+            available_by_split[split_name].add(batch.modality)
+    shared_modalities = available_by_split["train"] & available_by_split["test"]
+    modality = next((name for name in ("eeg", "fmri", "meg", "spikes") if name in shared_modalities), None)
+    if modality is None:
+        return None
+
+    records_by_id = {record.record_id: record for record in split.all_records}
+    arrays: dict[str, list[np.ndarray]] = {name: [] for name in ("train_x", "train_y", "val_x", "val_y", "test_x", "test_y")}
+    provenance: dict[str, list[WindowExampleProvenance]] = {"train": [], "val": [], "test": []}
+    resolved_spec: ResolvedForecastTaskSpec | None = None
+    limit = int(max_windows_per_split) if max_windows_per_split is not None else None
+    if limit is not None and limit <= 0:
+        raise ValueError("max_windows_per_split must be positive when provided")
+
+    for batch in batches:
+        if batch.modality != modality:
+            continue
+        record_id = _record_id(batch)
+        split_name = split_keys.get(record_id)
+        record = records_by_id.get(record_id)
+        if split_name is None or record is None:
+            continue
+        sampling_rate_hz = batch.sampling_rate
+        if sampling_rate_hz is None:
+            raise ForecastProtocolError(
+                f"v2 forecasting requires sampling_rate metadata for record {record_id!r}"
+            )
+        current_spec = forecast_task.resolve(sampling_rate_hz)
+        if resolved_spec is None:
+            resolved_spec = current_spec
+        elif current_spec != resolved_spec:
+            raise ForecastProtocolError(
+                "a supervised forecast task requires recordings with one resolved sampling grid; "
+                "partition mixed sampling rates before building the task"
+            )
+        remaining = None if limit is None else limit - len(provenance[split_name])
+        if remaining is not None and remaining <= 0:
+            continue
+        x, y, rows = _nonoverlapping_recording_windows(
+            batch,
+            record=record,
+            split=split_name,
+            spec=current_spec,
+            limit=remaining,
+        )
+        if x.size == 0:
+            continue
+        arrays[f"{split_name}_x"].append(x)
+        arrays[f"{split_name}_y"].append(y)
+        provenance[split_name].extend(rows)
+
+    if resolved_spec is None:
+        return None
+    x_train, y_train = _stack_supervised(arrays["train_x"]), _stack_supervised(arrays["train_y"])
+    x_val, y_val = _stack_supervised(arrays["val_x"]), _stack_supervised(arrays["val_y"])
+    x_test, y_test = _stack_supervised(arrays["test_x"]), _stack_supervised(arrays["test_y"])
+    if x_train.size == 0 or x_test.size == 0:
+        return None
+    return SupervisedWindowTask(
+        task_id="future_state_forecasting",
+        source_modality=modality,
+        target_modality=modality,
+        x_train=x_train,
+        y_train=y_train,
+        x_test=x_test,
+        y_test=y_test,
+        x_val=x_val if x_val.size else None,
+        y_val=y_val if y_val.size else None,
+        forecast_spec=resolved_spec,
+        train_provenance=tuple(provenance["train"]),
+        val_provenance=tuple(provenance["val"]),
+        test_provenance=tuple(provenance["test"]),
+        notes=("prepared non-overlapping forecast windows built directly from source recordings",),
+        metadata={
+            "forecast_protocol_id": resolved_spec.spec.protocol_id,
+            "forecast_schema_version": resolved_spec.spec.schema_version,
+            "claim_eligible": resolved_spec.claim_eligible,
+            "context_samples": resolved_spec.context_samples,
+            "target_samples": resolved_spec.target_samples,
+            "gap_samples": resolved_spec.gap_samples,
+            "stride_samples": resolved_spec.stride_samples,
+            "sampling_rate_hz": resolved_spec.sampling_rate_hz,
+        },
+    )
+
+
+def _nonoverlapping_recording_windows(
+    batch: NeuralEventBatch,
+    *,
+    record: RecordingRecord,
+    split: str,
+    spec: ResolvedForecastTaskSpec,
+    limit: int | None,
+) -> tuple[np.ndarray, np.ndarray, list[WindowExampleProvenance]]:
+    signal = np.asarray(batch.signal, dtype=np.float32)
+    xs: list[np.ndarray] = []
+    ys: list[np.ndarray] = []
+    rows: list[WindowExampleProvenance] = []
+    max_start = signal.shape[0] - (spec.context_samples + spec.gap_samples + spec.target_samples)
+    for start in range(0, max_start + 1, spec.stride_samples):
+        input_start, input_stop, target_start, target_stop = spec.ranges(start)
+        xs.append(signal[input_start:input_stop])
+        ys.append(signal[target_start:target_stop])
+        rows.append(
+            WindowExampleProvenance(
+                dataset_id=batch.dataset_id,
+                subject_id=record.subject_id,
+                session_id=record.session_id,
+                site_id=record.site_id,
+                record_id=record.record_id,
+                source_hash=batch.source_hash,
+                split=split,
+                input_start=input_start,
+                input_stop=input_stop,
+                target_start=target_start,
+                target_stop=target_stop,
+            )
+        )
+        if limit is not None and len(rows) >= limit:
+            break
+    if not xs:
+        empty_x = np.empty((0, spec.context_samples, signal.shape[-1]), dtype=np.float32)
+        empty_y = np.empty((0, spec.target_samples, signal.shape[-1]), dtype=np.float32)
+        return empty_x, empty_y, []
+    return np.asarray(xs, dtype=np.float32), np.asarray(ys, dtype=np.float32), rows
+
+
+def _stack_supervised(parts: list[np.ndarray]) -> np.ndarray:
+    if not parts:
+        return np.asarray([], dtype=np.float32)
+    return np.concatenate(parts, axis=0).astype(np.float32)
 
 
 def _masked_task_from_windows(
@@ -293,7 +460,9 @@ def _stimulus_fmri_task_from_windows(windows_by_split: dict[str, list[NeuralEven
     )
 
 
-def _future_xy(signals: list[np.ndarray]) -> tuple[np.ndarray | None, np.ndarray | None]:
+def _legacy_overlapping_future_xy(signals: list[np.ndarray]) -> tuple[np.ndarray | None, np.ndarray | None]:
+    """Historical one-sample-shift task retained only for artifact compatibility."""
+
     usable = [np.asarray(signal, dtype=np.float32) for signal in signals if signal.shape[0] >= 2]
     if not usable:
         return None, None
