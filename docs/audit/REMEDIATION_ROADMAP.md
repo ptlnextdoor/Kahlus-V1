@@ -2,6 +2,22 @@
 
 No pull request should merge and no expensive A100 job should launch until the P0 protocol audit is complete.
 
+## C0 HNPH v0.2 Invalidation Freeze
+
+The HNPH v0.2 protocol, machine-readable freeze, canonical implementation
+ledger, invalidated result registry, and non-destructive quarantine policy are
+now documented. This C0 state invalidates the historical 3.116 overlapping GRU
+attribution, the failed seven-A100 rank-drift run, and the completed six-A100 run
+whose final gate was false. It does not implement the evaluator or authorize
+training.
+
+Raw source caches must be preserved. Derived prepared data, checkpoints, and
+evidence associated with invalid runs must be quarantined and excluded from
+canonical discovery. Expensive training remains blocked until a clean rebuild
+passes source-hash, zero-person-overlap, physical-unit/rate/channel, no-silent-
+truncation, baseline-completeness, distributed-lockstep, and independent
+reproduction gates.
+
 ## Delivery State
 
 - R0 forensic audit merged in `564d80f2`.

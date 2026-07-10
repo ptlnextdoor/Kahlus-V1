@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "registry_version": "1.0.0",
+  "effective_date": "2026-07-10",
+  "canonical_protocol_id": "kahlus.hnph.phase0.v0.2",
+  "default_claim_eligible": false,
+  "records": [
+    {
+      "invalidation_id": "INV-001",
+      "label": "historical_3_116_overlapping_target_result",
+      "execution_status": "completed_historical",
+      "validity_status": "invalid",
+      "claim_eligible": false,
+      "reported_metrics": {
+        "future_task_mse": 3.11607456072082
+      },
+      "task_facts": {
+        "source_window_samples": 128,
+        "input_samples": 127,
+        "target_samples": 127,
+        "shared_input_target_samples": 126,
+        "overlapping_target": true
+      },
+      "architecture_facts": {
+        "model_class": "NeuralStateSpaceTranslator",
+        "configured_backbone": "ssm_fallback",
+        "implemented_backbone": "GRU",
+        "not_attributable_to": [
+          "NeuralFieldCompiler",
+          "Mamba",
+          "true_SSM"
+        ]
+      },
+      "invalidation_reasons": [
+        "input_target_overlap",
+        "architecture_attribution_mismatch",
+        "incompatible_with_hnph_v0_2"
+      ],
+      "permitted_wording": "Historical overlapping-target GRU translator result.",
+      "quarantine": {
+        "raw_source_cache": "preserve",
+        "derived_prepared_data": "quarantine",
+        "checkpoints": "quarantine",
+        "evidence": "quarantine"
+      }
+    },
+    {
+      "invalidation_id": "INV-002",
+      "label": "failed_7xa100_rank_drift_run",
+      "execution_status": "failed",
+      "validity_status": "invalid",
+      "claim_eligible": false,
+      "distributed_facts": {
+        "requested_world_size": 7,
+        "accelerator": "A100",
+        "rank_drift": true,
+        "collective_timeout": true,
+        "timeout_family": "NCCL",
+        "completion_gate_passed": false,
+        "rank_consistency_gate_passed": false
+      },
+      "reported_metrics": null,
+      "invalidation_reasons": [
+        "distributed_rank_drift",
+        "collective_timeout",
+        "incomplete_execution"
+      ],
+      "permitted_wording": "The seven-A100 run failed due to distributed rank drift.",
+      "quarantine": {
+        "raw_source_cache": "preserve",
+        "derived_prepared_data": "quarantine",
+        "checkpoints": "quarantine",
+        "evidence": "quarantine"
+      }
+    },
+    {
+      "invalidation_id": "INV-003",
+      "label": "completed_6xa100_invalid_run",
+      "execution_status": "completed",
+      "validity_status": "invalid",
+      "claim_eligible": false,
+      "distributed_facts": {
+        "world_size": 6,
+        "accelerator": "A100"
+      },
+      "reported_metrics": {
+        "test_mse": 354076727.1019103,
+        "test_pearson_r": 0.6294566387
+      },
+      "final_gate_passed": false,
+      "sleep_edf_person_overlap_counts": {
+        "train_test": 26,
+        "train_validation": 18,
+        "validation_test": 8
+      },
+      "data_contract_facts": {
+        "channel_count_silently_truncated": true,
+        "mixed_sampling_rates_combined": true,
+        "mixed_physical_units_combined": true,
+        "sample_count_truncated_to": 16384,
+        "required_source_hashes_present": false,
+        "required_baseline_outputs_present": false
+      },
+      "invalidation_reasons": [
+        "cross_split_person_overlap",
+        "silent_channel_count_truncation",
+        "mixed_sampling_rates",
+        "mixed_physical_units",
+        "silent_sample_truncation",
+        "missing_source_hashes",
+        "missing_required_baselines",
+        "final_gate_false"
+      ],
+      "permitted_wording": "A completed six-A100 run was invalidated by split leakage, silent truncation, mixed physical contracts, and missing evidence; its final gate was false.",
+      "quarantine": {
+        "raw_source_cache": "preserve",
+        "derived_prepared_data": "quarantine",
+        "checkpoints": "quarantine",
+        "evidence": "quarantine"
+      }
+    }
+  ],
+  "rehabilitation_policy": {
+    "metadata_relabel_only_sufficient": false,
+    "report_regeneration_only_sufficient": false,
+    "clean_rebuild_from_verified_raw_sources_required": true,
+    "canonical_split_audit_required": true,
+    "physical_data_audit_required": true,
+    "source_hash_manifest_required": true,
+    "required_baselines_required": true,
+    "independent_scoring_reproduction_required": true
+  }
+}

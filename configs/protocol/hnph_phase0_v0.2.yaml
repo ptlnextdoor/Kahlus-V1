@@ -1,0 +1,127 @@
+schema_version: 1
+protocol_id: kahlus.hnph.phase0.v0.2
+protocol_version: 0.2.0
+status: frozen_protocol_only
+effective_date: "2026-07-10"
+external_test_opened: false
+
+datasets:
+  development:
+    canonical_id: sleep-edf-expanded-sleep-cassette
+    role: development
+    subset: sleep_cassette
+    person_grouped: true
+    allowed_uses:
+      - training
+      - validation
+      - held_subject_internal_test
+      - target_development
+      - calibration_development
+      - model_selection
+      - baseline_selection
+  external:
+    canonical_id: cap-sleep-database
+    role: sealed_external_test
+    sealed: true
+    opened: false
+    site_holdout_claim_allowed: false
+  secondary_shift:
+    canonical_id: sleep-edf-expanded-sleep-telemetry
+    role: descriptive_distribution_shift
+    pooled_into_training: false
+
+target:
+  endpoint_type: oracle_conditional_stable_sleep_transition
+  oracle_conditioning:
+    current_macrostate: true
+    causally_available_state_history: true
+    deployment_claim: false
+  macrostates:
+    - Wake
+    - NREM
+    - REM
+    - Unknown
+  nrem_mapping:
+    rk_stages: [1, 2, 3, 4]
+    aasm_stages: [N1, N2, N3]
+  cadence_seconds: 30
+  context_seconds: 600
+  stable_transition_consecutive_epochs: 2
+  stable_transition_duration_seconds: 60
+  natural_grid_only: true
+  event_enriched_evaluation: false
+  complete_follow_up_default: true
+
+lead_bands_minutes:
+  - id: B1
+    lower_exclusive: 0.5
+    upper_inclusive: 2.0
+  - id: B2
+    lower_exclusive: 2.0
+    upper_inclusive: 5.0
+  - id: B3
+    lower_exclusive: 5.0
+    upper_inclusive: 10.0
+  - id: B4
+    lower_exclusive: 10.0
+    upper_inclusive: 20.0
+primary_band_id: B2
+
+chief_comparator:
+  family: semi_markov_competing_risk
+  selection: validation_only
+  allowed_inputs:
+    - current_macrostate
+    - two_preceding_macrostates
+    - current_bout_age
+    - elapsed_recording_time_or_time_of_night
+    - recent_transition_count
+    - empirical_destination_and_base_rate
+
+feasibility_gate:
+  endpoint_power_minimum: 0.80
+  target_incremental_log_skill_bits_per_anchor: 0.02
+  cluster_unit: subject
+
+related_work:
+  ssf_set:
+    role: required_related_work_and_protocol_comparator_when_reproducible
+    establishes_first_sleep_forecaster_claim: false
+
+primary_endpoint:
+  dataset: cap-sleep-database
+  band_id: B2
+  estimand: mean_subject_balanced_incremental_categorical_log_skill_bits
+  comparison: model_minus_chief_comparator
+  success:
+    subject_level_lcb_95_gt: 0.0
+    calibration_gate_must_pass: true
+
+claim_gate:
+  pre_evaluation_positive_result_claim_allowed: false
+  blocked_claims:
+    - clinical
+    - diagnostic
+    - treatment
+    - seizure_warning
+    - digital_twin
+    - foundation_model
+    - biological_mechanism
+    - site_held_out_without_site_provenance
+  invalidating_conditions:
+    - split_leakage
+    - causal_or_interval_overlap
+    - missing_or_unverified_source_hashes
+    - silent_channel_truncation
+    - mixed_sampling_rates_or_units
+    - silent_sample_truncation
+    - missing_chief_comparator
+    - failed_calibration_or_negative_control
+    - distributed_rank_drift
+    - irreproducible_evidence
+
+retention:
+  preserve_raw_caches: true
+  quarantine_invalid_derived_prepared_data: true
+  quarantine_invalid_checkpoints: true
+  quarantine_invalid_evidence: true
