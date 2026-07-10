@@ -21,6 +21,7 @@ from neurotwin.eval.paper_demos import (
 )
 from neurotwin.eval.prepared_paper_mode import run_prepared_baseline_suite_multi_seed, write_prepared_paper_mode_artifacts
 from neurotwin.data.prepared_tasks import PreparedSuiteConfig
+from neurotwin.data.forecast_contract import ForecastTaskSpec
 from neurotwin.repro import write_json
 
 
@@ -48,6 +49,7 @@ class EvalCommandConfig:
     paper_mode: bool = False
     require_pass: bool = False
     gate_mode: str = "evidence"
+    forecast_task: ForecastTaskSpec | None = None
 
 
 @dataclass(frozen=True)
@@ -293,6 +295,7 @@ def _prepared_suite_config(
         train_steps=config.train_steps,
         max_windows_per_split=config.max_windows_per_split,
         model_ids=config.baseline_model_ids,
+        forecast_task=config.forecast_task,
     )
 
 

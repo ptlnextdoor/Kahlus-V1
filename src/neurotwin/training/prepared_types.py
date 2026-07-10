@@ -13,6 +13,7 @@ from neurotwin.config_types import (
     ResolvedPreparedRuntimeConfig,
     resolve_prepared_config,
 )
+from neurotwin.data.forecast_contract import ForecastTaskSpec
 from neurotwin.data.prepared_tasks import PreparedSuiteConfig
 from neurotwin.runtime.distributed import DistributedInfo
 
@@ -26,6 +27,7 @@ class PreparedTrainingConfig:
     stride: int
     steps: int
     requested_task: str
+    forecast_task: ForecastTaskSpec | None
     model: ResolvedPreparedModelConfig
     runtime: ResolvedPreparedRuntimeConfig
 
@@ -46,6 +48,7 @@ class PreparedTrainingConfig:
             stride=resolved.stride,
             steps=resolved.steps,
             requested_task=resolved.requested_task,
+            forecast_task=resolved.forecast_task,
             model=resolved.model,
             runtime=resolved.runtime,
         )
@@ -102,6 +105,7 @@ class PreparedTrainingConfig:
             stride=self.stride,
             seed=self.seed,
             train_steps=self.steps,
+            forecast_task=self.forecast_task,
         )
 
 

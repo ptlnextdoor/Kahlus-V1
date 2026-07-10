@@ -173,6 +173,26 @@ class PreparedTrainingTests(unittest.TestCase):
         self.assertEqual(_normalize_model_type("nfc"), "NeuralFieldCompiler")
         self.assertEqual(_normalize_model_type("neural_field_compiler"), "NeuralFieldCompiler")
 
+    def test_prepared_training_config_forwards_explicit_forecast_protocol(self):
+        config = PreparedTrainingConfig.from_mapping(
+            {
+                "event_manifest": "event_manifest.json",
+                "split_manifest": "split_manifest.json",
+                "forecast_task": {
+                    "protocol_id": "kahlus.forecast.v2_nonoverlap",
+                    "schema_version": 2,
+                    "context_seconds": 1.0,
+                    "target_seconds": 0.5,
+                    "gap_seconds": 0.25,
+                    "stride_seconds": 0.5,
+                    "claim_eligible": True,
+                },
+            }
+        )
+
+        self.assertIsNotNone(config.forecast_task)
+        self.assertEqual(config.suite_config().forecast_task, config.forecast_task)
+
     def test_prepared_training_cleans_up_distributed_group_on_failure(self):
         config = {
             "event_manifest": "missing-event-manifest.json",

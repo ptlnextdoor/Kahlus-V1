@@ -119,6 +119,8 @@ class PreparedDataPayload(TypedDict):
     event_summary: dict[str, object]
     window_length: int
     stride: int
+    forecast_protocol_id: str
+    claim_eligible: bool
     skipped_tasks: list[dict[str, str]]
     stimulus_evidence: dict[str, object] | None
 

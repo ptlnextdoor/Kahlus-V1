@@ -6,6 +6,13 @@ from typing import Any
 import numpy as np
 
 from neurotwin.data.prepared_tasks import SupervisedWindowTask
+from neurotwin.data.forecast_contract import (
+    FORECAST_PROTOCOL_V2_NONOVERLAP,
+    ForecastProtocolError,
+    ForecastTaskSpec,
+    ResolvedForecastTaskSpec,
+    WindowExampleProvenance,
+)
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import RecordingRecord, SplitManifest, build_split_manifest
 
@@ -115,18 +122,30 @@ def build_future_forecasting_task(
     window_length: int = 8,
     forecast_horizon: int = 1,
     stride: int = 1,
+    forecast_task: ForecastTaskSpec | None = None,
 ) -> SupervisedWindowTask:
-    """Create a subject-held-out EEG future-window task with equal input/target lengths."""
+    """Create a subject-held-out EEG forecast task.
 
-    if window_length <= 1:
-        raise ValueError("window_length must be > 1")
-    if forecast_horizon < 1:
-        raise ValueError("forecast_horizon must be >= 1")
-    if stride < 1:
-        raise ValueError("stride must be >= 1")
+    Supplying ``forecast_task`` selects the v2 time-based, non-overlapping
+    protocol. Omitting it preserves historical v1 shifted-window behavior and
+    marks the returned task as ineligible for claim-bearing evidence.
+    """
+
+    if forecast_task is not None and forecast_task.protocol_id != FORECAST_PROTOCOL_V2_NONOVERLAP:
+        raise ForecastProtocolError("the direct EEG-v1 builder only accepts the v2 non-overlap protocol")
+
+    if forecast_task is None:
+        if window_length <= 1:
+            raise ValueError("window_length must be > 1")
+        if forecast_horizon < 1:
+            raise ValueError("forecast_horizon must be >= 1")
+        if stride < 1:
+            raise ValueError("stride must be >= 1")
 
     by_record = {batch.recording_id: batch for batch in dataset.batches}
     arrays: dict[str, list[np.ndarray]] = {"train_x": [], "train_y": [], "val_x": [], "val_y": [], "test_x": [], "test_y": []}
+    provenance: dict[str, list[WindowExampleProvenance]] = {"train": [], "val": [], "test": []}
+    resolved_spec: ResolvedForecastTaskSpec | None = None
     test_subjects: list[str] = []
     test_records: list[str] = []
     test_starts: list[int] = []
@@ -139,11 +158,32 @@ def build_future_forecasting_task(
             batch = by_record.get(record.record_id)
             if batch is None:
                 continue
-            x, y, starts = _future_windows(batch.signal, window_length, forecast_horizon, stride)
+            if forecast_task is None:
+                x, y, starts = _future_windows(batch.signal, window_length, forecast_horizon, stride)
+            else:
+                sampling_rate_hz = batch.sampling_rate
+                if sampling_rate_hz is None:
+                    raise ForecastProtocolError(
+                        f"v2 forecasting requires sampling_rate metadata for record {record.record_id!r}"
+                    )
+                current_spec = forecast_task.resolve(sampling_rate_hz)
+                if resolved_spec is None:
+                    resolved_spec = current_spec
+                elif current_spec != resolved_spec:
+                    raise ForecastProtocolError(
+                        "a supervised forecast task requires recordings with one resolved sampling grid; "
+                        "partition mixed sampling rates before building the task"
+                    )
+                x, y, starts = _forecast_windows_from_spec(batch.signal, current_spec)
             if x.size == 0:
                 continue
             arrays[f"{split_name}_x"].append(x)
             arrays[f"{split_name}_y"].append(y)
+            if forecast_task is not None:
+                assert resolved_spec is not None
+                provenance[split_name].extend(
+                    _forecast_provenance_rows(batch, record, split_name, starts, resolved_spec)
+                )
             if split_name == "test":
                 test_subjects.extend([record.subject_id] * x.shape[0])
                 test_records.extend([record.record_id] * x.shape[0])
@@ -154,6 +194,37 @@ def build_future_forecasting_task(
     x_test, y_test = _stack(arrays["test_x"]), _stack(arrays["test_y"])
     if x_train.size == 0 or x_test.size == 0:
         raise ValueError("future forecasting task requires nonempty train and test windows")
+    metadata: dict[str, Any] = {
+        "dataset_id": dataset.dataset_id,
+        "source": dataset.source,
+        "benchmark_status": _benchmark_status(dataset),
+        "split_type": "subject_held_out",
+        "window_length": int(window_length),
+        "forecast_horizon": int(forecast_horizon),
+        "window_stride": int(stride),
+        "sampling_rate_hz": _dataset_sampling_rate_hz(dataset),
+        "test_subject_ids": tuple(test_subjects),
+        "test_record_ids": tuple(test_records),
+        "test_window_starts": tuple(int(v) for v in test_starts),
+    }
+    if resolved_spec is not None:
+        metadata.update(
+            {
+                "forecast_protocol_id": resolved_spec.spec.protocol_id,
+                "forecast_schema_version": resolved_spec.spec.schema_version,
+                "claim_eligible": resolved_spec.claim_eligible,
+                "context_samples": resolved_spec.context_samples,
+                "target_samples": resolved_spec.target_samples,
+                "gap_samples": resolved_spec.gap_samples,
+                "stride_samples": resolved_spec.stride_samples,
+                "sampling_rate_hz": resolved_spec.sampling_rate_hz,
+                "window_length": resolved_spec.context_samples,
+                "forecast_horizon": resolved_spec.context_samples + resolved_spec.gap_samples,
+                "window_stride": resolved_spec.stride_samples,
+            }
+        )
+    else:
+        metadata.update({"forecast_protocol_id": "kahlus.forecast.v1_overlap", "claim_eligible": False})
     return SupervisedWindowTask(
         task_id="future_state_forecasting",
         source_modality="eeg",
@@ -164,20 +235,12 @@ def build_future_forecasting_task(
         y_test=y_test,
         x_val=x_val if x_val.size else None,
         y_val=y_val if y_val.size else None,
+        forecast_spec=resolved_spec,
+        train_provenance=tuple(provenance["train"]),
+        val_provenance=tuple(provenance["val"]),
+        test_provenance=tuple(provenance["test"]),
         notes=("Kahlus v1 EEG future-window forecasting under held-out subject split",),
-        metadata={
-            "dataset_id": dataset.dataset_id,
-            "source": dataset.source,
-            "benchmark_status": _benchmark_status(dataset),
-            "split_type": "subject_held_out",
-            "window_length": int(window_length),
-            "forecast_horizon": int(forecast_horizon),
-            "window_stride": int(stride),
-            "sampling_rate_hz": _dataset_sampling_rate_hz(dataset),
-            "test_subject_ids": tuple(test_subjects),
-            "test_record_ids": tuple(test_records),
-            "test_window_starts": tuple(int(v) for v in test_starts),
-        },
+        metadata=metadata,
     )
 
 
@@ -200,6 +263,55 @@ def _future_windows(
     if not xs:
         return np.empty((0, window_length, signal.shape[-1]), dtype=np.float32), np.empty((0, window_length, signal.shape[-1]), dtype=np.float32), []
     return np.asarray(xs, dtype=np.float32), np.asarray(ys, dtype=np.float32), starts
+
+
+def _forecast_windows_from_spec(
+    signal: np.ndarray,
+    spec: ResolvedForecastTaskSpec,
+) -> tuple[np.ndarray, np.ndarray, list[int]]:
+    """Create v2 forecast examples with explicit, non-overlapping half-open ranges."""
+
+    signal = np.asarray(signal, dtype=np.float32)
+    xs: list[np.ndarray] = []
+    ys: list[np.ndarray] = []
+    starts: list[int] = []
+    max_start = signal.shape[0] - (spec.context_samples + spec.gap_samples + spec.target_samples)
+    for start in range(0, max_start + 1, spec.stride_samples):
+        input_start, input_stop, target_start, target_stop = spec.ranges(start)
+        xs.append(signal[input_start:input_stop])
+        ys.append(signal[target_start:target_stop])
+        starts.append(start)
+    if not xs:
+        empty_x = np.empty((0, spec.context_samples, signal.shape[-1]), dtype=np.float32)
+        empty_y = np.empty((0, spec.target_samples, signal.shape[-1]), dtype=np.float32)
+        return empty_x, empty_y, []
+    return np.asarray(xs, dtype=np.float32), np.asarray(ys, dtype=np.float32), starts
+
+
+def _forecast_provenance_rows(
+    batch: NeuralEventBatch,
+    record: RecordingRecord,
+    split: str,
+    starts: list[int],
+    spec: ResolvedForecastTaskSpec,
+) -> list[WindowExampleProvenance]:
+    return [
+        WindowExampleProvenance(
+            dataset_id=batch.dataset_id,
+            subject_id=record.subject_id,
+            session_id=record.session_id,
+            site_id=record.site_id,
+            record_id=record.record_id,
+            source_hash=batch.source_hash,
+            split=split,
+            input_start=input_start,
+            input_stop=input_stop,
+            target_start=target_start,
+            target_stop=target_stop,
+        )
+        for start in starts
+        for input_start, input_stop, target_start, target_stop in (spec.ranges(start),)
+    ]
 
 
 def _stack(parts: list[np.ndarray]) -> np.ndarray:

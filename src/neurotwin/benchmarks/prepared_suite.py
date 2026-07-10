@@ -25,6 +25,7 @@ from neurotwin.data.prepared_tasks import (
     first_prepared_modality_with_splits,
     prepared_windows_by_split,
 )
+from neurotwin.data.forecast_contract import FORECAST_PROTOCOL_V1_OVERLAP
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.repro import write_json
@@ -43,6 +44,7 @@ def run_prepared_baseline_suite(
         stride=config.stride,
         seed=config.seed,
         max_windows_per_split=config.max_windows_per_split,
+        forecast_task=config.forecast_task,
     )
     payload: PreparedBaselineSuitePayload
     if tasks:
@@ -100,6 +102,10 @@ def run_prepared_baseline_suite(
         "event_summary": event_manifest_summary(config.event_manifest),
         "window_length": config.window_length,
         "stride": config.stride,
+        "forecast_protocol_id": (
+            config.forecast_task.protocol_id if config.forecast_task is not None else FORECAST_PROTOCOL_V1_OVERLAP
+        ),
+        "claim_eligible": bool(config.forecast_task is not None and config.forecast_task.claim_eligible),
         "max_windows_per_split": config.max_windows_per_split,
         "skipped_tasks": skipped,
         "stimulus_evidence": _stimulus_evidence_from_tasks(tasks),
@@ -134,6 +140,8 @@ def format_prepared_baseline_report(payload: PreparedBaselineSuitePayload | Prep
                 f"split_manifest={prepared.get('split_manifest')}",
                 f"window_length={prepared.get('window_length')}",
                 f"stride={prepared.get('stride')}",
+                f"forecast_protocol_id={prepared.get('forecast_protocol_id')}",
+                f"claim_eligible={prepared.get('claim_eligible')}",
                 f"max_windows_per_split={prepared.get('max_windows_per_split')}",
                 f"stimulus_evidence={_format_stimulus_evidence(prepared.get('stimulus_evidence'))}",
                 "",

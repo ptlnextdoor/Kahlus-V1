@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from neurotwin.adapters.synthetic import make_synthetic_event_batches, make_synthetic_recordings
 from neurotwin.config_types import resolve_forecast_task_for_sampling, resolve_prepared_config
 from neurotwin.data.forecast_contract import (
     FORECAST_PROTOCOL_V1_OVERLAP,
@@ -14,6 +15,9 @@ from neurotwin.data.forecast_contract import (
     legacy_overlapping_forecast_spec,
 )
 from neurotwin.data.prepared_tasks import SupervisedWindowTask
+from neurotwin.data.prepared_tasks import build_prepared_window_tasks
+from neurotwin.data.split_manifest import build_split_manifest
+from neurotwin.eeg_v1.dataset import build_future_forecasting_task, make_synthetic_eeg_v1_dataset
 
 
 class ForecastContractTests(unittest.TestCase):
@@ -132,6 +136,59 @@ class ForecastContractTests(unittest.TestCase):
         assert spec is not None
         self.assertEqual(spec.spec.protocol_id, FORECAST_PROTOCOL_V1_OVERLAP)
         self.assertFalse(spec.claim_eligible)
+
+    def test_eeg_v1_builder_emits_disjoint_v2_ranges_and_provenance(self) -> None:
+        dataset = make_synthetic_eeg_v1_dataset(seed=7, n_subjects=9, sessions_per_subject=1, n_time=72)
+        task = build_future_forecasting_task(
+            dataset,
+            forecast_task=ForecastTaskSpec(
+                protocol_id=FORECAST_PROTOCOL_V2_NONOVERLAP,
+                schema_version=2,
+                context_seconds=8 / 128,
+                target_seconds=4 / 128,
+                gap_seconds=2 / 128,
+                stride_seconds=8 / 128,
+                claim_eligible=True,
+            ),
+        )
+
+        self.assertEqual(task.x_train.shape[1:], (8, 6))
+        self.assertEqual(task.y_train.shape[1:], (4, 6))
+        self.assertEqual(task.metadata["forecast_protocol_id"], FORECAST_PROTOCOL_V2_NONOVERLAP)
+        self.assertEqual(len(task.train_provenance), task.x_train.shape[0])
+        self.assertEqual(len(task.test_provenance), task.x_test.shape[0])
+        self.assertTrue(all(not row.target_overlaps_input for row in task.train_provenance + task.test_provenance))
+        self.assertTrue(all(row.target_start - row.input_stop == 2 for row in task.test_provenance))
+
+    def test_prepared_builder_bypasses_legacy_shift_when_v2_spec_is_supplied(self) -> None:
+        records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg",))
+        batches = make_synthetic_event_batches(n_subjects=6, sessions_per_subject=1, modalities=("eeg",), n_time=72)
+        for batch in batches:
+            batch.metadata["sampling_rate"] = 128.0
+            batch.metadata["source_hash"] = f"hash-{batch.recording_id}"
+        split = build_split_manifest(records, policy="subject", seed=0)
+        tasks, _ = build_prepared_window_tasks(
+            batches,
+            split,
+            window_length=8,
+            stride=8,
+            forecast_task=ForecastTaskSpec(
+                protocol_id=FORECAST_PROTOCOL_V2_NONOVERLAP,
+                schema_version=2,
+                context_seconds=8 / 128,
+                target_seconds=4 / 128,
+                gap_seconds=2 / 128,
+                stride_seconds=8 / 128,
+                claim_eligible=True,
+            ),
+        )
+
+        task = next(task for task in tasks if task.task_id == "future_state_forecasting")
+        self.assertEqual(task.x_train.shape[1:], (8, batches[0].n_space))
+        self.assertEqual(task.y_train.shape[1:], (4, batches[0].n_space))
+        self.assertEqual(task.metadata["forecast_protocol_id"], FORECAST_PROTOCOL_V2_NONOVERLAP)
+        self.assertTrue(all(not row.target_overlaps_input for row in task.train_provenance + task.test_provenance))
+        self.assertTrue(all(row.source_hash is not None for row in task.train_provenance))
 
 
 if __name__ == "__main__":
