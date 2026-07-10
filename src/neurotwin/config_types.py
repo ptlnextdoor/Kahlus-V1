@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, TypedDict, cast
 
+from neurotwin.data.forecast_contract import (
+    ForecastTaskSpec,
+    ResolvedForecastTaskSpec,
+    legacy_overlapping_forecast_spec,
+)
+
 try:
     from typing import NotRequired
 except ImportError:  # pragma: no cover - Python 3.10 compatibility path.
@@ -80,6 +86,16 @@ class PreparedTrainingSectionConfig(TypedDict, total=False):
     adapter_mode: str
 
 
+class ForecastTaskConfig(TypedDict, total=False):
+    protocol_id: str
+    schema_version: int
+    context_seconds: float
+    target_seconds: float
+    gap_seconds: float
+    stride_seconds: float
+    claim_eligible: bool
+
+
 class PreparedTrainingConfigInput(TypedDict, total=False):
     experiment: str
     dataset: str
@@ -89,11 +105,13 @@ class PreparedTrainingConfigInput(TypedDict, total=False):
     data: PreparedDataConfig
     model: PreparedModelConfig
     training: PreparedTrainingSectionConfig
+    forecast_task: ForecastTaskConfig
     event_manifest: ConfigPath
     split_manifest: ConfigPath
     window_size: int
     window_length: int
     stride: int
+    forecast_horizon: int
     steps: int
     batch_size: int
     eval_batch_size: int
@@ -175,6 +193,7 @@ class ResolvedPreparedConfig:
     stride: int
     steps: int
     requested_task: str
+    forecast_task: ForecastTaskSpec | None
     model: ResolvedPreparedModelConfig
     runtime: ResolvedPreparedRuntimeConfig
 
@@ -197,6 +216,7 @@ def resolve_prepared_config(
         raise ValueError("prepared training requires event_manifest and split_manifest")
 
     window_length = int(config.get("window_size", config.get("window_length", window_length_default)))
+    forecast_task = _resolve_forecast_task(config)
     batch_size = config.get("batch_size", training_config.get("batch_size"))
     eval_batch_size = config.get("eval_batch_size", training_config.get("eval_batch_size"))
     objective_weights = training_config.get("objective_weights", config.get("objective_weights", {}))
@@ -271,6 +291,7 @@ def resolve_prepared_config(
         stride=int(config.get("stride", window_length)),
         steps=int(config.get("steps", 24)),
         requested_task=str(config.get("task", "future_state_forecasting")),
+        forecast_task=forecast_task,
         model=model,
         runtime=runtime,
     )
@@ -278,6 +299,41 @@ def resolve_prepared_config(
 
 def _mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _resolve_forecast_task(config: PreparedTrainingConfigInput) -> ForecastTaskSpec | None:
+    raw = config.get("forecast_task")
+    if raw is None:
+        return None
+    if not isinstance(raw, Mapping):
+        raise ValueError("forecast_task must be a mapping")
+    return ForecastTaskSpec.from_mapping(raw)
+
+
+def resolve_forecast_task_for_sampling(
+    config: PreparedTrainingConfigInput,
+    *,
+    sampling_rate_hz: float,
+    window_length_default: int = 8,
+) -> ResolvedForecastTaskSpec | None:
+    """Resolve a v2 config or classify a legacy forecast config as overlap-only."""
+
+    raw = config.get("forecast_task")
+    if raw is not None:
+        if not isinstance(raw, Mapping):
+            raise ValueError("forecast_task must be a mapping")
+        return ForecastTaskSpec.from_mapping(raw).resolve(sampling_rate_hz)
+    if str(config.get("task", "future_state_forecasting")) != "future_state_forecasting":
+        return None
+    window_length = int(config.get("window_size", config.get("window_length", window_length_default)))
+    stride = int(config.get("stride", window_length))
+    horizon = int(config.get("forecast_horizon", 1))
+    return legacy_overlapping_forecast_spec(
+        window_samples=window_length,
+        forecast_horizon_samples=horizon,
+        stride_samples=stride,
+        sampling_rate_hz=sampling_rate_hz,
+    )
 
 
 def _optional_int(value: object) -> int | None:
