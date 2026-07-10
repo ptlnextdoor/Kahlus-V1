@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 
+from neurotwin.data.forecast_contract import ResolvedForecastTaskSpec, WindowExampleProvenance
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import SplitManifest
 from neurotwin.data.windows import WindowSpec, batch_to_windows
@@ -34,12 +35,39 @@ class SupervisedWindowTask:
     y_train: np.ndarray
     x_test: np.ndarray
     y_test: np.ndarray
+    forecast_spec: ResolvedForecastTaskSpec | None = None
+    train_provenance: tuple[WindowExampleProvenance, ...] = ()
+    val_provenance: tuple[WindowExampleProvenance, ...] = ()
+    test_provenance: tuple[WindowExampleProvenance, ...] = ()
     metric_mask: np.ndarray | None = None
     x_val: np.ndarray | None = None
     y_val: np.ndarray | None = None
     val_metric_mask: np.ndarray | None = None
     notes: tuple[str, ...] = ()
     metadata: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self._validate_provenance("train", self.x_train, self.train_provenance)
+        self._validate_provenance("test", self.x_test, self.test_provenance)
+        if self.x_val is not None:
+            self._validate_provenance("val", self.x_val, self.val_provenance)
+        elif self.val_provenance:
+            raise ValueError("val provenance exists without validation inputs")
+        if self.forecast_spec is not None:
+            for rows in (self.train_provenance, self.val_provenance, self.test_provenance):
+                for row in rows:
+                    row.validate_against(self.forecast_spec)
+            if self.forecast_spec.claim_eligible and not (self.train_provenance and self.test_provenance):
+                raise ValueError("claim-eligible forecast tasks require train and test provenance")
+
+    @staticmethod
+    def _validate_provenance(
+        split: str,
+        values: np.ndarray,
+        provenance: tuple[WindowExampleProvenance, ...],
+    ) -> None:
+        if provenance and len(provenance) != int(np.asarray(values).shape[0]):
+            raise ValueError(f"{split} provenance count does not match supervised examples")
 
 
 def build_prepared_window_tasks(
