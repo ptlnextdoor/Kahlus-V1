@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from unittest import mock
 import tempfile
 import unittest
@@ -93,7 +94,21 @@ class ForecastabilityM2Tests(unittest.TestCase):
             self.assertFalse(gate["gate_passed"])
             self.assertEqual(gate["real_sleep_edf"]["status"], "not_run_no_local_sleep_edf_root")
 
-    def test_sleep_edf_records_index_source(self) -> None:
+    def test_sleep_edf_records_index_parses_response(self) -> None:
+        response = mock.MagicMock()
+        response.read.return_value = b"sleep-cassette/SC4001E0-PSG.edf\nsleep-cassette/SC4001E0-Hypnogram.edf\n"
+        response.__enter__.return_value = response
+        with mock.patch("neurotwin.forecastability.m2.urlopen", return_value=response) as urlopen_mock:
+            records = fetch_sleep_edf_records_index()
+
+        self.assertIn("sleep-cassette/SC4001E0-PSG.edf", records)
+        urlopen_mock.assert_called_once_with("https://physionet.org/files/sleep-edfx/1.0.0/RECORDS", timeout=20)
+
+    @unittest.skipUnless(
+        os.environ.get("NEUROTWIN_RUN_NETWORK_TESTS") == "1",
+        "real network integration disabled; set NEUROTWIN_RUN_NETWORK_TESTS=1",
+    )
+    def test_sleep_edf_records_index_network_source(self) -> None:
         records = fetch_sleep_edf_records_index()
         self.assertIn("sleep-cassette/SC4001E0-PSG.edf", records)
 
