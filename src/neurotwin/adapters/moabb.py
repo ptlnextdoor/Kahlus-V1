@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+from importlib.metadata import PackageNotFoundError, version
 import os
 from typing import Any, Iterable
 
@@ -51,10 +52,16 @@ def load_moabb_trials(
         subjects=list(subjects) if subjects else None,
         return_epochs=True,
     )
-    signal, resolved_sampling_rate, channel_names, signal_unit = _epoch_array_metadata(
+    signal, resolved_sampling_rate, channel_names, signal_unit, unit_factor_provenance = _epoch_array_metadata(
         x,
         dataset=dataset,
         sampling_rate=sampling_rate,
+    )
+    source_provenance = _moabb_source_provenance(
+        dataset_name=dataset_name,
+        paradigm_name=paradigm,
+        paradigm_obj=paradigm_obj,
+        unit_factor_provenance=unit_factor_provenance,
     )
     trials = []
     for idx, trial_signal in enumerate(signal):
@@ -71,10 +78,89 @@ def load_moabb_trials(
                 "sampling_rate": resolved_sampling_rate,
                 "channel_names": channel_names,
                 "signal_unit": signal_unit,
+                **source_provenance,
                 "metadata": meta,
             }
         )
     return trials
+
+
+def load_balanced_moabb_subject_trials(
+    dataset_name: str,
+    subjects: tuple[int, ...],
+    *,
+    paradigm: str = "LeftRightImagery",
+    max_trials: int | None,
+    sampling_rate: float | None = None,
+) -> list[dict[str, Any]]:
+    """Load subjects incrementally and preserve subject-round-robin selection.
+
+    At most one subject's MOABB epochs plus the bounded selected trial copies are
+    retained at once. The returned ordering matches ``balanced_trial_subset`` on
+    the same per-subject trial streams.
+    """
+
+    if not subjects:
+        raise ValueError("subjects must contain at least one subject")
+    if max_trials is None:
+        trials: list[dict[str, Any]] = []
+        for subject in subjects:
+            trials.extend(
+                load_moabb_trials(
+                    dataset_name,
+                    subjects=(subject,),
+                    paradigm=paradigm,
+                    sampling_rate=sampling_rate,
+                )
+            )
+        return trials
+    if max_trials <= 0:
+        raise ValueError("max_trials must be positive when provided")
+    subject_order = sorted(dict.fromkeys(subjects), key=lambda value: str(value))
+    quota = (max_trials + len(subject_order) - 1) // len(subject_order)
+    retained: dict[int, list[dict[str, Any]]] = {}
+    available: dict[int, int] = {}
+    for subject in subject_order:
+        loaded = load_moabb_trials(
+            dataset_name,
+            subjects=(subject,),
+            paradigm=paradigm,
+            sampling_rate=sampling_rate,
+        )
+        available[subject] = len(loaded)
+        retained[subject] = [_copy_trial(trial) for trial in loaded[:quota]]
+
+    nonempty_groups = sum(count > 0 for count in available.values())
+    if nonempty_groups < 3:
+        raise ValueError(
+            "MOABB smoke split 'subject' requires at least 3 subject groups "
+            "so train/val/test are all represented."
+        )
+    if max_trials < nonempty_groups:
+        raise ValueError(
+            f"max_trials={max_trials} is too small for {nonempty_groups} subject groups; "
+            f"use at least {nonempty_groups}."
+        )
+
+    target_counts = _balanced_group_counts(available, max_trials=max_trials)
+    for subject in subject_order:
+        target = target_counts[subject]
+        if target <= len(retained[subject]):
+            continue
+        loaded = load_moabb_trials(
+            dataset_name,
+            subjects=(subject,),
+            paradigm=paradigm,
+            sampling_rate=sampling_rate,
+        )
+        retained[subject] = [_copy_trial(trial) for trial in loaded[:target]]
+
+    selected: list[dict[str, Any]] = []
+    for offset in range(max(target_counts.values(), default=0)):
+        for subject in subject_order:
+            if offset < target_counts[subject]:
+                selected.append(retained[subject][offset])
+    return selected
 
 
 def balanced_trial_subset(
@@ -169,6 +255,7 @@ def trials_to_recordings(trials: Iterable[dict[str, Any]] | None, dataset_id: st
                     "signal_unit": str(trial.get("signal_unit", "unknown")),
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
+                    **_trial_source_metadata(trial),
                 },
             )
         )
@@ -198,7 +285,7 @@ def trials_to_event_batches(trials: Iterable[dict[str, Any]], dataset_id: str, s
                 stimulus_embedding=None,
                 behavior={},
                 space_index=np.arange(n_space),
-                provenance={"adapter": "moabb", "record_index": idx},
+                provenance={"adapter": "moabb", "record_index": idx, **_trial_source_metadata(trial)},
                 metadata={
                     "record_id": record_id,
                     "source_record_id": record_id,
@@ -207,6 +294,7 @@ def trials_to_event_batches(trials: Iterable[dict[str, Any]], dataset_id: str, s
                     "signal_unit": str(trial.get("signal_unit", "unknown")),
                     "channel_names": list(trial.get("channel_names", [])),
                     "montage": trial.get("montage"),
+                    **_trial_source_metadata(trial),
                 },
             )
         )
@@ -267,7 +355,7 @@ def _epoch_array_metadata(
     *,
     dataset: Any,
     sampling_rate: float | None,
-) -> tuple[np.ndarray, float, list[str], str]:
+) -> tuple[np.ndarray, float, list[str], str, dict[str, Any]]:
     """Extract MOABB epoch arrays with their true sampling rate and signal unit.
 
     MOABB's regular array path scales MNE epoch data by ``dataset.unit_factor``
@@ -284,11 +372,19 @@ def _epoch_array_metadata(
             raise RuntimeError(
                 f"MOABB resampling requested {sampling_rate} Hz but epochs report {info_rate} Hz"
             )
+        unit_factor = float(getattr(dataset, "unit_factor", 1e6))
         return (
-            array * float(getattr(dataset, "unit_factor", 1e6)),
+            array * unit_factor,
             info_rate,
             _listlike(getattr(data, "ch_names", None)),
             "uV",
+            {
+                "factor": unit_factor,
+                "factor_source": f"{type(dataset).__module__}.{type(dataset).__name__}.unit_factor",
+                "input_source": "MNE Epochs.get_data() returned by MOABB",
+                "operation": "multiply",
+                "output_unit": "uV",
+            },
         )
 
     # This fallback exists for simple test doubles and nonstandard MOABB-like
@@ -299,7 +395,91 @@ def _epoch_array_metadata(
         float(sampling_rate or getattr(dataset, "sfreq", 1.0) or 1.0),
         _listlike(getattr(dataset, "channels", None)),
         "unknown",
+        {
+            "factor": None,
+            "factor_source": "unavailable for non-MNE MOABB-like array",
+            "input_source": "array returned by MOABB-like paradigm",
+            "operation": "none",
+            "output_unit": "unknown",
+        },
     )
+
+
+def _moabb_source_provenance(
+    *,
+    dataset_name: str,
+    paradigm_name: str,
+    paradigm_obj: Any,
+    unit_factor_provenance: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        moabb_version = version("moabb")
+    except PackageNotFoundError:
+        moabb_version = "unknown"
+    get_params = getattr(paradigm_obj, "get_params", None)
+    parameters = get_params(deep=False) if callable(get_params) else {}
+    filters = getattr(paradigm_obj, "filters", None)
+    return {
+        "signal_source": "MOABB-preprocessed epochs",
+        "moabb_dataset": dataset_name,
+        "moabb_paradigm": paradigm_name,
+        "moabb_version": moabb_version,
+        "moabb_filters": {"source": "paradigm.filters", "value": _json_safe(filters)},
+        "moabb_preprocessing": {
+            "api": "paradigm.get_data(return_epochs=True)",
+            "paradigm_class": f"{type(paradigm_obj).__module__}.{type(paradigm_obj).__name__}",
+            "parameters": _json_safe(parameters),
+        },
+        "unit_factor_provenance": unit_factor_provenance,
+    }
+
+
+def _trial_source_metadata(trial: dict[str, Any]) -> dict[str, Any]:
+    keys = (
+        "signal_source",
+        "moabb_dataset",
+        "moabb_paradigm",
+        "moabb_version",
+        "moabb_filters",
+        "moabb_preprocessing",
+        "unit_factor_provenance",
+    )
+    return {key: trial[key] for key in keys if key in trial}
+
+
+def _copy_trial(trial: dict[str, Any]) -> dict[str, Any]:
+    copied = dict(trial)
+    copied["signal"] = np.array(trial["signal"], dtype=np.float32, copy=True)
+    copied["metadata"] = dict(trial.get("metadata", {}))
+    return copied
+
+
+def _balanced_group_counts(available: dict[int, int], *, max_trials: int) -> dict[int, int]:
+    counts = {subject: 0 for subject in available}
+    while sum(counts.values()) < max_trials:
+        progressed = False
+        for subject in available:
+            if counts[subject] >= available[subject]:
+                continue
+            counts[subject] += 1
+            progressed = True
+            if sum(counts.values()) >= max_trials:
+                break
+        if not progressed:
+            break
+    return counts
+
+
+def _json_safe(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    return repr(value)
 
 
 def _metadata_row(metadata: Any, idx: int) -> dict[str, Any]:

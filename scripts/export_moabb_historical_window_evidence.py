@@ -18,8 +18,7 @@ from _bootstrap import ensure_src_import_path
 ensure_src_import_path(__file__)
 
 from neurotwin.adapters.moabb import (  # noqa: E402
-    balanced_trial_subset,
-    load_moabb_trials,
+    load_balanced_moabb_subject_trials,
     trials_to_event_batches,
     trials_to_recordings,
 )
@@ -53,14 +52,12 @@ def main() -> int:
     if args.max_trials < 0:
         parser.error("--max-trials must be non-negative")
 
-    trials = load_moabb_trials(
+    trials = load_balanced_moabb_subject_trials(
         args.dataset,
         subjects=tuple(args.subjects),
         paradigm=args.paradigm,
-        max_trials=None,
+        max_trials=args.max_trials or None,
     )
-    if args.max_trials:
-        trials = balanced_trial_subset(trials, split_policy="subject", max_trials=args.max_trials)
     records = trials_to_recordings(trials, dataset_id=args.dataset)
     batches = trials_to_event_batches(trials, dataset_id=args.dataset)
     split = build_split_manifest(records, policy="subject", seed=0)
