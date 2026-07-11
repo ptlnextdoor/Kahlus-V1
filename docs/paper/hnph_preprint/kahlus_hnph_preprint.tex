@@ -1,0 +1,183 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers,compress}{natbib}
+\usepackage[preprint]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+\definecolor{statusblue}{RGB}{31,78,121}
+\definecolor{statusgreen}{RGB}{32,117,91}
+\definecolor{statusred}{RGB}{157,44,44}
+\newcommand{\implemented}{\textcolor{statusgreen}{\textbf{IMPLEMENTED}}}
+\newcommand{\pending}{\textcolor{statusblue}{\textbf{PROPOSED}}}
+\newcommand{\unrun}{\textcolor{statusred}{\textbf{UNRUN}}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\I}{\mathrm{I}}
+\newcommand{\KL}{\mathrm{KL}}
+
+\title{Kahlus HNPH: Toward a Falsifiable Human Neural Predictability Horizon}
+
+\author{%
+  Aayushya Patel \\
+  Kahlus Research Project \\
+  \texttt{aayushya@aayushya.net}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Most electroencephalography (EEG) machine-learning systems classify the present or predict a nearby signal segment. High scores in these tasks can arise from autocorrelation, overlapping windows, sleep-state duration, time of night, subject identity, or acquisition hardware rather than information about a genuinely future neural transition. We introduce the research protocol for the \emph{Human Neural Predictability Horizon} (HNPH): the longest lead-time range at which causal EEG history improves a calibrated predictive distribution for a future stable sleep macrostate transition beyond a strong oracle-conditional semi-Markov comparator, under held-subject and held-dataset evaluation. The proposed Phase~0 study develops on Sleep-EDF Sleep Cassette recordings and opens the CAP Sleep Database once as an external test. Its primary estimand is subject-balanced log-score gain, in bits, for transitions occurring 2--5 minutes after an issue time. We prove the ideal log-score gain equals conditional mutual information, show why no nontrivial model-free finite horizon can exist without assumptions on latent dynamics and the observation channel, and specify the assumptions and experiments still required. This is a protocol and implementation-status preprint: no qualifying HNPH result, clinical forecast, or biological latent-state claim currently exists.
+\end{abstract}
+
+\begin{center}
+\fcolorbox{statusred}{red!4}{\parbox{0.92\linewidth}{\small
+\textbf{Scientific status (11 July 2026).} The causal data contracts and firebreak audits exist, but canonical Sleep-EDF/CAP preparation, baseline feasibility, horizon estimation, and external evaluation are incomplete. Historical overlapping-window and invalid multidataset artifacts are not evidence for HNPH.}}
+\end{center}
+
+\section{The problem, in plain language}
+
+EEG records voltage differences at the scalp. It is informative but indirect: neural sources are mixed by the head, corrupted by artifacts, sampled through different montages, and labeled using operational scoring rules. A model can therefore appear to ``predict the brain'' while only continuing a smooth waveform or learning that a subject has remained in the same sleep stage for a long time. Kahlus originally emphasized an architecture called the Neural Field Compiler (NFC). A repository-wide forensic audit found that the strongest recovered forecasting artifact was not a distinct future forecast: a 127-sample target shared 126 samples with its input. The result was also produced by a GRU-based translator rather than the experimental NFC. Those findings invalidate the broad interpretation, not merely one metric.
+
+The revised program begins with a measurement question rather than a model:
+\begin{quote}
+How far in advance does causal, noninvasive EEG history contain calibrated information about the next stable brain-state transition beyond current scored state, state duration, recent state history, elapsed night time, signal quality, and acquisition identity?
+\end{quote}
+The first endpoint is sleep because whole-night recordings provide many transitions and public external cohorts without requiring a clinical claim. The aim is not to diagnose a sleep disorder or forecast a seizure. It is to establish whether a reproducible predictive boundary exists at all.
+
+This distinction matters for impact. Retrospective classification recognizes a state after it is present. A trustworthy forecast would estimate what may happen, when, and with what uncertainty, and would abstain when evidence is weak. Such a capability could eventually inform prospective research in sleep, anesthesia, intensive care, epilepsy, and closed-loop neurotechnology. Those applications remain downstream hypotheses. The present scientific objective is a valid ruler.
+
+\section{Related evidence and the gap}
+
+Sleep-stage modeling is already mature. U-Sleep was trained on 15,660 participants from 16 studies and demonstrated robust staging across cohorts and channel combinations \citep{perslev2021usleep}. This establishes the importance of cross-cohort engineering, but staging labels the present rather than measuring future information. SSF-SET directly forecasts future stage sequences from past EEG with a tokenized representation and causal decoder, reporting subject-wise results on SleepEDF20 and SleepEDF78 \citep{kweon2026ssf}. It is therefore required related work and a protocol comparator, not evidence that Kahlus is first.
+
+The central methodological danger is that predictability need not imply a new neural precursor. Across 484 participants and 11 public datasets, EEG phase prediction differences across cognitive states were largely explained by power and signal-to-noise ratio \citep{kim2023phase}. In a neighboring clinical forecasting domain, a systematic review of 18 human seizure-forecasting studies found moderate aggregate performance but substantial design and evaluation heterogeneity \citep{carmo2024seizure}. Proix et al. showed that multiday seizure-risk forecasts can be validated prospectively in adults with implanted recordings \citep{proix2021seizure}; that work illustrates calibrated risk forecasting but does not transfer a clinical claim to scalp EEG or sleep transitions.
+
+The gap is therefore narrower and more demanding than ``apply a larger network to EEG.'' Existing work does not by itself provide a nuisance-aware estimand tied to a strong state-duration comparator, subject-level simultaneous uncertainty over lead-time bands, an untouched external acquisition cohort, and negative controls executed in the same evidence contract. HNPH is intended to make a positive result, a null result, and an invalid experiment distinguishable.
+
+\section{Formal object: a conditional predictability frontier}
+
+\subsection{Outcome, history, and comparator}
+
+For subject $s$, recording $r$, and issue time $t$, let $H_t$ be a strictly causal EEG history from $[t-L,t)$, with Phase~0 default $L=10$ minutes. Let $Z_t$ contain only declared causal covariates available to every competitor: current oracle-scored macrostate, the two preceding states, current bout age, elapsed night time, recent transition count, and signal-quality features. Dataset, path, subject, session, and future-label identifiers are forbidden model inputs.
+
+Sleep epochs are mapped to $S_e\in\{\mathrm{Wake},\mathrm{NREM},\mathrm{REM},\mathrm{Unknown}\}$. A transition is stable when the destination persists for two consecutive 30-second epochs. For lead band $B$, define $O_t^B$ as the destination when the next stable transition occurs in $B$, or class $0$ when no transition occurs in the band and complete follow-up is available. The preregistered bands are $(0.5,2]$, $(2,5]$, $(5,10]$, and $(10,20]$ minutes.
+
+Let $q_b(o\mid Z_t)$ be the chief competing-risk semi-Markov distribution and $q_\theta(o\mid H_t,Z_t)$ a candidate EEG-augmented distribution. For subject $s$,
+\begin{equation}
+G_s(B)=\frac{1}{|\mathcal A_s|}\sum_{t\in\mathcal A_s}
+\log_2\frac{q_\theta(O_t^B\mid H_t,Z_t)}{q_b(O_t^B\mid Z_t)},
+\label{eq:gain}
+\end{equation}
+where $\mathcal A_s$ is the complete, natural-grid anchor set. Averaging first within subject prevents a long recording from masquerading as many independent people. The primary Phase~0 estimand is $\Delta(B)=\E_s[G_s(B)]$ on CAP for $B=(2,5]$ minutes.
+
+\subsection{Why log-score gain is the right bridge to information}
+
+Let $p_1(o)=p(o\mid H,Z)$ and $p_0(o)=p(o\mid Z)$. If both predictive distributions are oracle-correct, then
+\begin{equation}
+\E\left[\log_2\frac{p(O\mid H,Z)}{p(O\mid Z)}\right]
+=\I_2(O;H\mid Z),
+\label{eq:cmi}
+\end{equation}
+the conditional mutual information in bits. This follows immediately from the definition of conditional mutual information as an expected log density ratio. Thus, an ideal score gap measures information in EEG history that is absent from the declared nuisance history.
+
+For imperfect models, however,
+\begin{align}
+\E\log_2\frac{q_\theta(O\mid H,Z)}{q_b(O\mid Z)}
+=\;&\I_2(O;H\mid Z)
+-\frac{1}{\ln 2}\E\KL(p_1\Vert q_\theta) \\
+&+\frac{1}{\ln 2}\E\KL(p_0\Vert q_b).
+\label{eq:decomposition}
+\end{align}
+Equation~\eqref{eq:decomposition} is a warning: a neural model can obtain positive gain because the baseline is misspecified. The semi-Markov model must therefore be strong, validated, and supplemented by flexible feature-only comparators. No architecture receives scientific credit merely for beating a weak prior. Proper log scoring is central because it evaluates an entire predictive distribution rather than a selected threshold \citep{gneiting2007proper}.
+
+We define the empirical transition frontier as the longest contiguous prefix of bands for which the simultaneous one-sided 95\% lower confidence bound on $\Delta(B)$ exceeds zero and calibration gates pass. The operational primary claim needs only the 2--5 minute endpoint; longer bands are secondary and multiplicity-controlled.
+
+\subsection{What can and cannot be proved}
+
+The most ambitious theory target is an upper bound on forecastable information as lead time increases. A nontrivial \emph{model-free} finite bound is impossible. For any lead $h$, one can construct a process in which a future event bit is deterministically encoded in past observations, giving positive information at arbitrary $h$. One can also construct an independent future, giving zero information immediately. Therefore, no universal finite HNPH follows from EEG being noisy or noninvasive alone.
+
+A useful theorem requires assumptions. If a latent process $U_t$ generates both future outcome and observed EEG through a noisy observation operator, the data-processing principle \citep{cover2006elements} yields bounds of the form
+\begin{equation}
+\I(O_{t+h};H_t\mid Z_t)\leq \I(U_{t+h};U_{\leq t}\mid Z_t).
+\end{equation}
+Under explicit mixing or strong data-processing assumptions, the right side may contract as $\eta(h)C$ with $\eta(h)\rightarrow0$. Estimating or bounding $\eta(h)$ under physiologically defensible assumptions is a high-risk theoretical contribution. It is currently a proof obligation, not an established Kahlus theorem.
+
+\section{Phase 0 study design}
+
+\subsection{Data and test sealing}
+
+Development uses only the Sleep Cassette portion of Sleep-EDF Expanded v1.0.0, which contains repeated home recordings, 100-Hz EEG, and expert hypnograms \citep{kemp2000sleep,sleepedf2018}. Both nights from a person must share one canonical subject identifier and one split. Sleep Telemetry is a secondary shift analysis and is never pooled into training. External evaluation uses technically compatible CAP Sleep v1.0.0 records, a separate acquisition source with richer and variable montages \citep{terzano2001cap,capsleep2012}. CAP pathology groups are descriptive strata, not diagnostic labels. The CAP manifest, model family, seeds, calibration method, comparator, protocol hash, and report template must be sealed before test opening. A third cohort is required for independent replication; reversing CAP-to-Sleep-EDF is a sensitivity analysis only.
+
+Each admitted physical record must retain exact dataset version, official source, raw and annotation hashes, canonical subject/session identity, physical duration, per-channel sampling rate and SI units, reference endpoints, measured or unknown geometry, valid/missing/artifact intervals, and a versioned transformation lineage. Splits are constructed before anchors or train-fitted transforms. Causal filtering support, context, guard, target, and scored test support may not overlap.
+
+\subsection{Baselines, controls, and statistics}
+
+Baselines precede the model. The transition ladder begins with empirical destination frequencies, Markov and semi-Markov competing-risk models, and logistic or hazard models using the same $Z_t$. Waveform/state diagnostics add persistence, ridge, AR/VAR where stable, and Kalman-style linear dynamics. Neural parity later requires matched causal TCN, plain GRU, TinySSM, and Transformer budgets.
+
+Every reported number ships with target permutation, time shift, unrelated same-record context, identity/nuisance probes, missingness-only predictors, and channel/geometry permutation where applicable. A negative control with a positive lower confidence bound blocks the claim. Subject-cluster bootstrap intervals, not flattened-window intervals, quantify population uncertainty. Validation-only calibration must produce 90\% adaptive prediction sets with external coverage compatible with 0.90 without degenerating to the full class set. External Brier score may not be worse than the chief comparator.
+
+Baseline-only feasibility is a mandatory stop gate. Subject-clustered simulation must indicate at least 80\% power to detect a 0.02-bit-per-anchor gain at the primary endpoint. If event counts, follow-up, or cohort size cannot support that target, the correct next action is to redesign or report an underpowered protocol, not train a larger network.
+
+\subsection{Minimal model, only after authorization}
+
+The first authorized model should be deliberately small: per-lead causal epoch features (fixed spectral bands, quality measures, and explicit 10--20 endpoints), a permutation-aware lead-set encoder, a two-layer causal GRU or diagonal state-space temporal backbone, and a competing-risk hazard head trained by censoring-aware likelihood. It predicts an incremental distribution over the frozen semi-Markov comparator. Proper losses train uncertainty; an auxiliary scalar ``confidence head'' is insufficient.
+
+The name Neural Field Compiler is not yet mathematically earned. The current experimental NFC is a finite latent-tensor observation model. Coordinate-conditioned implicit representations and neural operators provide concrete reference classes \citep{sitzmann2020siren,li2021fno}. A neural-field/operator claim would require physical coordinates as inputs, a stated observation operator, identical weights evaluated across montages or discretizations, and successful coordinate-removal, permutation, missing-lead, and montage-transfer falsification. Phase~0 should prefer the accurate name \emph{causal probabilistic EEG forecaster} unless those tests pass.
+
+\section{What exists now and what happens next}
+
+Table~\ref{tab:status} separates repository state from the intended paper. Passing unit tests establish software behavior, not biological validity.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\caption{Implementation and evidence status at commit \texttt{d2862a49}.}
+\label{tab:status}
+\begin{tabular}{p{0.30\linewidth}p{0.16\linewidth}p{0.45\linewidth}}
+\toprule
+Component & Status & Meaning \\
+\midrule
+Forensic audit and invalid task diagnosis & \implemented & Historical 126/127 overlap and model-identity mismatch documented. \\
+Versioned non-overlap task contract/builders & \implemented & Distinct-future examples can be represented and rejected when overlapping. \\
+Physical record, lead geometry, quality, and evidence contracts & \implemented & Continuous acquisitions can be described before windowing. \\
+Causal anchor/firebreak and forbidden-field audits & \implemented & Physical-time support and identity/target metadata can fail closed. \\
+Common EDF ingestion validation & \implemented & Shared EDF mechanics exist; a complete cohort adapter does not. \\
+Sleep-EDF canonical preparation and hypnogram alignment & \pending & Canonical identity, checksums, inclusion report, and prepared store remain. \\
+CAP adapter and sealed external cohort & \pending & Signal/scoring clock, montage, pathology strata, and seal remain. \\
+Semi-Markov ladder, scorer, power gate, CMI estimator & \pending & No qualifying baseline-only HNPH packet exists. \\
+HNPH curve, external result, clinical utility & \unrun & No scientific or clinical claim is permitted. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The next execution order is intentionally conservative. First, merge or reject the open invalidation, eligibility-authority, and NFC-causality corrections after review; do not use their existence as validation. Second, implement the collision-safe physical-record store and a Sleep-EDF adapter that proves paired-night grouping, units, references, annotation timing, and hashes. Third, implement the CAP adapter and freeze its admissible cohort without exposing model results. Fourth, materialize natural-grid anchors and stable-transition targets with complete-follow-up and causal-support audits. Fifth, run baseline-only scoring, controls, and power analysis. Only a passing feasibility packet authorizes a model.
+
+After authorization, train matched small models on Sleep-EDF, fit calibration on validation subjects, and make an internal go/no-go decision. If the semi-Markov comparator ties the neural model, stop architecture expansion and report the null. If internal gates pass, seal the CAP test and open it once. Seven A100 GPUs should initially run fixed seeds and declared ablations concurrently; forced seven-way distributed training adds synchronization risk without scientific value for a small model.
+
+\section{Novelty, impact, and failure conditions}
+
+HNPH could become a strong machine-learning and neuroengineering contribution if three layers close one loop. The \emph{theory} layer must define the estimand and derive assumption-conditional limits or finite-sample rates. The \emph{algorithm} layer must estimate a horizon with subject-valid uncertainty, calibration, abstention, and strong comparators. The \emph{systems} layer must preserve physical provenance and reproduce the result from raw manifests to figures. Architectural complexity by itself is not novelty.
+
+A top-tier result would require a positive externally held-out frontier, passing negative controls, a meaningful margin over semi-Markov and matched neural comparators, and either a genuine theorem or an estimator with demonstrated statistical advantages. A calibrated null can still be publishable as a boundary and benchmark result. Failure includes leakage, negative-control success, underpowered events, loss of external calibration, or a tie with the prior model. A prize is not a scientific milestone that can be planned or promised. The actionable standard is a result important enough that independent groups choose to reproduce it and that survives their attempt to disprove it.
+
+Clinical and wearable work starts much later. A low-density recorder is justified only after retrospective montage-transfer tests identify a minimal sensor set that preserves the frontier. Epilepsy is a high-risk replication domain, not a Phase~0 shortcut. Gut--brain, endocrine, autonomic, and multimodal signals may eventually enter the observation set, but only with synchronized prospective data and a prespecified incremental-information test. They should not be added merely to make the architecture broader.
+
+\section{Conclusion}
+
+Kahlus has moved from an architecture-first EEG forecast claim to a falsification-first program for measuring a predictive boundary. The current repository contributes contracts, audits, and corrected task definitions; it does not yet contribute a measured HNPH, a validated NFC, or a clinical forecast. The next scientific result is not a large A100 run. It is a baseline-only, leakage-audited feasibility packet built from correctly identified Sleep-EDF people and a sealed CAP external protocol. If that ruler passes, a small model may test whether EEG history adds information. If it fails, the null is the result. That discipline is the shortest credible path from ambition to consequential science.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
