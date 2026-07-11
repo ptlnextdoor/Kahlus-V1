@@ -7,6 +7,8 @@ from typing import Any
 import torch
 from torch import nn
 
+from neurotwin.models.causal import CausalConv1d, CausalTransformerEncoder
+
 
 class TinyTransformerBaseline(nn.Module):
     """Small Transformer baseline for CPU shape and smoke tests."""
@@ -21,18 +23,13 @@ class TinyTransformerBaseline(nn.Module):
         dropout: float = 0.0,
     ) -> None:
         super().__init__()
-        if latent_dim % n_heads != 0:
-            raise ValueError("latent_dim must be divisible by n_heads")
         self.input = nn.Linear(input_dim, latent_dim)
-        layer = nn.TransformerEncoderLayer(
-            d_model=latent_dim,
-            nhead=n_heads,
-            dim_feedforward=latent_dim * 4,
+        self.encoder = CausalTransformerEncoder(
+            latent_dim,
+            n_heads=n_heads,
+            n_layers=n_layers,
             dropout=dropout,
-            batch_first=True,
-            activation="gelu",
         )
-        self.encoder = nn.TransformerEncoder(layer, num_layers=n_layers)
         self.output = nn.Linear(latent_dim, output_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -41,7 +38,55 @@ class TinyTransformerBaseline(nn.Module):
 
 
 class TinySSMBaseline(nn.Module):
-    """CPU debug stand-in for long-sequence SSM baselines until Mamba is pinned."""
+    """Small stable diagonal state-space baseline for causal sequence prediction."""
+
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        latent_dim: int = 128,
+        n_layers: int = 2,
+        dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
+        if n_layers < 1:
+            raise ValueError("n_layers must be positive")
+        self.input = nn.Linear(input_dim, latent_dim)
+        self.layers = nn.ModuleList(
+            _DiagonalStateSpaceLayer(latent_dim, dropout=dropout if layer < n_layers - 1 else 0.0)
+            for layer in range(n_layers)
+        )
+        self.output = nn.Linear(latent_dim, output_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_sequence_tensor(x)
+        latent = self.input(x)
+        for layer in self.layers:
+            latent = layer(latent)
+        return self.output(latent)
+
+
+class _DiagonalStateSpaceLayer(nn.Module):
+    def __init__(self, latent_dim: int, *, dropout: float) -> None:
+        super().__init__()
+        self.input_projection = nn.Linear(latent_dim, latent_dim)
+        self.logit_decay = nn.Parameter(torch.zeros(latent_dim))
+        self.norm = nn.LayerNorm(latent_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, values: torch.Tensor) -> torch.Tensor:
+        decay = torch.sigmoid(self.logit_decay).view(1, -1)
+        state = values.new_zeros(values.shape[0], values.shape[2])
+        outputs: list[torch.Tensor] = []
+        projected = self.input_projection(values)
+        for step in range(values.shape[1]):
+            state = decay * state + (1.0 - decay) * projected[:, step]
+            outputs.append(state)
+        return self.dropout(torch.nn.functional.gelu(self.norm(torch.stack(outputs, dim=1))))
+
+
+class TinyGRUBaseline(nn.Module):
+    """Legacy GRU sequence baseline retained for the historical ssm_fallback ID."""
 
     def __init__(
         self,
@@ -348,10 +393,10 @@ class _TemporalConvModalityEncoder(nn.Module):
         super().__init__()
         self.input = nn.Linear(input_dim, latent_dim)
         self.temporal = nn.Sequential(
-            nn.Conv1d(latent_dim, latent_dim, kernel_size=3, padding=1, groups=1),
+            CausalConv1d(latent_dim, latent_dim, kernel_size=3),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Conv1d(latent_dim, latent_dim, kernel_size=1),
+            CausalConv1d(latent_dim, latent_dim, kernel_size=1),
         )
         self.norm = nn.LayerNorm(latent_dim)
 
@@ -365,17 +410,12 @@ class _TemporalConvModalityEncoder(nn.Module):
 class _TransformerBackbone(nn.Module):
     def __init__(self, latent_dim: int, n_layers: int, n_heads: int, dropout: float) -> None:
         super().__init__()
-        if latent_dim % n_heads != 0:
-            raise ValueError("latent_dim must be divisible by n_heads for transformer backbone")
-        layer = nn.TransformerEncoderLayer(
-            d_model=latent_dim,
-            nhead=n_heads,
-            dim_feedforward=latent_dim * 4,
+        self.net = CausalTransformerEncoder(
+            latent_dim,
+            n_heads=n_heads,
+            n_layers=n_layers,
             dropout=dropout,
-            batch_first=True,
-            activation="gelu",
         )
-        self.net = nn.TransformerEncoder(layer, num_layers=n_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
@@ -416,6 +456,8 @@ def _build_backbone(backbone: str, latent_dim: int, n_layers: int, n_heads: int,
         return _TransformerBackbone(latent_dim, n_layers, n_heads, dropout)
     if backbone == "mamba":
         raise ValueError('backbone="mamba" is not wired in v1; use backbone="ssm_fallback" until Mamba support is pinned')
-    if backbone in {"ssm_fallback", "ssm", "gru"}:
+    if backbone == "ssm":
+        raise ValueError('backbone="ssm" is ambiguous; use TinySSMBaseline or explicitly select "gru"')
+    if backbone in {"ssm_fallback", "gru"}:
         return _SSMFallbackBackbone(latent_dim, n_layers, dropout)
     raise ValueError(f"Unknown backbone {backbone!r}")

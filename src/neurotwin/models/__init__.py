@@ -15,6 +15,7 @@ from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairO
 from neurotwin.models.torch_models import (
     NeuralStateSpaceTranslator,
     NeuralStateSpaceTranslatorConfig,
+    TinyGRUBaseline,
     TinySSMBaseline,
     TinyTransformerBaseline,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "NeuroTwinPairOperator",
     "NeuroTwinPairOperatorConfig",
     "NumpyRidgeBaseline",
+    "TinyGRUBaseline",
     "TinySSMBaseline",
     "TinyTransformerBaseline",
     "TorchMLPBaseline",

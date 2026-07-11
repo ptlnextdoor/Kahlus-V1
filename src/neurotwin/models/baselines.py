@@ -6,6 +6,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from neurotwin.models.causal import CausalConv1d
+
 
 @dataclass(frozen=True)
 class BaselineSpec:
@@ -115,13 +117,12 @@ class TorchTCNBaseline(nn.Module):
 
     def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 128, kernel_size: int = 3) -> None:
         super().__init__()
-        padding = kernel_size // 2
         self.net = nn.Sequential(
-            nn.Conv1d(input_dim, hidden_dim, kernel_size=kernel_size, padding=padding),
+            CausalConv1d(input_dim, hidden_dim, kernel_size=kernel_size),
             nn.GELU(),
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=padding),
+            CausalConv1d(hidden_dim, hidden_dim, kernel_size=kernel_size),
             nn.GELU(),
-            nn.Conv1d(hidden_dim, output_dim, kernel_size=1),
+            CausalConv1d(hidden_dim, output_dim, kernel_size=1),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
