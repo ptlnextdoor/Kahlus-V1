@@ -20,6 +20,8 @@ class ExpandedCliTests(unittest.TestCase):
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "forecast_eligibility_required": False,
+            "forecast_eligibility_passed": True,
         }
 
     def run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:

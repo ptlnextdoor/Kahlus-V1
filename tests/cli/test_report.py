@@ -5,6 +5,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from neurotwin.eval.forecast_eligibility import write_forecast_eligibility_artifact
 from unittest import mock
 
 from neurotwin.benchmarks.reports import generate_model_card_report, generate_run_report
@@ -212,7 +214,39 @@ class CliReportTests(unittest.TestCase):
             summary_path = run_dir / "summary.json"
             summary_path.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
             (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
-            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "paper_mode_gate.json").write_text(
+                json.dumps(
+                    {
+                        "passed": True,
+                        "require_ci": True,
+                        "violations": [],
+                        "required_seeds": [0, 1, 2],
+                        "observed_seeds": [0, 1, 2],
+                        "forecast_eligibility_required": True,
+                        "forecast_eligibility_passed": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            write_forecast_eligibility_artifact(
+                run_dir / "forecast_eligibility.json",
+                {
+                    "protocol": {"protocol_id": "kahlus.forecast.v2_nonoverlap", "schema_version": 2},
+                    "source_hashes": ["a" * 64],
+                    "source_hash_verification_passed": True,
+                    "transform_lineage_hash": "b" * 64,
+                    "transform_lineage_complete": True,
+                    "split_audit": {
+                        "passed": True,
+                        "violations": [],
+                        "subject_overlap_count": 0,
+                        "recording_overlap_count": 0,
+                        "session_overlap_count": 0,
+                    },
+                    "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
+                    "invalidated_result_ids": [],
+                },
+            )
             (run_dir / "prepared_baseline_suite.json").write_text(
                 json.dumps(
                     {

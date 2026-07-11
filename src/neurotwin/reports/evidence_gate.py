@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from neurotwin.repro import write_json
+from neurotwin.eval.forecast_eligibility import ForecastEligibilityDecision, validate_forecast_eligibility_artifact
+from neurotwin.eval.paper_gate import paper_mode_gate_allows_claim
 
 
 def write_final_prepared_evidence_gate(run_dir: str | Path) -> dict[str, Any]:
@@ -54,12 +56,18 @@ def build_prepared_evidence_gate(
     baseline_ranking_present = _baseline_ranking_present(run_path)
     competitor_reproduction_status_present = _competitor_reproduction_status_present(run_path)
     paper_mode_gate_present = _paper_mode_gate_present(run_path)
+    forecast_required = any("forecast" in str(row.get("task_id", "")).lower() for row in _task_result_rows(summary))
+    forecast_eligibility = _forecast_eligibility(run_path) if forecast_required else None
+    forecast_eligibility_passed = bool(forecast_eligibility and forecast_eligibility.claim_eligible)
     if not baseline_ranking_present:
         failures.append("baseline ranking artifact missing or unavailable")
     if not competitor_reproduction_status_present:
         failures.append("exact competitor reproduction status requires prepared baseline suite artifacts")
     if not paper_mode_gate_present:
         failures.append("paper_mode_gate.json missing or not passed")
+    if forecast_required and not forecast_eligibility_passed:
+        details = "; ".join(forecast_eligibility.violations) if forecast_eligibility is not None else "artifact missing"
+        failures.append(f"forecast eligibility missing or failed: {details}")
     summary_claim = bool(summary.get("scientific_claim_allowed"))
     if not summary_claim:
         failures.append("summary.json scientific_claim_allowed is false")
@@ -68,7 +76,7 @@ def build_prepared_evidence_gate(
         "stage": stage,
         "passed": False if failures else summary_claim,
         "scientific_claim_allowed": summary_claim,
-        "summary_is_source_of_truth": True,
+        "summary_is_source_of_truth": False,
         "failures": failures,
         "checks": {
             "quarantined_tasks": quarantined or [],
@@ -79,6 +87,9 @@ def build_prepared_evidence_gate(
             "eval_audit_passed": bool(eval_audit.get("passed")) if isinstance(eval_audit, dict) else False,
             "competitor_reproduction_status_present": competitor_reproduction_status_present,
             "paper_mode_gate_present": paper_mode_gate_present,
+            "forecast_eligibility_required": forecast_required,
+            "forecast_eligibility_passed": forecast_eligibility_passed,
+            "forecast_eligibility_violations": list(forecast_eligibility.violations) if forecast_eligibility else [],
         },
     }
 
@@ -131,7 +142,14 @@ def _paper_mode_gate_present(run_dir: Path | None) -> bool:
     if run_dir is None:
         return False
     gate = read_json_artifact(run_dir / "paper_mode_gate.json")
-    return isinstance(gate, dict) and gate.get("passed") is True
+    return isinstance(gate, dict) and paper_mode_gate_allows_claim(gate)
+
+
+def _forecast_eligibility(run_dir: Path | None) -> ForecastEligibilityDecision | None:
+    if run_dir is None:
+        return None
+    payload = read_json_artifact(run_dir / "forecast_eligibility.json")
+    return validate_forecast_eligibility_artifact(payload if isinstance(payload, dict) else None)
 
 
 def format_evidence_diagnostic_report(summary: dict[str, Any], evidence_gate: dict[str, Any]) -> str:

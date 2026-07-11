@@ -11,6 +11,7 @@ from neurotwin.eval.paper_contracts import (
     normalize_seed_tuple,
     validate_paper_mode_evidence,
 )
+from neurotwin.eval.forecast_eligibility import validate_forecast_eligibility_artifact
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,8 @@ class PaperModeGateReport:
     required_seeds: tuple[int, ...]
     observed_seeds: tuple[int, ...]
     require_ci: bool
+    forecast_eligibility_required: bool
+    forecast_eligibility_passed: bool
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -42,14 +45,25 @@ def validate_paper_mode_payload(
     """Validate the artifact contract required before paper-mode claims."""
 
     gate = validate_paper_mode_evidence(payload, audit_report=audit_report, require_ci=require_ci)
+    forecast_required = _contains_forecast_task(payload)
+    forecast_decision = validate_forecast_eligibility_artifact(
+        payload.get("forecast_eligibility") if isinstance(payload, dict) else None
+    )
+    violations = list(gate.violations)
+    checked = list(gate.checked)
+    if forecast_required:
+        checked.append("forecast_eligibility")
+        violations.extend(forecast_decision.violations)
     report = PaperModeGateReport(
-        passed=gate.passed,
-        violations=gate.violations,
+        passed=not violations,
+        violations=tuple(violations),
         warnings=gate.warnings,
-        checked=gate.checked,
+        checked=tuple(checked),
         required_seeds=gate.required_seeds,
         observed_seeds=gate.observed_seeds,
         require_ci=gate.require_ci,
+        forecast_eligibility_required=forecast_required,
+        forecast_eligibility_passed=forecast_decision.claim_eligible if forecast_required else True,
     )
     if raise_on_fail and not report.passed:
         raise PaperModeGateError(report)
@@ -63,6 +77,8 @@ def format_paper_mode_gate(report: PaperModeGateReport) -> str:
         "required_seeds=" + ",".join(str(seed) for seed in report.required_seeds),
         "observed_seeds=" + ",".join(str(seed) for seed in report.observed_seeds),
         f"require_ci={report.require_ci}",
+        f"forecast_eligibility_required={report.forecast_eligibility_required}",
+        f"forecast_eligibility_passed={report.forecast_eligibility_passed}",
         "checked=" + ",".join(report.checked),
     ]
     for violation in report.violations:
@@ -79,15 +95,23 @@ def paper_mode_gate_allows_claim(payload: PaperModeGateReport | dict[str, Any] |
         violations = payload.violations
         require_ci = payload.require_ci
         passed = payload.passed
+        forecast_required = payload.forecast_eligibility_required
+        forecast_passed = payload.forecast_eligibility_passed
     elif isinstance(payload, dict):
         required_seeds = normalize_seed_tuple(payload.get("required_seeds"))
         observed_seeds = normalize_seed_tuple(payload.get("observed_seeds"))
         violations = payload.get("violations")
         require_ci = payload.get("require_ci")
         passed = payload.get("passed")
+        forecast_required = payload.get("forecast_eligibility_required")
+        forecast_passed = payload.get("forecast_eligibility_passed")
     else:
         return False
     if passed is not True or require_ci is not True:
+        return False
+    if forecast_required not in (True, False):
+        return False
+    if forecast_required is True and forecast_passed is not True:
         return False
     if not isinstance(violations, (list, tuple)) or any(str(item).strip() for item in violations):
         return False
@@ -147,3 +171,19 @@ def effective_scientific_claim_allowed_for_run(
 
 def _json_artifact_error(path: Path, error: str, message: str) -> dict[str, Any]:
     return {"error": error, "path": str(path), "message": message}
+
+
+def _contains_forecast_task(payload: Any) -> bool:
+    if isinstance(payload, PaperModeEvidence):
+        return _contains_forecast_task(payload.seed_results)
+    if isinstance(payload, dict):
+        task_id = payload.get("task_id")
+        if isinstance(task_id, str) and "forecast" in task_id.lower():
+            return True
+        tasks = payload.get("tasks")
+        if isinstance(tasks, dict) and any("forecast" in str(key).lower() for key in tasks):
+            return True
+        return any(_contains_forecast_task(value) for value in payload.values())
+    if isinstance(payload, (list, tuple)):
+        return any(_contains_forecast_task(value) for value in payload)
+    return False

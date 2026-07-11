@@ -22,12 +22,35 @@ from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
 from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
+from neurotwin.eval.forecast_eligibility import write_forecast_eligibility_artifact
 from neurotwin.training.command import TrainingCommandConfig, run_training_command
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 from neurotwin.training.prepared_loop import _normalize_model_type
 
 
 class PreparedTrainingTests(unittest.TestCase):
+    @staticmethod
+    def _write_valid_forecast_eligibility(run_dir: Path) -> None:
+        write_forecast_eligibility_artifact(
+            run_dir / "forecast_eligibility.json",
+            {
+                "protocol": {"protocol_id": "kahlus.forecast.v2_nonoverlap", "schema_version": 2},
+                "source_hashes": ["a" * 64],
+                "source_hash_verification_passed": True,
+                "transform_lineage_hash": "b" * 64,
+                "transform_lineage_complete": True,
+                "split_audit": {
+                    "passed": True,
+                    "violations": [],
+                    "subject_overlap_count": 0,
+                    "recording_overlap_count": 0,
+                    "session_overlap_count": 0,
+                },
+                "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
+                "invalidated_result_ids": [],
+            },
+        )
+
     def _prepared_dir(self, root: Path) -> Path:
         prepared = root / "prepared"
         records = make_synthetic_recordings(n_subjects=6, sessions_per_subject=1, modalities=("eeg", "fmri"))
@@ -644,7 +667,21 @@ class PreparedTrainingTests(unittest.TestCase):
             self.assertIn("baseline ranking artifact missing or unavailable", missing_gate["failures"])
             self.assertIn("paper_mode_gate.json missing or not passed", missing_gate["failures"])
 
-            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (run_dir / "paper_mode_gate.json").write_text(
+                json.dumps(
+                    {
+                        "passed": True,
+                        "require_ci": True,
+                        "violations": [],
+                        "required_seeds": [0, 1, 2],
+                        "observed_seeds": [0, 1, 2],
+                        "forecast_eligibility_required": True,
+                        "forecast_eligibility_passed": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self._write_valid_forecast_eligibility(run_dir)
             (run_dir / "prepared_baseline_suite.json").write_text(
                 json.dumps(
                     {

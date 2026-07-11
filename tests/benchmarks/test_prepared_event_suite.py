@@ -32,7 +32,29 @@ from neurotwin.eval.command import EvalCommandConfig, run_eval_command
 from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
 from neurotwin.eval.paper_contracts import build_paper_mode_evidence
 from neurotwin.eval.paper_gate import validate_paper_mode_payload
+from neurotwin.eval.forecast_eligibility import build_forecast_eligibility_artifact
 from neurotwin.eval.prepared_paper_mode import _aggregate_seed_ranks, run_prepared_baseline_suite_multi_seed
+
+
+def _valid_forecast_eligibility_artifact() -> dict[str, object]:
+    return build_forecast_eligibility_artifact(
+        {
+            "protocol": {"protocol_id": FORECAST_PROTOCOL_V2_NONOVERLAP, "schema_version": 2},
+            "source_hashes": ["a" * 64],
+            "source_hash_verification_passed": True,
+            "transform_lineage_hash": "b" * 64,
+            "transform_lineage_complete": True,
+            "split_audit": {
+                "passed": True,
+                "violations": [],
+                "subject_overlap_count": 0,
+                "recording_overlap_count": 0,
+                "session_overlap_count": 0,
+            },
+            "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
+            "invalidated_result_ids": [],
+        }
+    )
 
 
 class PreparedEventSuiteTests(unittest.TestCase):
@@ -663,13 +685,14 @@ class PreparedEventSuiteTests(unittest.TestCase):
                     "1",
                     "2",
                 ],
-                check=True,
                 text=True,
                 capture_output=True,
                 env=env,
             )
             paper_artifact = json.loads((eval_dir / "prepared_baseline_suite.json").read_text(encoding="utf-8"))
-            self.assertIn("paper_mode_passed=True", paper_pass.stdout)
+            self.assertNotEqual(paper_pass.returncode, 0)
+            self.assertIn("paper_mode_passed=False", paper_pass.stdout)
+            self.assertIn("forecast eligibility evidence is missing", paper_pass.stdout)
             self.assertEqual(paper_artifact["seeds"], [0, 1, 2])
             self.assertEqual([row["seed"] for row in paper_artifact["seed_results"]], [0, 1, 2])
             self.assertTrue(paper_artifact["seed_aggregate"])
@@ -717,7 +740,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
         assert result is not None
         self.assertAlmostEqual(result.metrics["k1_support_minutes"], 4.0 / 10.0 / 60.0)
 
-    def test_prepared_baseline_multi_seed_satisfies_paper_gate(self):
+    def test_prepared_baseline_multi_seed_requires_forecast_eligibility(self):
         with tempfile.TemporaryDirectory() as tmp:
             prep_dir = Path(tmp) / "prepared"
             eval_dir = Path(tmp) / "eval"
@@ -746,7 +769,8 @@ class PreparedEventSuiteTests(unittest.TestCase):
             )
 
             gate = validate_paper_mode_payload(payload, audit_report={"passed": True})
-            self.assertTrue(gate.passed, gate.violations)
+            self.assertFalse(gate.passed)
+            self.assertIn("forecast eligibility evidence is missing", gate.violations)
             self.assertEqual(gate.observed_seeds, (0, 1, 2))
             self.assertEqual([row["seed"] for row in payload["seed_results"]], [0, 1, 2])
             self.assertTrue(payload["aggregate"]["aggregate_rank"])
@@ -792,6 +816,7 @@ class PreparedEventSuiteTests(unittest.TestCase):
             require_ci=True,
         )
         payload = {
+            "forecast_eligibility": _valid_forecast_eligibility_artifact(),
             "aggregate": {
                 "selection_metric": "mse",
                 "higher_is_better": False,

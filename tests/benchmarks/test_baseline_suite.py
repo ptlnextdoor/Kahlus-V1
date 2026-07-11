@@ -26,8 +26,31 @@ from neurotwin.eval.paper_gate import (
     paper_mode_gate_allows_claim,
     validate_paper_mode_payload,
 )
+from neurotwin.eval.forecast_eligibility import build_forecast_eligibility_artifact
 from neurotwin.models.baselines import NumpyRidgeBaseline
 from neurotwin.models.tribe_style import TribeStyleModel, TribeStyleStimulusInput
+
+
+def _valid_forecast_eligibility_artifact() -> dict[str, object]:
+    digest = "a" * 64
+    return build_forecast_eligibility_artifact(
+        {
+            "protocol": {"protocol_id": "kahlus.forecast.v2_nonoverlap", "schema_version": 2},
+            "source_hashes": [digest],
+            "source_hash_verification_passed": True,
+            "transform_lineage_hash": "b" * 64,
+            "transform_lineage_complete": True,
+            "split_audit": {
+                "passed": True,
+                "violations": [],
+                "subject_overlap_count": 0,
+                "recording_overlap_count": 0,
+                "session_overlap_count": 0,
+            },
+            "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
+            "invalidated_result_ids": [],
+        }
+    )
 
 
 class BaselineSuiteTests(unittest.TestCase):
@@ -270,6 +293,7 @@ class BaselineSuiteTests(unittest.TestCase):
 
         def strict_payload(*records: dict[str, object]) -> dict[str, object]:
             return {
+                "forecast_eligibility": _valid_forecast_eligibility_artifact(),
                 "aggregate": {
                     "selection_metric": "mse",
                     "higher_is_better": False,
@@ -405,6 +429,7 @@ class BaselineSuiteTests(unittest.TestCase):
             }
 
         payload = {
+            "forecast_eligibility": _valid_forecast_eligibility_artifact(),
             "aggregate": {"aggregate_rank": [{"model_id": "linear_ridge", "mean_rank": 1.0}]},
             "seed_results": [
                 seed_record(0),
@@ -475,6 +500,8 @@ class BaselineSuiteTests(unittest.TestCase):
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "forecast_eligibility_required": False,
+            "forecast_eligibility_passed": True,
         }
         self.assertTrue(paper_mode_gate_allows_claim(valid_gate))
         self.assertTrue(
@@ -489,6 +516,7 @@ class BaselineSuiteTests(unittest.TestCase):
                 valid_gate,
             )
         )
+
         self.assertFalse(
             effective_scientific_claim_allowed(
                 {"synthetic_only": True, "real_data_smoke": False, "scientific_claim_allowed": True},
@@ -532,6 +560,28 @@ class BaselineSuiteTests(unittest.TestCase):
             )
         )
 
+    def test_paper_mode_evidence_object_cannot_bypass_forecast_eligibility(self):
+        def record(seed: int) -> dict[str, object]:
+            mse = 0.3 + 0.01 * seed
+            return {
+                "seed": seed,
+                "tasks": {
+                    "future_state_forecasting": {
+                        "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": mse, "rank": 1.0}],
+                        "metrics_by_model": {
+                            "linear_ridge": {"mse": mse, "mse_ci_low": mse - 0.01, "mse_ci_high": mse + 0.01}
+                        },
+                    }
+                },
+            }
+
+        from neurotwin.eval.paper_contracts import build_paper_mode_evidence
+
+        evidence = build_paper_mode_evidence([record(0), record(1), record(2)])
+        gate = validate_paper_mode_payload(evidence, audit_report={"passed": True})
+        self.assertFalse(gate.passed)
+        self.assertIn("forecast eligibility evidence is missing", gate.violations)
+
     def test_effective_scientific_claim_allowed_for_run_uses_tolerant_summary_and_gate_loaders(self):
         valid_gate = {
             "passed": True,
@@ -539,6 +589,8 @@ class BaselineSuiteTests(unittest.TestCase):
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "forecast_eligibility_required": False,
+            "forecast_eligibility_passed": True,
         }
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
