@@ -1,5 +1,7 @@
 # Repository-Wide Bug Audit
 
+This is the original forensic snapshot. Later code-level NFC and baseline repairs are tracked in [NFC_CORRECTNESS_REMEDIATION.md](NFC_CORRECTNESS_REMEDIATION.md); task-definition, statistical, provenance, and empirical-validation findings below remain open unless a separate canonical ledger marks them complete.
+
 ## P0 Findings
 
 ### P0-001: Context and target overlap invalidates the central task wording

@@ -16,15 +16,18 @@ The model must state support, boundary assumptions, interpolation, identifiabili
 
 ## Current Implementation
 
-- `NeuralFieldCompiler.forward_task` selects the first matching source modality.
-- A linear source-to-target projection creates node values.
+- `NeuralFieldCompiler.forward_task` projects every available source modality to the target sensor set and fuses them with learned, reported softmax weights.
+- Task embeddings distinguish forecasting, reconstruction, readout, and translation computation paths.
+- Optional measured coordinates are validated and encoded per output sensor; configured geometry cannot be silently omitted.
 - `LatentNeuralField` maps scalar node values to finite latent features.
-- `FieldUpdateOperator` applies learned gated residual dynamics and optional pair interactions.
-- Optional structural matrices influence dynamics, but physical coordinates are not inputs.
+- `FieldUpdateOperator` uses an actual selectable causal GRU or causally masked Transformer followed by same-time sensor attention.
+- Optional structural matrices influence same-time attention and invalid shapes fail closed.
 - The EEG observation operator pools latent nodes and applies a linear readout.
-- The uncertainty head outputs positive scores without calibrated probabilistic training.
+- The fMRI temporal adapter uses left-only support and an explicit nonnegative delay.
+- Prepared training scores predictive scale with a Gaussian negative log-likelihood when uncertainty is enabled.
+- Subject identifiers are rejected by the NFC forward path.
 
-This is a finite latent-tensor sequence model. It may become a useful architecture, but field/operator terminology has not yet earned empirical support.
+This remains a coordinate-conditioned finite latent-tensor sequence model. It may become a useful architecture, but field/operator terminology has not yet earned empirical support because no montage, resolution, or discretization-transfer experiment has passed. Gaussian likelihood training also does not establish held-out calibration.
 
 ## Required Falsification Experiments
 
@@ -37,7 +40,7 @@ This is a finite latent-tensor sequence model. It may become a useful architectu
 7. SIREN baseline: coordinate-to-signal interpolation on the same observed coordinates.
 8. FNO/graph-operator baseline only on a task with justified common domain/discretization.
 9. Subject/site nuisance probes on latent states.
-10. Calibrated probabilistic likelihood and coverage, not an uncertainty-head score alone.
+10. Held-out calibration and prediction-set coverage after probabilistic training.
 
 ## Naming Rule
 
