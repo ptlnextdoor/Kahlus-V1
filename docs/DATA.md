@@ -2,6 +2,10 @@
 
 Raw public neural data is never committed.
 
+Raw EEG waveform export manifests:
+
+- `docs/data/kahlus_raw_eeg_waveforms_efa0d90.md`: out-of-band 74 GB raw EDF ZIP manifest for paper figure generation.
+
 Supported paths in this pass:
 
 - `synthetic`: deterministic CPU plumbing tests.
