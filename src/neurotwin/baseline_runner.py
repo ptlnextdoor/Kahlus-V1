@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 from neurotwin.gates import evaluate_gate, write_evidence_gate
 from neurotwin.models.baselines import NumpyRidgeBaseline, TorchMLPBaseline
-from neurotwin.models.torch_models import TinySSMBaseline, TinyTransformerBaseline
+from neurotwin.models.torch_models import TinyGRUBaseline, TinyTransformerBaseline
 from neurotwin.numerics import ignore_spurious_matmul_warnings
 from neurotwin.repro import set_global_seed, write_json
 from neurotwin.scoring.metrics import mae, mse, pearsonr, r2_score, rank_models
@@ -240,7 +240,7 @@ def _build_torch_baseline(model_id: str, task: RegressionTask, seed: int):
     if model_id == "transformer":
         return TinyTransformerBaseline(channels_in, channels_out, latent_dim=32, n_heads=4, n_layers=1), _asarray64, True
     if model_id == "ssm_fallback":
-        return TinySSMBaseline(channels_in, channels_out, latent_dim=32, n_layers=1), _asarray64, True
+        return TinyGRUBaseline(channels_in, channels_out, latent_dim=32, n_layers=1), _asarray64, True
     raise RuntimeError(f"unknown torch baseline model_id: {model_id!r}")
 
 

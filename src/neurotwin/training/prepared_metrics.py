@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -42,6 +43,80 @@ def mse_loss(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return nn.functional.mse_loss(prediction.float(), target.float())
 
 
+def gaussian_nll_loss(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+    scale: torch.Tensor,
+    *,
+    minimum_scale: float = 1e-6,
+) -> torch.Tensor:
+    if prediction.shape != target.shape or scale.shape != target.shape:
+        raise ValueError("prediction, target, and scale must have identical shapes")
+    safe_scale = scale.float().clamp_min(float(minimum_scale))
+    standardized = (target.float() - prediction.float()) / safe_scale
+    return (0.5 * standardized.square() + safe_scale.log() + 0.5 * math.log(2.0 * math.pi)).mean()
+
+
+def probabilistic_output(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    precision: str = "fp32",
+) -> dict[str, torch.Tensor]:
+    enabled = precision == "bf16" and x.device.type in {"cuda", "cpu"}
+    with torch.autocast(device_type=x.device.type, dtype=torch.bfloat16, enabled=enabled):
+        output = model(
+            {task.source_modality: x},
+            target_modality=task.target_modality,
+            task=_task_mode(task),
+            return_output=True,
+        )
+    if not isinstance(output, dict):
+        raise TypeError("probabilistic model must return an output mapping")
+    if "prediction" not in output or "uncertainty" not in output:
+        raise ValueError("probabilistic model output requires prediction and uncertainty tensors")
+    return output
+
+
+def probabilistic_loss(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    target: torch.Tensor,
+    precision: str = "fp32",
+) -> torch.Tensor:
+    output = probabilistic_output(model, task, x, precision=precision)
+    return gaussian_nll_loss(output["prediction"], target, output["uncertainty"])
+
+
+def batched_objective_loss(
+    model: nn.Module,
+    task: Any,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    precision: str,
+    batch_size: int,
+    *,
+    probabilistic: bool,
+) -> float:
+    model.eval()
+    total_loss = 0.0
+    total_samples = 0
+    with torch.no_grad():
+        for start in range(0, x.shape[0], batch_size):
+            end = min(start + batch_size, x.shape[0])
+            loss = (
+                probabilistic_loss(model, task, x[start:end], y[start:end], precision=precision)
+                if probabilistic
+                else mse_loss(predict(model, task, x[start:end], precision=precision), y[start:end])
+            )
+            batch_samples = end - start
+            total_loss += float(loss) * batch_samples
+            total_samples += batch_samples
+    model.train()
+    return total_loss / max(1, total_samples)
+
+
 def batched_loss(
     model: nn.Module,
     task: Any,
@@ -50,18 +125,15 @@ def batched_loss(
     precision: str,
     batch_size: int,
 ) -> float:
-    model.eval()
-    total_loss = 0.0
-    total_samples = 0
-    with torch.no_grad():
-        for start in range(0, x.shape[0], batch_size):
-            end = min(start + batch_size, x.shape[0])
-            pred = predict(model, task, x[start:end], precision=precision)
-            batch_samples = end - start
-            total_loss += float(mse_loss(pred, y[start:end])) * batch_samples
-            total_samples += batch_samples
-    model.train()
-    return total_loss / max(1, total_samples)
+    return batched_objective_loss(
+        model,
+        task,
+        x,
+        y,
+        precision,
+        batch_size,
+        probabilistic=False,
+    )
 
 
 def predict_numpy_batches(

@@ -14,7 +14,13 @@ from neurotwin.data.synthetic_field import generate_synthetic_latent_field
 from neurotwin.models.baselines import TorchMLPBaseline, TorchTCNBaseline
 from neurotwin.models.nfc import NeuralFieldCompiler, NeuralFieldCompilerConfig
 from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairOperatorConfig
-from neurotwin.models.torch_models import NeuralStateSpaceTranslator, NeuralStateSpaceTranslatorConfig, TinySSMBaseline, TinyTransformerBaseline
+from neurotwin.models.torch_models import (
+    NeuralStateSpaceTranslator,
+    NeuralStateSpaceTranslatorConfig,
+    TinyGRUBaseline,
+    TinySSMBaseline,
+    TinyTransformerBaseline,
+)
 from neurotwin.scoring.metrics import mse, pearsonr
 
 
@@ -357,6 +363,7 @@ def _model_catalog() -> dict[str, dict[str, str]]:
         "tcn": {"role": "direct_baseline", "status": "local_baseline"},
         "transformer": {"role": "direct_baseline", "status": "local_baseline"},
         "ssm_fallback": {"role": "direct_baseline", "status": "local_baseline"},
+        "tiny_ssm": {"role": "direct_baseline", "status": "local_baseline"},
         "current_neurotwin": {"role": "current_neurotwin_baseline", "status": "local_baseline"},
         "pair_operator": {"role": "baseline_ablation", "status": "local_baseline"},
         "nfc_no_observation_operator": {"role": "nfc_ablation", "status": "experimental_architecture"},
@@ -403,11 +410,19 @@ def _model_predictions_for_task(
             train_steps,
         ),
         "ssm_fallback": _fit_sequence_baseline(
-            lambda: TinySSMBaseline(x_train.shape[-1], y_train.shape[-1], latent_dim=16, n_layers=1),
+            lambda: TinyGRUBaseline(x_train.shape[-1], y_train.shape[-1], latent_dim=16, n_layers=1),
             x_train,
             y_train,
             x_test,
             seed + 4,
+            train_steps,
+        ),
+        "tiny_ssm": _fit_sequence_baseline(
+            lambda: TinySSMBaseline(x_train.shape[-1], y_train.shape[-1], latent_dim=16, n_layers=1),
+            x_train,
+            y_train,
+            x_test,
+            seed + 14,
             train_steps,
         ),
         "current_neurotwin": _fit_current_neurotwin(

@@ -15,7 +15,13 @@ from neurotwin.models.torch_models import NeuralStateSpaceTranslatorConfig
 from neurotwin.repro import append_jsonl
 from neurotwin.runtime.distributed import distributed_any, unwrap_model, wrap_ddp_if_initialized
 from neurotwin.training.prepared_checkpoints import load_task_resume, save_task_checkpoint
-from neurotwin.training.prepared_metrics import batched_loss, evaluate_task, mse_loss, predict
+from neurotwin.training.prepared_metrics import (
+    batched_objective_loss,
+    evaluate_task,
+    mse_loss,
+    predict,
+    probabilistic_loss,
+)
 from neurotwin.training.prepared_types import (
     PreparedBatchSampler,
     PreparedCheckpointInfo,
@@ -153,7 +159,15 @@ def _run_task_training_loop(
 ) -> tuple[float, float]:
 
     with torch.no_grad():
-        initial_loss = batched_loss(model, task, tensors.x_train, tensors.y_train, precision=config.precision, batch_size=tensors.eval_batch_size)
+        initial_loss = batched_objective_loss(
+            model,
+            task,
+            tensors.x_train,
+            tensors.y_train,
+            precision=config.precision,
+            batch_size=tensors.eval_batch_size,
+            probabilistic=_uses_probabilistic_objective(model_config),
+        )
     _append_task_metric(
         runtime.paths.metrics_jsonl_path,
         {
@@ -190,7 +204,12 @@ def _run_task_training_loop(
             index_tensor = torch.as_tensor(batch_indices, dtype=torch.long, device=runtime.device)
             xb = tensors.x_train.index_select(0, index_tensor)
             yb = tensors.y_train.index_select(0, index_tensor)
-            loss = (mse_loss(predict(model, task, xb, precision=config.precision), yb) * objective_weight) / config.gradient_accumulation_steps
+            objective = (
+                probabilistic_loss(model, task, xb, yb, precision=config.precision)
+                if _uses_probabilistic_objective(model_config)
+                else mse_loss(predict(model, task, xb, precision=config.precision), yb)
+            )
+            loss = (objective * objective_weight) / config.gradient_accumulation_steps
             loss_value = float(loss.detach())
             if distributed_any(not math.isfinite(loss_value), device=runtime.device):
                 optimizer.zero_grad(set_to_none=True)
@@ -431,6 +450,7 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
         nfc_config = NeuralFieldCompilerConfig(
             latent_dim=model_cfg.latent_dim,
             n_layers=model_cfg.n_layers,
+            n_heads=model_cfg.n_heads,
             backbone=model_cfg.backbone,
             projection_dim=model_cfg.projection_dim,
             pair_rank=model_cfg.pair_rank,
@@ -440,6 +460,7 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
             stimulus_lag_steps=model_cfg.stimulus_lag_steps,
             hrf_delay_steps=model_cfg.hrf_delay_steps,
             subject_state_dim=model_cfg.subject_state_dim,
+            geometry_dim=model_cfg.geometry_dim,
         )
         return {
             "type": model_type,
@@ -468,6 +489,15 @@ def _model_config_for_task(task: Any, config: PreparedTrainingConfig) -> dict[st
         "output_dims": {task.target_modality: task.y_train.shape[-1]},
         **asdict(translator_config),
     }
+
+
+def _uses_probabilistic_objective(model_config: dict[str, Any]) -> bool:
+    model_type = str(model_config.get("type", ""))
+    if model_type == "NeuralFieldCompiler":
+        return bool(model_config.get("use_uncertainty"))
+    if model_type == "NeuroTwinPairOperator":
+        return bool(model_config.get("use_uncertainty_head"))
+    return False
 
 
 def _translator_from_model_config(model_config: dict[str, Any]) -> nn.Module:
