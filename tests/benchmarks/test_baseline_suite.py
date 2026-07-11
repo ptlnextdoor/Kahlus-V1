@@ -26,34 +26,51 @@ from neurotwin.eval.paper_gate import (
     paper_mode_gate_allows_claim,
     validate_paper_mode_payload,
 )
-from neurotwin.eval.forecast_eligibility import build_forecast_eligibility_artifact
+from neurotwin.eval.claim_contracts import claim_contract_sha256, collect_task_claim_contracts
+from neurotwin.eval.forecast_eligibility import forecast_eligibility_sha256
 from neurotwin.models.baselines import NumpyRidgeBaseline
 from neurotwin.models.tribe_style import TribeStyleModel, TribeStyleStimulusInput
+from tests.forecast_eligibility_fixtures import build_bound_forecast_eligibility
 
 
 def _valid_forecast_eligibility_artifact() -> dict[str, object]:
-    digest = "a" * 64
-    return build_forecast_eligibility_artifact(
-        {
-            "protocol": {"protocol_id": "kahlus.forecast.v2_nonoverlap", "schema_version": 2},
-            "source_hashes": [digest],
-            "source_hash_verification_passed": True,
-            "transform_lineage_hash": "b" * 64,
-            "transform_lineage_complete": True,
-            "split_audit": {
-                "passed": True,
-                "violations": [],
-                "subject_overlap_count": 0,
-                "recording_overlap_count": 0,
-                "session_overlap_count": 0,
-            },
-            "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
-            "invalidated_result_ids": [],
-        }
-    )
+    with tempfile.TemporaryDirectory() as tmp:
+        return build_bound_forecast_eligibility(Path(tmp))
 
 
 class BaselineSuiteTests(unittest.TestCase):
+    def test_serialized_paper_gate_cannot_bypass_bound_task_and_eligibility_artifacts(self):
+        task_payload = {"tasks": {"future_state_forecasting": {}}}
+        contracts, unknown = collect_task_claim_contracts(task_payload)
+        self.assertFalse(unknown)
+        eligibility = _valid_forecast_eligibility_artifact()
+        gate = {
+            "passed": True,
+            "require_ci": True,
+            "violations": [],
+            "required_seeds": [0, 1, 2],
+            "observed_seeds": [0, 1, 2],
+            "claim_contract_sha256": claim_contract_sha256(contracts),
+            "forecast_eligibility_required": True,
+            "forecast_eligibility_passed": True,
+            "forecast_eligibility_sha256": forecast_eligibility_sha256(eligibility),
+        }
+
+        self.assertTrue(
+            paper_mode_gate_allows_claim(
+                gate,
+                task_payload=task_payload,
+                forecast_eligibility=eligibility,
+            )
+        )
+        self.assertFalse(paper_mode_gate_allows_claim(gate, task_payload=task_payload))
+        self.assertFalse(
+            paper_mode_gate_allows_claim(
+                {**gate, "forecast_eligibility_required": False},
+                task_payload={"tasks": {"oracle_conditional_stable_sleep_transition": {}}},
+            )
+        )
+
     def test_synthetic_baseline_suite_runs_all_required_models(self):
         payload = run_synthetic_baseline_suite(seed=4, train_steps=1)
 
@@ -494,26 +511,33 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertEqual(ranking_only_report.observed_seeds, ())
 
     def test_effective_scientific_claim_allowed_requires_real_run_and_canonical_gate(self):
+        task_payload = {"tasks": {"masked_neural_reconstruction": {}}}
+        contracts, unknown = collect_task_claim_contracts(task_payload)
+        self.assertFalse(unknown)
         valid_gate = {
             "passed": True,
             "require_ci": True,
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "claim_contract_sha256": claim_contract_sha256(contracts),
             "forecast_eligibility_required": False,
             "forecast_eligibility_passed": True,
+            "forecast_eligibility_sha256": None,
         }
-        self.assertTrue(paper_mode_gate_allows_claim(valid_gate))
+        self.assertTrue(paper_mode_gate_allows_claim(valid_gate, task_payload=task_payload))
         self.assertTrue(
             effective_scientific_claim_allowed(
                 {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 valid_gate,
+                task_payload=task_payload,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
                 {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": False},
                 valid_gate,
+                task_payload=task_payload,
             )
         )
 
@@ -521,12 +545,14 @@ class BaselineSuiteTests(unittest.TestCase):
             effective_scientific_claim_allowed(
                 {"synthetic_only": True, "real_data_smoke": False, "scientific_claim_allowed": True},
                 valid_gate,
+                task_payload=task_payload,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
                 {"synthetic_only": False, "real_data_smoke": True, "scientific_claim_allowed": True},
                 valid_gate,
+                task_payload=task_payload,
             )
         )
         self.assertFalse(
@@ -539,6 +565,7 @@ class BaselineSuiteTests(unittest.TestCase):
                     "required_seeds": [0, 1, 2],
                     "observed_seeds": [0, 1, 2],
                 },
+                task_payload=task_payload,
             )
         )
         self.assertFalse(
@@ -551,12 +578,14 @@ class BaselineSuiteTests(unittest.TestCase):
                     "required_seeds": [0, 1],
                     "observed_seeds": [0, 1, 2],
                 },
+                task_payload=task_payload,
             )
         )
         self.assertFalse(
             effective_scientific_claim_allowed(
                 {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},
                 None,
+                task_payload=task_payload,
             )
         )
 
@@ -583,14 +612,19 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("forecast eligibility evidence is missing", gate.violations)
 
     def test_effective_scientific_claim_allowed_for_run_uses_tolerant_summary_and_gate_loaders(self):
+        task_payload = {"tasks": {"masked_neural_reconstruction": {}}}
+        contracts, unknown = collect_task_claim_contracts(task_payload)
+        self.assertFalse(unknown)
         valid_gate = {
             "passed": True,
             "require_ci": True,
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "claim_contract_sha256": claim_contract_sha256(contracts),
             "forecast_eligibility_required": False,
             "forecast_eligibility_passed": True,
+            "forecast_eligibility_sha256": None,
         }
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
@@ -599,6 +633,7 @@ class BaselineSuiteTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (run_dir / "paper_mode_gate.json").write_text(json.dumps(valid_gate), encoding="utf-8")
+            (run_dir / "prepared_baseline_suite.json").write_text(json.dumps(task_payload), encoding="utf-8")
             self.assertEqual(
                 load_run_summary(run_dir),
                 {"synthetic_only": False, "real_data_smoke": False, "scientific_claim_allowed": True},

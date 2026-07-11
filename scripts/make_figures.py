@@ -10,7 +10,7 @@ def main() -> int:
     from _bootstrap import ensure_src_import_path
 
     ensure_src_import_path(__file__)
-    from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
+    from neurotwin.eval.paper_gate import load_run_summary, paper_mode_gate_allows_claim_for_run
 
     parser = argparse.ArgumentParser(description="Create lightweight text figure specs from NeuroTwin run metrics.")
     parser.add_argument("run_dir")
@@ -37,7 +37,7 @@ def main() -> int:
         lines.insert(0, "claim_status: real_data_smoke")
     elif isinstance(summary, dict):
         claim_allowed = bool(summary.get("scientific_claim_allowed"))
-        gate_allows = paper_mode_gate_allows_claim(load_paper_mode_gate(run_path))
+        gate_allows = paper_mode_gate_allows_claim_for_run(run_path)
         lines.insert(
             0,
             f"paper_mode_gate_allows_claim: {gate_allows}",

@@ -21,35 +21,25 @@ from neurotwin.adapters.synthetic import (
 from neurotwin.data.event_io import save_event_batches
 from neurotwin.data.manifest_io import save_split_manifest
 from neurotwin.data.split_manifest import build_split_manifest
+from neurotwin.eval.claim_contracts import claim_contract_sha256, collect_task_claim_contracts
+from neurotwin.eval.forecast_eligibility import forecast_eligibility_sha256
 from neurotwin.reports.evidence_gate import build_prepared_evidence_gate, write_final_prepared_evidence_gate
-from neurotwin.eval.forecast_eligibility import write_forecast_eligibility_artifact
+from neurotwin.repro import write_json
 from neurotwin.training.command import TrainingCommandConfig, run_training_command
 from neurotwin.training.prepared import PreparedBatchSampler, PreparedTrainingConfig, PreparedTrainingRunPaths, run_prepared_training
 from neurotwin.training.prepared_loop import _normalize_model_type
+from tests.forecast_eligibility_fixtures import build_bound_forecast_eligibility
 
 
 class PreparedTrainingTests(unittest.TestCase):
     @staticmethod
-    def _write_valid_forecast_eligibility(run_dir: Path) -> None:
-        write_forecast_eligibility_artifact(
+    def _write_valid_forecast_eligibility(run_dir: Path) -> dict[str, object]:
+        artifact = build_bound_forecast_eligibility(run_dir / "eligibility_sources")
+        write_json(
             run_dir / "forecast_eligibility.json",
-            {
-                "protocol": {"protocol_id": "kahlus.forecast.v2_nonoverlap", "schema_version": 2},
-                "source_hashes": ["a" * 64],
-                "source_hash_verification_passed": True,
-                "transform_lineage_hash": "b" * 64,
-                "transform_lineage_complete": True,
-                "split_audit": {
-                    "passed": True,
-                    "violations": [],
-                    "subject_overlap_count": 0,
-                    "recording_overlap_count": 0,
-                    "session_overlap_count": 0,
-                },
-                "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
-                "invalidated_result_ids": [],
-            },
+            artifact,
         )
+        return artifact
 
     def _prepared_dir(self, root: Path) -> Path:
         prepared = root / "prepared"
@@ -641,6 +631,38 @@ class PreparedTrainingTests(unittest.TestCase):
         self.assertFalse(gate["passed"])
         self.assertIn("required task quarantined: masked_neural_reconstruction", gate["failures"])
 
+    def test_evidence_gate_rejects_unrelated_task_ranking(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(
+                    {
+                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
+                        "tasks": {
+                            "unrelated_classification": {
+                                "ranking": [
+                                    {"model_id": "linear_ridge", "metric": "mse", "value": 0.1, "rank": 1}
+                                ]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gate = build_prepared_evidence_gate(
+                {
+                    "scientific_claim_allowed": True,
+                    "task_results": [
+                        {"task_id": "future_state_forecasting", "best_val_mse": 0.2, "test_mse": 0.3}
+                    ],
+                },
+                eval_audit={"passed": True},
+                run_dir=run_dir,
+            )
+
+        self.assertFalse(gate["passed"])
+        self.assertIn("baseline ranking missing for task future_state_forecasting", gate["failures"])
+
     def test_final_evidence_gate_uses_completed_run_dir_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
@@ -664,9 +686,29 @@ class PreparedTrainingTests(unittest.TestCase):
             missing_gate = write_final_prepared_evidence_gate(run_dir)
 
             self.assertFalse(missing_gate["passed"])
-            self.assertIn("baseline ranking artifact missing or unavailable", missing_gate["failures"])
+            self.assertIn("prepared baseline suite has no task rankings", missing_gate["failures"])
             self.assertIn("paper_mode_gate.json missing or not passed", missing_gate["failures"])
 
+            eligibility = self._write_valid_forecast_eligibility(run_dir)
+            task_payload = {
+                "baseline_catalog": [
+                    {"model_id": model_id, "status": "local_baseline"}
+                    for model_id in ("persistence", "linear_ridge", "autoregressive_ridge", "random_permutation")
+                ],
+                "tasks": {
+                    "future_state_forecasting": {
+                        "ranking": [
+                            {"model_id": model_id, "metric": "mse", "value": 0.3 + rank, "rank": rank}
+                            for rank, model_id in enumerate(
+                                ("persistence", "linear_ridge", "autoregressive_ridge", "random_permutation"),
+                                start=1,
+                            )
+                        ]
+                    }
+                },
+            }
+            contracts, unknown = collect_task_claim_contracts(task_payload)
+            self.assertFalse(unknown)
             (run_dir / "paper_mode_gate.json").write_text(
                 json.dumps(
                     {
@@ -675,24 +717,16 @@ class PreparedTrainingTests(unittest.TestCase):
                         "violations": [],
                         "required_seeds": [0, 1, 2],
                         "observed_seeds": [0, 1, 2],
+                        "claim_contract_sha256": claim_contract_sha256(contracts),
                         "forecast_eligibility_required": True,
                         "forecast_eligibility_passed": True,
+                        "forecast_eligibility_sha256": forecast_eligibility_sha256(eligibility),
                     }
                 ),
                 encoding="utf-8",
             )
-            self._write_valid_forecast_eligibility(run_dir)
             (run_dir / "prepared_baseline_suite.json").write_text(
-                json.dumps(
-                    {
-                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
-                        "tasks": {
-                            "future_state_forecasting": {
-                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.3, "rank": 1}]
-                            }
-                        },
-                    }
-                ),
+                json.dumps(task_payload),
                 encoding="utf-8",
             )
 
@@ -739,7 +773,7 @@ class PreparedTrainingTests(unittest.TestCase):
 
         self.assertFalse(gate["checks"]["baseline_ranking_present"])
         self.assertFalse(gate["passed"])
-        self.assertIn("baseline ranking artifact missing or unavailable", gate["failures"])
+        self.assertIn("baseline ranking missing for task future_state_forecasting", gate["failures"])
 
     def _write_minimal_final_gate_inputs(self, run_dir: Path) -> None:
         (run_dir / "summary.json").write_text(

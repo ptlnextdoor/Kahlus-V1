@@ -32,29 +32,13 @@ from neurotwin.eval.command import EvalCommandConfig, run_eval_command
 from neurotwin.contracts.paper_mode import CANONICAL_REQUIRED_SEEDS
 from neurotwin.eval.paper_contracts import build_paper_mode_evidence
 from neurotwin.eval.paper_gate import validate_paper_mode_payload
-from neurotwin.eval.forecast_eligibility import build_forecast_eligibility_artifact
 from neurotwin.eval.prepared_paper_mode import _aggregate_seed_ranks, run_prepared_baseline_suite_multi_seed
+from tests.forecast_eligibility_fixtures import build_bound_forecast_eligibility
 
 
 def _valid_forecast_eligibility_artifact() -> dict[str, object]:
-    return build_forecast_eligibility_artifact(
-        {
-            "protocol": {"protocol_id": FORECAST_PROTOCOL_V2_NONOVERLAP, "schema_version": 2},
-            "source_hashes": ["a" * 64],
-            "source_hash_verification_passed": True,
-            "transform_lineage_hash": "b" * 64,
-            "transform_lineage_complete": True,
-            "split_audit": {
-                "passed": True,
-                "violations": [],
-                "subject_overlap_count": 0,
-                "recording_overlap_count": 0,
-                "session_overlap_count": 0,
-            },
-            "firebreak_audit": {"passed": True, "violations": [], "target_overlaps_context": False},
-            "invalidated_result_ids": [],
-        }
-    )
+    with tempfile.TemporaryDirectory() as tmp:
+        return build_bound_forecast_eligibility(Path(tmp))
 
 
 class PreparedEventSuiteTests(unittest.TestCase):

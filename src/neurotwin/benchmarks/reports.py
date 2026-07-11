@@ -8,7 +8,7 @@ from neurotwin.benchmarks.nfc_suite import format_nfc_synthetic_report, run_nfc_
 from neurotwin.benchmarks.registry import competitor_registry
 from neurotwin.benchmarks.suite import run_neural_translation_v1_synthetic
 from neurotwin.benchmarks.task_specs import default_translation_tasks
-from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
+from neurotwin.eval.paper_gate import load_run_summary, paper_mode_gate_allows_claim_for_run
 from neurotwin.reports.model_card import generate_model_card_report as generate_model_card_report
 
 COMPARE_FIELDS = (
@@ -148,7 +148,7 @@ def generate_run_report(run_dir: str | Path) -> str:
     path = Path(run_dir)
     summary = load_run_summary(path)
     summary_claim = _summary_scientific_claim_allowed(summary)
-    gate_allows_claim = paper_mode_gate_allows_claim(load_paper_mode_gate(path))
+    gate_allows_claim = paper_mode_gate_allows_claim_for_run(path)
     artifact_paths = _write_run_table_artifacts(path, summary=summary, scientific_claim_allowed=summary_claim, gate_allows_claim=gate_allows_claim)
     lines = [
         "# NeuroTwin Run Report",
@@ -210,7 +210,7 @@ def generate_compare_report(run_dirs: list[str] | tuple[str, ...], out_dir: str 
         if artifact_error:
             row["artifact_error"] = artifact_error
         row["scientific_claim_allowed"] = _summary_scientific_claim_allowed(summary)
-        row["paper_mode_gate_allows_claim"] = paper_mode_gate_allows_claim(load_paper_mode_gate(path))
+        row["paper_mode_gate_allows_claim"] = paper_mode_gate_allows_claim_for_run(path)
         rows.append(row)
     destination = Path(out_dir) if out_dir else None
     if destination is not None:
@@ -259,7 +259,7 @@ def _write_run_table_artifacts(
     metrics = _read_json(metrics_path)
     summary_payload = summary if isinstance(summary, dict) else _read_json(summary_path)
     summary_claim = _summary_scientific_claim_allowed(summary_payload) if scientific_claim_allowed is None else bool(scientific_claim_allowed)
-    gate_allows = paper_mode_gate_allows_claim(load_paper_mode_gate(path)) if gate_allows_claim is None else bool(gate_allows_claim)
+    gate_allows = paper_mode_gate_allows_claim_for_run(path) if gate_allows_claim is None else bool(gate_allows_claim)
     artifacts: list[str] = []
     flat_rows = list(_flatten_metrics({"metrics": metrics, "summary": summary_payload}))
     flat_csv = tables_dir / "metrics_flat.csv"

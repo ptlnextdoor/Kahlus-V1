@@ -9,19 +9,29 @@ from pathlib import Path
 import numpy as np
 
 from neurotwin.benchmarks.nfc_suite import nfc_falsification_status
+from neurotwin.eval.claim_contracts import claim_contract_sha256, collect_task_claim_contracts
 
 
 class ExpandedCliTests(unittest.TestCase):
     @staticmethod
+    def _paper_mode_task_payload() -> dict[str, object]:
+        return {"tasks": {"masked_neural_reconstruction": {}}}
+
+    @staticmethod
     def _valid_paper_mode_gate() -> dict[str, object]:
+        contracts, unknown = collect_task_claim_contracts(ExpandedCliTests._paper_mode_task_payload())
+        if unknown:
+            raise AssertionError(f"unknown test task contracts: {unknown}")
         return {
             "passed": True,
             "require_ci": True,
             "violations": [],
             "required_seeds": [0, 1, 2],
             "observed_seeds": [0, 1, 2],
+            "claim_contract_sha256": claim_contract_sha256(contracts),
             "forecast_eligibility_required": False,
             "forecast_eligibility_passed": True,
+            "forecast_eligibility_sha256": None,
         }
 
     def run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
@@ -256,6 +266,10 @@ class ExpandedCliTests(unittest.TestCase):
                 json.dumps(self._valid_paper_mode_gate()),
                 encoding="utf-8",
             )
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(self._paper_mode_task_payload()),
+                encoding="utf-8",
+            )
 
             result = self.run_cli("report", "--run-dir", str(run_dir))
             metric_summary = json.loads((run_dir / "figures" / "metric_summary.json").read_text(encoding="utf-8"))
@@ -308,6 +322,10 @@ class ExpandedCliTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (run_a / "paper_mode_gate.json").write_text(json.dumps(self._valid_paper_mode_gate()), encoding="utf-8")
+            (run_a / "prepared_baseline_suite.json").write_text(
+                json.dumps(self._paper_mode_task_payload()),
+                encoding="utf-8",
+            )
             (run_b / "metrics.json").write_text('{"test_mse": 0.3}', encoding="utf-8")
             (run_b / "summary.json").write_text(
                 '{"status": "completed", "synthetic_only": false, "real_data_smoke": false, "scientific_claim_allowed": false, "test_mse": 0.3}',

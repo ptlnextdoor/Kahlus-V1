@@ -10,7 +10,7 @@ def main() -> int:
     from _bootstrap import ensure_src_import_path
 
     ensure_src_import_path(__file__)
-    from neurotwin.eval.paper_gate import load_paper_mode_gate, load_run_summary, paper_mode_gate_allows_claim
+    from neurotwin.eval.paper_gate import load_run_summary, paper_mode_gate_allows_claim_for_run
 
     parser = argparse.ArgumentParser(description="Create simple markdown tables from NeuroTwin run metrics.")
     parser.add_argument("run_dirs", nargs="+")
@@ -28,7 +28,7 @@ def main() -> int:
             raise SystemExit(f"{run_dir} is synthetic-only; rerun with --allow-synthetic for plumbing tables")
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
         claim_allowed = bool(summary.get("scientific_claim_allowed"))
-        gate_allows = paper_mode_gate_allows_claim(load_paper_mode_gate(run_path))
+        gate_allows = paper_mode_gate_allows_claim_for_run(run_path)
         claim_status = "real_data_smoke" if summary.get("real_data_smoke") else "scientific" if claim_allowed else "plumbing"
         print(f"| {run_path.name} | claim_status | {claim_status} |")
         print(f"| {run_path.name} | scientific_claim_allowed | {claim_allowed} |")
