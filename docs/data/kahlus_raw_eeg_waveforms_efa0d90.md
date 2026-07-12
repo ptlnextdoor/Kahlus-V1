@@ -30,7 +30,8 @@ GitHub does not store this 74 GB raw artifact in Git history. The raw tree is pu
 
 - Dataset URL: https://huggingface.co/datasets/kgarg47/kahlus-raw-eeg-waveforms-efa0d90
 - Hub tree: `raw/`
-- Hub file count: `4,377` including the two dataset README files
+- Hub uploaded data/README files: `4,377`
+- Hub repository files: `4,378` including `.gitattributes`
 - Hub data size: approximately `79.9 GB`
 
 The local ZIP remains the checksum-verified monolithic companion artifact. The Hub tree is the recommended distribution form because individual EDF and annotation files can be downloaded without extracting the ZIP.
@@ -49,7 +50,7 @@ Expected values:
 - SHA-256: `52a6dd67c0f27ba0c9184085be6c642de259fa7604e69931e435b83095f1e916`
 - ZIP entry count: `4533`
 
-For the Hub copy, verify that the dataset page shows the `raw/` tree and that its file count is `4,377` including the two README files.
+For the Hub copy, verify that the dataset page shows the `raw/` tree, all `4,377` uploaded data/README files, and the repository-managed `.gitattributes` file.
 
 ## Scope Notes
 
