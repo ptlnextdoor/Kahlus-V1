@@ -26,9 +26,14 @@ The export preserves raw EDF waveform files and companion event/annotation files
 
 ## Distribution Status
 
-GitHub cannot store this archive directly as a normal Git object, and this repository does not currently define a large-object storage location for a 74 GB raw ZIP. A distribution link should be added here after the archive is uploaded to an external storage system that supports this size, such as institutional object storage, S3/R2, Google Drive via a native uploader, OSF, Zenodo, or Hugging Face Datasets.
+GitHub does not store this 74 GB raw artifact in Git history. The raw tree is publicly available through Hugging Face Datasets, which stores the files directly and supports resumable large-folder transfers:
 
-- Download URL: `PENDING_EXTERNAL_STORAGE_UPLOAD`
+- Dataset URL: https://huggingface.co/datasets/kgarg47/kahlus-raw-eeg-waveforms-efa0d90
+- Hub tree: `raw/`
+- Hub file count: `4,377` including the two dataset README files
+- Hub data size: approximately `79.9 GB`
+
+The local ZIP remains the checksum-verified monolithic companion artifact. The Hub tree is the recommended distribution form because individual EDF and annotation files can be downloaded without extracting the ZIP.
 
 ## Verification
 
@@ -43,6 +48,8 @@ Expected values:
 
 - SHA-256: `52a6dd67c0f27ba0c9184085be6c642de259fa7604e69931e435b83095f1e916`
 - ZIP entry count: `4533`
+
+For the Hub copy, verify that the dataset page shows the `raw/` tree and that its file count is `4,377` including the two README files.
 
 ## Scope Notes
 
