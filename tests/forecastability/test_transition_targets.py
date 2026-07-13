@@ -12,6 +12,7 @@ from neurotwin.forecastability import (
     TransitionLeadBand,
     TransitionTargetSpec,
     audit_forecast_firebreak,
+    build_natural_transition_target_result,
     build_natural_transition_targets,
 )
 
@@ -81,6 +82,50 @@ class TransitionTargetTests(unittest.TestCase):
         epochs[4] = TransitionEpoch("sleep-001", 121.0, "NREM")
         with self.assertRaisesRegex(ValueError, "natural zero-based cadence grid"):
             build_natural_transition_targets(epochs, _spec())
+
+    def test_earlier_transition_is_a_no_event_for_a_later_band(self) -> None:
+        targets = build_natural_transition_targets(_epochs(), _spec())
+        target = next(row for row in targets if row.target_id == "sleep-001:000019:B1")
+
+        self.assertEqual(target.outcome, "no_event")
+        self.assertIsNone(target.event_time_s)
+
+    def test_one_epoch_reversal_is_not_silently_promoted_to_ambiguous(self) -> None:
+        epochs = list(_epochs())
+        epochs[25] = TransitionEpoch("sleep-001", 25 * 30.0, "REM")
+        for index in range(26, len(epochs)):
+            epochs[index] = TransitionEpoch("sleep-001", index * 30.0, "NREM")
+        targets = build_natural_transition_targets(epochs, _spec())
+        target = next(row for row in targets if row.target_id == "sleep-001:000019:B2")
+
+        self.assertEqual(target.outcome, "no_event")
+        self.assertFalse(target.ambiguous)
+
+    def test_unknown_annotation_boundary_is_a_scored_ambiguity(self) -> None:
+        epochs = list(_epochs())
+        epochs[25] = TransitionEpoch("sleep-001", 25 * 30.0, "Unknown")
+        targets = build_natural_transition_targets(epochs, _spec())
+        target = next(row for row in targets if row.target_id == "sleep-001:000019:B2")
+
+        self.assertEqual(target.outcome, "Ambiguous")
+        self.assertTrue(target.ambiguous)
+        self.assertEqual(target.event_time_s, 750.0)
+
+    def test_unknown_source_epoch_is_scored_as_ambiguous_not_silently_dropped(self) -> None:
+        epochs = list(_epochs())
+        epochs[19] = TransitionEpoch("sleep-001", 19 * 30.0, "Unknown")
+        targets = build_natural_transition_targets(epochs, _spec())
+        target = next(row for row in targets if row.target_id == "sleep-001:000019:B2")
+
+        self.assertEqual(target.outcome, "Ambiguous")
+        self.assertTrue(target.ambiguous)
+        self.assertEqual(target.event_time_s, 600.0)
+
+    def test_right_censored_anchors_are_excluded_and_counted_by_band(self) -> None:
+        result = build_natural_transition_target_result(_epochs(), _spec())
+
+        self.assertGreater(result.complete_follow_up_excluded_count_by_band["B1"], 0)
+        self.assertGreater(result.complete_follow_up_excluded_count_by_band["B2"], 0)
 
 
 if __name__ == "__main__":

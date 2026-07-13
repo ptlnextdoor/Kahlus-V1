@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 import math
-from typing import Iterable
+from typing import Iterable, Literal
 
 from neurotwin.forecastability.firebreak import ForecastAnchor, TimeInterval
 
@@ -43,6 +43,8 @@ class TransitionTargetSpec:
     primary_band_id: str
     ontology: tuple[str, ...] = ("Wake", "NREM", "REM", "Unknown")
     complete_follow_up_required: bool = True
+    outcome_mode: Literal["next_stable_transition_with_ambiguity"] = "next_stable_transition_with_ambiguity"
+    ambiguous_outcome: str = "Ambiguous"
 
     def __post_init__(self) -> None:
         _text(self.version, "version")
@@ -70,6 +72,11 @@ class TransitionTargetSpec:
             previous_upper = band.upper_inclusive_s
         if not self.ontology or len(set(self.ontology)) != len(self.ontology):
             raise ValueError("ontology must contain unique states")
+        if self.outcome_mode != "next_stable_transition_with_ambiguity":
+            raise ValueError("unsupported transition outcome mode")
+        _text(self.ambiguous_outcome, "ambiguous_outcome")
+        if self.ambiguous_outcome in {*self.ontology, "no_event"}:
+            raise ValueError("ambiguous_outcome must be distinct from ontology states and no_event")
 
 
 @dataclass(frozen=True)
@@ -100,6 +107,8 @@ class TransitionTarget:
     event_time_s: float | None
     band_id: str
     complete_follow_up: bool
+    ambiguous: bool = False
+    ambiguous_outcome: str = "Ambiguous"
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -115,18 +124,32 @@ class TransitionTarget:
             raise ValueError("issue_time_s must be finite and >= 0")
         if not math.isclose(self.anchor.context.end_s, self.issue_time_s, rel_tol=0.0, abs_tol=1e-9):
             raise ValueError("forecast-anchor context must end at the transition issue time")
-        if (self.destination_macrostate is None) != (self.event_time_s is None):
+        if self.ambiguous:
+            if self.destination_macrostate is not None or self.event_time_s is None:
+                raise ValueError("ambiguous transition targets require a boundary time but no destination")
+            _text(self.ambiguous_outcome, "ambiguous_outcome")
+        elif (self.destination_macrostate is None) != (self.event_time_s is None):
             raise ValueError("event time and destination must be present or absent together")
         if self.destination_macrostate is not None:
             _text(self.destination_macrostate, "destination_macrostate")
             if self.destination_macrostate == self.current_macrostate:
                 raise ValueError("transition destination must differ from the current macrostate")
-            if self.event_time_s is None or not self.anchor.target.start_s < self.event_time_s <= self.anchor.target.end_s:
-                raise ValueError("transition event must occur inside the target lead band")
+        if self.event_time_s is not None and not self.issue_time_s <= self.event_time_s <= self.anchor.target.end_s:
+            raise ValueError("transition boundary must occur on or after issue time and before lead-band end")
 
     @property
     def outcome(self) -> str:
+        if self.ambiguous:
+            return self.ambiguous_outcome
         return self.destination_macrostate or "no_event"
+
+
+@dataclass(frozen=True)
+class TransitionTargetBuildResult:
+    """Targets plus explicit right-censoring counts for the frozen lead bands."""
+
+    targets: tuple[TransitionTarget, ...]
+    complete_follow_up_excluded_count_by_band: dict[str, int]
 
 
 def build_natural_transition_targets(
@@ -137,6 +160,17 @@ def build_natural_transition_targets(
 ) -> tuple[TransitionTarget, ...]:
     """Build complete-follow-up HNPH targets without event-enriched resampling."""
 
+    return build_natural_transition_target_result(epochs, spec, filter_guard_s=filter_guard_s).targets
+
+
+def build_natural_transition_target_result(
+    epochs: Iterable[TransitionEpoch],
+    spec: TransitionTargetSpec,
+    *,
+    filter_guard_s: float = 0.0,
+) -> TransitionTargetBuildResult:
+    """Build targets and report each right-censored lead-band exclusion."""
+
     if not math.isfinite(float(filter_guard_s)) or filter_guard_s < 0:
         raise ValueError("filter_guard_s must be finite and >= 0")
     by_record: dict[str, list[TransitionEpoch]] = defaultdict(list)
@@ -145,11 +179,18 @@ def build_natural_transition_targets(
             raise ValueError(f"epoch macrostate {epoch.macrostate!r} is outside the frozen ontology")
         by_record[epoch.record_id].append(epoch)
     targets: list[TransitionTarget] = []
+    excluded = {band.band_id: 0 for band in spec.lead_bands}
     for record_id, record_epochs in sorted(by_record.items()):
         ordered = sorted(record_epochs, key=lambda row: row.start_s)
         _validate_natural_grid(ordered, spec.cadence_s)
-        targets.extend(_targets_for_record(record_id, ordered, spec, filter_guard_s))
-    return tuple(targets)
+        record_targets, record_excluded = _targets_for_record(record_id, ordered, spec, filter_guard_s)
+        targets.extend(record_targets)
+        for band_id, count in record_excluded.items():
+            excluded[band_id] += count
+    return TransitionTargetBuildResult(
+        targets=tuple(targets),
+        complete_follow_up_excluded_count_by_band=excluded,
+    )
 
 
 def _validate_natural_grid(epochs: list[TransitionEpoch], cadence_s: float) -> None:
@@ -166,16 +207,14 @@ def _targets_for_record(
     epochs: list[TransitionEpoch],
     spec: TransitionTargetSpec,
     filter_guard_s: float,
-) -> list[TransitionTarget]:
+) -> tuple[list[TransitionTarget], dict[str, int]]:
     context_epochs = int(round(spec.context_s / spec.cadence_s))
     record_end_s = epochs[-1].start_s + spec.cadence_s
     targets: list[TransitionTarget] = []
+    excluded = {band.band_id: 0 for band in spec.lead_bands}
     for issue_index in range(context_epochs - 1, len(epochs)):
         current = epochs[issue_index].macrostate
-        if current == "Unknown":
-            continue
         issue_time_s = epochs[issue_index].start_s + spec.cadence_s
-        event_time_s, destination = _first_stable_transition(epochs, issue_index, spec)
         context = TimeInterval(issue_time_s - spec.context_s, issue_time_s)
         for band in spec.lead_bands:
             target = TimeInterval(
@@ -184,8 +223,18 @@ def _targets_for_record(
             )
             complete = target.end_s <= record_end_s
             if spec.complete_follow_up_required and not complete:
+                excluded[band.band_id] += 1
                 continue
-            in_band = event_time_s is not None and target.start_s < event_time_s <= target.end_s
+            if current == "Unknown":
+                event_time_s, destination, ambiguous = issue_time_s, None, True
+            else:
+                event_time_s, destination, ambiguous = _transition_status(
+                    epochs,
+                    issue_index,
+                    target.start_s,
+                    target.end_s,
+                    spec,
+                )
             anchor = ForecastAnchor(
                 anchor_id=f"{record_id}:{issue_index:06d}:{band.band_id}",
                 record_id=record_id,
@@ -200,26 +249,46 @@ def _targets_for_record(
                     anchor=anchor,
                     issue_time_s=issue_time_s,
                     current_macrostate=current,
-                    destination_macrostate=destination if in_band else None,
-                    event_time_s=event_time_s if in_band else None,
+                    destination_macrostate=destination,
+                    event_time_s=event_time_s,
                     band_id=band.band_id,
                     complete_follow_up=complete,
+                    ambiguous=ambiguous,
+                    ambiguous_outcome=spec.ambiguous_outcome,
                 )
             )
-    return targets
+    return targets, excluded
 
 
-def _first_stable_transition(
+def _transition_status(
     epochs: list[TransitionEpoch],
     issue_index: int,
+    band_start_s: float,
+    band_end_s: float,
     spec: TransitionTargetSpec,
-) -> tuple[float | None, str | None]:
+) -> tuple[float | None, str | None, bool]:
+    """Return the first stable transition in one band, or an adjudication ambiguity.
+
+    A failed one-epoch candidate is not itself ambiguous: it is simply not a
+    stable transition.  Unknown annotation segments and an unresolved candidate
+    that begins inside the band remain scored as ``Ambiguous``.
+    """
+
     current = epochs[issue_index].macrostate
-    last_start = len(epochs) - spec.stable_destination_epochs + 1
-    for index in range(issue_index + 1, last_start):
+    band_end_index = int(round(band_end_s / spec.cadence_s)) - 1
+    for index in range(issue_index + 1, min(band_end_index + 1, len(epochs))):
         destination = epochs[index].macrostate
-        if destination in {current, "Unknown"}:
+        if destination == current:
             continue
-        if all(epochs[offset].macrostate == destination for offset in range(index, index + spec.stable_destination_epochs)):
-            return epochs[index].start_s, destination
-    return None, None
+        if destination == "Unknown":
+            return epochs[index].start_s, None, True
+        stable_end = index + spec.stable_destination_epochs - 1
+        if stable_end > band_end_index or stable_end >= len(epochs):
+            if band_start_s < epochs[index].start_s <= band_end_s:
+                return epochs[index].start_s, None, True
+            return None, None, False
+        if all(epochs[offset].macrostate == destination for offset in range(index, stable_end + 1)):
+            if band_start_s < epochs[index].start_s <= band_end_s:
+                return epochs[index].start_s, destination, False
+            return None, None, False
+    return None, None, False
