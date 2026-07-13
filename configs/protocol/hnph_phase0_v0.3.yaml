@@ -1,0 +1,340 @@
+schema_version: 1
+protocol_id: kahlus.hnph.phase0.v0.3
+protocol_version: 0.3.0
+status: frozen_preregistration_before_claim_mode
+effective_date: "2026-07-13"
+external_test_opened: false
+
+supersedes:
+  protocol_id: kahlus.hnph.phase0.v0.2
+  reason: b2_preregistration_and_construct_validity_gates_added_before_claim_mode
+  prior_claim_mode_results_invalidated: false
+
+b2_preregistration_addendum:
+  document: docs/research/hnph_b2_preregistration_addendum.md
+  version: 1
+  required_before_claim_mode: true
+  preserves_cap_seal_during_h3_selection: true
+
+program_position:
+  phase0_role: neural_casp_baseline_evidence_ruler
+  downstream_flagship: passive_pci
+  hnph_results_are_passive_pci_evidence: false
+
+datasets:
+  development:
+    canonical_id: sleep-edf-expanded-sleep-cassette
+    role: development
+    subset: sleep_cassette
+    person_grouped: true
+    allowed_uses:
+      - training
+      - validation
+      - held_subject_internal_test
+      - target_development
+      - calibration_development
+      - model_selection
+      - baseline_selection
+  external:
+    canonical_id: cap-sleep-database
+    role: sealed_external_test
+    sealed: true
+    opened: false
+    site_holdout_claim_allowed: false
+  secondary_shift:
+    canonical_id: sleep-edf-expanded-sleep-telemetry
+    role: descriptive_distribution_shift
+    pooled_into_training: false
+
+target:
+  endpoint_type: oracle_conditional_stable_sleep_transition
+  oracle_conditioning:
+    current_macrostate: true
+    causally_available_state_history: true
+    deployment_claim: false
+  macrostates:
+    - Wake
+    - NREM
+    - REM
+    - Unknown
+  nrem_mapping:
+    rk_stages: [1, 2, 3, 4]
+    aasm_stages: [N1, N2, N3]
+  cadence_seconds: 30
+  context_seconds: 600
+  stable_transition_consecutive_epochs: 2
+  stable_transition_duration_seconds: 60
+  natural_grid_only: true
+  event_enriched_evaluation: false
+  complete_follow_up_default: true
+  b2_primary_outcome:
+    mode: next_stable_transition_with_ambiguity
+    alphabet: [no_event, Wake, NREM, REM, Ambiguous]
+    ambiguous_handling: additional_scored_class
+    one_epoch_reversal: no_event_under_two_epoch_stability_rule
+    observed_unknown_interval: Ambiguous
+    future_macrostate_role: separately_versioned_future_extension
+    incomplete_follow_up: excluded_and_reported_by_band
+
+lead_bands_minutes:
+  - id: B1
+    lower_exclusive: 0.5
+    upper_inclusive: 2.0
+  - id: B2
+    lower_exclusive: 2.0
+    upper_inclusive: 5.0
+  - id: B3
+    lower_exclusive: 5.0
+    upper_inclusive: 10.0
+  - id: B4
+    lower_exclusive: 10.0
+    upper_inclusive: 20.0
+primary_band_id: B2
+
+chief_comparator:
+  family: semi_markov_competing_risk
+  selection: validation_only
+  allowed_inputs:
+    - current_macrostate
+    - two_preceding_macrostates
+    - current_bout_age
+    - elapsed_recording_time_or_time_of_night
+    - recent_transition_count
+    - empirical_destination_and_base_rate
+
+feasibility_gate:
+  endpoint_power_minimum: 0.80
+  target_incremental_log_skill_bits_per_anchor: 0.02
+  target_role: design_sensitivity_not_clinical_effect
+  cluster_unit: subject
+  minimum_independent_subject_clusters: 12
+  minimum_event_subjects: 8
+  minimum_positive_primary_band_anchors: 100
+
+effect_threshold:
+  epsilon_bits_per_anchor: 0.02
+  role: preregistered_design_sensitivity_not_clinical_or_biological_effect
+  residual_gate: simultaneous_subject_lcb_gte_epsilon
+  familywise_alpha: 0.05
+  max_t_family: lead_band_x_transition_type_x_named_evaluation
+  familywise_hypothesis_count: 12
+  target_power: 0.80
+  sigma_source: training_folds_or_synthetic_only
+  subject_cluster_power:
+    margin_bits_per_anchor: 0.02
+    calculation: "m_e >= ((z_(1-alpha/|G|) + z_(1-beta0)) * sigma_e / d)^2"
+    beta0: 0.20
+    sigma_must_be_frozen_before_claim_mode: true
+
+h3_authorization:
+  development_code_requires_internal_b2_pass: true
+  does_not_open_sealed_external_test: true
+  external_claim_mode_requires_frozen_h3_family: true
+  external_positive_requires_every_named_external_dataset: true
+  external_positive_requires_at_least_one_preregistered_complete_follow_up_band_per_dataset: true
+  external_positive_residual_lcb_must_be_gte_epsilon: true
+
+semi_markov_comparator_acceptance:
+  required:
+    - dwell_time_fit
+    - held_subject_calibration_and_brier_decomposition
+    - synthetic_no_eeg_dominance
+    - beats_simpler_markov_ladder
+    - nuisance_challenger_adequacy_audit
+  no_nuisance_challenger_improvement_gte_epsilon: true
+  challenger_metric: held_subject_subject_cluster_lcb_log_skill_bits
+  challenger_threshold_bits_per_anchor: 0.02
+  real_data_kl_misspecification_upper_bound_is_not_claimed: true
+
+label_construct_validity:
+  required_before_h3: true
+  required_source: repeated_independent_raters_or_validated_leave_one_rater_out_soft_labels
+  minimum_independent_raters: 3
+  reference_name: label_reproducibility_reference
+  reference_baseline: same_frozen_chief_nuisance_comparator
+  reference_target: leave_one_rater_out_consensus_or_soft_label
+  outcome_alphabet: [no_event, Wake, NREM, REM, Ambiguous]
+  method: leave_one_rater_out_soft_target_subject_cluster_bootstrap_max_t
+  primary_target_provenance_hash_required: true
+  subject_cluster_max_t_required: true
+  probability_floor: 1.0e-12
+  reference_lcb_must_be_gte_epsilon: true
+  literature_kappa_is_not_sufficient: true
+
+baseline_ladder:
+  selection: validation_only
+  required:
+    - empirical_no_event_destination
+    - markov_transition_prior
+    - semi_markov_competing_risk
+    - validation_tuned_logistic_or_ridge_hazard
+    - validation_tuned_gbm_hazard
+    - fixed_standard_eeg_features_plus_nuisance
+
+control_suite:
+  positive_control: synthetic_known_signal_pass
+  nuisance_probe_control: nuisance_probe
+  required:
+    - label_shuffle
+    - within_subject_time_shift
+    - unrelated_context
+    - missingness_only
+    - applicable_channel_or_geometry_permutation
+    - cluster_permutation_null
+    - nuisance_probe
+    - synthetic_known_signal_pass
+    - synthetic_null_fail
+  nuisance_probe_maximum_accuracy_above_chance: 0.20
+
+related_work:
+  ssf_set:
+    role: required_related_work_and_protocol_comparator_when_reproducible
+    establishes_first_sleep_forecaster_claim: false
+
+primary_endpoint:
+  dataset: cap-sleep-database
+  band_id: B2
+  estimand: mean_subject_balanced_incremental_categorical_log_skill_bits
+  comparison: model_minus_chief_comparator
+  probability_scoring:
+    dtype: float64
+    epsilon: 1.0e-12
+    renormalize_after_clipping: true
+    comparator_dirichlet_alpha_per_category: 0.5
+    aggregation_order:
+      - mean_within_subject
+      - equal_weight_mean_across_subjects
+  inference:
+    interval: one_sided_simultaneous_95_percent_lower_bound
+    multiplicity_method: subject_cluster_bootstrap_max_t
+    family: preregistered_lead_band_x_transition_type_x_named_evaluation
+    preserve_all_within_subject_anchors: true
+    bootstrap_replicates: 2000
+  success:
+    subject_level_simultaneous_lcb_95_gte_epsilon_bits_per_anchor: 0.02
+    simultaneous_across_preregistered_family: true
+    external_brier_noninferiority_lcb_gte: 0.0
+    calibration_gate_must_pass: true
+    prediction_set_gate_must_pass: true
+    negative_control_gate_must_pass: true
+    label_reproducibility_reference_lcb_gte_epsilon_bits_per_anchor: 0.02
+
+censoring:
+  index_definition: number_of_complete_target_bins_observed_after_issue_time
+  survival_before_first_bin: 1.0
+  event_loss: -log(S_j_minus_1_times_h_j_k)
+  right_censor_loss: -log(S_c)
+  primary_score_requires_complete_follow_up: true
+
+calibration_gate:
+  fit_dataset: development_validation_only
+  intercept_subject_bootstrap_ci_95_contains: 0.0
+  slope_subject_bootstrap_ci_95_contains: 1.0
+  top_label_ece_subject_bootstrap_upper_95_lte: 0.10
+  external_recalibration_allowed: false
+
+prediction_set_gate:
+  method: validation_fitted_adaptive_prediction_set
+  target_coverage: 0.90
+  external_subject_bootstrap_ci_95_must_contain_target: true
+  median_set_size_lt_number_of_classes: true
+  full_set_frequency_lt: 0.50
+
+negative_control_gate:
+  incremental_log_skill_upper_95_lte: 0.0
+  cluster_unit: subject
+
+transition_frontier:
+  definition: longest_contiguous_prefix_passing_simultaneous_skill_and_calibration
+  empty_if_first_band_fails: true
+  isolated_later_band_cannot_skip_failure: true
+
+stopping_rules:
+  stop_architecture_expansion_if_chief_comparator_ties_or_wins: true
+  tie_definition: primary_simultaneous_interval_includes_zero
+  stop_architecture_expansion_if_residual_lcb_below_epsilon: true
+  report_bounded_or_calibrated_null: true
+
+evidence_artifact:
+  required_outputs: [json, markdown]
+  required_fields:
+    - claim_scope
+    - stop_reason
+    - protocol_sha256
+    - artifact_hashes
+    - seed
+    - bootstrap_replicates
+    - outcome_class
+    - preregistration_hash
+    - epsilon_bits_per_anchor
+    - effect_size
+    - frozen_power_inputs
+    - subject_cluster_max_t_passed
+    - baseline_claim_mode_comparator_eligible
+    - baseline_claim_mode_max_t_inference_eligible
+    - baseline_claim_mode_primary_target_eligible
+    - negative_control_upper_95_log_skill_bits_by_control
+    - real_minus_control_lower_95_log_skill_bits_by_control
+    - synthetic_known_signal_lcb_bits_by_band
+    - nuisance_probe_accuracy_above_chance
+    - comparator_acceptance_checks
+    - comparator_nuisance_challenger_lcb_bits_by_band
+    - primary_ambiguity_handling
+    - complete_follow_up_excluded_count_by_band
+    - label_reproducibility_family
+    - label_rater_target_provenance_sha256
+    - label_chief_comparator_prediction_sha256
+    - classical_eeg_incremental_log_skill_lcb_by_band
+  exit_status:
+    invalid_or_incomplete_experiment: nonzero
+    complete_valid_null_or_positive_experiment: zero
+  frozen_stop_reasons:
+    - underpowered
+    - integrity_fail
+    - baseline_fail
+    - control_fail
+    - residual_below_epsilon
+    - comparator_challenger_exceeds_epsilon
+    - label_reliability_unavailable
+    - label_reliability_below_epsilon
+    - pass_authorize_h3
+
+replication:
+  cap_role: external_dataset_validation
+  cap_to_sleep_edf_reversal_role: sensitivity_analysis_only
+  independent_replication_requires_third_cohort: true
+  post_b2_independent_replication_milestone:
+    required_before_independent_replication_claim: true
+    unaffiliated_group_required: true
+    versioned_replication_packet_required: true
+    unaffiliated_group_is_invited_to_attempt_falsification: true
+    cap_is_not_independent_replication: true
+
+claim_gate:
+  pre_evaluation_positive_result_claim_allowed: false
+  blocked_claims:
+    - clinical
+    - diagnostic
+    - treatment
+    - seizure_warning
+    - digital_twin
+    - foundation_model
+    - biological_mechanism
+    - site_held_out_without_site_provenance
+  invalidating_conditions:
+    - split_leakage
+    - causal_or_interval_overlap
+    - missing_or_unverified_source_hashes
+    - silent_channel_truncation
+    - mixed_sampling_rates_or_units
+    - silent_sample_truncation
+    - missing_chief_comparator
+    - failed_calibration_or_negative_control
+    - distributed_rank_drift
+    - irreproducible_evidence
+
+retention:
+  preserve_raw_caches: true
+  quarantine_invalid_derived_prepared_data: true
+  quarantine_invalid_checkpoints: true
+  quarantine_invalid_evidence: true
