@@ -5,6 +5,11 @@ status: frozen_protocol_only
 effective_date: "2026-07-10"
 external_test_opened: false
 
+program_position:
+  phase0_role: neural_casp_baseline_evidence_ruler
+  downstream_flagship: passive_pci
+  hnph_results_are_passive_pci_evidence: false
+
 datasets:
   development:
     canonical_id: sleep-edf-expanded-sleep-cassette
@@ -83,6 +88,32 @@ feasibility_gate:
   target_incremental_log_skill_bits_per_anchor: 0.02
   target_role: design_sensitivity_not_clinical_effect
   cluster_unit: subject
+  minimum_independent_subject_clusters: 12
+  minimum_event_subjects: 8
+  minimum_positive_primary_band_anchors: 100
+
+baseline_ladder:
+  selection: validation_only
+  required:
+    - empirical_no_event_destination
+    - markov_transition_prior
+    - semi_markov_competing_risk
+    - validation_tuned_logistic_or_ridge_hazard
+    - validation_tuned_gbm_hazard
+    - fixed_standard_eeg_features_plus_nuisance
+
+control_suite:
+  required:
+    - label_shuffle
+    - within_subject_time_shift
+    - unrelated_context
+    - missingness_only
+    - applicable_channel_or_geometry_permutation
+    - cluster_permutation_null
+    - nuisance_probe
+    - synthetic_known_signal_pass
+    - synthetic_null_fail
+  nuisance_probe_maximum_accuracy_above_chance: 0.20
 
 related_work:
   ssf_set:
@@ -107,6 +138,7 @@ primary_endpoint:
     multiplicity_method: subject_cluster_bootstrap_max_t
     family: four_frozen_transition_bands
     preserve_all_within_subject_anchors: true
+    bootstrap_replicates: 2000
   success:
     subject_level_lcb_95_gt: 0.0
     simultaneous_across_frozen_bands: true
@@ -149,6 +181,20 @@ stopping_rules:
   stop_architecture_expansion_if_chief_comparator_ties_or_wins: true
   tie_definition: primary_simultaneous_interval_includes_zero
   report_bounded_or_calibrated_null: true
+
+evidence_artifact:
+  required_outputs: [json, markdown]
+  required_fields:
+    - claim_scope
+    - stop_reason
+    - protocol_sha256
+    - artifact_hashes
+    - seed
+    - bootstrap_replicates
+    - outcome_class
+  exit_status:
+    invalid_or_incomplete_experiment: nonzero
+    complete_valid_null_or_positive_experiment: zero
 
 replication:
   cap_role: external_dataset_validation

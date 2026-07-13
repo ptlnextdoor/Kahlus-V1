@@ -10,6 +10,11 @@ rationale remains in `kahlus_hnph_full_development_protocol.md`. If an older
 configuration, prepared dataset, checkpoint, result, or report conflicts with
 this freeze, the older artifact is ineligible for HNPH v0.2 evidence.
 
+HNPH/KSTF is the Phase-0 Neural-CASP baseline and evidence ruler: it decides
+whether a residual transition-forecasting signal is present under a frozen,
+leakage-aware contract. Passive PCI remains Kahlus's downstream flagship
+defendant. An HNPH result is not Passive-PCI evidence.
+
 ## Frozen Scientific Question
 
 Does causal EEG history add externally generalizable information about the next
@@ -53,6 +58,16 @@ Baseline feasibility authorizes model work only if subject-clustered simulation
 estimates at least 80% power for a 0.02 bit/anchor primary-endpoint gain. SSF-SET
 is required related work and, when reproducible under this endpoint, a protocol
 comparator; it does not establish a Kahlus first-sleep-forecaster claim.
+
+Before neural work, the evaluator must show at least 12 independent subject
+clusters, 8 event subjects, and 100 positive primary-band anchors. It must use
+2,000 subject-cluster bootstrap replicates; compare the validation-selected best
+baseline from the frozen empirical, Markov, semi-Markov, regularized-hazard,
+GBM-hazard, and fixed standard-EEG-plus-nuisance ladder; and pass the frozen
+shuffle, within-subject time-shift, unrelated-context, missingness-only,
+applicable channel/geometry-permutation, cluster-permutation, nuisance-probe,
+and synthetic known-signal/null controls. A nuisance probe may not exceed
+chance plus 0.20.
 
 The 0.02 bit/anchor value is a preregistered design-sensitivity target, not a
 biological constant, minimum clinically important difference, or established
@@ -125,6 +140,11 @@ causal context as applicable. Input tensors must exclude subject IDs, dataset
 IDs, paths, dates, source keys, future labels, and future samples. Physical
 units, sampling rates, channel identities, references, masks, and transform
 lineage must remain explicit; silent harmonization or truncation is forbidden.
+
+Every HNPH evaluator run emits both JSON and Markdown evidence artifacts. They
+must record `claim_scope`, `stop_reason`, protocol and artifact hashes, seed,
+bootstrap count, and outcome class. Invalid or incomplete runs exit nonzero;
+complete valid positive and calibrated-null runs exit zero.
 
 ## Primary Claims and Outcomes
 
