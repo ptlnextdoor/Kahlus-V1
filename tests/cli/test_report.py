@@ -5,9 +5,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+
 from unittest import mock
 
 from neurotwin.benchmarks.reports import generate_model_card_report, generate_run_report
+from neurotwin.eval.claim_contracts import claim_contract_sha256, collect_task_claim_contracts
+from neurotwin.eval.forecast_eligibility import forecast_eligibility_sha256
+from neurotwin.repro import write_json
+from tests.forecast_eligibility_fixtures import build_bound_forecast_eligibility
 
 
 class CliReportTests(unittest.TestCase):
@@ -212,18 +217,45 @@ class CliReportTests(unittest.TestCase):
             summary_path = run_dir / "summary.json"
             summary_path.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
             (run_dir / "eval_audit.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
-            (run_dir / "paper_mode_gate.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
-            (run_dir / "prepared_baseline_suite.json").write_text(
+            eligibility = build_bound_forecast_eligibility(run_dir / "eligibility_sources")
+            task_payload = {
+                "baseline_catalog": [
+                    {"model_id": model_id, "status": "local_baseline"}
+                    for model_id in ("persistence", "linear_ridge", "autoregressive_ridge", "random_permutation")
+                ],
+                "tasks": {
+                    "future_state_forecasting": {
+                        "ranking": [
+                            {"model_id": model_id, "metric": "mse", "value": 0.3 + rank, "rank": rank}
+                            for rank, model_id in enumerate(
+                                ("persistence", "linear_ridge", "autoregressive_ridge", "random_permutation"),
+                                start=1,
+                            )
+                        ]
+                    }
+                },
+            }
+            contracts, unknown = collect_task_claim_contracts(task_payload)
+            self.assertFalse(unknown)
+            (run_dir / "paper_mode_gate.json").write_text(
                 json.dumps(
                     {
-                        "baseline_catalog": [{"model_id": "linear_ridge", "status": "local_baseline"}],
-                        "tasks": {
-                            "future_state_forecasting": {
-                                "ranking": [{"model_id": "linear_ridge", "metric": "mse", "value": 0.3, "rank": 1}]
-                            }
-                        },
+                        "passed": True,
+                        "require_ci": True,
+                        "violations": [],
+                        "required_seeds": [0, 1, 2],
+                        "observed_seeds": [0, 1, 2],
+                        "claim_contract_sha256": claim_contract_sha256(contracts),
+                        "forecast_eligibility_required": True,
+                        "forecast_eligibility_passed": True,
+                        "forecast_eligibility_sha256": forecast_eligibility_sha256(eligibility),
                     }
                 ),
+                encoding="utf-8",
+            )
+            write_json(run_dir / "forecast_eligibility.json", eligibility)
+            (run_dir / "prepared_baseline_suite.json").write_text(
+                json.dumps(task_payload),
                 encoding="utf-8",
             )
 

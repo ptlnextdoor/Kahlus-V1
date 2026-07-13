@@ -7,7 +7,8 @@ from typing import Any
 
 from neurotwin.benchmarks.reports import generate_run_report
 from neurotwin.eval.paper_demos import PaperDemoConfig, run_identity_probe, run_leakage_demo
-from neurotwin.reports.evidence_gate import read_json_artifact, write_final_prepared_evidence_gate
+from neurotwin.eval.paper_gate import paper_mode_gate_allows_claim_for_run
+from neurotwin.reports.evidence_gate import write_final_prepared_evidence_gate
 from neurotwin.reports.model_card import generate_model_card_report
 from neurotwin.repro import write_json
 
@@ -18,6 +19,7 @@ A100_PAPER_MODE_ARTIFACTS = (
     "seed_aggregate.csv",
     "baseline_failures.json",
     "paper_mode_gate.json",
+    "forecast_eligibility.json",
 )
 
 
@@ -83,8 +85,7 @@ def copy_paper_mode_artifacts(run_dir: Path, paper_mode_dir: str | Path | None) 
 
 
 def paper_mode_gate_passed(paper_mode_dir: Path) -> bool:
-    gate = read_json_artifact(paper_mode_dir / "paper_mode_gate.json")
-    return isinstance(gate, dict) and gate.get("passed") is True
+    return paper_mode_gate_allows_claim_for_run(paper_mode_dir)
 
 
 def write_paper_mode_unavailable(run_dir: Path, reason: str) -> None:

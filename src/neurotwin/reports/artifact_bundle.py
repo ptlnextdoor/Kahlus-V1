@@ -9,6 +9,7 @@ from typing import Any
 MINIMUM_MODEL_CARD_SOURCE_ARTIFACTS = (
     "prepared_baseline_suite.json",
     "paper_mode_gate.json",
+    "forecast_eligibility.json",
     "evidence_gate.json",
     "eval_audit.json",
     "summary.json",
@@ -25,6 +26,7 @@ class ModelCardSourceArtifacts:
     eval_audit: Any
     claim_gate: Any
     evidence_gate: Any
+    forecast_eligibility: Any
     identity_probe: Any
     leakage_demo: Any
     source_artifacts: tuple[str, ...]
@@ -50,6 +52,7 @@ def load_model_card_source_artifacts(run_dir: str | Path) -> ModelCardSourceArti
         eval_audit=first_json_artifact(path, ("eval_audit.json", "LEAKAGE_AUDIT.json")),
         claim_gate=first_json_artifact(path, ("paper_mode_gate.json", "CLAIM_GATE.json")),
         evidence_gate=first_json_artifact(path, ("evidence_gate.json",)),
+        forecast_eligibility=first_json_artifact(path, ("forecast_eligibility.json",)),
         identity_probe=first_json_artifact(path, ("identity_probe.json", "IDENTITY_PROBE.json")),
         leakage_demo=first_json_artifact(path, ("leakage_demo.json", "LEAKAGE_DEMO.json")),
         source_artifacts=source_artifacts,

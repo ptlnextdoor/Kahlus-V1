@@ -39,7 +39,11 @@ def model_card_lines(source: ModelCardSourceArtifacts, *, aliases: list[str]) ->
     stimulus_evidence = _first_dict(summary_payload.get("stimulus_evidence"), prepared_data.get("stimulus_evidence"))
     quarantined_tasks = summary_payload.get("quarantined_tasks", [])
     summary_claim = bool(summary_payload.get("scientific_claim_allowed"))
-    gate_allowed = paper_mode_gate_allows_claim(gate_payload)
+    gate_allowed = paper_mode_gate_allows_claim(
+        gate_payload,
+        task_payload=prepared_payload,
+        forecast_eligibility=source.forecast_eligibility if isinstance(source.forecast_eligibility, dict) else None,
+    )
     lines = [
         "# EEG Model Card",
         "",
