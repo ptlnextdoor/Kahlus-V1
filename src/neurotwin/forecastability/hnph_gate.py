@@ -464,14 +464,333 @@ def _thresholds(protocol: Mapping[str, Any]) -> dict[str, Any]:
     positive_control_id = str(controls.get("positive_control", ""))
     nuisance_probe_control_id = str(controls.get("nuisance_probe_control", ""))
     return {
-        "minimum_independent_subject_clusters": int(feasibility.get("minimum_independent_subject_clusters", 10**9)),
-        "minimum_event_subjects": int(feasibility.get("minimum_event_subjects", 10**9)),
-        "minimum_positive_primary_band_anchors": int(feasibility.get("minimum_positive_primary_band_anchors", 10**9)),
-        "endpoint_power_minimum": float(feasibility.get("endpoint_power_minimum", math.inf)),
-        "bootstrap_replicates": int(inference.get("bootstrap_replicates", 10**9)),
+        "primary_band_id": str(protocol.get("primary_band_id", "")),
+        "minimum_independent_subject_clusters": _safe_int(feasibility.get("minimum_independent_subject_clusters"), 10**9),
+        "minimum_event_subjects": _safe_int(feasibility.get("minimum_event_subjects"), 10**9),
+        "minimum_positive_primary_band_anchors": _safe_int(feasibility.get("minimum_positive_primary_band_anchors"), 10**9),
+        "target_power": _safe_float(effect.get("target_power"), math.inf),
+        "epsilon_bits_per_anchor": _safe_float(effect.get("epsilon_bits_per_anchor"), math.inf),
+        "familywise_alpha": _safe_float(effect.get("familywise_alpha"), math.inf),
+        "familywise_hypothesis_count": _safe_int(effect.get("familywise_hypothesis_count"), 0),
+        "power_sigma_source": str(effect.get("sigma_source", "")),
+        "bootstrap_replicates": _safe_int(inference.get("bootstrap_replicates"), 10**9),
         "required_baselines": tuple(str(value) for value in ladder.get("required", ())),
-        "required_controls": tuple(str(value) for value in controls.get("required", ())),
+        "required_controls": required_controls,
+        "negative_controls": tuple(
+            control
+            for control in required_controls
+            if control not in {positive_control_id, nuisance_probe_control_id}
+        ),
+        "positive_control_id": positive_control_id,
+        "nuisance_probe_control_id": nuisance_probe_control_id,
+        "nuisance_probe_maximum_accuracy_above_chance": _safe_float(
+            controls.get("nuisance_probe_maximum_accuracy_above_chance"), math.inf
+        ),
+        "required_comparator_checks": tuple(str(value) for value in comparator.get("required", ())),
+        "primary_ambiguity_handling": str(target.get("ambiguous_handling", "")),
+        "minimum_independent_raters": _safe_int(label_reliability.get("minimum_independent_raters"), 10**9),
+        "probability_floor": _safe_float(label_reliability.get("probability_floor"), math.inf),
+        "label_family_method": str(label_reliability.get("method", "")),
+        "label_outcome_alphabet": tuple(str(value) for value in label_reliability.get("outcome_alphabet", ())),
+        "lead_band_ids": tuple(
+            str(value.get("id"))
+            for value in lead_bands
+            if isinstance(value, Mapping) and isinstance(value.get("id"), str)
+        )
+        if isinstance(lead_bands, list)
+        else (),
     }
+
+
+def _load_yaml_object(path: str | Path, label: str) -> tuple[dict[str, Any], str | None]:
+    try:
+        payload = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        return {}, f"{label} could not be read"
+    if not isinstance(payload, dict):
+        return {}, f"{label} must be a YAML object"
+    return payload, None
+
+
+def _load_text_hash(path: str | Path, label: str) -> tuple[str | None, str | None]:
+    try:
+        return hash_file(path), None
+    except OSError:
+        return None, f"{label} could not be read"
+
+
+def _load_frozen_protocol_hash(path: str | Path) -> tuple[str | None, str | None]:
+    try:
+        content = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return None, "preregistration addendum could not be read"
+    match = _FROZEN_PROTOCOL_SHA256.search(content)
+    if match is None:
+        return None, "preregistration addendum lacks a frozen v0.3 protocol hash"
+    return match.group(1), None
+
+
+def _hash_or_none(path: str | Path) -> str | None:
+    try:
+        return hash_file(path)
+    except OSError:
+        return None
+
+
+def _is_canonical_protocol_path(path: str | Path) -> bool:
+    try:
+        return Path(path).resolve() == _CANONICAL_PROTOCOL_PATH.resolve()
+    except OSError:
+        return False
+
+
+def _is_canonical_preregistration_path(path: str | Path) -> bool:
+    try:
+        return Path(path).resolve() == _CANONICAL_PREREGISTRATION_PATH.resolve()
+    except OSError:
+        return False
+
+
+def _artifact_hash_binding_failures(evidence: HnphFeasibilityEvidence) -> list[str]:
+    """Bind every declared hash to a local runner artifact without emitting paths."""
+
+    failures: list[str] = []
+    required_paths = _REQUIRED_ARTIFACT_HASHES - set(evidence.artifact_paths)
+    if required_paths:
+        failures.append("missing required artifact paths: " + ",".join(sorted(required_paths)))
+    for name in sorted(_REQUIRED_ARTIFACT_HASHES & set(evidence.artifact_paths)):
+        try:
+            actual_hash = hash_file(evidence.artifact_paths[name])
+        except OSError:
+            failures.append(f"required artifact cannot be read: {name}")
+            continue
+        if actual_hash != evidence.artifact_hashes.get(name):
+            failures.append(f"artifact hash does not match local runner artifact: {name}")
+    return failures
+
+
+def _artifact_content_failures(evidence: HnphFeasibilityEvidence) -> list[str]:
+    """Verify that decision inputs agree with their typed runner artifacts."""
+
+    failures: list[str] = []
+    split_audit = _read_bound_json_artifact(evidence, "split_audit", failures)
+    _require_artifact_fields(
+        split_audit,
+        "split_audit",
+        "kahlus.hnph.split_audit.v1",
+        {
+            "finite": evidence.finite,
+            "firebreak_passed": evidence.firebreak_passed,
+            "complete": evidence.complete,
+        },
+        failures,
+    )
+    targets = _read_bound_json_artifact(evidence, "anchor_targets", failures)
+    _require_artifact_fields(
+        targets,
+        "anchor_targets",
+        "kahlus.hnph.anchor_targets.v1",
+        {
+            "outcome_alphabet": ["no_event", "Wake", "NREM", "REM", "Ambiguous"],
+            "primary_target_kind": "leave_one_rater_out_soft_label",
+            "primary_target_provenance_sha256": evidence.label_rater_target_provenance_sha256,
+            "primary_ambiguity_handling": evidence.primary_ambiguity_handling,
+            "complete_follow_up_excluded_count_by_band": _safe_int_mapping(
+                evidence.complete_follow_up_excluded_count_by_band
+            ),
+            "positive_primary_band_anchors": _safe_int(evidence.positive_primary_band_anchors),
+        },
+        failures,
+    )
+    power = _read_bound_json_artifact(evidence, "power_analysis", failures)
+    _require_artifact_fields(
+        power,
+        "power_analysis",
+        "kahlus.hnph.power_analysis.v1",
+        {
+            "seed": _safe_int(evidence.seed),
+            "independent_subject_clusters": _safe_int(evidence.independent_subject_clusters),
+            "event_subjects": _safe_int(evidence.event_subjects),
+            "simulated_power_by_band": _safe_float_mapping(evidence.simulated_power_by_band),
+            "sigma_bits_by_band": _safe_float_mapping(evidence.power_sigma_bits_by_band),
+            "required_subjects_by_band": _safe_int_mapping(evidence.required_subjects_by_band),
+            "available_event_subjects_by_band": _safe_int_mapping(evidence.available_event_subjects_by_band),
+            "source": evidence.power_source,
+        },
+        failures,
+    )
+    baseline = _read_bound_json_artifact(evidence, "baseline_results", failures)
+    _require_artifact_fields(
+        baseline,
+        "baseline_results",
+        HNPH_CLASSICAL_BASELINE_SCHEMA,
+        {
+            "selected_best_baseline": evidence.selected_best_baseline,
+            "claim_mode_comparator_eligible": evidence.baseline_claim_mode_comparator_eligible,
+            "claim_mode_max_t_inference_eligible": evidence.baseline_claim_mode_max_t_inference_eligible,
+            "claim_mode_primary_target_eligible": evidence.baseline_claim_mode_primary_target_eligible,
+            "primary_target_provenance_sha256": evidence.label_rater_target_provenance_sha256,
+            "chief_comparator_prediction_sha256": evidence.label_chief_comparator_prediction_sha256,
+        },
+        failures,
+    )
+    if baseline and set(baseline.get("validation_nll_by_model", ())) != set(evidence.baseline_ids):
+        failures.append("bound baseline_results does not match the declared baseline ladder")
+    max_t = _read_bound_json_artifact(evidence, "max_t_inference", failures)
+    _require_artifact_fields(
+        max_t,
+        "max_t_inference",
+        "kahlus.hnph.subject_cluster_max_t.v1",
+        {
+            "bootstrap_replicates": _safe_int(evidence.bootstrap_replicates),
+            "passed": evidence.subject_cluster_max_t_passed,
+            "negative_control_upper_95_log_skill_bits_by_control": _safe_float_mapping(
+                evidence.negative_control_upper_95_log_skill_bits_by_control
+            ),
+            "real_minus_control_lower_95_log_skill_bits_by_control": _safe_float_mapping(
+                evidence.real_minus_control_lower_95_log_skill_bits_by_control
+            ),
+            "synthetic_known_signal_lcb_bits_by_band": _safe_float_mapping(
+                evidence.synthetic_known_signal_lcb_bits_by_band
+            ),
+            "nuisance_probe_accuracy_above_chance": (
+                float(evidence.nuisance_probe_accuracy_above_chance)
+                if _finite_number(evidence.nuisance_probe_accuracy_above_chance)
+                else None
+            ),
+            "classical_eeg_incremental_log_skill_lcb_by_band": _safe_float_mapping(
+                evidence.classical_eeg_incremental_log_skill_lcb_by_band
+            ),
+        },
+        failures,
+    )
+    comparator = _read_bound_json_artifact(evidence, "comparator_acceptance", failures)
+    _require_artifact_fields(
+        comparator,
+        "comparator_acceptance",
+        "kahlus.hnph.comparator_acceptance.v1",
+        {
+            "checks": _safe_bool_mapping(evidence.comparator_acceptance_checks),
+            "nuisance_challenger_lcb_bits_by_band": _safe_float_mapping(
+                evidence.comparator_nuisance_challenger_lcb_bits_by_band
+            ),
+        },
+        failures,
+    )
+    future_canary = _read_bound_json_artifact(evidence, "future_canary", failures)
+    _require_artifact_fields(
+        future_canary,
+        "future_canary",
+        "kahlus.hnph.future_canary.v1",
+        {"passed": evidence.future_canary_passed},
+        failures,
+    )
+    family = evidence.label_reproducibility_family
+    if family is not None:
+        label_reference = _read_bound_json_artifact(evidence, "label_reliability_reference", failures)
+        expected_family = {
+            **family.to_dict(),
+            "rater_target_provenance_sha256": evidence.label_rater_target_provenance_sha256,
+            "chief_comparator_prediction_sha256": evidence.label_chief_comparator_prediction_sha256,
+        }
+        _require_artifact_fields(
+            label_reference,
+            "label_reliability_reference",
+            LABEL_REPRODUCIBILITY_FAMILY_SCHEMA,
+            expected_family,
+            failures,
+        )
+    return failures
+
+
+def _read_bound_json_artifact(
+    evidence: HnphFeasibilityEvidence,
+    name: str,
+    failures: list[str],
+) -> Mapping[str, Any] | None:
+    path = evidence.artifact_paths.get(name)
+    if path is None:
+        return None
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        failures.append(f"bound artifact must be a readable JSON object: {name}")
+        return None
+    if not isinstance(payload, Mapping):
+        failures.append(f"bound artifact must be a JSON object: {name}")
+        return None
+    return payload
+
+
+def _require_artifact_fields(
+    payload: Mapping[str, Any] | None,
+    name: str,
+    schema: str,
+    expected: Mapping[str, Any],
+    failures: list[str],
+) -> None:
+    if payload is None:
+        return
+    if payload.get("schema") != schema:
+        failures.append(f"bound artifact schema is invalid: {name}")
+        return
+    for field, value in expected.items():
+        if payload.get(field) != value:
+            failures.append(f"bound artifact does not match declared evidence: {name}.{field}")
+
+
+def _safe_hashes(values: Mapping[str, str]) -> dict[str, str]:
+    return dict(sorted((str(key), str(value)) for key, value in values.items()))
+
+
+def _safe_float_mapping(values: Mapping[str, float]) -> dict[str, float | None]:
+    return {str(key): float(value) if _finite_number(value) else None for key, value in sorted(values.items())}
+
+
+def _safe_int_mapping(values: Mapping[str, int]) -> dict[str, int | None]:
+    return {str(key): _safe_int(value) if _is_int(value) else None for key, value in sorted(values.items())}
+
+
+def _safe_bool_mapping(values: Mapping[str, bool]) -> dict[str, bool]:
+    return {str(key): bool(value) for key, value in sorted(values.items())}
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _is_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _safe_int(value: Any, default: int | None = None) -> int | None:
+    return int(value) if _is_int(value) else default
+
+
+def _safe_float(value: Any, default: float) -> float:
+    return float(value) if _finite_number(value) else default
+
+
+def _finite_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+
+
+def _finite_nonnegative(value: Any) -> bool:
+    return _finite_number(value) and float(value) >= 0
+
+
+def _minimum_required_subjects(sigma_bits: float, thresholds: Mapping[str, Any]) -> int:
+    """Compute the frozen Bonferroni subject-cluster power requirement."""
+
+    alpha = thresholds["familywise_alpha"]
+    hypotheses = thresholds["familywise_hypothesis_count"]
+    power = thresholds["target_power"]
+    epsilon = thresholds["epsilon_bits_per_anchor"]
+    if not 0 < alpha < 1 or not _is_int(hypotheses) or hypotheses < 1 or not 0 < power < 1 or not epsilon > 0:
+        return 10**9
+    normal = NormalDist()
+    critical = normal.inv_cdf(1 - alpha / hypotheses) + normal.inv_cdf(power)
+    return max(1, math.ceil((critical * sigma_bits / epsilon) ** 2))
 
 
 def _blocked_claims() -> tuple[str, ...]:
@@ -479,5 +798,6 @@ def _blocked_claims() -> tuple[str, ...]:
         "external HNPH result",
         "Passive-PCI evidence",
         "clinical, diagnostic, treatment, or seizure-warning claim",
+        "external-test opening or tuning during H3 selection",
         "neural architecture expansion without a passing B2 gate",
     )
