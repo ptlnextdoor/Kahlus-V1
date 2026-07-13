@@ -335,19 +335,30 @@ def _structural_failures(
     )
     if malformed:
         failures.append("artifact hashes must be SHA-256 values with non-path names: " + ",".join(malformed))
-    required_baselines = set(thresholds["required_baselines"])
-    baseline_ids = set(evidence.baseline_ids)
-    missing_baselines = sorted(required_baselines - baseline_ids)
-    if missing_baselines:
-        failures.append("frozen baseline ladder is incomplete: " + ",".join(missing_baselines))
-    if evidence.selected_best_baseline not in baseline_ids:
-        failures.append("selected best baseline is not present in the evaluated baseline set")
-    if evidence.selected_best_baseline == "fixed_standard_eeg_features_plus_nuisance":
-        failures.append("EEG-plus-nuisance model cannot define the best nuisance baseline")
-    required_controls = set(thresholds["required_controls"])
-    failed_controls = sorted(name for name in required_controls if not evidence.controls_passed.get(name, False))
-    if failed_controls:
-        failures.append("required controls did not pass: " + ",".join(failed_controls))
+    if preregistration_hash is not None and evidence.artifact_hashes.get("preregistration_addendum") != preregistration_hash:
+        failures.append("preregistration addendum hash does not bind the emitted packet")
+    failures.extend(_artifact_hash_binding_failures(evidence))
+    failures.extend(_artifact_content_failures(evidence))
+    if evidence.power_source != thresholds["power_sigma_source"]:
+        failures.append("power inputs were not frozen from the permitted source")
+    for field, value in (
+        ("label rater-target provenance hash", evidence.label_rater_target_provenance_sha256),
+        ("label chief-comparator provenance hash", evidence.label_chief_comparator_prediction_sha256),
+    ):
+        if not isinstance(value, str) or not _SHA256.fullmatch(value):
+            failures.append(f"{field} is missing or malformed")
+    primary_band = thresholds["primary_band_id"]
+    if not _finite_nonnegative(evidence.power_sigma_bits_by_band.get(primary_band)):
+        failures.append("primary-band frozen power sigma is missing or invalid")
+    if not _is_int(evidence.required_subjects_by_band.get(primary_band)) or not _is_int(evidence.available_event_subjects_by_band.get(primary_band)):
+        failures.append("primary-band required and available subject counts are missing or invalid")
+    else:
+        required = evidence.required_subjects_by_band[primary_band]
+        sigma = evidence.power_sigma_bits_by_band.get(primary_band)
+        if _finite_nonnegative(sigma):
+            minimum_required = _minimum_required_subjects(float(sigma), thresholds)
+            if required < minimum_required:
+                failures.append("primary-band required subject count is below the frozen power calculation")
     return failures
 
 
