@@ -231,6 +231,8 @@ class EvidenceDecision:
     failed_requirements: tuple[str, ...]
     allowed_claims: tuple[str, ...]
     blocked_claims: tuple[str, ...]
+    claim_scope: str | None = None
+    stop_reason: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.protocol_version, "protocol_version")
@@ -253,3 +255,7 @@ class EvidenceDecision:
             raise ValueError("a passing evidence decision cannot contain failed requirements")
         if not self.gate_passed and self.outcome_class != "invalid_experiment" and not self.failed_requirements:
             raise ValueError("a failed non-invalid decision must identify failed requirements")
+        if self.claim_scope is not None:
+            _require_text(self.claim_scope, "claim_scope")
+        if self.stop_reason is not None:
+            _require_text(self.stop_reason, "stop_reason")

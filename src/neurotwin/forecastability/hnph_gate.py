@@ -1,22 +1,33 @@
-"""Fail-closed HNPH Phase-0 baseline-feasibility evidence gate."""
+"""Fail-closed HNPH v0.3 B2 preregistration and baseline-feasibility gate."""
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
 import math
 from pathlib import Path
 import re
+from statistics import NormalDist
 from typing import Any, Mapping
 
 import yaml
 
 from neurotwin.forecastability.contracts import EvidenceDecision
+from neurotwin.forecastability.hnph_baselines import HNPH_CLASSICAL_BASELINE_SCHEMA
+from neurotwin.forecastability.label_reliability import (
+    LABEL_REPRODUCIBILITY_FAMILY_SCHEMA,
+    LabelReproducibilityFamilyResult,
+)
 from neurotwin.repro import hash_file, write_json
 
 
-HNPH_BASELINE_FEASIBILITY_SCHEMA = "kahlus.hnph.baseline_feasibility.v1"
-_HNPH_PROTOCOL_ID = "kahlus.hnph.phase0.v0.2"
+HNPH_BASELINE_FEASIBILITY_SCHEMA = "kahlus.hnph.baseline_feasibility.v3"
+_HNPH_PROTOCOL_ID = "kahlus.hnph.phase0.v0.3"
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+_CANONICAL_PROTOCOL_PATH = _REPOSITORY_ROOT / "configs" / "protocol" / "hnph_phase0_v0.3.yaml"
+_CANONICAL_PREREGISTRATION_PATH = _REPOSITORY_ROOT / "docs" / "research" / "hnph_b2_preregistration_addendum.md"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_FROZEN_PROTOCOL_SHA256 = re.compile(r"\*\*Frozen v0\.3 protocol SHA-256:\*\* `([0-9a-f]{64})`")
 _REQUIRED_ARTIFACT_HASHES = frozenset(
     {
         "physical_registry",
@@ -25,93 +36,179 @@ _REQUIRED_ARTIFACT_HASHES = frozenset(
         "anchor_targets",
         "transform_lineage",
         "baseline_results",
+        "preregistration_addendum",
+        "power_analysis",
+        "max_t_inference",
+        "comparator_acceptance",
+        "label_reliability_reference",
+        "future_canary",
     }
 )
 
 
 @dataclass(frozen=True)
 class HnphFeasibilityEvidence:
-    """Hash-bound B2 inputs; raw data and local paths are intentionally absent."""
+    """Hash-bound B2 inputs; raw data, rater labels, and local paths stay outside the packet."""
 
     protocol_path: str | Path
+    preregistration_path: str | Path
     artifact_hashes: Mapping[str, str]
+    artifact_paths: Mapping[str, str | Path]
     seed: int
     bootstrap_replicates: int
     subject_cluster_max_t_passed: bool
     independent_subject_clusters: int
     event_subjects: int
     positive_primary_band_anchors: int
-    simulated_power: float
+    simulated_power_by_band: Mapping[str, float]
+    power_sigma_bits_by_band: Mapping[str, float]
+    required_subjects_by_band: Mapping[str, int]
+    available_event_subjects_by_band: Mapping[str, int]
+    power_source: str
     finite: bool
     firebreak_passed: bool
+    future_canary_passed: bool
     complete: bool
     baseline_ids: tuple[str, ...]
     selected_best_baseline: str
-    controls_passed: Mapping[str, bool]
-    classical_eeg_incremental_log_skill_lcb: float
+    baseline_claim_mode_comparator_eligible: bool
+    baseline_claim_mode_max_t_inference_eligible: bool
+    baseline_claim_mode_primary_target_eligible: bool
+    negative_control_upper_95_log_skill_bits_by_control: Mapping[str, float]
+    real_minus_control_lower_95_log_skill_bits_by_control: Mapping[str, float]
+    synthetic_known_signal_lcb_bits_by_band: Mapping[str, float]
+    nuisance_probe_accuracy_above_chance: float
+    comparator_acceptance_checks: Mapping[str, bool]
+    comparator_nuisance_challenger_lcb_bits_by_band: Mapping[str, float]
+    primary_ambiguity_handling: str
+    complete_follow_up_excluded_count_by_band: Mapping[str, int]
+    label_reproducibility_family: LabelReproducibilityFamilyResult | None
+    label_rater_target_provenance_sha256: str | None
+    label_chief_comparator_prediction_sha256: str | None
+    classical_eeg_incremental_log_skill_lcb_by_band: Mapping[str, float]
 
 
 def build_hnph_baseline_feasibility(evidence: HnphFeasibilityEvidence) -> dict[str, Any]:
-    """Evaluate the frozen B2 gate and return a publication-safe evidence payload."""
+    """Evaluate the frozen B2 protocol and return a publication-safe evidence packet."""
 
-    protocol, protocol_error = _load_protocol(evidence.protocol_path)
+    protocol, protocol_error = _load_yaml_object(evidence.protocol_path, "HNPH protocol")
+    preregistration, preregistration_error = _load_text_hash(evidence.preregistration_path, "preregistration addendum")
     protocol_sha256 = _hash_or_none(evidence.protocol_path)
-    invalid = _invalid_requirements(evidence, protocol, protocol_error)
+    frozen_protocol_sha256, frozen_protocol_error = _load_frozen_protocol_hash(evidence.preregistration_path)
     thresholds = _thresholds(protocol)
-    if invalid:
+    structural_failures = _structural_failures(
+        evidence,
+        protocol,
+        protocol_error,
+        preregistration,
+        preregistration_error,
+        protocol_sha256,
+        frozen_protocol_sha256,
+        frozen_protocol_error,
+        thresholds,
+    )
+    claim_scope = "internal_b2_feasibility_only_no_external_or_clinical_claim"
+    if structural_failures:
+        stop_reason = "integrity_fail"
         decision = EvidenceDecision(
             protocol_version=str(protocol.get("protocol_version", "unknown")),
             gate_passed=False,
             outcome_class="invalid_experiment",
-            failed_requirements=tuple(invalid),
+            failed_requirements=tuple(structural_failures),
             allowed_claims=(),
             blocked_claims=_blocked_claims(),
+            claim_scope=claim_scope,
+            stop_reason=stop_reason,
         )
-        stop_reason = "invalid_or_incomplete_hnph_baseline_evidence"
     else:
-        null_failures = _null_requirements(evidence, thresholds)
-        if null_failures:
+        stop_reason, gate_failures = _gate_failures(evidence, thresholds)
+        if gate_failures:
             decision = EvidenceDecision(
                 protocol_version=str(protocol["protocol_version"]),
                 gate_passed=False,
                 outcome_class="calibrated_null",
-                failed_requirements=tuple(null_failures),
-                allowed_claims=("bounded HNPH Phase-0 baseline-feasibility result",),
+                failed_requirements=tuple(gate_failures),
+                allowed_claims=("bounded HNPH B2 preregistration result",),
                 blocked_claims=_blocked_claims(),
+                claim_scope=claim_scope,
+                stop_reason=stop_reason,
             )
-            stop_reason = "bounded_or_calibrated_null_stops_h3"
         else:
+            stop_reason = "pass_authorize_h3"
             decision = EvidenceDecision(
                 protocol_version=str(protocol["protocol_version"]),
                 gate_passed=True,
                 outcome_class="dynamics_only_pass",
                 failed_requirements=(),
-                allowed_claims=("internal HNPH classical-baseline feasibility supports a small H3 model test",),
+                allowed_claims=("internal B2 evidence authorizes a frozen small H3 implementation",),
                 blocked_claims=_blocked_claims(),
+                claim_scope=claim_scope,
+                stop_reason=stop_reason,
             )
-            stop_reason = "h3_authorized_after_classical_eeg_residual_skill"
+    primary_band = thresholds["primary_band_id"]
     payload = {
         "schema": HNPH_BASELINE_FEASIBILITY_SCHEMA,
         "protocol_id": protocol.get("protocol_id"),
         "protocol_sha256": protocol_sha256,
-        "artifact_hashes": dict(sorted((str(key), str(value)) for key, value in evidence.artifact_hashes.items())),
-        "seed": int(evidence.seed),
-        "bootstrap_replicates": int(evidence.bootstrap_replicates),
+        "frozen_protocol_sha256": frozen_protocol_sha256,
+        "preregistration_hash": preregistration,
+        "artifact_hashes": _safe_hashes(evidence.artifact_hashes),
+        "seed": _safe_int(evidence.seed),
+        "bootstrap_replicates": _safe_int(evidence.bootstrap_replicates),
+        "epsilon_bits_per_anchor": thresholds["epsilon_bits_per_anchor"],
+        "effect_size": {
+            "bits_per_anchor": thresholds["epsilon_bits_per_anchor"],
+            "role": "preregistered_design_sensitivity_not_clinical_or_biological_effect",
+        },
         "thresholds": thresholds,
+        "frozen_power_inputs": {
+            "source": evidence.power_source,
+            "sigma_bits_by_band": _safe_float_mapping(evidence.power_sigma_bits_by_band),
+            "required_subjects_by_band": _safe_int_mapping(evidence.required_subjects_by_band),
+            "available_event_subjects_by_band": _safe_int_mapping(evidence.available_event_subjects_by_band),
+        },
         "observed": {
-            "independent_subject_clusters": int(evidence.independent_subject_clusters),
+            "independent_subject_clusters": _safe_int(evidence.independent_subject_clusters),
+            "event_subjects": _safe_int(evidence.event_subjects),
+            "positive_primary_band_anchors": _safe_int(evidence.positive_primary_band_anchors),
             "subject_cluster_max_t_passed": bool(evidence.subject_cluster_max_t_passed),
-            "event_subjects": int(evidence.event_subjects),
-            "positive_primary_band_anchors": int(evidence.positive_primary_band_anchors),
-            "simulated_power": float(evidence.simulated_power),
-            "classical_eeg_incremental_log_skill_lcb": float(evidence.classical_eeg_incremental_log_skill_lcb),
+            "simulated_power_by_band": _safe_float_mapping(evidence.simulated_power_by_band),
+            "classical_eeg_incremental_log_skill_lcb_by_band": _safe_float_mapping(evidence.classical_eeg_incremental_log_skill_lcb_by_band),
             "selected_best_baseline": evidence.selected_best_baseline,
             "baseline_ids": sorted(set(evidence.baseline_ids)),
-            "controls_passed": dict(sorted((str(key), bool(value)) for key, value in evidence.controls_passed.items())),
+            "baseline_claim_mode_comparator_eligible": bool(evidence.baseline_claim_mode_comparator_eligible),
+            "baseline_claim_mode_max_t_inference_eligible": bool(evidence.baseline_claim_mode_max_t_inference_eligible),
+            "baseline_claim_mode_primary_target_eligible": bool(evidence.baseline_claim_mode_primary_target_eligible),
+            "negative_control_upper_95_log_skill_bits_by_control": _safe_float_mapping(
+                evidence.negative_control_upper_95_log_skill_bits_by_control
+            ),
+            "real_minus_control_lower_95_log_skill_bits_by_control": _safe_float_mapping(
+                evidence.real_minus_control_lower_95_log_skill_bits_by_control
+            ),
+            "synthetic_known_signal_lcb_bits_by_band": _safe_float_mapping(
+                evidence.synthetic_known_signal_lcb_bits_by_band
+            ),
+            "nuisance_probe_accuracy_above_chance": (
+                float(evidence.nuisance_probe_accuracy_above_chance)
+                if _finite_number(evidence.nuisance_probe_accuracy_above_chance)
+                else None
+            ),
+            "comparator_acceptance_checks": _safe_bool_mapping(evidence.comparator_acceptance_checks),
+            "comparator_nuisance_challenger_lcb_bits_by_band": _safe_float_mapping(evidence.comparator_nuisance_challenger_lcb_bits_by_band),
+            "primary_ambiguity_handling": evidence.primary_ambiguity_handling,
+            "complete_follow_up_excluded_count_by_band": _safe_int_mapping(evidence.complete_follow_up_excluded_count_by_band),
+            "label_rater_target_provenance_sha256": evidence.label_rater_target_provenance_sha256,
+            "label_chief_comparator_prediction_sha256": evidence.label_chief_comparator_prediction_sha256,
+            "label_reproducibility_family": (
+                evidence.label_reproducibility_family.to_dict()
+                if evidence.label_reproducibility_family is not None
+                else None
+            ),
+            "primary_band_id": primary_band,
         },
         "decision": asdict(decision),
         "model_work_authorized": decision.gate_passed,
-        "claim_scope": "internal_baseline_feasibility_only_not_external_or_clinical_evidence",
+        "claim_scope": claim_scope,
         "stop_reason": stop_reason,
         "exit_code": 1 if decision.outcome_class == "invalid_experiment" else 0,
     }
@@ -131,8 +228,10 @@ def run_hnph_baseline_feasibility(
     markdown_path = out / "HNPH_BASELINE_FEASIBILITY.md"
     markdown_path.write_text(format_hnph_baseline_feasibility(payload), encoding="utf-8")
     manifest = {
-        "schema": "kahlus.hnph.baseline_feasibility_manifest.v1",
+        "schema": "kahlus.hnph.baseline_feasibility_manifest.v3",
         "protocol_sha256": payload["protocol_sha256"],
+        "frozen_protocol_sha256": payload["frozen_protocol_sha256"],
+        "preregistration_hash": payload["preregistration_hash"],
         "artifact_hashes": {
             "hnph_baseline_feasibility_json": hash_file(json_path),
             "hnph_baseline_feasibility_markdown": hash_file(markdown_path),
@@ -148,10 +247,13 @@ def format_hnph_baseline_feasibility(payload: Mapping[str, Any]) -> str:
 
     decision = payload["decision"]
     lines = [
-        "# HNPH Phase-0 Baseline Feasibility",
+        "# HNPH B2 Baseline Feasibility",
         "",
         f"- protocol: `{payload.get('protocol_id', 'unknown')}`",
         f"- protocol_sha256: `{payload.get('protocol_sha256', 'missing')}`",
+        f"- frozen_protocol_sha256: `{payload.get('frozen_protocol_sha256', 'missing')}`",
+        f"- preregistration_hash: `{payload.get('preregistration_hash', 'missing')}`",
+        f"- epsilon_bits_per_anchor: `{payload.get('epsilon_bits_per_anchor', 'missing')}`",
         f"- outcome_class: `{decision['outcome_class']}`",
         f"- model_work_authorized: `{payload['model_work_authorized']}`",
         f"- claim_scope: `{payload['claim_scope']}`",
@@ -162,53 +264,66 @@ def format_hnph_baseline_feasibility(payload: Mapping[str, Any]) -> str:
         "",
     ]
     failures = decision["failed_requirements"]
-    lines.extend(f"- {failure}" for failure in failures) if failures else lines.append("- none")
+    if failures:
+        lines.extend(f"- {failure}" for failure in failures)
+    else:
+        lines.append("- none")
     lines.extend(["", "## Claim Boundary", ""])
-    lines.extend(f"- allowed: {claim}" for claim in decision["allowed_claims"]) if decision["allowed_claims"] else lines.append("- allowed: none")
+    if decision["allowed_claims"]:
+        lines.extend(f"- allowed: {claim}" for claim in decision["allowed_claims"])
+    else:
+        lines.append("- allowed: none")
     lines.extend(f"- blocked: {claim}" for claim in decision["blocked_claims"])
     return "\n".join(lines) + "\n"
 
 
-def _load_protocol(path: str | Path) -> tuple[dict[str, Any], str | None]:
-    try:
-        payload = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
-        return {}, f"HNPH protocol could not be read: {exc}"
-    if not isinstance(payload, dict):
-        return {}, "HNPH protocol must be a YAML object"
-    return payload, None
-
-
-def _hash_or_none(path: str | Path) -> str | None:
-    try:
-        return hash_file(path)
-    except OSError:
-        return None
-
-
-def _invalid_requirements(
+def _structural_failures(
     evidence: HnphFeasibilityEvidence,
     protocol: Mapping[str, Any],
     protocol_error: str | None,
+    preregistration_hash: str | None,
+    preregistration_error: str | None,
+    protocol_sha256: str | None,
+    frozen_protocol_sha256: str | None,
+    frozen_protocol_error: str | None,
+    thresholds: Mapping[str, Any],
 ) -> list[str]:
     failures: list[str] = []
     if protocol_error:
         failures.append(protocol_error)
     if protocol.get("protocol_id") != _HNPH_PROTOCOL_ID:
-        failures.append("frozen HNPH v0.2 protocol is missing or mismatched")
+        failures.append("frozen HNPH v0.3 protocol is missing or mismatched")
+    if not _is_canonical_protocol_path(evidence.protocol_path):
+        failures.append("HNPH gate must use the repository's canonical v0.3 protocol path")
+    if not _is_canonical_preregistration_path(evidence.preregistration_path):
+        failures.append("HNPH gate must use the repository's canonical v0.3 preregistration addendum")
+    if preregistration_error or preregistration_hash is None:
+        failures.append(preregistration_error or "preregistration addendum hash is missing")
+    if frozen_protocol_error or frozen_protocol_sha256 is None:
+        failures.append(frozen_protocol_error or "preregistration addendum lacks the frozen protocol hash")
+    elif protocol_sha256 != frozen_protocol_sha256:
+        failures.append("canonical protocol hash differs from the preregistered frozen protocol hash")
     if not evidence.complete:
         failures.append("baseline-feasibility evidence is incomplete")
     if not evidence.finite:
         failures.append("baseline-feasibility payload contains non-finite values")
     if not evidence.firebreak_passed:
         failures.append("forecast firebreak audit did not pass")
-    if isinstance(evidence.seed, bool) or not isinstance(evidence.seed, int):
+    if not evidence.future_canary_passed:
+        failures.append("future-canary audit did not pass")
+    if not _is_int(evidence.seed):
         failures.append("seed must be an integer")
-    thresholds = _thresholds(protocol)
-    if evidence.bootstrap_replicates < thresholds["bootstrap_replicates"]:
+    if not _is_int(evidence.bootstrap_replicates) or evidence.bootstrap_replicates < thresholds["bootstrap_replicates"]:
         failures.append("subject-cluster bootstrap replicate count is below the frozen requirement")
     if not evidence.subject_cluster_max_t_passed:
         failures.append("subject-cluster max-t inference did not pass")
+    if evidence.primary_ambiguity_handling != thresholds["primary_ambiguity_handling"]:
+        failures.append("primary ambiguity handling differs from the frozen protocol")
+    if (
+        thresholds["positive_control_id"] not in thresholds["required_controls"]
+        or thresholds["nuisance_probe_control_id"] not in thresholds["required_controls"]
+    ):
+        failures.append("frozen control-suite roles are incomplete")
     artifact_keys = set(evidence.artifact_hashes)
     missing_artifacts = sorted(_REQUIRED_ARTIFACT_HASHES - artifact_keys)
     if missing_artifacts:
