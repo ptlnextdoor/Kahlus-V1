@@ -1,15 +1,33 @@
 # Remediation Roadmap
 
-No pull request should merge and no expensive A100 job should launch until the P0 protocol audit is complete.
+No claim-bearing evaluator, training, or expensive A100 pull request should
+merge until the P0 protocol audit is complete. This governance freeze may merge
+to establish those boundaries.
+
+## C0 HNPH v0.2 Invalidation Freeze
+
+The HNPH v0.2 protocol, machine-readable freeze, canonical implementation
+ledger, invalidated result registry, and non-destructive quarantine policy are
+now documented. This C0 state invalidates the historical 3.116 overlapping GRU
+attribution, the failed seven-A100 rank-drift run, and the completed six-A100 run
+whose final gate was false. It does not implement the evaluator or authorize
+training.
+
+Raw source caches must be preserved. Derived prepared data, checkpoints, and
+evidence associated with invalid runs must be quarantined and excluded from
+canonical discovery. Expensive training remains blocked until a clean rebuild
+passes source-hash, zero-person-overlap, physical-unit/rate/channel, no-silent-
+truncation, baseline-completeness, distributed-lockstep, and independent
+reproduction gates.
 
 ## Delivery State
 
 - R0 forensic audit merged in `564d80f2`.
 - R1 forecast/provenance contract merged in `06654d27`.
-- R2 is the pending non-overlapping-builder implementation. It is the first
-  code path that can construct a claim-eligible forecast example; historical
-  shifted-window builders remain readable only for compatibility and emit
-  `kahlus.forecast.v1_overlap` as ineligible metadata.
+- R2 non-overlapping builders merged in PR #56. They are a necessary generic
+  forecast construction repair, not HNPH evaluator, baseline, or training
+  authorization; historical shifted-window builders remain readable only for
+  compatibility and emit `kahlus.forecast.v1_overlap` as ineligible metadata.
 - `p0_remediation_complete=false` remains in effect. No A100 work is allowed
   until R1 through R6 are merged and their local protocol gates pass.
 
