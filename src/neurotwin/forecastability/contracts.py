@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 from typing import Any, Literal
+from urllib.parse import urlparse
 
 
 CANONICAL_PHYSICAL_UNITS = frozenset({"V", "mV", "uV", "nV"})
@@ -149,7 +150,7 @@ class PhysicalSignalRecord:
         )
 
     def manifest_metadata(self) -> dict[str, Any]:
-        """Return JSON-safe sidecar metadata for existing recording manifests."""
+        """Return a publication-safe sidecar; local source locations stay local."""
 
         return {
             "physical_record_schema_version": "hnph_physical_record_v1",
@@ -157,9 +158,9 @@ class PhysicalSignalRecord:
             "sampling_rate_hz": self.sampling_rate_hz,
             "physical_unit": self.physical_unit,
             "duration_s": self.duration_s,
-            "raw_source_uri": self.raw_source_uri,
+            "raw_source_uri": _public_source_uri(self.raw_source_uri),
             "source_sha256": self.source_sha256,
-            "annotation_uri": self.annotation_uri,
+            "annotation_uri": _public_source_uri(self.annotation_uri),
             "lead_geometry": [
                 {
                     "lead_id": lead.lead_id,
@@ -180,6 +181,17 @@ class PhysicalSignalRecord:
                 for interval in self.quality_intervals
             ],
         }
+
+
+def _public_source_uri(value: str | None) -> str | None:
+    if value is None:
+        return None
+    parsed = urlparse(value)
+    if parsed.scheme in {"", "file"} or value.startswith(("/", "~", "\\")):
+        return None
+    if len(value) > 2 and value[1] == ":" and value[2] in {"/", "\\"}:
+        return None
+    return value
 
 
 @dataclass(frozen=True)

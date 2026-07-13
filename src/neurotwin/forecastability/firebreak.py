@@ -12,6 +12,8 @@ from neurotwin.forecastability.registry import PhysicalRecordRegistry
 
 FORBIDDEN_MODEL_INPUT_FIELDS = frozenset(
     {
+        "patient",
+        "patient_id",
         "subject_id",
         "session_id",
         "dataset_id",
