@@ -362,28 +362,107 @@ def _structural_failures(
     return failures
 
 
-def _null_requirements(evidence: HnphFeasibilityEvidence, thresholds: Mapping[str, Any]) -> list[str]:
-    failures: list[str] = []
-    for observed_name, threshold_name in (
-        ("independent_subject_clusters", "minimum_independent_subject_clusters"),
-        ("event_subjects", "minimum_event_subjects"),
-        ("positive_primary_band_anchors", "minimum_positive_primary_band_anchors"),
+def _gate_failures(evidence: HnphFeasibilityEvidence, thresholds: Mapping[str, Any]) -> tuple[str, list[str]]:
+    primary_band = thresholds["primary_band_id"]
+    if evidence.independent_subject_clusters < thresholds["minimum_independent_subject_clusters"] or evidence.event_subjects < thresholds["minimum_event_subjects"] or evidence.positive_primary_band_anchors < thresholds["minimum_positive_primary_band_anchors"]:
+        return "underpowered", ["subject, event-subject, or primary-anchor feasibility count is below threshold"]
+    required_subjects = evidence.required_subjects_by_band[primary_band]
+    available_subjects = evidence.available_event_subjects_by_band[primary_band]
+    simulated_power = evidence.simulated_power_by_band.get(primary_band)
+    if required_subjects > available_subjects or not _finite_number(simulated_power) or float(simulated_power) < thresholds["target_power"]:
+        return "underpowered", ["primary-band power gate is not met before claim-mode evaluation"]
+    baseline_ids = set(evidence.baseline_ids)
+    missing_baselines = sorted(set(thresholds["required_baselines"]) - baseline_ids)
+    if missing_baselines or evidence.selected_best_baseline not in baseline_ids:
+        return "baseline_fail", ["frozen nuisance baseline ladder is incomplete or unselected"]
+    if evidence.selected_best_baseline != "semi_markov_competing_risk":
+        return "baseline_fail", ["chief semi-Markov comparator is not the selected nuisance baseline"]
+    if (
+        not evidence.baseline_claim_mode_comparator_eligible
+        or not evidence.baseline_claim_mode_max_t_inference_eligible
+        or not evidence.baseline_claim_mode_primary_target_eligible
     ):
-        if int(getattr(evidence, observed_name)) < int(thresholds[threshold_name]):
-            failures.append(f"{observed_name} is below the frozen feasibility threshold")
-    if not math.isfinite(float(evidence.simulated_power)) or evidence.simulated_power < float(thresholds["endpoint_power_minimum"]):
-        failures.append("simulated primary-endpoint power is below the frozen feasibility threshold")
-    skill = float(evidence.classical_eeg_incremental_log_skill_lcb)
-    if not math.isfinite(skill) or skill <= 0:
-        failures.append("classical EEG-plus-nuisance residual-skill lower bound is not positive")
-    return failures
+        return "baseline_fail", ["baseline artifact is marked diagnostic-only rather than claim-mode eligible"]
+    failed_comparator = sorted(name for name in thresholds["required_comparator_checks"] if not evidence.comparator_acceptance_checks.get(name, False))
+    if failed_comparator:
+        return "baseline_fail", ["chief comparator acceptance checks failed: " + ",".join(failed_comparator)]
+    challenger_lcb = evidence.comparator_nuisance_challenger_lcb_bits_by_band.get(primary_band)
+    if not _finite_number(challenger_lcb):
+        return "baseline_fail", ["primary-band nuisance-challenger adequacy audit is missing"]
+    if float(challenger_lcb) >= thresholds["epsilon_bits_per_anchor"]:
+        return "comparator_challenger_exceeds_epsilon", ["a nuisance-only challenger improves the chief comparator by epsilon or more"]
+    failed_controls = sorted(
+        name
+        for name in thresholds["negative_controls"]
+        if not _finite_number(evidence.negative_control_upper_95_log_skill_bits_by_control.get(name))
+        or float(evidence.negative_control_upper_95_log_skill_bits_by_control[name]) > 0
+        or not _finite_number(evidence.real_minus_control_lower_95_log_skill_bits_by_control.get(name))
+        or float(evidence.real_minus_control_lower_95_log_skill_bits_by_control[name]) <= 0
+    )
+    if failed_controls:
+        return "control_fail", ["required control confidence bands did not pass: " + ",".join(failed_controls)]
+    synthetic_lcb = evidence.synthetic_known_signal_lcb_bits_by_band.get(primary_band)
+    if not _finite_number(synthetic_lcb) or float(synthetic_lcb) < thresholds["epsilon_bits_per_anchor"]:
+        return "control_fail", ["synthetic known-signal lower bound is below epsilon"]
+    if (
+        not _finite_number(evidence.nuisance_probe_accuracy_above_chance)
+        or float(evidence.nuisance_probe_accuracy_above_chance) > thresholds["nuisance_probe_maximum_accuracy_above_chance"]
+    ):
+        return "control_fail", ["nuisance probe exceeds the frozen chance margin"]
+    family = evidence.label_reproducibility_family
+    if family is None:
+        return "label_reliability_unavailable", ["label-reproducibility family is unavailable"]
+    if (
+        family.schema != LABEL_REPRODUCIBILITY_FAMILY_SCHEMA
+        or family.method != thresholds["label_family_method"]
+        or tuple(family.outcome_alphabet) != thresholds["label_outcome_alphabet"]
+        or family.probability_floor != thresholds["probability_floor"]
+        or family.bootstrap_replicates < thresholds["bootstrap_replicates"]
+        or not family.max_t_passed
+    ):
+        return "label_reliability_unavailable", ["label-reproducibility family lacks frozen five-way leave-one-rater-out max-t provenance"]
+    if tuple(family.family_cell_ids) != thresholds["lead_band_ids"]:
+        return "label_reliability_unavailable", ["label-reproducibility family does not cover every preregistered lead band"]
+    if any(
+        reference.bootstrap_replicates < thresholds["bootstrap_replicates"]
+        or reference.independent_rater_count < thresholds["minimum_independent_raters"]
+        or reference.subject_count < thresholds["minimum_independent_subject_clusters"]
+        or reference.probability_floor != thresholds["probability_floor"]
+        or reference.interval_method != "subject_cluster_bootstrap_max_t_one_sided"
+        or not _finite_number(reference.subject_balanced_log_skill_bits)
+        or not _finite_number(reference.subject_bootstrap_lcb_95_bits)
+        for reference in family.references_by_family_cell.values()
+    ):
+        return "label_reliability_unavailable", ["one or more label-reproducibility band references are incomplete"]
+    reference = family.references_by_family_cell.get(primary_band)
+    if reference is None or not _finite_number(reference.subject_bootstrap_lcb_95_bits):
+        return "label_reliability_unavailable", ["primary-band label-reproducibility reference is incomplete"]
+    if (
+        family.independent_rater_count < thresholds["minimum_independent_raters"]
+        or family.subject_count < thresholds["minimum_independent_subject_clusters"]
+    ):
+        return "label_reliability_unavailable", ["label-reproducibility family lacks frozen rater or subject support"]
+    if reference.subject_bootstrap_lcb_95_bits < thresholds["epsilon_bits_per_anchor"]:
+        return "label_reliability_below_epsilon", ["label-reproducibility reference lower bound is below epsilon"]
+    residual_lcb = evidence.classical_eeg_incremental_log_skill_lcb_by_band.get(primary_band)
+    if not _finite_number(residual_lcb) or float(residual_lcb) < thresholds["epsilon_bits_per_anchor"]:
+        return "residual_below_epsilon", ["classical EEG-plus-nuisance residual-skill lower bound is below epsilon"]
+    return "pass_authorize_h3", []
 
 
 def _thresholds(protocol: Mapping[str, Any]) -> dict[str, Any]:
-    feasibility = protocol.get("feasibility_gate") if isinstance(protocol.get("feasibility_gate"), Mapping) else {}
-    inference = protocol.get("primary_endpoint", {}).get("inference", {}) if isinstance(protocol.get("primary_endpoint"), Mapping) else {}
-    ladder = protocol.get("baseline_ladder") if isinstance(protocol.get("baseline_ladder"), Mapping) else {}
-    controls = protocol.get("control_suite") if isinstance(protocol.get("control_suite"), Mapping) else {}
+    feasibility = _mapping(protocol.get("feasibility_gate"))
+    inference = _mapping(_mapping(protocol.get("primary_endpoint")).get("inference"))
+    ladder = _mapping(protocol.get("baseline_ladder"))
+    controls = _mapping(protocol.get("control_suite"))
+    effect = _mapping(protocol.get("effect_threshold"))
+    comparator = _mapping(protocol.get("semi_markov_comparator_acceptance"))
+    target = _mapping(_mapping(protocol.get("target")).get("b2_primary_outcome"))
+    label_reliability = _mapping(protocol.get("label_construct_validity"))
+    lead_bands = protocol.get("lead_bands_minutes")
+    required_controls = tuple(str(value) for value in controls.get("required", ()))
+    positive_control_id = str(controls.get("positive_control", ""))
+    nuisance_probe_control_id = str(controls.get("nuisance_probe_control", ""))
     return {
         "minimum_independent_subject_clusters": int(feasibility.get("minimum_independent_subject_clusters", 10**9)),
         "minimum_event_subjects": int(feasibility.get("minimum_event_subjects", 10**9)),
