@@ -30,6 +30,9 @@ reproduction gates.
   compatibility and emit `kahlus.forecast.v1_overlap` as ineligible metadata.
 - `p0_remediation_complete=false` remains in effect. No A100 work is allowed
   until R1 through R6 are merged and their local protocol gates pass.
+- M1 MOABB window diagnostics are a mentor-facing historical-task explanation,
+  not a P0 substitute: they must preserve the overlap label and cannot validate
+  the recovered numerical result without the missing checkpoint.
 
 ## P0: Evidence-Invalidating
 

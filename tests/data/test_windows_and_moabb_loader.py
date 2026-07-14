@@ -3,7 +3,7 @@ from unittest import mock
 
 import numpy as np
 
-from neurotwin.adapters.moabb import load_moabb_trials
+from neurotwin.adapters.moabb import load_balanced_moabb_subject_trials, load_moabb_trials
 from neurotwin.adapters.synthetic import make_synthetic_event_batch
 from neurotwin.data.windows import WindowSpec, batch_to_windows
 
@@ -42,3 +42,66 @@ class WindowsAndMoabbLoaderTests(unittest.TestCase):
         self.assertEqual(trials[0]["subject"], 1)
         self.assertEqual(trials[0]["label"], "left")
         self.assertEqual(trials[0]["sampling_rate"], 256.0)
+
+    def test_load_moabb_trials_preserves_epoch_sampling_channel_names_and_microvolts(self):
+        class FakeEpochs:
+            info = {"sfreq": 250.0}
+            ch_names = ["C3", "C4", "Cz"]
+
+            @staticmethod
+            def get_data():
+                return np.full((2, 3, 5), 2e-6, dtype=np.float32)
+
+        fake_dataset = mock.Mock(unit_factor=1e6)
+        fake_dataset_cls = mock.Mock(return_value=fake_dataset)
+        fake_paradigm = mock.Mock()
+        fake_paradigm.get_data.return_value = (
+            FakeEpochs(),
+            np.array(["left", "right"]),
+            [
+                {"subject": 1, "session": "0", "run": "0"},
+                {"subject": 2, "session": "0", "run": "1"},
+            ],
+        )
+
+        with mock.patch("neurotwin.adapters.moabb.require_moabb"), mock.patch(
+            "neurotwin.adapters.moabb._resolve_moabb_dataset", return_value=fake_dataset_cls
+        ), mock.patch("neurotwin.adapters.moabb._build_moabb_paradigm", return_value=fake_paradigm):
+            trials = load_moabb_trials("FakeDataset", subjects=(1, 2))
+
+        self.assertEqual(trials[0]["sampling_rate"], 250.0)
+        self.assertEqual(trials[0]["channel_names"], ["C3", "C4", "Cz"])
+        self.assertEqual(trials[0]["signal_unit"], "uV")
+        self.assertTrue(np.allclose(trials[0]["signal"], 2.0))
+        self.assertEqual(trials[0]["signal_source"], "MOABB-preprocessed epochs")
+        self.assertEqual(trials[0]["moabb_dataset"], "FakeDataset")
+        self.assertEqual(trials[0]["moabb_paradigm"], "LeftRightImagery")
+        self.assertIn("moabb_version", trials[0])
+        self.assertIn("moabb_filters", trials[0])
+        self.assertIn("moabb_preprocessing", trials[0])
+        self.assertEqual(trials[0]["unit_factor_provenance"]["factor"], 1e6)
+        self.assertEqual(trials[0]["unit_factor_provenance"]["operation"], "multiply")
+
+    def test_balanced_subject_loader_is_incremental_and_preserves_round_robin_semantics(self):
+        def fake_load(_dataset_name, subjects, **_kwargs):
+            subject = subjects[0]
+            count = {1: 4, 2: 1, 3: 4}[subject]
+            return [
+                {
+                    "signal": np.full((2, 1), subject * 10 + index, dtype=np.float32),
+                    "subject": subject,
+                    "run": str(index),
+                    "metadata": {"index": index},
+                }
+                for index in range(count)
+            ]
+
+        with mock.patch("neurotwin.adapters.moabb.load_moabb_trials", side_effect=fake_load) as loader:
+            trials = load_balanced_moabb_subject_trials(
+                "FakeDataset",
+                (1, 2, 3),
+                max_trials=6,
+            )
+
+        self.assertEqual([(trial["subject"], trial["run"]) for trial in trials], [(1, "0"), (2, "0"), (3, "0"), (1, "1"), (3, "1"), (1, "2")])
+        self.assertTrue(all(len(call.kwargs["subjects"]) == 1 for call in loader.call_args_list))
