@@ -21,10 +21,9 @@ from typing import Iterable
 
 import numpy as np
 
-try:
-    import matplotlib.pyplot as plt
-except Exception as exc:  # pragma: no cover
-    raise SystemExit(f"matplotlib is required: {exc}")
+# Imported only after NPZ validation so missing plotting dependencies cannot mask
+# a scientific-contract violation in an input artifact.
+plt = None
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -690,9 +689,18 @@ def main() -> None:
     ap.add_argument("--mentor-two-figures", action="store_true", help="Write only the two compact mentor-facing diagnostics")
     args = ap.parse_args()
 
+    # Validate source provenance before requiring an optional plotting dependency.
+    data = load_data(args)
+
+    global plt
+    try:
+        import matplotlib.pyplot as matplotlib_pyplot
+    except Exception as exc:  # pragma: no cover
+        raise SystemExit(f"matplotlib is required: {exc}")
+    plt = matplotlib_pyplot
+
     apply_publication_style()
     with fresh_atomic_output_directory(args.out) as out:
-        data = load_data(args)
         channels = selected_channels(data.channel_names, args.max_display_channels, args.channels)
 
         if args.mentor_two_figures:
