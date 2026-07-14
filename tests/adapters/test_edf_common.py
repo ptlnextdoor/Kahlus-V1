@@ -109,6 +109,31 @@ class EdfCommonAdapterTests(unittest.TestCase):
                 quality_intervals=(QualityInterval(0.0, 60.0, "valid"),),
             )
 
+    def test_redacts_local_source_uris_from_data_cards(self) -> None:
+        header = self._header(
+            _Edf(
+                duration=60.0,
+                signals=(_Signal("EEG Fpz-Cz", 100.0, "uV"),),
+                annotations=(),
+            )
+        )
+        record = build_physical_record_from_edf(
+            header,
+            record_id="rec",
+            subject_id="sub",
+            session_id="ses",
+            dataset_id="fixture",
+            site_id=None,
+            raw_source_uri="file:///private/raw/rec.edf",
+            annotation_uri="/private/raw/rec-hypnogram.edf",
+            quality_intervals=(QualityInterval(0.0, 60.0, "valid"),),
+        )
+
+        card = build_edf_data_card(header, record)
+        self.assertIsNone(card["raw_source_uri"])
+        self.assertIsNone(card["annotation_uri"])
+        self.assertNotIn("/private/raw", json.dumps(card))
+
     @unittest.skipIf(edfio is None, "edfio is required for the real EDF reader fixture")
     def test_default_reader_extracts_real_edf_header_without_loading_signal_values(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

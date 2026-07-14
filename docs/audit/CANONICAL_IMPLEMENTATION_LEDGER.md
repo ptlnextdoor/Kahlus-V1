@@ -1,8 +1,10 @@
-# HNPH v0.2 Canonical Implementation Ledger
+# HNPH Canonical Implementation Ledger
 
-**Canonical protocol:** `kahlus.hnph.phase0.v0.2`
-**Ledger date:** 2026-07-10
-**Current authorization:** Documentation and data-governance remediation only
+**C0 canonical protocol:** `kahlus.hnph.phase0.v0.2`
+**Active B2 preregistration:** `kahlus.hnph.phase0.v0.3`
+**Ledger date:** 2026-07-13
+**Current authorization:** B2 implementation and data-governance remediation
+only; claim-mode evaluation remains blocked
 
 This ledger separates a frozen decision from an implemented and validated
 capability. A checked documentation row does not authorize training or a result
@@ -18,6 +20,27 @@ claim.
 | `docs/audit/invalidated_result_registry.json` | Machine-readable invalidation facts | Active in C0 |
 | `docs/audit/DATA_MIGRATION_AND_QUARANTINE.md` | Retention, migration, and quarantine rules | Active in C0 |
 | `docs/audit/REMEDIATION_ROADMAP.md` | Sequencing and launch authorization | Updated in C0 |
+
+## v0.3 B2 Preregistration Additions
+
+v0.3 preserves the v0.2 C0 freeze and adds claim-mode prerequisites before any
+held-subject or CAP outcome is used for a claim. It does not invalidate a prior
+claim-mode result because none has been produced.
+
+| Artifact | Canonical responsibility | State |
+| --- | --- | --- |
+| `docs/research/kahlus_hnph_protocol_v0.3.md` | Concise v0.3 authority boundary and claim contract | Frozen before claim mode |
+| `docs/research/hnph_b2_preregistration_addendum.md` | B2 design sensitivity, comparator, label-validity, and replication rules | Frozen before claim mode |
+| `configs/protocol/hnph_phase0_v0.3.yaml` | Machine-readable v0.3 B2 preregistration | Frozen before claim mode |
+
+The added B2 gates are: `epsilon = 0.02` bits/anchor as a design-sensitivity
+floor; a validated semi-Markov comparator with a finite nuisance-challenger
+audit; a five-way `no_event/Wake/NREM/REM/Ambiguous` operational target;
+leave-one-rater-out label-reproducibility evidence; and a post-B2 unaffiliated
+replication milestone. The comparator audit is not an asserted upper bound on
+real-data misspecification. The B2 gate opens and hash-binds typed runner
+artifacts, binds the canonical v0.3 protocol SHA-256 to the addendum, and does
+not accept caller flags or hash-shaped strings as H3 authorization.
 
 ## Frozen Contract Ledger
 
@@ -59,6 +82,12 @@ The following remain incomplete after C0 and block expensive training:
 7. One-device, two-process lockstep, resume-parity, and rank-completeness tests.
 8. Clean raw-to-evidence reproduction and independent score verification.
 9. External-test seal and explicit red-team approval.
+10. Multi-rater/soft-label reproducibility reference with the v0.3 frozen
+    subject/rater support and max-t provenance.
 
 Until every applicable gate is recorded as passing, `CAP opened=false`,
 `training_authorized=false`, and `claim_eligible=false` remain controlling.
+
+After B2, independent-replication wording remains blocked until a third cohort
+and an unaffiliated falsification-oriented run complete the frozen replication
+packet. That milestone does not open CAP or substitute for B2.

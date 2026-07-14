@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from neurotwin.forecastability.contracts import LeadGeometry, PhysicalSignalRecord, QualityInterval
+from neurotwin.forecastability.contracts import LeadGeometry, PhysicalSignalRecord, QualityInterval, _public_source_uri
 from neurotwin.repro import hash_file, write_json
 
 
@@ -65,6 +65,7 @@ def read_edf_header(
     path: str | Path,
     *,
     reader: Callable[[Path], Any] | None = None,
+    require_signals: bool = True,
 ) -> EdfHeaderRecord:
     """Read EDF header metadata and EDF+ annotations without materializing samples."""
 
@@ -73,7 +74,7 @@ def read_edf_header(
         raise FileNotFoundError(f"EDF source does not exist or is not a file: {source_path}")
     edf = (reader or _default_edf_reader)(source_path)
     signals = tuple(_signal_header(signal) for signal in tuple(getattr(edf, "signals", ())))
-    if not signals:
+    if require_signals and not signals:
         raise EdfReadError("EDF contains no ordinary signals")
     labels = [signal.label for signal in signals]
     if len(set(labels)) != len(labels):
@@ -171,9 +172,9 @@ def build_edf_data_card(header: EdfHeaderRecord, record: PhysicalSignalRecord) -
         "lead_count": len(record.leads),
         "lead_ids": [lead.lead_id for lead in record.leads],
         "annotation_count": len(header.annotations),
-        "raw_source_uri": record.raw_source_uri,
+        "raw_source_uri": _public_source_uri(record.raw_source_uri),
         "source_sha256": record.source_sha256,
-        "annotation_uri": record.annotation_uri,
+        "annotation_uri": _public_source_uri(record.annotation_uri),
         "quality_interval_count": len(record.quality_intervals),
         "valid_intervals_s": [[start_s, end_s] for start_s, end_s in record.valid_intervals_s],
         "local_source_path_recorded": False,

@@ -88,12 +88,14 @@ class ForecastFirebreakTests(unittest.TestCase):
         report = audit_model_input_mapping(
             {
                 "signal": object(),
+                "patient": object(),
+                "patient_id": object(),
                 "subject_id": object(),
                 "target_label": object(),
             }
         )
         self.assertFalse(report.passed)
-        self.assertEqual(len(report.violations), 2)
+        self.assertEqual(len(report.violations), 4)
 
 
 if __name__ == "__main__":
