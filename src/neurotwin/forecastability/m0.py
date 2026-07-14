@@ -19,9 +19,9 @@ from neurotwin.data.split_manifest import RecordingRecord, SplitManifest, build_
 from neurotwin.eeg_v1.dataset import build_future_forecasting_task, make_synthetic_eeg_v1_dataset
 
 
-RUNNER_IDS = ("persistence", "linear_ridge", "gbm", "mlp", "tcn", "transformer", "model")
+RUNNER_IDS = ("persistence", "linear_ridge", "gbm", "mlp", "tcn", "transformer", "neurotwin")
 DISPLAY_IDS = {"linear_ridge": "ridge"}
-REQUIRED_ROWS = ("persistence", "ridge", "gbm", "mlp", "tcn", "transformer", "model")
+REQUIRED_ROWS = ("persistence", "ridge", "gbm", "mlp", "tcn", "transformer", "neurotwin")
 
 
 def run_m0_gate(

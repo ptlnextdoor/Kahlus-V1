@@ -68,7 +68,7 @@ This matrix maps `docs/research/equation_ledger.md` to the current runnable repo
 | EQ-035 | docs only; deferred | none | none | none | No eigenvalue stability criterion. |
 | EQ-036 | docs only; deferred | none | none | none | No spectral-radius enforcement. |
 | EQ-037 | docs only; deferred | none | none | none | No stability penalty. |
-| EQ-038 | docs only; scaffolded proxy | `src/neurotwin/models/nfc/uncertainty.py` emits positive maps | `tests/models/test_nfc.py` | `uncertainty_calibration.csv` proxy | No NLL training objective or predictive variance likelihood. |
+| EQ-038 | implemented; not scientifically validated | `src/neurotwin/models/nfc/uncertainty.py`; `src/neurotwin/training/prepared_metrics.py` | `tests/models/test_nfc.py`; prepared-training tests | likelihood-trained predictive scale | Gaussian NLL is wired; held-out calibration, reliability, and coverage remain required. |
 | EQ-039 | scaffolded proxy; needs evidence | `src/neurotwin/benchmarks/nfc_suite.py` writes calibration proxy | `tests/benchmarks/test_nfc_suite.py` | `uncertainty_calibration.csv` with `proxy_source=mse_derived_suite_proxy` | No interval coverage target or real calibration claim. |
 | EQ-040 | docs only; deferred | none | none | none | No InfoNCE objective or leakage-safe contrastive sampler. |
 | EQ-041 | docs only; deferred | none | none | none | No Koopman observable model. |

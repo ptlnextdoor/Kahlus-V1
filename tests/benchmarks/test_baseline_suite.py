@@ -219,6 +219,14 @@ class BaselineSuiteTests(unittest.TestCase):
         self.assertIn("pair_operator", runner_ids)
         self.assertIn("pair_operator_no_pair_state", runner_ids)
 
+    def test_executable_baseline_ids_are_unique_and_have_no_model_alias(self):
+        runner_ids = [runner.model_id for runner in EXECUTABLE_BASELINE_RUNNERS]
+
+        self.assertEqual(len(runner_ids), len(set(runner_ids)))
+        self.assertNotIn("model", runner_ids)
+        self.assertIn("ssm_fallback", runner_ids)
+        self.assertIn("tiny_ssm", runner_ids)
+
     def test_brainvista_style_stimulus_features_are_history_only_by_default(self):
         x = np.arange(1 * 5 * 3, dtype=np.float32).reshape(1, 5, 3)
         config = BrainVistaStyleConfig(stimulus_lag_steps=1, include_current_stimulus=False, hrf_lag_steps=2)

@@ -8,6 +8,8 @@ from typing import Any
 import torch
 from torch import nn
 
+from neurotwin.models.causal import CausalHRFAdapter, CausalTransformerEncoder
+
 
 @dataclass(frozen=True)
 class NeuroTwinPairOperatorConfig:
@@ -125,9 +127,8 @@ class NeuroTwinPairOperator(nn.Module):
         )
         self.pair_update = nn.Sequential(nn.Linear(resolved.latent_dim, resolved.latent_dim), nn.GELU())
         self.hrf_adapter = nn.Sequential(
-            nn.Conv1d(resolved.latent_dim, resolved.latent_dim, kernel_size=3, padding=resolved.hrf_delay_steps),
+            CausalHRFAdapter(resolved.latent_dim, delay_steps=resolved.hrf_delay_steps),
             nn.GELU(),
-            nn.Conv1d(resolved.latent_dim, resolved.latent_dim, kernel_size=1),
         )
         self.temporal = _build_temporal_core(resolved)
         self.forecast_heads = nn.ModuleDict({modality: nn.Linear(resolved.latent_dim, 1) for modality in sorted(output_dims)})
@@ -147,9 +148,11 @@ class NeuroTwinPairOperator(nn.Module):
         batch: dict[str, torch.Tensor],
         target_modality: str,
         task: str = "readout",
+        return_output: bool = False,
         **kwargs: Any,
-    ) -> torch.Tensor:
-        return self.forward_task(batch, target_modality=target_modality, task=task, **kwargs)["prediction"]
+    ) -> torch.Tensor | dict[str, torch.Tensor]:
+        output = self.forward_task(batch, target_modality=target_modality, task=task, **kwargs)
+        return output if return_output else output["prediction"]
 
     def forward_task(
         self,
@@ -198,8 +201,13 @@ class NeuroTwinPairOperator(nn.Module):
             "latent": latent_summary,
             "projection": self.projection_head(latent_summary.mean(dim=1)),
             "pair_confidence": self._pair_confidence(target_modality, dtype=prediction.dtype, device=prediction.device),
-            "expert_utilization": self._expert_utilization(source_modality, target_modality, task, prediction.device),
         }
+        if self.use_pair_state and self.output_dims[target_modality] <= self.pair_confidence_max_parcels:
+            output["pair_mixing_matrix"] = self._pair_mixing_matrix(
+                target_modality,
+                dtype=prediction.dtype,
+                device=prediction.device,
+            )
         if self.use_uncertainty_head:
             output["uncertainty"] = torch.nn.functional.softplus(self.uncertainty_head(latent).squeeze(-1)) + 1e-6
         if self.use_pair_uncertainty:
@@ -232,6 +240,11 @@ class NeuroTwinPairOperator(nn.Module):
         weights = (left @ right.T) / sqrt(float(max(1, self.pair_rank)))
         return torch.softmax(weights, dim=-1)
 
+    def _pair_mixing_matrix(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+        left, right = self._pair_factors(target_modality, dtype=dtype, device=device)
+        normalization = sqrt(float(max(1, left.shape[0]) * max(1, self.pair_rank)))
+        return (left @ right.T) / normalization
+
     def _pair_confidence(self, target_modality: str, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
         if not self.use_pair_state:
             dim = self.output_dims[target_modality]
@@ -257,8 +270,6 @@ class NeuroTwinPairOperator(nn.Module):
         batch, time, parcels, latent_dim = node_tokens.shape
         flat = node_tokens.permute(0, 2, 3, 1).reshape(batch * parcels, latent_dim, time)
         context = self.hrf_adapter(flat)
-        if context.shape[-1] > time:
-            context = context[..., :time]
         return context.reshape(batch, parcels, latent_dim, time).permute(0, 3, 1, 2)
 
     def _temporal_operator(self, node_tokens: torch.Tensor) -> torch.Tensor:
@@ -277,17 +288,6 @@ class NeuroTwinPairOperator(nn.Module):
             current = current + self.refinement(torch.stack((current, uncertainty), dim=-1)).squeeze(-1)
         return current
 
-    def _expert_utilization(self, source_modality: str, target_modality: str, task: str, device: torch.device) -> torch.Tensor:
-        values = torch.zeros(6, dtype=torch.float32, device=device)
-        values[0] = 1.0 if target_modality == "fmri" else 0.0
-        values[1] = 1.0 if source_modality == "stimulus" else 0.0
-        values[2] = 1.0 if self.use_pair_state else 0.0
-        values[3] = 1.0 if task == "reconstruction" else 0.0
-        values[4] = 1.0 if task == "forecast" else 0.0
-        values[5] = 1.0 if self.use_uncertainty_head else 0.0
-        return values / values.sum().clamp_min(1.0)
-
-
 def _resolve_pair_operator_config(
     config: NeuroTwinPairOperatorConfig | Mapping[str, Any] | None,
     options: Mapping[str, Any],
@@ -305,7 +305,9 @@ def _resolve_pair_operator_config(
 
 def _build_temporal_core(config: NeuroTwinPairOperatorConfig) -> nn.Module:
     backbone = config.backbone.lower()
-    if backbone in {"gru", "ssm", "ssm_fallback"}:
+    if backbone == "ssm":
+        raise ValueError('pair-operator backbone="ssm" is ambiguous; select "gru" or "transformer"')
+    if backbone in {"gru", "ssm_fallback"}:
         return nn.GRU(
             config.latent_dim,
             config.latent_dim,
@@ -314,17 +316,12 @@ def _build_temporal_core(config: NeuroTwinPairOperatorConfig) -> nn.Module:
             dropout=config.dropout if config.n_layers > 1 else 0.0,
         )
     if backbone == "transformer":
-        if config.latent_dim % config.n_heads != 0:
-            raise ValueError("latent_dim must be divisible by n_heads for transformer pair-operator backbone")
-        layer = nn.TransformerEncoderLayer(
-            d_model=config.latent_dim,
-            nhead=config.n_heads,
-            dim_feedforward=config.latent_dim * 4,
+        return CausalTransformerEncoder(
+            config.latent_dim,
+            n_heads=config.n_heads,
+            n_layers=config.n_layers,
             dropout=config.dropout,
-            batch_first=True,
-            activation="gelu",
         )
-        return nn.TransformerEncoder(layer, num_layers=config.n_layers)
     raise ValueError(f"Unknown pair-operator backbone {config.backbone!r}")
 
 

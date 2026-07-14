@@ -15,6 +15,7 @@ from neurotwin.models.nfc import (
     StimulusConditioningOperator,
     UncertaintyMapHead,
 )
+from neurotwin.training.prepared_metrics import gaussian_nll_loss
 
 
 class NeuralFieldCompilerShapeTests(unittest.TestCase):
@@ -50,6 +51,28 @@ class NeuralFieldCompilerShapeTests(unittest.TestCase):
         self.assertTrue(torch.allclose(baseline[:, :-1], perturbed[:, :-1], atol=1e-5))
         self.assertFalse(torch.allclose(baseline[:, -1], perturbed[:, -1]))
 
+    def test_field_update_backends_and_depth_change_the_computation(self):
+        torch.manual_seed(17)
+        gru = FieldUpdateOperator(latent_dim=8, backend="gru", n_layers=2, n_heads=2)
+        torch.manual_seed(17)
+        transformer = FieldUpdateOperator(latent_dim=8, backend="transformer", n_layers=2, n_heads=2)
+        field = torch.randn(2, 5, 4, 8)
+
+        gru_output = gru(field)
+        transformer_output = transformer(field)
+
+        self.assertNotEqual(tuple(gru.state_dict()), tuple(transformer.state_dict()))
+        self.assertFalse(torch.allclose(gru_output, transformer_output))
+        self.assertEqual(gru.temporal.num_layers, 2)
+        self.assertEqual(transformer.temporal.num_layers, 2)
+
+    def test_field_update_rejects_ambiguous_structural_prior(self):
+        updater = FieldUpdateOperator(latent_dim=8)
+        field = torch.randn(2, 5, 4, 8)
+
+        with self.assertRaisesRegex(ValueError, "structural_prior must have shape"):
+            updater(field, anatomy=torch.zeros(2, 4, 4))
+
     def test_low_rank_pair_kernel_changes_output_when_enabled(self):
         torch.manual_seed(3)
         z = torch.randn(2, 5, 8)
@@ -77,6 +100,18 @@ class NeuralFieldCompilerShapeTests(unittest.TestCase):
         self.assertEqual(eeg(latent).shape, (2, 6, 3))
         self.assertEqual(behavior(latent).shape, (2, 6, 2))
 
+    def test_fmri_observation_operator_cannot_read_future_latent_samples(self):
+        torch.manual_seed(9)
+        operator = FMRIObservationOperator(latent_dim=8, output_dim=7, hrf_delay_steps=1)
+        latent = torch.randn(2, 6, 7, 8)
+        baseline = operator(latent)
+        changed = latent.clone()
+        changed[:, 4:, :, :] += 100.0
+        perturbed = operator(changed)
+
+        self.assertTrue(torch.allclose(baseline[:, :4], perturbed[:, :4], atol=1e-6))
+        self.assertFalse(torch.allclose(baseline[:, 4:], perturbed[:, 4:]))
+
     def test_stimulus_conditioning_is_causal(self):
         conditioner = StimulusConditioningOperator(stimulus_dim=4, latent_dim=8, lag_steps=2)
         stimulus = torch.randn(2, 5, 4)
@@ -101,6 +136,21 @@ class NeuralFieldCompilerShapeTests(unittest.TestCase):
         self.assertEqual(maps["pair_uncertainty"].shape, (2, 7, 7))
         self.assertTrue(torch.isfinite(maps["region_uncertainty"]).all())
 
+    def test_gaussian_objective_trains_nfc_uncertainty_head(self):
+        model = NeuralFieldCompiler(
+            input_dims={"eeg": 3},
+            output_dims={"eeg": 3},
+            config=NeuralFieldCompilerConfig(latent_dim=8, use_uncertainty=True),
+        )
+        output = model.forward_task({"eeg": torch.randn(2, 6, 3)}, target_modality="eeg", task="forecast")
+        loss = gaussian_nll_loss(output["prediction"], torch.randn(2, 6, 3), output["uncertainty"])
+
+        loss.backward()
+
+        gradient = model.uncertainty_head.region_head.weight.grad
+        self.assertIsNotNone(gradient)
+        self.assertGreater(float(gradient.abs().sum()), 0.0)
+
     def test_neural_field_compiler_forward_contract(self):
         model = NeuralFieldCompiler(
             input_dims={"stimulus": 4},
@@ -124,7 +174,54 @@ class NeuralFieldCompilerShapeTests(unittest.TestCase):
         self.assertEqual(output["latent_field"].shape, (2, 6, 7, 8))
         self.assertEqual(output["projection"].shape[0], 2)
         self.assertIn("uncertainty", output)
+        self.assertIn("modality_weights", output)
+        self.assertNotIn("expert_utilization", output)
         self.assertTrue(torch.isfinite(output["prediction"]).all())
+
+    def test_neural_field_compiler_fuses_every_available_modality(self):
+        torch.manual_seed(11)
+        model = NeuralFieldCompiler(
+            input_dims={"eeg": 3, "fmri": 2},
+            output_dims={"eeg": 3},
+            config=NeuralFieldCompilerConfig(latent_dim=8, pair_rank=3),
+        )
+        eeg = torch.randn(2, 6, 3)
+        fmri = torch.randn(2, 6, 2)
+        baseline = model.forward_task({"eeg": eeg, "fmri": fmri}, target_modality="eeg")
+        perturbed = model.forward_task({"eeg": eeg, "fmri": fmri + 20.0}, target_modality="eeg")
+
+        self.assertEqual(baseline["modality_weights"].shape, (2,))
+        self.assertTrue(torch.allclose(baseline["modality_weights"].sum(), torch.tensor(1.0), atol=1e-6))
+        self.assertFalse(torch.allclose(baseline["prediction"], perturbed["prediction"]))
+
+    def test_neural_field_compiler_uses_coordinates_and_rejects_subject_ids(self):
+        torch.manual_seed(21)
+        model = NeuralFieldCompiler(
+            input_dims={"eeg": 3},
+            output_dims={"eeg": 3},
+            config=NeuralFieldCompilerConfig(latent_dim=8, geometry_dim=2),
+        )
+        eeg = torch.randn(2, 6, 3)
+        coordinates = torch.tensor([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
+        baseline = model.forward_task(
+            {"eeg": eeg},
+            target_modality="eeg",
+            geometry={"coordinates": coordinates},
+        )
+        perturbed = model.forward_task(
+            {"eeg": eeg},
+            target_modality="eeg",
+            geometry={"coordinates": coordinates.flip(0)},
+        )
+
+        self.assertFalse(torch.allclose(baseline["prediction"], perturbed["prediction"]))
+        with self.assertRaisesRegex(ValueError, "subject_ids are forbidden"):
+            model.forward_task(
+                {"eeg": eeg},
+                target_modality="eeg",
+                geometry={"coordinates": coordinates},
+                subject_ids=torch.tensor([0, 1]),
+            )
 
     def test_forward_uses_structural_prior_geometry_without_tensor_truthiness(self):
         model = self._geometry_model()

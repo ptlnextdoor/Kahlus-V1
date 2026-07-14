@@ -41,7 +41,7 @@ This ledger preserves mathematical formulas, research-state rules, and discarded
 | EQ-035 | `Re(lambda_i(J_t))<0` | stability / spectral radius | Local stability | theory only | ledger, master dossier | Not enforced. |
 | EQ-036 | `rho(A)<1` | stability / spectral radius | Discrete stability | theory only | ledger, master dossier | Not enforced. |
 | EQ-037 | `R_stab=max(0,rho(A)-1)^2` | stability / spectral radius | Stability penalty | theory only | ledger, master dossier | Future loss term. |
-| EQ-038 | `L_NLL=sum_{m,t,i} (y-mu)^2/(2 sigma^2)+0.5 log sigma^2` | uncertainty / calibration | Uncertainty NLL | theory only | constitution, master dossier | Current uncertainty calibration is not full NLL. |
+| EQ-038 | `L_NLL=sum_{m,t,i} (y-mu)^2/(2 sigma^2)+0.5 log sigma^2` | uncertainty / calibration | Gaussian predictive NLL | implemented, unvalidated | `training/prepared_metrics.py`; constitution | Predictive scale receives a proper training score; held-out calibration is still required. |
 | EQ-039 | `P[Y in C_alpha(X)] approx 1-alpha` | uncertainty / calibration | Calibration condition | theory only | constitution, master dossier | Requires real calibration artifacts. |
 | EQ-040 | `L_InfoNCE=-log exp(sim(z_a,z_b)/tau)/sum_{b'} exp(sim(z_a,z_b')/tau)` | information theory / contrastive learning | Contrastive alignment | theory only | ledger, master dossier | Future representation audit. |
 | EQ-041 | `g(F_{t+1})=K g(F_t)` | Koopman / residual dynamics | Koopman form | theory only | ledger, master dossier | Future dynamics baseline. |

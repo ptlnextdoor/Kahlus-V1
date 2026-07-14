@@ -16,6 +16,7 @@ from neurotwin.models.pair_operator import NeuroTwinPairOperator, NeuroTwinPairO
 from neurotwin.models.torch_models import (
     NeuralStateSpaceTranslator,
     NeuralStateSpaceTranslatorConfig,
+    TinyGRUBaseline,
     TinySSMBaseline,
     TinyTransformerBaseline,
 )
@@ -686,7 +687,7 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
     ExecutableBaselineRunner(
         "ssm_fallback",
         lambda task, seed, steps: _fit_torch_sequence_model(
-            lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
+            lambda: TinyGRUBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
             task,
             seed=seed + 4,
             steps=steps,
@@ -697,12 +698,11 @@ EXECUTABLE_BASELINE_RUNNERS: tuple[ExecutableBaselineRunner, ...] = (
         lambda task, seed, steps: _fit_torch_sequence_model(
             lambda: TinySSMBaseline(task.x_train.shape[-1], task.y_train.shape[-1], latent_dim=24, n_layers=1),
             task,
-            seed=seed + 4,
+            seed=seed + 14,
             steps=steps,
         ),
     ),
     ExecutableBaselineRunner("neurotwin", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
-    ExecutableBaselineRunner("model", lambda task, seed, steps: _fit_neurotwin(task, seed=seed + 5, steps=steps)),
     ExecutableBaselineRunner(
         "tribe_style",
         lambda task, seed, steps: _fit_tribe_style(task, seed=seed + 6, steps=steps),

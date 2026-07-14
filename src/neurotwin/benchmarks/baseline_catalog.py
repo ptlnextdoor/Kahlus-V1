@@ -103,9 +103,15 @@ BASELINE_CATALOG: tuple[BaselineCatalogEntry, ...] = (
     ),
     BaselineCatalogEntry(
         model_id="ssm_fallback",
-        display_name="SSM Fallback",
+        display_name="GRU (Legacy ID)",
         status="local_baseline",
-        notes="GRU-based SSM fallback until Mamba is pinned.",
+        notes="GRU retained under the historical ssm_fallback identifier; it is not reported as a state-space model.",
+    ),
+    BaselineCatalogEntry(
+        model_id="tiny_ssm",
+        display_name="Tiny Diagonal SSM",
+        status="local_baseline",
+        notes="Stable diagonal recurrent state-space baseline with causal sequence processing.",
     ),
     BaselineCatalogEntry(
         model_id="neurotwin",
