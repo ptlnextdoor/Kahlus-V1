@@ -23,6 +23,20 @@ On BNCI2014_001 (BCI Competition IV-2a, 22 EEG channels, 250 Hz, local MOABB cac
 
 **PDF (vector, for slides/papers):** [`fig_ridge_overlap_headline.pdf`](ridge_overlap_headline/fig_ridge_overlap_headline.pdf) · **LaTeX caption:** `artifacts/ridge_bnci_real/figures/fig_ridge_overlap_headline_caption.tex`
 
+## Where the h=1 fit actually fails
+
+The headline figure above establishes *that* the h=1 ridge number is an overlap artifact. This companion figure asks a different question: given that, how good is the h=1 fit itself, spectrally and per-channel?
+
+<div class="figure-card">
+
+![Ridge residual diagnostics](ridge_overlap_headline/fig_ridge_residual_diagnostics.png)
+
+**Figure. Where the h=1 ridge fit actually fails.** **(a)** Welch power spectrum (mean over test windows/channels) of the actual signal, the ridge prediction, and their residual. Prediction tracks actual closely below ~15 Hz; the residual carries a visible bump near 10 Hz (alpha band) that the model under-fits, and both series roll off together above ~15 Hz. Residual power is otherwise broadband rather than concentrated in one band, consistent with unmodelled noise rather than a large structured signal ridge is missing. **(b)** Per-channel Pearson r between actual and predicted h=1 signal, sorted; median r=0.86, range [0.76, 0.91]. All channels sit in a narrow, uniformly-high band — no channel is a qualitative outlier, so fit quality is roughly uniform across scalp location rather than concentrated in a subset of electrodes.
+
+</div>
+
+**PDF:** [`fig_ridge_residual_diagnostics.pdf`](ridge_overlap_headline/fig_ridge_residual_diagnostics.pdf) · **LaTeX caption:** `artifacts/ridge_bnci_real/figures/fig_ridge_residual_diagnostics_caption.tex`
+
 ## Full horizon sweep
 
 | horizon | overlap | ridge Pearson r | ridge R^2 | persistence r |
@@ -47,6 +61,9 @@ PYTHONPATH=src python3 scripts/analysis/build_bnci_ridge_tensors.py
 PYTHONPATH=src python3 scripts/analysis/plot_ridge_paper_figure.py \
   --npz artifacts/ridge_bnci_real/ridge_bnci_tensors.npz \
   --summary artifacts/ridge_bnci_real/ridge_bnci_summary.json \
+  --out artifacts/ridge_bnci_real/figures
+PYTHONPATH=src python3 scripts/analysis/plot_ridge_residual_diagnostics.py \
+  --npz artifacts/ridge_bnci_real/ridge_bnci_tensors.npz \
   --out artifacts/ridge_bnci_real/figures
 ```
 
