@@ -1,6 +1,11 @@
-# Ridge EEG diagnostic figures
+# Ridge EEG diagnostic figures (schematic prototype, superseded)
 
-**Status:** schematic demo figures, not benchmark evidence.
+**Status:** schematic demo figures, not benchmark evidence. **Superseded** by
+the real benchmark-derived figure at
+[Ridge EEG diagnostics for Amrith](../../figures/ridge-eeg-diagnostics.md),
+generated from the actual BNCI2014_001 tensors rather than synthetic demo
+data. This packet is kept only as a record of the figure-grammar prototype
+that preceded real data; do not cite it as evidence.
 
 **Prediction source:** schematic recomputed linear_ridge on synthetic demo data.
 
