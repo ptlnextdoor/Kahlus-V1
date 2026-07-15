@@ -1,0 +1,16 @@
+\caption{\textbf{The ridge headline on BNCI2014\_001 measures input/target overlap, not
+neural forecasting.} \textbf{(a)} The benchmark builds $X=s[t{:}t{+}L]$ and $Y=s[t{+}h{:}t{+}h{+}L]$
+with $L{=}128$. At the headline setting $h{=}1$ the target is the input shifted by one sample
+(4~ms): 127 of 128 samples are bit-identical, so the reported ``forecast'' is
+99.2\% copied input. \textbf{(b)} Test $r$ for ridge and a matched persistence baseline
+both collapse toward the noise floor as $h$ grows, and ridge never separates far from
+persistence --- the headline $r{=}0.87$ reflects waveform continuity, not learned dynamics.
+\textbf{(c)} Plotting $r$ directly against overlap (rather than against $h$) shows skill tracking
+overlap monotonically down to $r\approx0$; once the target no longer overlaps the input
+($h\ge L$) ridge sits at $r\approx0.06$, within the noise floor (the slight non-monotone
+tail at zero overlap is noise-floor scatter, not recovered signal). \textbf{(d)} The fitted $22\times22$ channel map is
+\emph{diagonally dominant but not an identity}: mean diagonal $\beta{=}0.79$ is
+5.1$\times$ the mean $|$off-diagonal$|$ (and $\|C-I\|_F/\|I\|_F{=}0.94$). The strong
+diagonal is why ridge tracks persistence; the residual off-diagonal mass is the small
+cross-channel term by which it exceeds persistence at short $h$. Split: subjects 1--6 train,
+7--9 test, per-subject $z$-scoring; no cross-subject normalisation.}
