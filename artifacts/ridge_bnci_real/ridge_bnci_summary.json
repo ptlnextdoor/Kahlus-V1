@@ -1,6 +1,6 @@
 {
   "dataset": "BNCI2014_001 (BCI Competition IV-2a) via MOABB local cache",
-  "source_dir": "/Users/aayu/.cache/kahlus/moabb/MNE-bnci-data/~bci/database/001-2014",
+  "source_dir": "~/.cache/kahlus/moabb/MNE-bnci-data/~bci/database/001-2014",
   "sampling_rate_hz": 250.0,
   "n_eeg_channels": 22,
   "channel_names": [
@@ -160,7 +160,7 @@
       }
     }
   ],
-  "figure_npz": "/Users/aayu/Workspace/developer/Kahlus-V1/artifacts/ridge_bnci_real/ridge_bnci_tensors.npz",
+  "figure_npz": "artifacts/ridge_bnci_real/ridge_bnci_tensors.npz",
   "interpretation": "At horizon=1 the target window overlaps the input window in L-1 of L samples, so a channel-to-channel linear map (ridge) trivially scores high. As horizon grows and input/target overlap goes to zero, both persistence and ridge skill collapse toward the noise floor. This shows the headline ridge number reflects short-horizon waveform continuity, not a rich neural-state model.",
   "scope": "Sanity analysis of an existing public benchmark. No clinical claim."
 }

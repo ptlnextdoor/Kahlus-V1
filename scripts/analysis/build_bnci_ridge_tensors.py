@@ -32,6 +32,23 @@ import numpy as np
 import scipy.io as sio
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _portable_path(path: Path) -> str:
+    """Render a path relative to the repo root or home dir, never a bare local absolute path.
+
+    Committed provenance (ridge_bnci_summary.json) should stay meaningful across
+    machines rather than embedding one contributor's home directory.
+    """
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        pass
+    try:
+        return str(Path("~") / resolved.relative_to(Path.home()))
+    except ValueError:
+        return str(resolved)
 sys.path.insert(0, str(ROOT / "src"))
 
 
@@ -259,7 +276,7 @@ def main() -> None:
 
     summary = {
         "dataset": "BNCI2014_001 (BCI Competition IV-2a) via MOABB local cache",
-        "source_dir": str(args.cache_dir),
+        "source_dir": _portable_path(args.cache_dir),
         "sampling_rate_hz": fs,
         "n_eeg_channels": N_EEG,
         "channel_names": EEG_CHANNEL_NAMES,
@@ -270,7 +287,7 @@ def main() -> None:
         "test_subjects": test_subj,
         "normalization": "per-subject z-score (subject-held-out; no cross-subject stats)",
         "horizon_sweep": sweep,
-        "figure_npz": str(npz_path),
+        "figure_npz": _portable_path(npz_path),
         "interpretation": (
             "At horizon=1 the target window overlaps the input window in L-1 of L "
             "samples, so a channel-to-channel linear map (ridge) trivially scores "
