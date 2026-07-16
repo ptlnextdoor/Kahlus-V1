@@ -9,7 +9,7 @@ The repo should not claim a new brain foundation model or clinical digital twin.
 
 ## What to read first
 
-- [Ridge EEG diagnostics for Amrith](figures/ridge-eeg-diagnostics.md): the current visual packet for explaining why ridge regression can look strong.
+- [Ridge EEG diagnostics for Amrith](figures/ridge-eeg-diagnostics.md): benchmark-derived figure and analysis of why ridge regression on BNCI2014_001 measures input/target overlap, not learned neural dynamics.
 - [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization vs AI-generated slop.
 - [Reputable neuroscience repo patterns](references/reputable-neuroscience-repos.md): what MNE, MOABB, Braindecode, CEBRA, NeuroML, and Nilearn teach us.
 - [Benchmark protocol](paper/benchmark_protocol.md): existing reviewer-facing benchmark rules.

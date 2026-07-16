@@ -1,0 +1,166 @@
+{
+  "dataset": "BNCI2014_001 (BCI Competition IV-2a) via MOABB local cache",
+  "source_dir": "~/.cache/kahlus/moabb/MNE-bnci-data/~bci/database/001-2014",
+  "sampling_rate_hz": 250.0,
+  "n_eeg_channels": 22,
+  "channel_names": [
+    "Fz",
+    "FC3",
+    "FC1",
+    "FCz",
+    "FC2",
+    "FC4",
+    "C5",
+    "C3",
+    "C1",
+    "Cz",
+    "C2",
+    "C4",
+    "C6",
+    "CP3",
+    "CP1",
+    "CPz",
+    "CP2",
+    "CP4",
+    "P1",
+    "Pz",
+    "P2",
+    "POz"
+  ],
+  "window_length": 128,
+  "stride": 64,
+  "ridge_alpha": 0.01,
+  "train_subjects": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "test_subjects": [
+    7,
+    8,
+    9
+  ],
+  "normalization": "per-subject z-score (subject-held-out; no cross-subject stats)",
+  "horizon_sweep": [
+    {
+      "horizon_samples": 1,
+      "horizon_ms": 4.0,
+      "input_target_overlap_samples": 127,
+      "overlap_fraction": 0.9921875,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.25149873818071744,
+        "mae": 0.3577701222849824,
+        "pearsonr": 0.8663985144887871,
+        "r2": 0.7492332137553981
+      },
+      "persistence": {
+        "mse": 0.29594584114906786,
+        "mae": 0.37229379609885815,
+        "pearsonr": 0.8524554245739631,
+        "r2": 0.7049154678697422
+      }
+    },
+    {
+      "horizon_samples": 4,
+      "horizon_ms": 16.0,
+      "input_target_overlap_samples": 124,
+      "overlap_fraction": 0.96875,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.6481748438745683,
+        "mae": 0.6085776453115365,
+        "pearsonr": 0.5987383054259452,
+        "r2": 0.35805229816495765
+      },
+      "persistence": {
+        "mse": 0.8780430538903832,
+        "mae": 0.6936652714003267,
+        "pearsonr": 0.5652044606751079,
+        "r2": 0.13039247683881083
+      }
+    },
+    {
+      "horizon_samples": 16,
+      "horizon_ms": 64.0,
+      "input_target_overlap_samples": 112,
+      "overlap_fraction": 0.875,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.9043219949642105,
+        "mae": 0.727329883253075,
+        "pearsonr": 0.24310748349272365,
+        "r2": 0.05095729228548862
+      },
+      "persistence": {
+        "mse": 1.6392279635180427,
+        "mae": 0.9730364954058264,
+        "pearsonr": 0.14194744169948165,
+        "r2": -0.7202913936866877
+      }
+    },
+    {
+      "horizon_samples": 64,
+      "horizon_ms": 256.0,
+      "input_target_overlap_samples": 64,
+      "overlap_fraction": 0.5,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.9982084828411089,
+        "mae": 0.7437693415880504,
+        "pearsonr": 0.008142589908024214,
+        "r2": -0.005436527105987743
+      },
+      "persistence": {
+        "mse": 2.0158567150059947,
+        "mae": 1.0693375906980203,
+        "pearsonr": -0.022102702822307883,
+        "r2": -1.0304535670846762
+      }
+    },
+    {
+      "horizon_samples": 128,
+      "horizon_ms": 512.0,
+      "input_target_overlap_samples": 0,
+      "overlap_fraction": 0.0,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.9843479265413353,
+        "mae": 0.7449622564688639,
+        "pearsonr": 0.055941884206001206,
+        "r2": 0.0015934023090837801
+      },
+      "persistence": {
+        "mse": 2.12271582663658,
+        "mae": 1.0936757136068298,
+        "pearsonr": -0.07391078564890935,
+        "r2": -1.153032915692226
+      }
+    },
+    {
+      "horizon_samples": 192,
+      "horizon_ms": 768.0,
+      "input_target_overlap_samples": 0,
+      "overlap_fraction": 0.0,
+      "n_test_windows": 1200,
+      "ridge": {
+        "mse": 0.9810486502091608,
+        "mae": 0.7401963608566546,
+        "pearsonr": 0.09758349265394688,
+        "r2": 0.009475589321558231
+      },
+      "persistence": {
+        "mse": 2.1674146389719677,
+        "mae": 1.0931456089119471,
+        "pearsonr": -0.07887413504174783,
+        "r2": -1.188349280645582
+      }
+    }
+  ],
+  "figure_npz": "artifacts/ridge_bnci_real/ridge_bnci_tensors.npz",
+  "interpretation": "At horizon=1 the target window overlaps the input window in L-1 of L samples, so a channel-to-channel linear map (ridge) trivially scores high. As horizon grows and input/target overlap goes to zero, both persistence and ridge skill collapse toward the noise floor. This shows the headline ridge number reflects short-horizon waveform continuity, not a rich neural-state model.",
+  "scope": "Sanity analysis of an existing public benchmark. No clinical claim."
+}
