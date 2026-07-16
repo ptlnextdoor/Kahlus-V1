@@ -58,6 +58,7 @@ CAP are descriptive single-label transport checks only under v0.4.
 | `docs/research/hnph_v0.4_source_qualification_addendum.md` | Hash-bound fail-closed DOD admission contract | Frozen; qualification pending |
 | `configs/protocol/hnph_phase0_v0.4.yaml` | Machine-readable active HNPH protocol | Frozen; claim mode false |
 | `docs/audit/invalidated_result_registry.json` | INV-004 records the v0.3 supersession required by the B2 freeze rule | Active |
+| `docs/figures/hnph_protocol/figure_manifest.json` | Figure classification, inputs, outputs, and captions | Protocol-only; no empirical result |
 
 ## Frozen Contract Ledger
 
