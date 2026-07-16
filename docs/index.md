@@ -54,6 +54,19 @@ research/pair_operator_design
 
 ```{toctree}
 :maxdepth: 2
+:caption: HNPH protocol lineage
+
+research/kahlus_hnph_protocol_v0.4
+research/hnph_v0.4_source_qualification_addendum
+research/kahlus_hnph_protocol_v0.3
+research/hnph_b2_preregistration_addendum
+research/kahlus_hnph_protocol_v0.2
+research/kahlus_hnph_decision_log
+audit/INVALIDATED_RESULT_REGISTRY
+```
+
+```{toctree}
+:maxdepth: 2
 :caption: Runbooks and repo operation
 
 DATA

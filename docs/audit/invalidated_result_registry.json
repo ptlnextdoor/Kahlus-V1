@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "registry_version": "1.0.0",
-  "effective_date": "2026-07-10",
-  "canonical_protocol_id": "kahlus.hnph.phase0.v0.2",
+  "registry_version": "1.1.0",
+  "effective_date": "2026-07-15",
+  "canonical_protocol_id": "kahlus.hnph.phase0.v0.4",
   "default_claim_eligible": false,
   "records": [
     {
@@ -117,6 +117,35 @@
         "derived_prepared_data": "quarantine",
         "checkpoints": "quarantine",
         "evidence": "quarantine"
+      }
+    },
+    {
+      "invalidation_id": "INV-004",
+      "label": "hnph_v0_3_protocol_superseded_by_v0_4",
+      "execution_status": "not_executed",
+      "validity_status": "superseded",
+      "claim_eligible": false,
+      "reported_metrics": null,
+      "protocol_facts": {
+        "superseded_protocol_id": "kahlus.hnph.phase0.v0.3",
+        "superseding_protocol_id": "kahlus.hnph.phase0.v0.4",
+        "superseding_protocol_sha256": "401a8e47db3aefc5c549fec956254f291f71e43c6bf636c464551df552acc839",
+        "superseded_addendum": "docs/research/hnph_b2_preregistration_addendum.md",
+        "superseding_addendum": "docs/research/hnph_v0.4_source_qualification_addendum.md",
+        "claim_mode_runs_executed_under_v0_3": 0,
+        "v0_3_preserved_for_audit": true,
+        "source_qualification_status": "unverified",
+        "external_test_opened": false
+      },
+      "invalidation_reasons": [
+        "superseded_by_hnph_v0_4_source_qualification"
+      ],
+      "permitted_wording": "HNPH protocol v0.3 is preserved for audit and superseded by v0.4 for all future claim-mode work; no claim-mode result was computed under v0.3.",
+      "quarantine": {
+        "raw_source_cache": "preserve",
+        "derived_prepared_data": "preserve",
+        "checkpoints": "preserve",
+        "evidence": "preserve"
       }
     }
   ],

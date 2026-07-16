@@ -1,4 +1,4 @@
-"""Fail-closed HNPH v0.3 B2 preregistration and baseline-feasibility gate."""
+"""Fail-closed HNPH v0.4 source-qualified baseline-feasibility gate."""
 
 from __future__ import annotations
 
@@ -21,15 +21,18 @@ from neurotwin.forecastability.label_reliability import (
 from neurotwin.repro import hash_file, write_json
 
 
-HNPH_BASELINE_FEASIBILITY_SCHEMA = "kahlus.hnph.baseline_feasibility.v3"
-_HNPH_PROTOCOL_ID = "kahlus.hnph.phase0.v0.3"
+HNPH_BASELINE_FEASIBILITY_SCHEMA = "kahlus.hnph.baseline_feasibility.v4"
+_HNPH_PROTOCOL_ID = "kahlus.hnph.phase0.v0.4"
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-_CANONICAL_PROTOCOL_PATH = _REPOSITORY_ROOT / "configs" / "protocol" / "hnph_phase0_v0.3.yaml"
-_CANONICAL_PREREGISTRATION_PATH = _REPOSITORY_ROOT / "docs" / "research" / "hnph_b2_preregistration_addendum.md"
+_CANONICAL_PROTOCOL_PATH = _REPOSITORY_ROOT / "configs" / "protocol" / "hnph_phase0_v0.4.yaml"
+_CANONICAL_PREREGISTRATION_PATH = (
+    _REPOSITORY_ROOT / "docs" / "research" / "hnph_v0.4_source_qualification_addendum.md"
+)
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
-_FROZEN_PROTOCOL_SHA256 = re.compile(r"\*\*Frozen v0\.3 protocol SHA-256:\*\* `([0-9a-f]{64})`")
+_FROZEN_PROTOCOL_SHA256 = re.compile(r"\*\*Frozen v0\.4 protocol SHA-256:\*\* `([0-9a-f]{64})`")
 _REQUIRED_ARTIFACT_HASHES = frozenset(
     {
+        "source_qualification",
         "physical_registry",
         "source_manifest",
         "split_audit",
@@ -54,6 +57,8 @@ class HnphFeasibilityEvidence:
     preregistration_path: str | Path
     artifact_hashes: Mapping[str, str]
     artifact_paths: Mapping[str, str | Path]
+    source_qualification_passed: bool
+    external_test_opened: bool
     seed: int
     bootstrap_replicates: int
     subject_cluster_max_t_passed: bool
@@ -153,6 +158,8 @@ def build_hnph_baseline_feasibility(evidence: HnphFeasibilityEvidence) -> dict[s
         "frozen_protocol_sha256": frozen_protocol_sha256,
         "preregistration_hash": preregistration,
         "artifact_hashes": _safe_hashes(evidence.artifact_hashes),
+        "source_qualification_passed": bool(evidence.source_qualification_passed),
+        "external_test_opened": bool(evidence.external_test_opened),
         "seed": _safe_int(evidence.seed),
         "bootstrap_replicates": _safe_int(evidence.bootstrap_replicates),
         "epsilon_bits_per_anchor": thresholds["epsilon_bits_per_anchor"],
@@ -228,7 +235,7 @@ def run_hnph_baseline_feasibility(
     markdown_path = out / "HNPH_BASELINE_FEASIBILITY.md"
     markdown_path.write_text(format_hnph_baseline_feasibility(payload), encoding="utf-8")
     manifest = {
-        "schema": "kahlus.hnph.baseline_feasibility_manifest.v3",
+        "schema": "kahlus.hnph.baseline_feasibility_manifest.v4",
         "protocol_sha256": payload["protocol_sha256"],
         "frozen_protocol_sha256": payload["frozen_protocol_sha256"],
         "preregistration_hash": payload["preregistration_hash"],
@@ -292,11 +299,11 @@ def _structural_failures(
     if protocol_error:
         failures.append(protocol_error)
     if protocol.get("protocol_id") != _HNPH_PROTOCOL_ID:
-        failures.append("frozen HNPH v0.3 protocol is missing or mismatched")
+        failures.append("frozen HNPH v0.4 protocol is missing or mismatched")
     if not _is_canonical_protocol_path(evidence.protocol_path):
-        failures.append("HNPH gate must use the repository's canonical v0.3 protocol path")
+        failures.append("HNPH gate must use the repository's canonical v0.4 protocol path")
     if not _is_canonical_preregistration_path(evidence.preregistration_path):
-        failures.append("HNPH gate must use the repository's canonical v0.3 preregistration addendum")
+        failures.append("HNPH gate must use the repository's canonical v0.4 preregistration addendum")
     if preregistration_error or preregistration_hash is None:
         failures.append(preregistration_error or "preregistration addendum hash is missing")
     if frozen_protocol_error or frozen_protocol_sha256 is None:
@@ -305,6 +312,10 @@ def _structural_failures(
         failures.append("canonical protocol hash differs from the preregistered frozen protocol hash")
     if not evidence.complete:
         failures.append("baseline-feasibility evidence is incomplete")
+    if not evidence.source_qualification_passed:
+        failures.append("DOD source qualification did not pass")
+    if evidence.external_test_opened:
+        failures.append("sealed DOD-O data were opened before model-family freeze")
     if not evidence.finite:
         failures.append("baseline-feasibility payload contains non-finite values")
     if not evidence.firebreak_passed:
@@ -526,7 +537,7 @@ def _load_frozen_protocol_hash(path: str | Path) -> tuple[str | None, str | None
         return None, "preregistration addendum could not be read"
     match = _FROZEN_PROTOCOL_SHA256.search(content)
     if match is None:
-        return None, "preregistration addendum lacks a frozen v0.3 protocol hash"
+        return None, "preregistration addendum lacks a frozen v0.4 protocol hash"
     return match.group(1), None
 
 
@@ -573,6 +584,21 @@ def _artifact_content_failures(evidence: HnphFeasibilityEvidence) -> list[str]:
     """Verify that decision inputs agree with their typed runner artifacts."""
 
     failures: list[str] = []
+    source_qualification = _read_bound_json_artifact(evidence, "source_qualification", failures)
+    _require_artifact_fields(
+        source_qualification,
+        "source_qualification",
+        "kahlus.hnph.dod_source_qualification.v1",
+        {
+            "qualified": evidence.source_qualification_passed,
+            "external_opened": evidence.external_test_opened,
+            "development_dataset": "DOD-H",
+            "external_dataset": "DOD-O",
+            "individual_rater_count_by_dataset": {"DOD-H": 5, "DOD-O": 5},
+            "held_out_rater_excluded_from_consensus": True,
+        },
+        failures,
+    )
     split_audit = _read_bound_json_artifact(evidence, "split_audit", failures)
     _require_artifact_fields(
         split_audit,

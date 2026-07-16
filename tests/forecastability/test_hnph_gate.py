@@ -23,9 +23,10 @@ from neurotwin.repro import hash_file
 
 
 _ROOT = Path(__file__).resolve().parents[2]
-_PROTOCOL = _ROOT / "configs" / "protocol" / "hnph_phase0_v0.3.yaml"
-_PREREGISTRATION = _ROOT / "docs" / "research" / "hnph_b2_preregistration_addendum.md"
+_PROTOCOL = _ROOT / "configs" / "protocol" / "hnph_phase0_v0.4.yaml"
+_PREREGISTRATION = _ROOT / "docs" / "research" / "hnph_v0.4_source_qualification_addendum.md"
 _ARTIFACT_NAMES = (
+    "source_qualification",
     "physical_registry",
     "source_manifest",
     "split_audit",
@@ -88,6 +89,8 @@ def _evidence(**changes: object):
     values: dict[str, object] = {
         "protocol_path": _PROTOCOL,
         "preregistration_path": _PREREGISTRATION,
+        "source_qualification_passed": True,
+        "external_test_opened": False,
         "seed": 7,
         "bootstrap_replicates": protocol["primary_endpoint"]["inference"]["bootstrap_replicates"],
         "subject_cluster_max_t_passed": True,
@@ -145,6 +148,18 @@ def _write_bound_artifacts(
         path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
         paths[name] = path
 
+    write(
+        "source_qualification",
+        {
+            "schema": "kahlus.hnph.dod_source_qualification.v1",
+            "qualified": values["source_qualification_passed"],
+            "external_opened": values["external_test_opened"],
+            "development_dataset": "DOD-H",
+            "external_dataset": "DOD-O",
+            "individual_rater_count_by_dataset": {"DOD-H": 5, "DOD-O": 5},
+            "held_out_rater_excluded_from_consensus": True,
+        },
+    )
     for name in ("physical_registry", "source_manifest", "transform_lineage"):
         write(name, {"schema": f"kahlus.hnph.{name}.v1"})
     write(
@@ -298,6 +313,22 @@ class HnphBaselineGateTests(unittest.TestCase):
 
         self.assertEqual(payload["stop_reason"], "label_reliability_unavailable")
 
+    def test_unqualified_dod_source_is_an_integrity_failure(self) -> None:
+        with _evidence(source_qualification_passed=False) as evidence:
+            payload = build_hnph_baseline_feasibility(evidence)
+
+        self.assertEqual(payload["decision"]["outcome_class"], "invalid_experiment")
+        self.assertEqual(payload["stop_reason"], "integrity_fail")
+        self.assertFalse(payload["source_qualification_passed"])
+
+    def test_opened_external_cohort_is_an_integrity_failure(self) -> None:
+        with _evidence(external_test_opened=True) as evidence:
+            payload = build_hnph_baseline_feasibility(evidence)
+
+        self.assertEqual(payload["decision"]["outcome_class"], "invalid_experiment")
+        self.assertEqual(payload["stop_reason"], "integrity_fail")
+        self.assertTrue(payload["external_test_opened"])
+
     def test_control_failure_is_a_complete_bounded_stop(self) -> None:
         protocol = yaml.safe_load(_PROTOCOL.read_text())
         controls = protocol["control_suite"]
@@ -329,7 +360,7 @@ class HnphBaselineGateTests(unittest.TestCase):
 
     def test_noncanonical_same_id_protocol_cannot_control_gate(self) -> None:
         with _evidence() as evidence, tempfile.TemporaryDirectory() as tmp:
-            copied = Path(tmp) / "hnph_phase0_v0.3.yaml"
+            copied = Path(tmp) / "hnph_phase0_v0.4.yaml"
             copied.write_text(_PROTOCOL.read_text(), encoding="utf-8")
             payload = build_hnph_baseline_feasibility(replace(evidence, protocol_path=copied))
 

@@ -1,12 +1,17 @@
 # Invalidated Result Registry
 
-**Registry version:** 1
-**Effective date:** 2026-07-10
+**Registry version:** 1.1.0
+**Effective date:** 2026-07-15
+**Canonical protocol:** `kahlus.hnph.phase0.v0.4`
 
 This registry records exact historical facts without turning invalid metrics into
 scientific evidence. Invalidated artifacts remain available for forensic audit
 under quarantine, but they cannot be selected, compared with canonical results,
 or used in claims.
+
+Records INV-001 through INV-003 are invalid results. INV-004 is a protocol
+supersession with no result attached; it is recorded here because the frozen B2
+addendum requires a superseding change to carry a registry entry.
 
 ## INV-001: Historical 3.116 Result
 
@@ -60,11 +65,44 @@ Permitted wording: "A completed six-A100 run was invalidated by split leakage,
 silent truncation, mixed physical contracts, and missing evidence; its final
 gate was false."
 
+## INV-004: HNPH v0.3 Protocol Superseded by v0.4
+
+**Status:** Superseded for future claim-mode work; not invalid, and not
+executed.
+
+- Superseded protocol: `kahlus.hnph.phase0.v0.3`.
+- Superseding protocol: `kahlus.hnph.phase0.v0.4`, frozen at SHA-256
+  `401a8e47db3aefc5c549fec956254f291f71e43c6bf636c464551df552acc839`.
+- Claim-mode runs executed under v0.3: `0`. No metric exists to invalidate, and
+  nothing under v0.3 is quarantined.
+- v0.3 and its B2 preregistration addendum are preserved unchanged for audit.
+  v0.3 remains the correct historical record of what was frozen at the time.
+- v0.4 supersedes v0.3 by requiring hash-bound DOD source qualification: five
+  independent rater streams per dataset, person identities, physical units,
+  sampling rates, licenses, and source/annotation hashes, verified locally and
+  fail-closed before any migration.
+- Source qualification status: `unverified`. DOD-O remains sealed
+  (`external_test_opened: false`). Migration, training, and claim-mode
+  evaluation are therefore unauthorized.
+
+This entry exists because `docs/research/hnph_b2_preregistration_addendum.md`
+freezes v0.3 with the condition that "a later change requires a new addendum
+version and an invalidation-registry entry". The addendum half is
+`docs/research/hnph_v0.4_source_qualification_addendum.md`; this is the registry
+half. Without it the v0.4 migration would violate the freeze rule the project
+set for itself.
+
+Permitted wording: "HNPH protocol v0.3 is preserved for audit and superseded by
+v0.4 for all future claim-mode work; no claim-mode result was computed under
+v0.3."
+
 ## Registry-Wide Disposition
 
 - Preserve raw source caches unchanged and read-only where feasible.
 - Quarantine all derived prepared data, checkpoints, predictions, metrics,
   figures, and evidence bundles associated with INV-001 through INV-003.
+- INV-004 carries no quarantine: it records a protocol supersession, not a
+  result. Nothing was computed under v0.3.
 - Do not delete quarantined material until hashes and provenance are inventoried.
 - Do not warm-start, tune, select, compare, or report from quarantined material.
 - A clean rebuild from verified raw sources is required; changing a label or
