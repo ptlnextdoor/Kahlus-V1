@@ -12,6 +12,7 @@ The repo should not claim a new brain foundation model or clinical digital twin.
 - [Concepts for non-specialists](overview/concepts.md): the plain-English version before the math.
 - [Limitations and claim boundaries](limitations.md): what Kahlus is not, and unsafe claims to never make.
 - [Ridge EEG diagnostics for Amrith](figures/ridge-eeg-diagnostics.md): benchmark-derived figure and analysis of why ridge regression on BNCI2014_001 measures input/target overlap, not learned neural dynamics.
+- [Figure archive](figures/README.md): previews and vector/raster links for the HNPH protocol figure set.
 - [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization vs AI-generated slop.
 - [Reputable neuroscience repo patterns](references/reputable-neuroscience-repos.md): what MNE, MOABB, Braindecode, CEBRA, NeuroML, and Nilearn teach us.
 - [Benchmark protocol](paper/benchmark_protocol.md): existing reviewer-facing benchmark rules.
@@ -32,6 +33,8 @@ limitations
 :caption: Research figures
 
 figures/ridge-eeg-diagnostics
+figures/README
+figures/hnph_protocol/FIGURE_PROVENANCE
 figures/visual-standards
 analysis/ridge_eeg_interpretability_plan
 analysis/neuroscience_figure_stack

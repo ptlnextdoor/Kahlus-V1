@@ -12,6 +12,18 @@ NFC treats fMRI, EEG, behavior, stimulus responses, and future modalities as par
 
 For the current repo state and NFC pivot map, see `docs/research/neurotwin_project_state.md`. Track A is reproducibility and claim-gate evidence. Track B is the NFC model path. The next A100 step is strict 1x NFC synthetic diagnostic only, not Algonauts or 6x DDP.
 
+## Figure archive
+
+The individual figures prepared for the protocol preprint are indexed in
+[`docs/figures/README.md`](docs/figures/README.md). HNPH protocol figures live
+under [`docs/figures/hnph_protocol/`](docs/figures/hnph_protocol/); regenerate
+them with `python3 scripts/analysis/render_docs_figures.py`. The BNCI ridge
+overlap analysis is documented separately in
+[`docs/figures/ridge-eeg-diagnostics.md`](docs/figures/ridge-eeg-diagnostics.md).
+The HNPH figures are protocol-only or descriptive illustrations; the ridge
+figures document a historical benchmark shortcut and do not establish a new
+empirical or clinical result.
+
 Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Brain-OF, BrainOmni, Brain Harmony, plus Transformer, SSM/Mamba, and modality-specialist baselines. Brain-OF is treated as the main benchmark opponent for generic multimodal neural foundation modeling.
 
 ## Current Scaffold

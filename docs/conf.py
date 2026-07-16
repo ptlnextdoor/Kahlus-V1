@@ -40,6 +40,9 @@ exclude_patterns = [
     ".DS_Store",
     "**/.ipynb_checkpoints",
     "research/*.tex",
+    # Figure-selection rationale is referenced as a file path from the preprint
+    # README, not linked as a page.
+    "paper/hnph_preprint/FIGURE_SELECTION_REVIEW.md",
 ]
 
 myst_enable_extensions = [
