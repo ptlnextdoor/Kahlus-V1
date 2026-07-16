@@ -10,22 +10,31 @@ from neurotwin.repro import hash_file
 
 
 _ROOT = Path(__file__).resolve().parents[2]
-_PROTOCOL = _ROOT / "configs" / "protocol" / "hnph_phase0_v0.3.yaml"
-_ADDENDUM = _ROOT / "docs" / "research" / "hnph_b2_preregistration_addendum.md"
+_PROTOCOL = _ROOT / "configs" / "protocol" / "hnph_phase0_v0.4.yaml"
+_ADDENDUM = _ROOT / "docs" / "research" / "hnph_v0.4_source_qualification_addendum.md"
 
 
 class HnphPreregistrationTests(unittest.TestCase):
-    def test_v03_freezes_b2_threshold_comparator_and_label_validity_requirements(self) -> None:
+    def test_v04_freezes_source_qualification_and_label_validity_requirements(self) -> None:
         protocol = yaml.safe_load(_PROTOCOL.read_text(encoding="utf-8"))
 
-        self.assertEqual(protocol["protocol_id"], "kahlus.hnph.phase0.v0.3")
-        self.assertEqual(protocol["status"], "frozen_preregistration_before_claim_mode")
+        self.assertEqual(protocol["protocol_id"], "kahlus.hnph.phase0.v0.4")
+        self.assertEqual(protocol["status"], "frozen_protocol_source_qualification_pending")
         self.assertTrue(_ADDENDUM.exists())
-        match = re.search(r"\*\*Frozen v0\.3 protocol SHA-256:\*\* `([0-9a-f]{64})`", _ADDENDUM.read_text())
+        match = re.search(r"\*\*Frozen v0\.4 protocol SHA-256:\*\* `([0-9a-f]{64})`", _ADDENDUM.read_text())
         self.assertIsNotNone(match)
         assert match is not None
         self.assertEqual(match.group(1), hash_file(_PROTOCOL))
-        self.assertEqual(protocol["b2_preregistration_addendum"]["document"], "docs/research/hnph_b2_preregistration_addendum.md")
+        self.assertEqual(
+            protocol["preregistration_addendum"]["document"],
+            "docs/research/hnph_v0.4_source_qualification_addendum.md",
+        )
+        self.assertFalse(protocol["claim_mode_authorized"])
+        self.assertEqual(protocol["datasets"]["development"]["canonical_id"], "DOD-H")
+        self.assertEqual(protocol["datasets"]["external"]["canonical_id"], "DOD-O")
+        self.assertTrue(protocol["datasets"]["external"]["sealed"])
+        self.assertEqual(protocol["source_qualification"]["minimum_independent_raters_in_source"], 5)
+        self.assertTrue(protocol["source_qualification"]["held_out_rater_must_not_contribute_to_target"])
         self.assertEqual(protocol["effect_threshold"]["epsilon_bits_per_anchor"], 0.02)
         self.assertEqual(protocol["effect_threshold"]["familywise_hypothesis_count"], 12)
         self.assertEqual(protocol["effect_threshold"]["sigma_source"], "training_folds_or_synthetic_only")
@@ -59,6 +68,8 @@ class HnphPreregistrationTests(unittest.TestCase):
         self.assertIn("effect_size", protocol["evidence_artifact"]["required_fields"])
         self.assertIn("label_reproducibility_family", protocol["evidence_artifact"]["required_fields"])
         self.assertIn("label_rater_target_provenance_sha256", protocol["evidence_artifact"]["required_fields"])
+        self.assertIn("source_qualification", protocol["evidence_artifact"]["required_artifact_hashes"])
+        self.assertIn("source_qualification_fail", protocol["evidence_artifact"]["frozen_stop_reasons"])
         self.assertEqual(protocol["control_suite"]["positive_control"], "synthetic_known_signal_pass")
         self.assertEqual(protocol["control_suite"]["nuisance_probe_control"], "nuisance_probe")
         self.assertIn("pass_authorize_h3", protocol["evidence_artifact"]["frozen_stop_reasons"])

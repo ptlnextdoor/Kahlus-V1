@@ -1,10 +1,10 @@
 # HNPH Canonical Implementation Ledger
 
 **C0 canonical protocol:** `kahlus.hnph.phase0.v0.2`
-**Active B2 preregistration:** `kahlus.hnph.phase0.v0.3`
+**Active protocol:** `kahlus.hnph.phase0.v0.4`
 **Ledger date:** 2026-07-13
-**Current authorization:** B2 implementation and data-governance remediation
-only; claim-mode evaluation remains blocked
+**Current authorization:** protocol and source-qualification implementation
+only; dataset migration, training, and claim-mode evaluation remain blocked
 
 This ledger separates a frozen decision from an implemented and validated
 capability. A checked documentation row does not authorize training or a result
@@ -42,20 +42,37 @@ real-data misspecification. The B2 gate opens and hash-binds typed runner
 artifacts, binds the canonical v0.3 protocol SHA-256 to the addendum, and does
 not accept caller flags or hash-shaped strings as H3 authorization.
 
+## v0.4 Source-Qualification Supersession
+
+v0.4 preserves v0.3 as immutable history and supersedes it for all future
+claim-mode work. The intended cohorts are DOD-H for development and sealed DOD-O
+for external acquisition/population evaluation, conditional on local verification
+of five separate rater streams, person identities, physical metadata, licensing,
+and immutable source/annotation hashes. Source qualification is currently
+`unverified`; migration and training are therefore unauthorized. Sleep-EDF and
+CAP are descriptive single-label transport checks only under v0.4.
+
+| Artifact | Canonical responsibility | State |
+| --- | --- | --- |
+| `docs/research/kahlus_hnph_protocol_v0.4.md` | Human-readable source, target, leakage, inference, and claim boundary | Frozen; qualification pending |
+| `docs/research/hnph_v0.4_source_qualification_addendum.md` | Hash-bound fail-closed DOD admission contract | Frozen; qualification pending |
+| `configs/protocol/hnph_phase0_v0.4.yaml` | Machine-readable active HNPH protocol | Frozen; claim mode false |
+| `docs/audit/invalidated_result_registry.json` | INV-004 records the v0.3 supersession required by the B2 freeze rule | Active |
+
 ## Frozen Contract Ledger
 
 | Contract | Canonical value | Implementation state | Evidence state |
 | --- | --- | --- | --- |
-| Development cohort | Sleep-EDF Expanded Sleep Cassette, person-grouped | Not established by C0 | None |
-| External cohort | Sealed CAP Sleep Database | Not established by C0 | Unopened |
-| Secondary shift cohort | Sleep-EDF Sleep Telemetry, descriptive and never pooled into training | Not established by C0 | None |
+| Development cohort | DOD-H after five-rater source qualification, person-grouped | Qualification tooling only | Unverified |
+| External cohort | Sealed DOD-O after source qualification and model-family freeze | Qualification tooling only | Unopened |
+| Descriptive transport | Sleep-EDF and CAP, single-label and non-claim-enabling | Not established | None |
 | Endpoint | Oracle-conditional next stable Wake/NREM/REM transition | Not established by C0 | None |
 | Cadence/context | 30-second natural grid; 10-minute causal context | Not established by C0 | None |
 | Stability | Two consecutive destination epochs | Not established by C0 | None |
 | Bands | `(0.5,2]`, `(2,5]`, `(5,10]`, `(10,20]` minutes | Not established by C0 | None |
-| Primary endpoint | Subject-balanced incremental log skill in CAP `(2,5]` minutes | Not established by C0 | None |
+| Primary endpoint | Subject-balanced incremental log skill in sealed DOD-O `(2,5]` minutes | Not established | None |
 | Chief comparator | Validation-selected semi-Markov competing-risk model including current and two preceding macrostates | Not established by C0 | None |
-| Test policy | One sealed external opening after complete freeze and red-team approval | Not established by C0 | CAP unopened |
+| Test policy | One sealed external opening after qualification and complete freeze | Enforced by gate and figure refusals | DOD-O unopened |
 
 ## Invalidated Legacy Inputs
 
@@ -73,7 +90,7 @@ not accept caller flags or hash-shaped strings as H3 authorization.
 
 The following remain incomplete after C0 and block expensive training:
 
-1. Official-source file inventory and source SHA-256 manifest.
+1. DOD-H/DOD-O five-rater, identity, license, physical-metadata, and source-hash qualification.
 2. Canonical person identity map and zero-overlap split audit.
 3. Physical unit, sampling-rate, channel, reference, and full-record length audits.
 4. Rebuilt prepared records with no silent channel or sample truncation.
@@ -85,9 +102,9 @@ The following remain incomplete after C0 and block expensive training:
 10. Multi-rater/soft-label reproducibility reference with the v0.3 frozen
     subject/rater support and max-t provenance.
 
-Until every applicable gate is recorded as passing, `CAP opened=false`,
+Until every applicable gate is recorded as passing, `DOD-O opened=false`,
 `training_authorized=false`, and `claim_eligible=false` remain controlling.
 
 After B2, independent-replication wording remains blocked until a third cohort
 and an unaffiliated falsification-oriented run complete the frozen replication
-packet. That milestone does not open CAP or substitute for B2.
+packet. That milestone does not open DOD-O or substitute for B2.

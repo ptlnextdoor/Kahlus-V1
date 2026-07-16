@@ -1,0 +1,218 @@
+schema_version: 1
+protocol_id: kahlus.hnph.phase0.v0.4
+protocol_version: 0.4.0
+status: frozen_protocol_source_qualification_pending
+effective_date: "2026-07-13"
+external_test_opened: false
+claim_mode_authorized: false
+
+supersedes:
+  protocol_id: kahlus.hnph.phase0.v0.3
+  reason: dod_source_qualification_and_external_cohort_contract_added_before_claim_mode
+  prior_protocol_preserved: true
+
+preregistration_addendum:
+  document: docs/research/hnph_v0.4_source_qualification_addendum.md
+  version: 1
+  required_before_claim_mode: true
+
+scientific_scope:
+  paper_type: protocol_and_theory
+  endpoint: operational_sleep_stage_annotation
+  oracle_current_state_conditioning: true
+  biological_transition_detector_claim: false
+  empirical_frontier_claim_allowed: false
+  observation_contraction_ceiling_role: assumption_dependent_non_novel_appendix_framing
+
+source_qualification:
+  status: unverified
+  fail_closed: true
+  migration_authorized: false
+  required_dataset_ids: [DOD-H, DOD-O]
+  required_per_dataset:
+    - immutable_source_sha256
+    - dataset_version
+    - license_identifier
+    - subject_identity_field
+    - physical_units_by_channel
+    - sampling_rate_hz_by_channel
+    - five_independent_rater_annotation_streams
+    - annotation_stream_sha256_by_rater
+  minimum_independent_raters_in_source: 5
+  minimum_consensus_raters_per_target: 3
+  held_out_rater_must_not_contribute_to_target: true
+  local_paths_must_not_enter_artifacts: true
+  raw_neural_data_must_not_enter_git: true
+
+datasets:
+  development:
+    canonical_id: DOD-H
+    role: development_after_source_qualification
+    person_grouped: true
+    qualification_status: unverified
+  external:
+    canonical_id: DOD-O
+    role: sealed_external_acquisition_and_population_test
+    sealed: true
+    opened: false
+    qualification_status: unverified
+    use_before_protocol_and_model_family_freeze: forbidden
+  descriptive_transport_only:
+    - canonical_id: sleep-edf-expanded
+      label_limitation: single_label_for_protocol_purposes
+      construct_validity_claim_enabled: false
+    - canonical_id: cap-sleep-database
+      label_limitation: single_label_for_protocol_purposes
+      construct_validity_claim_enabled: false
+
+target:
+  endpoint_type: oracle_conditional_stable_sleep_stage_annotation
+  deployment_claim: false
+  cadence_seconds: 30
+  context_seconds: 600
+  stable_transition_consecutive_epochs: 2
+  b2_primary_outcome:
+    mode: next_stable_transition_with_ambiguity
+    alphabet: [no_event, Wake, NREM, REM, Ambiguous]
+    ambiguous_handling: additional_scored_class
+    target_construction: leave_one_rater_out_soft_label
+    incomplete_follow_up: excluded_and_reported_by_band
+
+lead_bands_minutes:
+  - {id: B1, lower_exclusive: 0.5, upper_inclusive: 2.0}
+  - {id: B2, lower_exclusive: 2.0, upper_inclusive: 5.0}
+  - {id: B3, lower_exclusive: 5.0, upper_inclusive: 10.0}
+  - {id: B4, lower_exclusive: 10.0, upper_inclusive: 20.0}
+primary_band_id: B2
+
+feasibility_gate:
+  endpoint_power_minimum: 0.80
+  minimum_independent_subject_clusters: 12
+  minimum_event_subjects: 8
+  minimum_positive_primary_band_anchors: 100
+
+effect_threshold:
+  epsilon_bits_per_anchor: 0.02
+  role: preregistered_design_sensitivity_not_clinical_or_biological_effect
+  familywise_alpha: 0.05
+  familywise_hypothesis_count: 12
+  target_power: 0.80
+  sigma_source: training_folds_or_synthetic_only
+
+semi_markov_comparator_acceptance:
+  required:
+    - dwell_time_fit
+    - held_subject_calibration_and_brier_decomposition
+    - synthetic_no_eeg_dominance
+    - beats_simpler_markov_ladder
+    - nuisance_challenger_adequacy_audit
+
+label_construct_validity:
+  required_before_h3: true
+  required_source: five_independent_raters_with_leave_one_rater_out_soft_targets
+  minimum_independent_raters: 3
+  source_minimum_independent_raters: 5
+  reference_baseline: same_frozen_chief_nuisance_comparator
+  outcome_alphabet: [no_event, Wake, NREM, REM, Ambiguous]
+  method: leave_one_rater_out_soft_target_subject_cluster_bootstrap_max_t
+  probability_floor: 1.0e-12
+
+baseline_ladder:
+  selection: validation_only
+  required:
+    - empirical_no_event_destination
+    - markov_transition_prior
+    - semi_markov_competing_risk
+    - validation_tuned_logistic_or_ridge_hazard
+    - validation_tuned_gbm_hazard
+    - fixed_standard_eeg_features_plus_nuisance
+
+control_suite:
+  positive_control: synthetic_known_signal_pass
+  nuisance_probe_control: nuisance_probe
+  required:
+    - label_shuffle
+    - within_subject_time_shift
+    - unrelated_context
+    - missingness_only
+    - applicable_channel_or_geometry_permutation
+    - cluster_permutation_null
+    - nuisance_probe
+    - synthetic_known_signal_pass
+    - synthetic_null_fail
+  nuisance_probe_maximum_accuracy_above_chance: 0.20
+
+primary_endpoint:
+  dataset: DOD-O
+  band_id: B2
+  estimand: mean_subject_balanced_incremental_categorical_log_skill_bits
+  comparison: model_minus_best_eligible_nuisance_comparator
+  inference:
+    interval: one_sided_simultaneous_95_percent_lower_bound
+    multiplicity_method: subject_cluster_bootstrap_max_t
+    bootstrap_replicates: 2000
+
+evidence_artifact:
+  required_outputs: [json, markdown]
+  required_artifact_hashes:
+    - source_qualification
+    - physical_registry
+    - source_manifest
+    - split_audit
+    - anchor_targets
+    - transform_lineage
+    - baseline_results
+    - preregistration_addendum
+    - power_analysis
+    - max_t_inference
+    - comparator_acceptance
+    - label_reliability_reference
+    - future_canary
+  required_fields:
+    - claim_scope
+    - stop_reason
+    - protocol_sha256
+    - artifact_hashes
+    - source_qualification_passed
+    - external_test_opened
+    - seed
+    - bootstrap_replicates
+    - outcome_class
+    - preregistration_hash
+    - effect_size
+    - label_reproducibility_family
+    - label_rater_target_provenance_sha256
+  frozen_stop_reasons:
+    - source_qualification_fail
+    - underpowered
+    - integrity_fail
+    - baseline_fail
+    - control_fail
+    - residual_below_epsilon
+    - comparator_challenger_exceeds_epsilon
+    - label_reliability_unavailable
+    - label_reliability_below_epsilon
+    - pass_authorize_h3
+
+claim_gate:
+  pre_evaluation_positive_result_claim_allowed: false
+  empirical_hnph_frontier_claim_allowed: false
+  blocked_claims:
+    - clinical
+    - diagnostic
+    - treatment
+    - seizure_warning
+    - digital_twin
+    - foundation_model
+    - biological_mechanism
+  invalidating_conditions:
+    - unqualified_source
+    - external_data_opened_before_freeze
+    - split_leakage
+    - causal_or_interval_overlap
+    - missing_or_unverified_source_hashes
+    - held_out_rater_in_consensus_target
+    - mixed_sampling_rates_or_units
+    - missing_best_comparator
+    - failed_calibration_or_negative_control
+    - irreproducible_evidence
