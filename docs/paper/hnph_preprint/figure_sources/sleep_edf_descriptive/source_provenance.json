@@ -1,0 +1,35 @@
+{
+  "assets": {
+    "pdf": {
+      "file": "figure_a1_real_sleep_edf_waveform.pdf",
+      "sha256": "01bf87fae4b2ffad236f7987c2549f47827f07b89b5e2c075cc574a7a16b1855"
+    },
+    "png": {
+      "file": "figure_a1_real_sleep_edf_waveform.png",
+      "sha256": "92d27ff814c959c58ddd68b5499225f3d84e48f5247bae32ff0444110c710c87"
+    }
+  },
+  "claim_boundary": "The rendered image is a descriptive single-label Sleep-EDF transport example. The current HNPH v0.4 build does not independently qualify its raw source, and this image cannot enable repeated-rater construct validity or any empirical HNPH frontier claim.",
+  "derivative_renderer": {
+    "change_scope": "Regenerated from hash-verified local Sleep-EDF EDF files with Kahlus ridge-style matplotlib renderer; signal window, anchor selection, and stage mapping unchanged.",
+    "minimum_final_font_pt_at_5_5_in_width": 8.17,
+    "origin_script": "pipeline/scripts/paper/build_hnph_figures.py",
+    "origin_script_sha256": "39d8d0752bec8f1981e2fe4ae3c1e43b78b7723fc77751ea57020598acd2fa3f",
+    "renderer": "scripts/analysis/plot_sleep_edf_descriptive_figure.py"
+  },
+  "origin": "Kahlus_HNPH_Vector_Figure_Package_2026-07-11",
+  "origin_manifest_sha256": "3d394d0b146c8b02423145698583f1957cc309383778a06e9df6d51b7f1b67eb",
+  "record": {
+    "dataset": "Sleep-EDF Expanded",
+    "destination": "NREM",
+    "hypnogram_sha256_reported_by_origin": "76e8457a67eaaaa62c7f6cc6e098fbe1c0a9c3fa02fa90ea01460aa481d71e82",
+    "issue_time_seconds": 25800.0,
+    "psg_sha256_reported_by_origin": "bf91934cdbf7c9577bc91b411462ddb51c418e17e10a2f59a15feeeb917b0a5f",
+    "safe_record_id": "SC4002E0",
+    "sampling_rate_hz": 100.0,
+    "stable_transition_time_seconds": 26070.0,
+    "transition_lead_minutes": 4.5
+  },
+  "schema": "kahlus.hnph.descriptive_figure_source.v1",
+  "status": "descriptive_single_label_transport_not_claim_evidence"
+}

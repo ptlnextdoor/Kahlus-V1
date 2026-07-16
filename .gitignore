@@ -8,6 +8,14 @@ __pycache__/
 .desloppify/
 docs/_build/
 
+docs/paper/**/*.aux
+docs/paper/**/*.bbl
+docs/paper/**/*.blg
+docs/paper/**/*.fdb_latexmk
+docs/paper/**/*.fls
+docs/paper/**/*.log
+docs/paper/**/*.out
+
 graphify-out/cache/
 graphify-out/.graphify_detect.json
 graphify-out/.graphify_python
