@@ -9,6 +9,8 @@ The repo should not claim a new brain foundation model or clinical digital twin.
 
 ## What to read first
 
+- [Concepts for non-specialists](overview/concepts.md): the plain-English version before the math.
+- [Limitations and claim boundaries](limitations.md): what Kahlus is not, and unsafe claims to never make.
 - [Ridge EEG diagnostics for Amrith](figures/ridge-eeg-diagnostics.md): benchmark-derived figure and analysis of why ridge regression on BNCI2014_001 measures input/target overlap, not learned neural dynamics.
 - [Visual standards](figures/visual-standards.md): what counts as reputable neuroscience visualization vs AI-generated slop.
 - [Reputable neuroscience repo patterns](references/reputable-neuroscience-repos.md): what MNE, MOABB, Braindecode, CEBRA, NeuroML, and Nilearn teach us.
@@ -16,6 +18,14 @@ The repo should not claim a new brain foundation model or clinical digital twin.
 - [Leakage-proof evaluation](methods/leakage-proof-evaluation.md): split and audit logic.
 
 ## Documentation map
+
+```{toctree}
+:maxdepth: 2
+:caption: Overview
+
+overview/concepts
+limitations
+```
 
 ```{toctree}
 :maxdepth: 2
@@ -32,6 +42,7 @@ analysis/neuroscience_figure_stack
 :caption: Methods and evidence
 
 methods/leakage-proof-evaluation
+methods/ridge-baseline
 paper/benchmark_protocol
 paper/methods
 paper/experiments
@@ -84,6 +95,7 @@ H100_RUNBOOK
 LICENSE_REUSE
 RUNPOD_A100_REHEARSAL
 analysis/ridge_eeg_figures/README
+research/eeg_v1_figure_source/README
 maintenance/repo-knowledge-graph
 paper/abstract
 paper/outline
