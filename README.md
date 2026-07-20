@@ -1,30 +1,102 @@
-# NeuroTwin / Kahlus
+# KAHLUS-V1 / NeuroTwin
 
-> **AI agents:** Read **[AGENTS.md](AGENTS.md)** before writing code or making scientific claims. Conductor workspaces: **[CONDUCTOR.md](CONDUCTOR.md)**. Cursor loads `.cursor/rules/kahlus-constitution.mdc` automatically.
+> A leakage-controlled benchmark and model scaffold for neural translation:
+> can noninvasive biosignals forecast future brain and body state under
+> honest, held-out splits?
 
-NeuroTwin v1 is a research repo for a leakage-proof Neural Translation benchmark and model scaffold. **Kahlus** (Forecastability Trial 0 / Neural-CASP) is the leakage-controlled engine for testing whether noninvasive biosignals contain residual information about future brain/body state transitions — see [AGENTS.md](AGENTS.md) for the full research constitution, claim boundaries, and gate discipline. The current experimental architecture is NeuroTwin NFC, a Neural Field Compiler. The claim is not "first brain foundation model", "first multimodal brain model", "first stimulus-to-brain model", or a clinical digital twin.
+Kahlus is the leakage-controlled engine behind NeuroTwin. It asks one falsifiable
+question — **do noninvasive recordings (fMRI, EEG, behavior, stimulus) carry
+residual information about *future* neural state that survives strict
+subject/site/dataset holdout** — and refuses to let a model answer it by leaking.
+The current architecture is NeuroTwin NFC (a Neural Field Compiler) that treats
+every modality as a partial observation of one latent neural field.
 
-The defensible v1 target is stricter:
+The claim is deliberately **not** "first brain foundation model", "first
+multimodal brain model", or a clinical digital twin. The defensible v1 target is
+stricter: cross-modal neural translation, missing-modality reconstruction,
+future-state forecasting, and few-shot subject adaptation, all measured under
+held-out subject/site/dataset splits with a pre-declared leakage contract.
 
-> Cross-modal neural translation, missing-modality reconstruction, future-state forecasting, and few-shot subject adaptation under held-out subject/site/dataset splits.
+The full research constitution, claim boundaries, and gate discipline live in
+**[AGENTS.md](AGENTS.md)**.
 
-NFC treats fMRI, EEG, behavior, stimulus responses, and future modalities as partial observations of one latent neural field. Pair-Operator remains usable, but only as a baseline/ablation for low-rank relational field updates.
+---
 
-For the current repo state and NFC pivot map, see `docs/research/neurotwin_project_state.md`. Track A is reproducibility and claim-gate evidence. Track B is the NFC model path. The next A100 step is strict 1x NFC synthetic diagnostic only, not Algonauts or 6x DDP.
+## The headline result
 
-## Figure archive
+On the recovered EEG v1 benchmark, the honest finding is a **split verdict**, and
+we report it as one. Kahlus v1 wins future forecasting outright and **loses**
+masked reconstruction to a plain linear ridge. Publishing the loss is the point:
+a leakage-controlled benchmark that only ever flattered its own model would be
+worthless.
 
-The individual figures prepared for the protocol preprint are indexed in
-[`docs/figures/README.md`](docs/figures/README.md). HNPH protocol figures live
-under [`docs/figures/hnph_protocol/`](docs/figures/hnph_protocol/); regenerate
-them with `python3 scripts/analysis/render_docs_figures.py`. The BNCI ridge
-overlap analysis is documented separately in
-[`docs/figures/ridge-eeg-diagnostics.md`](docs/figures/ridge-eeg-diagnostics.md).
-The HNPH figures are protocol-only or descriptive illustrations; the ridge
-figures document a historical benchmark shortcut and do not establish a new
-empirical or clinical result.
+| task | winner | Kahlus v1 (MSE) | best baseline (MSE) | verdict |
+| --- | --- | --- | --- | --- |
+| **Future forecasting** | **Kahlus v1** | **3.12** | linear ridge 7.75 | Kahlus wins, 2.5x lower error |
+| **Masked reconstruction** | linear ridge | 53.98 | **linear ridge 7.81** | **Kahlus loses to a linear model** |
 
-Primary competitors are explicit first-class baselines: TRIBE v2, BrainVista, Brain-OF, BrainOmni, Brain Harmony, plus Transformer, SSM/Mamba, and modality-specialist baselines. Brain-OF is treated as the main benchmark opponent for generic multimodal neural foundation modeling.
+_MSE, lower is better; medians after de-duplicating repeated baseline-ranking
+artifacts. Full ranking across 10 baselines below._
+
+![Recovered Kahlus v1 versus standard EEG baselines](docs/research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png)
+
+The forecasting win is real and the reconstruction loss is real. A method that
+forecasts the next state well but reconstructs a masked present worse than ridge
+regression is telling you something specific about what it learned, and hiding
+that would defeat the entire leakage-controlled premise.
+
+Every figure is rendered only from cached CSV/JSON evidence artifacts (no raw
+tensors, no waveform overlays without provenance); the figure-source packet and
+its provenance rule are in
+[`docs/research/eeg_v1_figure_source/`](docs/research/eeg_v1_figure_source/).
+
+## Why this exists
+
+The neural foundation-model lane is crowded (TRIBE, BrainVista, Brain-OF,
+BrainOmni, Brain Harmony), and most benchmarks are built by the same group that
+builds the model. Leakage — reusing records, overlapping held-out groups,
+repeated windows, forbidden target metadata — is the field's quiet failure mode,
+and it inflates exactly the future-state and cross-subject claims that matter
+most. Kahlus is built the other way around: **the split manifest is frozen at
+recording-manifest time, before preprocessing, windowing, or augmentation**, and
+every competitor is a first-class baseline rather than a strawman.
+
+## The tasks (v1 neural translation)
+
+Five task families, each scored under held-out subject/site/dataset splits:
+
+1. **Future-state forecasting** — predict future neural state from past.
+2. **Masked reconstruction** — recover masked channels of the present.
+3. **Cross-modal translation** — map one modality to another.
+4. **Subject adaptation** — few-shot to a held-out subject.
+5. **Dataset/site generalization** — transfer across recording sites.
+
+Baseline failures are explicit and excluded from rankings rather than silently
+imputed. The competitor registry names the crowded lanes instead of pretending
+they do not exist.
+
+## Honest scope
+
+- The headline numbers are from the **recovered EEG v1 benchmark**, rendered from
+  cached evidence artifacts. Synthetic smoke results elsewhere in the repo are
+  plumbing checks, not science, and are labeled as such.
+- Kahlus **loses** masked reconstruction to a linear ridge. That is reported, not
+  buried.
+- Directed information / neural translation is not new; the contribution here is
+  the **leakage contract + held-out-split discipline + explicit competitor
+  baselines**, validated end-to-end on a benchmark that can fail its own model.
+- Clinical, physiological, and "digital twin" claims are out of scope for v1 by
+  the constitution in [AGENTS.md](AGENTS.md).
+
+## Independent coupling benchmark
+
+The directed-information estimator lane is checked separately by
+[kahlus-bench](https://github.com/ptlnextdoor/kahlus-bench), a leakage-sealed
+benchmark that certifies neural-coupling estimators against synthetic systems
+whose true directed information is analytically known. That benchmark reads
+ground truth; the estimators never do, so the pass is an independent check.
+
+---
 
 ## Current Scaffold
 
