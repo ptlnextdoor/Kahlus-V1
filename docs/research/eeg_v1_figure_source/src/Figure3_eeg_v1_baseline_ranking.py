@@ -46,14 +46,20 @@ KAHLUS_LABEL = "Kahlus v1 recovered"
 
 
 def main() -> None:
-    style.apply_style()
     ranking = comparison_rows(load_baselines(DATA / "baseline_ranking.csv"), load_recovered_kahlus(DATA / "task_results.csv"))
-    fig, axes = plt.subplots(1, 2, figsize=(7.35, 4.05), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(11.0, 4.5), constrained_layout=True)
     for ax, task in zip(axes, TASKS, strict=True):
         plot_task_ranking(ax, task_rows(ranking, task), TASK_TITLES[task])
-    fig.suptitle("Recovered Kahlus v1 versus standard EEG baselines", x=0.01, ha="left", fontsize=10.5, fontweight="bold")
-    fig.text(0.01, -0.015, "Bars are median MSE after de-duplicating repeated baseline-ranking artifacts. Lower is better.", fontsize=7.2, color=style.GRAY)
-    style.save(fig, FIGURES / "Figure3_eeg_v1_baseline_ranking")
+    fig.suptitle(
+        "Recovered Kahlus v1 versus standard EEG baselines: "
+        "wins forecasting, loses masked reconstruction to a linear ridge",
+        fontsize=12)
+    fig.text(0.5, -0.02, "Bars are median MSE after de-duplicating repeated baseline-ranking artifacts. Lower is better.",
+             ha="center", fontsize=8, color="0.4")
+    for ext in ("png", "pdf", "svg"):
+        fig.savefig(FIGURES / f"Figure3_eeg_v1_baseline_ranking.{ext}", dpi=130,
+                    bbox_inches="tight", facecolor="white")
+    plt.close(fig)
 
 
 def load_baselines(path: Path) -> pd.DataFrame:
@@ -91,8 +97,8 @@ def task_rows(df: pd.DataFrame, task: str) -> pd.DataFrame:
 
 def plot_task_ranking(ax: plt.Axes, df: pd.DataFrame, title: str) -> None:
     if df.empty:
-        ax.set_title(title, loc="left", fontweight="bold")
-        ax.text(0.5, 0.5, "no rows", ha="center", va="center", transform=ax.transAxes, color=style.GRAY)
+        ax.set_title(title)
+        ax.text(0.5, 0.5, "no rows", ha="center", va="center", transform=ax.transAxes, color="0.4")
         ax.set_axis_off()
         return
     order = df.model_label.to_list()
@@ -100,25 +106,24 @@ def plot_task_ranking(ax: plt.Axes, df: pd.DataFrame, title: str) -> None:
     sns.barplot(data=df, x="value", y="model_label", hue="model_label", order=order, palette=palette, dodge=False, legend=False, ax=ax)
     for patch, (_, row) in zip(ax.patches, df.iterrows(), strict=True):
         width = patch.get_width()
-        ax.text(width + df.value.max() * 0.015, patch.get_y() + patch.get_height() / 2, f"{width:.2f}", va="center", fontsize=7.1, color=style.INK)
+        ax.text(width + df.value.max() * 0.015, patch.get_y() + patch.get_height() / 2, f"{width:.2f}", va="center", fontsize=8, color="black")
         if row.model_label == KAHLUS_LABEL:
-            patch.set_edgecolor(style.INK)
+            patch.set_edgecolor("black")
             patch.set_linewidth(1.0)
     winner = df.iloc[0].model_label
-    winner_color = style.ORANGE if winner == KAHLUS_LABEL else style.BLUE
-    ax.set_title(f"{title}\nwinner: {winner}", loc="left", fontweight="bold", color=winner_color, pad=8)
+    ax.set_title(f"{title}  (winner: {winner})")
     ax.set_xlim(0, df.value.max() * 1.24)
     ax.set_xlabel("MSE, lower is better")
     ax.set_ylabel("")
-    ax.grid(axis="x", color=style.LIGHT)
+    ax.grid(axis="x", alpha=0.3)
 
 
 def model_color(model: str) -> str:
     if model == KAHLUS_LABEL:
-        return style.ORANGE
+        return "#ff7f0e"  # tab10 orange
     if "ridge" in model.lower():
-        return style.BLUE
-    return style.GRAY
+        return "#1f77b4"  # tab10 blue
+    return "#7f7f7f"  # tab10 gray
 
 
 if __name__ == "__main__":
