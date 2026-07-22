@@ -12,7 +12,6 @@ Leaderboard figure from cached task_results.csv and baseline_ranking.csv.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -21,9 +20,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _figure_style as style  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"

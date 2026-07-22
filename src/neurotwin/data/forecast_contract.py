@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import math
 from typing import Any, Mapping
 
+import numpy as np
+
 
 FORECAST_PROTOCOL_V1_OVERLAP = "kahlus.forecast.v1_overlap"
 FORECAST_PROTOCOL_V2_NONOVERLAP = "kahlus.forecast.v2_nonoverlap"
@@ -151,6 +153,42 @@ class WindowExampleProvenance:
             raise ForecastProtocolError(f"window ranges {actual} do not match protocol ranges {expected}")
         if spec.claim_eligible and self.target_overlaps_input:
             raise ForecastProtocolError("claim-eligible forecast provenance cannot overlap its input")
+
+
+def strictly_future_metric_mask(
+    y: np.ndarray,
+    *,
+    forecast_horizon: int,
+    input_length: int | None = None,
+) -> np.ndarray:
+    """Boolean mask that is True only on target positions absent from the input.
+
+    Assumes the target window starts ``forecast_horizon`` samples after the input
+    start (the historical shifted-window convention). Positions whose absolute
+    index still falls inside the input window are copyable and must not score.
+    """
+
+    y_arr = np.asarray(y)
+    if y_arr.ndim < 2:
+        raise ForecastProtocolError("y must have at least a batch and time axis")
+    if forecast_horizon < 1:
+        raise ForecastProtocolError("forecast_horizon must be >= 1")
+    target_length = int(y_arr.shape[1])
+    context = int(target_length if input_length is None else input_length)
+    if context < 1:
+        raise ForecastProtocolError("input_length must be positive")
+    time_mask = np.zeros(target_length, dtype=bool)
+    for index in range(target_length):
+        absolute = forecast_horizon + index
+        if absolute >= context:
+            time_mask[index] = True
+    if not bool(time_mask.any()):
+        raise ForecastProtocolError(
+            "strictly-future mask is empty; increase forecast_horizon or shorten the input window"
+        )
+    mask = np.zeros(y_arr.shape, dtype=bool)
+    mask[:, time_mask, ...] = True
+    return mask
 
 
 def legacy_overlapping_forecast_spec(

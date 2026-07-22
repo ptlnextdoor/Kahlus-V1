@@ -18,6 +18,7 @@ from neurotwin.training.prepared_checkpoints import load_task_resume, save_task_
 from neurotwin.training.prepared_metrics import (
     batched_objective_loss,
     evaluate_task,
+    indexed_metric_mask,
     mse_loss,
     predict,
     probabilistic_loss,
@@ -204,10 +205,11 @@ def _run_task_training_loop(
             index_tensor = torch.as_tensor(batch_indices, dtype=torch.long, device=runtime.device)
             xb = tensors.x_train.index_select(0, index_tensor)
             yb = tensors.y_train.index_select(0, index_tensor)
+            batch_mask = indexed_metric_mask(task, batch_indices)
             objective = (
-                probabilistic_loss(model, task, xb, yb, precision=config.precision)
+                probabilistic_loss(model, task, xb, yb, precision=config.precision, metric_mask=batch_mask)
                 if _uses_probabilistic_objective(model_config)
-                else mse_loss(predict(model, task, xb, precision=config.precision), yb)
+                else mse_loss(predict(model, task, xb, precision=config.precision), yb, metric_mask=batch_mask)
             )
             loss = (objective * objective_weight) / config.gradient_accumulation_steps
             loss_value = float(loss.detach())

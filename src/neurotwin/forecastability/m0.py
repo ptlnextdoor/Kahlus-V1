@@ -88,6 +88,13 @@ def _run_one(
     _set_determinism(seed)
     dataset = make_synthetic_eeg_v1_dataset(seed=seed, n_subjects=n_subjects, n_time=n_time, n_channels=n_channels)
     task = build_future_forecasting_task(dataset, window_length=8, forecast_horizon=1, stride=2)
+    if task.metric_mask is None or not bool(np.asarray(task.metric_mask).any()):
+        raise ValueError(
+            "M0 ground-truth ruler requires a strictly-future metric_mask on the forecasting task; "
+            "refusing to score an unmasked overlapping window"
+        )
+    if not bool(task.metadata.get("strictly_future_metric_mask")):
+        raise ValueError("M0 requires metadata['strictly_future_metric_mask']=True")
     manifest_paths = _freeze_manifests(out / "manifests", tuple(dataset.records), seed=seed)
     payload = _run_task_models(task, seed=seed, train_steps=train_steps, model_ids=RUNNER_IDS)
     _write_json(out / "task_payload.json", payload)
@@ -176,6 +183,12 @@ def _write_report(path: Path, gate: dict[str, Any], rows: list[dict[str, str]]) 
         lines.append(f"| {row['rank']} | {row['model_id']} | {row['mse']} | {row['mae']} | {row['pearsonr']} | {row['r2']} |")
     lines.extend(
         [
+            "",
+            "## Scoring contract",
+            "",
+            "Forecast metrics are computed only on the strictly-future `metric_mask` "
+            "(target positions absent from the input window). Overlapping / copyable "
+            "positions do not enter MSE, MAE, Pearson r, or R2.",
             "",
             "## Gate Discipline",
             "",
