@@ -31,7 +31,7 @@ cp "$RUNNER_TARBALL" "$HANDOFF_ROOT/"
 printf '%s\n' "$FULL_SHA" > "$HANDOFF_ROOT/COMMIT_HASH.txt"
 
 python3 "$SCRIPT_DIR/render_a100_handoff_readme.py" \
-  --template README_KTM_HANDOFF.md.in \
+  --template deploy/a100/README_KTM_HANDOFF.md.in \
   --output "$HANDOFF_ROOT/README_HANDOFF.md" \
   --full-sha "$FULL_SHA" \
   --short-sha "$SHORT_SHA" \

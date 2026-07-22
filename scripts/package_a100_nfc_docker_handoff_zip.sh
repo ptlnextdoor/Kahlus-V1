@@ -35,7 +35,7 @@ HANDOFF_ROOT="$STAGING/$HANDOFF_NAME"
 mkdir -p "$HANDOFF_ROOT"
 printf '%s\n' "$FULL_SHA" > "$HANDOFF_ROOT/COMMIT_HASH.txt"
 
-python3 - "$FULL_SHA" "$SHORT_SHA" "$IMAGE_REF" README_KRISH_AGENT_NFC_A100.md.in "$HANDOFF_ROOT/README_KRISH_AGENT.md" <<'PY'
+python3 - "$FULL_SHA" "$SHORT_SHA" "$IMAGE_REF" deploy/a100/README_KRISH_AGENT_NFC_A100.md.in "$HANDOFF_ROOT/README_KRISH_AGENT.md" <<'PY'
 from pathlib import Path
 from string import Template
 import sys

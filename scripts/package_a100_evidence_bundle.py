@@ -306,7 +306,7 @@ def write_readmes(config: EvidenceBundleConfig, root: Path) -> None:
             copied_handoff = False
     if not copied_handoff:
         short_sha = config.full_sha[:7]
-        template_path = config.repo_root / "README_HANDOFF.md.in"
+        template_path = config.repo_root / "deploy/a100/README_HANDOFF.md.in"
         if template_path.exists():
             _render_handoff_readme(
                 template_path,

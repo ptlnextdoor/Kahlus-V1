@@ -25,7 +25,7 @@ This map ties research concepts to current repository files. Treat it as a navig
 | Model cards/reports | `src/neurotwin/reports/`, `src/neurotwin/benchmarks/reports.py` | read-only reporting path |
 | CLI | `src/neurotwin/cli.py`, `src/neurotwin/eval/command.py`, `src/neurotwin/training/command.py` | public command surface |
 | Runtime estimates/preflight | `src/neurotwin/runtime/` | cluster safety layer |
-| A100 handoff | `scripts/a100_krish_agent_autorun.sh.in`, `scripts/package_runner_bundle.sh`, `scripts/package_a100_handoff_zip.sh`, `README_HANDOFF.md.in` | package after clean commit |
+| A100 handoff | `scripts/a100_krish_agent_autorun.sh.in`, `scripts/package_runner_bundle.sh`, `scripts/package_a100_handoff_zip.sh`, `deploy/a100/README_HANDOFF.md.in` | package after clean commit |
 | TurboVec layer | `src/neurotwin/retrieval/` if added | optional/deferred |
 | fNIRS | docs only | theory/deferred |
 
@@ -39,7 +39,7 @@ This map ties research concepts to current repository files. Treat it as a navig
 - `src/neurotwin/training/prepared_loop.py`
 - `scripts/package_runner_bundle.sh`
 - `scripts/package_a100_handoff_zip.sh`
-- `README_HANDOFF.md.in`
+- `deploy/a100/README_HANDOFF.md.in`
 
 These files define trust boundaries, packaging behavior, or long-running experiment contracts.
 
@@ -72,7 +72,7 @@ The gate must fail hard on shape mismatch, missing metrics, NaNs, target leakage
 - `src/neurotwin/benchmarks/nfc_suite.py`
 - `src/neurotwin/eval/command.py`
 - `scripts/a100_krish_agent_autorun.sh.in`
-- `README_HANDOFF.md.in`
+- `deploy/a100/README_HANDOFF.md.in`
 - `scripts/package_runner_bundle.sh`
 - `scripts/package_a100_handoff_zip.sh`
 - `docs/research/neurotwin_project_state.md`

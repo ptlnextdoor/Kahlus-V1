@@ -88,7 +88,7 @@ LEAKAGE
 BASELINES
 CLAIMS
 REPRODUCIBILITY
-A100_RUNBOOK
+deploy/A100_RUNBOOK
 ROADMAP
 ```
 
@@ -105,11 +105,11 @@ licenses/upstream-registry
 :maxdepth: 1
 :caption: Appendix and archived notes
 
-CHAPMAN_A100_LAUNCH
-CHAPMAN_A100_QUICKSTART
-H100_RUNBOOK
+deploy/CHAPMAN_A100_LAUNCH
+deploy/CHAPMAN_A100_QUICKSTART
+deploy/H100_RUNBOOK
 LICENSE_REUSE
-RUNPOD_A100_REHEARSAL
+deploy/RUNPOD_A100_REHEARSAL
 analysis/ridge_eeg_figures/README
 research/eeg_v1_figure_source/README
 maintenance/repo-knowledge-graph

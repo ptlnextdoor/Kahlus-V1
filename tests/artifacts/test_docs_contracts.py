@@ -109,22 +109,22 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             "scripts/package_runner_bundle.sh",
             "scripts/render_a100_handoff_readme.py",
             "scripts/train_a100_inner.sh",
-            "Dockerfile.a100",
-            "README_HANDOFF.md.in",
-            "README_AGENT_DEPLOY.md",
-            "README_RUN.md",
-            "environment-a100.yml",
+            "deploy/a100/Dockerfile.a100",
+            "deploy/a100/README_HANDOFF.md.in",
+            "deploy/a100/README_AGENT_DEPLOY.md",
+            "deploy/a100/README_RUN.md",
+            "deploy/a100/environment-a100.yml",
             "requirements/cluster-a100.txt",
             "docs/CLAIMS.md",
-            "docs/A100_RUNBOOK.md",
+            "docs/deploy/A100_RUNBOOK.md",
             "docs/research/neurotwin_nfc_research_dossier.pdf",
             "docs/research/neurotwin_nfc_research_dossier.tex",
             "docs/research/nfc_implementation_plan.md",
             "docs/research/nfc_architecture_decision_log.md",
             "docs/research/nfc_falsification_criteria.md",
-            "docs/CHAPMAN_A100_QUICKSTART.md",
-            "docs/RUNPOD_A100_REHEARSAL.md",
-            "docs/H100_RUNBOOK.md",
+            "docs/deploy/CHAPMAN_A100_QUICKSTART.md",
+            "docs/deploy/RUNPOD_A100_REHEARSAL.md",
+            "docs/deploy/H100_RUNBOOK.md",
             "docs/paper/outline.md",
             "docs/paper/limitations.md",
         ]
@@ -162,7 +162,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         )
         checked = {
             "pyproject.toml": Path("pyproject.toml").read_text(encoding="utf-8").lower(),
-            "environment-a100.yml": Path("environment-a100.yml").read_text(encoding="utf-8").lower(),
+            "deploy/a100/environment-a100.yml": Path("deploy/a100/environment-a100.yml").read_text(encoding="utf-8").lower(),
             "requirements/cluster-a100.txt": Path("requirements/cluster-a100.txt").read_text(encoding="utf-8").lower(),
         }
 
@@ -172,7 +172,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
                     self.assertNotIn(package, text)
 
     def test_a100_runbook_separates_fast_and_heavy_lanes(self):
-        runbook = Path("docs/A100_RUNBOOK.md").read_text(encoding="utf-8")
+        runbook = Path("docs/deploy/A100_RUNBOOK.md").read_text(encoding="utf-8")
 
         self.assertIn("Fast Iteration Lane", runbook)
         self.assertIn("Heavy 7-GPU Lane", runbook)
@@ -325,8 +325,8 @@ class ArtifactDocsContractsTests(unittest.TestCase):
             self.assertIn(required, preflight)
 
     def test_agent_deploy_docs_and_dockerfile_are_7gpu_first(self):
-        doc = Path("README_AGENT_DEPLOY.md").read_text(encoding="utf-8")
-        dockerfile = Path("Dockerfile.a100").read_text(encoding="utf-8")
+        doc = Path("deploy/a100/README_AGENT_DEPLOY.md").read_text(encoding="utf-8")
+        dockerfile = Path("deploy/a100/Dockerfile.a100").read_text(encoding="utf-8")
 
         for required in (
             "automated deployment agent",
@@ -367,10 +367,10 @@ class ArtifactDocsContractsTests(unittest.TestCase):
         self.assertIn("python -m pip install -e '.[moabb,cluster]'", dockerfile)
 
     def test_operator_run_bundle_files_are_self_contained(self):
-        readme = Path("README_RUN.md").read_text(encoding="utf-8")
+        readme = Path("deploy/a100/README_RUN.md").read_text(encoding="utf-8")
         run_full = Path("scripts/run_full.sh").read_text(encoding="utf-8")
         run_full_sbatch = Path("scripts/run_full.sbatch").read_text(encoding="utf-8")
-        environment = Path("environment-a100.yml").read_text(encoding="utf-8")
+        environment = Path("deploy/a100/environment-a100.yml").read_text(encoding="utf-8")
 
         for required in (
             "Operator Workflow",
@@ -479,7 +479,7 @@ class ArtifactDocsContractsTests(unittest.TestCase):
 
     def test_runpod_rehearsal_is_budget_gated(self):
         script = Path("scripts/cluster/runpod_a100_rehearsal.sh").read_text(encoding="utf-8")
-        doc = Path("docs/RUNPOD_A100_REHEARSAL.md").read_text(encoding="utf-8")
+        doc = Path("docs/deploy/RUNPOD_A100_REHEARSAL.md").read_text(encoding="utf-8")
 
         self.assertIn("RUNPOD_MAX_BUDGET_USD", script)
         self.assertIn("must be <= 5", script)

@@ -1,6 +1,6 @@
 # H100 Runbook
 
-H100 is a compatible high-memory variant. Use `docs/A100_RUNBOOK.md` as the canonical v1 cluster path unless a specific H100 queue is available. Prepare data before training. H100 jobs must not require internet access.
+H100 is a compatible high-memory variant. Use `docs/deploy/A100_RUNBOOK.md` as the canonical v1 cluster path unless a specific H100 queue is available. Prepare data before training. H100 jobs must not require internet access.
 Prepared artifacts should live under persistent `$NEUROTWIN_DATA/prepared/`; do not rely on node-local `/tmp` for cluster launches.
 
 Local dry run:

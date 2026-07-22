@@ -2,13 +2,17 @@ FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
 
 # Dependency/runtime helper image. This is not a source-hiding image; the
 # handoff runner still ships the runtime Python source required to execute.
+# Build from repo root: docker build -f deploy/a100/Dockerfile.a100 .
 ENV PIP_NO_CACHE_DIR=1 \
     PYTHONUNBUFFERED=1 \
     TOKENIZERS_PARALLELISM=false
 
 WORKDIR /workspace/repo
 
-COPY pyproject.toml README.md README_RUN.md README_AGENT_DEPLOY.md environment-a100.yml ./
+COPY pyproject.toml README.md ./
+COPY deploy/a100/README_RUN.md ./README_RUN.md
+COPY deploy/a100/README_AGENT_DEPLOY.md ./README_AGENT_DEPLOY.md
+COPY deploy/a100/environment-a100.yml ./environment-a100.yml
 COPY requirements ./requirements
 COPY configs ./configs
 COPY scripts ./scripts

@@ -42,11 +42,11 @@ FORBIDDEN_PARTS = {".git", ".env", ".ds_store", "__macosx", "__pycache__", "grap
 FORBIDDEN_MARKERS = ("secret", "password", "passwd", "api_key", "apikey", "ssh_key", "raw_private")
 
 RUNNER_PATHS = (
-    "README_RUN.md",
-    "README_AGENT_DEPLOY.md",
-    "Dockerfile.a100",
+    "deploy/a100/README_RUN.md",
+    "deploy/a100/README_AGENT_DEPLOY.md",
+    "deploy/a100/Dockerfile.a100",
     "pyproject.toml",
-    "environment-a100.yml",
+    "deploy/a100/environment-a100.yml",
     "requirements/cluster-a100.txt",
     "configs/train/moabb_a100.yaml",
     "configs/train/moabb_a100_smoke.yaml",
@@ -294,7 +294,8 @@ def _write_runner_tarball(repo: Path, tarball: Path, commit: str) -> None:
             source = repo / rel
             if not source.exists():
                 raise A100HandoffError(f"required handoff source is missing: {rel}")
-            _copy_source(source, runner_root / rel)
+            dest_rel = Path(rel).name if rel.startswith("deploy/a100/") else rel
+            _copy_source(source, runner_root / dest_rel)
         _write_checksums(runner_root, "RUNNER_SHA256SUMS")
         _assert_safe_tree(runner_root)
         with tarfile.open(tarball, "w:gz") as tar:

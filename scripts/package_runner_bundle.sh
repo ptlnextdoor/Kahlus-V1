@@ -27,13 +27,13 @@ mkdir -p "$OUT_DIR"
 BUNDLE_ROOT="$STAGING/$BUNDLE_NAME"
 VERIFY_ROOT="$STAGING/verify"
 ARCHIVE_PATHS=(
-  README_HANDOFF.md.in
-  README_RUN.md
-  README_AGENT_DEPLOY.md
+  deploy/a100/README_HANDOFF.md.in
+  deploy/a100/README_RUN.md
+  deploy/a100/README_AGENT_DEPLOY.md
+  deploy/a100/Dockerfile.a100
+  deploy/a100/environment-a100.yml
   README.md
-  Dockerfile.a100
   pyproject.toml
-  environment-a100.yml
   docs/research/math_implementation_coverage.md
   requirements/cluster-a100.txt
   configs/train/moabb_a100.yaml
@@ -67,6 +67,12 @@ ARCHIVE_PATHS=(
 )
 
 git archive --format=tar --prefix="$BUNDLE_NAME/" HEAD "${ARCHIVE_PATHS[@]}" | tar -xf - -C "$STAGING"
+
+# Flatten deploy/a100 assets to runner root for operator UX.
+for name in README_HANDOFF.md.in README_RUN.md README_AGENT_DEPLOY.md Dockerfile.a100 environment-a100.yml; do
+  mv "$BUNDLE_ROOT/deploy/a100/$name" "$BUNDLE_ROOT/$name"
+done
+rm -rf "$BUNDLE_ROOT/deploy"
 
 printf '%s\n' "$FULL_SHA" > "$BUNDLE_ROOT/COMMIT_HASH.txt"
 {
