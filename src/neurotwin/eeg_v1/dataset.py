@@ -12,6 +12,7 @@ from neurotwin.data.forecast_contract import (
     ForecastTaskSpec,
     ResolvedForecastTaskSpec,
     WindowExampleProvenance,
+    strictly_future_metric_mask,
 )
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import RecordingRecord, SplitManifest, build_split_manifest
@@ -225,6 +226,22 @@ def build_future_forecasting_task(
         )
     else:
         metadata.update({"forecast_protocol_id": "kahlus.forecast.v1_overlap", "claim_eligible": False})
+    train_mask = None
+    test_mask = None
+    val_mask = None
+    if resolved_spec is None:
+        # Historical overlapping windows: score/train only on the strictly-future tail.
+        train_mask = strictly_future_metric_mask(
+            y_train, forecast_horizon=forecast_horizon, input_length=window_length
+        )
+        test_mask = strictly_future_metric_mask(
+            y_test, forecast_horizon=forecast_horizon, input_length=window_length
+        )
+        if y_val.size:
+            val_mask = strictly_future_metric_mask(
+                y_val, forecast_horizon=forecast_horizon, input_length=window_length
+            )
+        metadata["strictly_future_metric_mask"] = True
     return SupervisedWindowTask(
         task_id="future_state_forecasting",
         source_modality="eeg",
@@ -233,8 +250,11 @@ def build_future_forecasting_task(
         y_train=y_train,
         x_test=x_test,
         y_test=y_test,
+        metric_mask=test_mask,
+        train_metric_mask=train_mask,
         x_val=x_val if x_val.size else None,
         y_val=y_val if y_val.size else None,
+        val_metric_mask=val_mask,
         forecast_spec=resolved_spec,
         train_provenance=tuple(provenance["train"]),
         val_provenance=tuple(provenance["val"]),

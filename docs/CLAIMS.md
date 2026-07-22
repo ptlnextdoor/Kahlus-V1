@@ -38,6 +38,12 @@ NFC synthetic tests validate plumbing only. Pair-Operator is an ablation/baselin
 
 Old short-step NFC synthetic signals produced before the corrected falsification gate are invalidated as evidence. They may be referenced only as debug history.
 
+Forecasting numbers produced under overlapping input/target windows (notably the
+historical `6621642` `future_state_forecasting` sidecar MSE 3.116 / Pearson 0.972)
+are **invalid as forecasting skill** as of 2026-07-21
+(`docs/research/eval_leakage_audit_2026-07-21.md`). Do not cite them as model
+performance.
+
 `tribe_style` is a NeuroTwin-native toy clean-room approximation for the TRIBE v2 stimulus-to-fMRI baseline lane. Do not describe it as exact TRIBE v2, as using TRIBE v2 weights, or as using real video/audio/text encoders unless explicit pretrained stimulus features are loaded.
 
 Real stimulus claims require a verified source artifact hash. `transcript_hash` and synthetic feature hashes are plumbing-only and do not make stimulus-to-fMRI claims eligible.

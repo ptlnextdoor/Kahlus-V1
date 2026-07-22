@@ -20,7 +20,7 @@ For multi-task runs, `Test MSE` and `Test Pearson r` are the `metrics.json` head
 
 | Label | Task | Test MSE | Test Pearson r | Interpretation |
 | --- | --- | ---: | ---: | --- |
-| `6621642-ddpfix` | `future_state_forecasting` | 3.116075 | 0.972108 | Narrow task-level forecasting result only. |
+| `6621642-ddpfix` | `future_state_forecasting` | 3.116075 | 0.972108 | **INVALID as forecasting skill (2026-07-21).** Overlapping input/target windows; see `docs/research/eval_leakage_audit_2026-07-21.md`. Kept as historical evidence of the bug, not a claim. |
 | `6621642-ddpfix` | `masked_neural_reconstruction` | 53.977132 | -0.012507 | Failed reconstruction task; blocks broad neural-translation claims. |
 
 ## Archive Hashes
@@ -42,4 +42,5 @@ Release artifact for `6621642-ddpfix`: <https://github.com/ptlnextdoor/Kahlus-V1
 - The `822a80e` full run passed the paper-mode gate before training, then failed during 6-GPU torchrun training before `summary.json` or `metrics.json` was produced.
 - `6621642-ddpfix` is recovered engineering evidence: the model reached the 100k-step checkpoint, then a patched 3-GPU zero-step resume proved the final distributed path can exit cleanly and write artifacts. It is MOABB EEG evidence, not Algonauts stimulus-to-fMRI evidence.
 - The 3.116075 MSE / 0.972108 Pearson result for `6621642-ddpfix` is `future_state_forecasting` only. The whole-run headline remains the aggregate multi-task `metrics.json` value, 28.546603 MSE / 0.479801 Pearson, and reconstruction failed.
+- **2026-07-21 invalidation:** that `future_state_forecasting` sidecar (3.116 / 0.972) is **not a valid forecast skill number**. The task used overlapping input/target windows (`H < W`), so the metric was dominated by copyable positions. See `docs/research/eval_leakage_audit_2026-07-21.md` and remediation on `fix/forecast-overlap-metric`. Do not cite it as forecasting performance. The row is retained as evidence of the bug.
 - The CSV is the canonical machine-readable ledger; this Markdown file is the GitHub-readable summary.

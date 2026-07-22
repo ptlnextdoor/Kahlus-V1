@@ -13,6 +13,7 @@ from neurotwin.data.forecast_contract import (
     ForecastTaskSpec,
     ResolvedForecastTaskSpec,
     WindowExampleProvenance,
+    strictly_future_metric_mask,
 )
 from neurotwin.data.schemas import NeuralEventBatch
 from neurotwin.data.split_manifest import RecordingRecord, SplitManifest
@@ -47,6 +48,7 @@ class SupervisedWindowTask:
     val_provenance: tuple[WindowExampleProvenance, ...] = ()
     test_provenance: tuple[WindowExampleProvenance, ...] = ()
     metric_mask: np.ndarray | None = None
+    train_metric_mask: np.ndarray | None = None
     x_val: np.ndarray | None = None
     y_val: np.ndarray | None = None
     val_metric_mask: np.ndarray | None = None
@@ -177,6 +179,7 @@ def build_future_forecasting_task_from_windows(
     *,
     task_id: str = "future_state_forecasting",
     notes: tuple[str, ...] = (),
+    horizon: int = 1,
 ) -> SupervisedWindowTask | None:
     modality = first_prepared_modality_with_splits(windows_by_split)
     if modality is None:
@@ -184,11 +187,18 @@ def build_future_forecasting_task_from_windows(
     train = [window.signal for window in windows_by_split["train"] if window.modality == modality]
     val = [window.signal for window in windows_by_split["val"] if window.modality == modality]
     test = [window.signal for window in windows_by_split["test"] if window.modality == modality]
-    x_train, y_train = _legacy_overlapping_future_xy(train)
-    x_val, y_val = _legacy_overlapping_future_xy(val)
-    x_test, y_test = _legacy_overlapping_future_xy(test)
+    x_train, y_train = _legacy_overlapping_future_xy(train, horizon=horizon)
+    x_val, y_val = _legacy_overlapping_future_xy(val, horizon=horizon)
+    x_test, y_test = _legacy_overlapping_future_xy(test, horizon=horizon)
     if x_train is None or x_test is None or y_train is None or y_test is None:
         return None
+    train_mask = strictly_future_metric_mask(y_train, forecast_horizon=horizon, input_length=x_train.shape[1])
+    test_mask = strictly_future_metric_mask(y_test, forecast_horizon=horizon, input_length=x_test.shape[1])
+    val_mask = (
+        strictly_future_metric_mask(y_val, forecast_horizon=horizon, input_length=x_val.shape[1])
+        if y_val is not None and x_val is not None
+        else None
+    )
     return SupervisedWindowTask(
         task_id="future_state_forecasting",
         source_modality=modality,
@@ -197,9 +207,22 @@ def build_future_forecasting_task_from_windows(
         y_train=y_train,
         x_test=x_test,
         y_test=y_test,
+        metric_mask=test_mask,
+        train_metric_mask=train_mask,
         x_val=x_val,
         y_val=y_val,
-        notes=notes or (f"prepared {modality} next-state windows",),
+        val_metric_mask=val_mask,
+        notes=notes
+        or (
+            f"prepared {modality} next-state windows",
+            "metric_mask scores only strictly-future target positions",
+        ),
+        metadata={
+            "forecast_protocol_id": "kahlus.forecast.v1_overlap",
+            "claim_eligible": False,
+            "forecast_horizon": int(horizon),
+            "strictly_future_metric_mask": True,
+        },
     )
 
 
@@ -460,13 +483,27 @@ def _stimulus_fmri_task_from_windows(windows_by_split: dict[str, list[NeuralEven
     )
 
 
-def _legacy_overlapping_future_xy(signals: list[np.ndarray]) -> tuple[np.ndarray | None, np.ndarray | None]:
-    """Historical one-sample-shift task retained only for artifact compatibility."""
+def _legacy_overlapping_future_xy(
+    signals: list[np.ndarray],
+    *,
+    horizon: int = 1,
+) -> tuple[np.ndarray | None, np.ndarray | None]:
+    """Historical shifted-window task retained only for artifact compatibility.
 
-    usable = [np.asarray(signal, dtype=np.float32) for signal in signals if signal.shape[0] >= 2]
+    ``horizon`` defaults to 1 (the historical bug). Pair with
+    ``strictly_future_metric_mask`` so reported scores cannot be inflated by the
+    copyable overlap.
+    """
+
+    if horizon < 1:
+        raise ValueError("horizon must be >= 1")
+    usable = [np.asarray(signal, dtype=np.float32) for signal in signals if signal.shape[0] >= horizon + 1]
     if not usable:
         return None, None
-    return np.asarray([signal[:-1] for signal in usable], dtype=np.float32), np.asarray([signal[1:] for signal in usable], dtype=np.float32)
+    return (
+        np.asarray([signal[:-horizon] for signal in usable], dtype=np.float32),
+        np.asarray([signal[horizon:] for signal in usable], dtype=np.float32),
+    )
 
 
 def _paired_windows(

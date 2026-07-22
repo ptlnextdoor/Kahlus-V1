@@ -13,6 +13,12 @@ These numbers are internally recorded but not paper-ready because:
 5. The release lacks raw-file identities and training checkpoints needed for full reproduction.
 6. Masked reconstruction fails, and the artifact's scientific claim gate is false.
 
+**2026-07-21:** Item 1 is confirmed still live in the historical claim path
+(`docs/research/eval_leakage_audit_2026-07-21.md`). The 3.1161 / 0.9721 forecast
+sidecar is **INVALID as forecasting skill** and must not be cited as such. It is
+retained here as evidence of the overlap bug. Remediation (strictly-future
+`metric_mask` on loss + metric) lands in PR-A on `fix/forecast-overlap-metric`.
+
 ## Forecastability Ladder
 
 | Milestone | Data | Result | Scientific interpretation |

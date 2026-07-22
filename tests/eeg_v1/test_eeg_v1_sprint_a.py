@@ -44,7 +44,8 @@ class EEGV1SprintATests(unittest.TestCase):
     def test_future_forecasting_task_and_split_audit(self):
         dataset = make_synthetic_eeg_v1_dataset(seed=3, n_subjects=9, sessions_per_subject=1)
         task = build_future_forecasting_task(dataset, window_length=8, forecast_horizon=2)
-        non_overlap = build_future_forecasting_task(dataset, window_length=8, forecast_horizon=2, stride=8)
+        # stride=8 only thins consecutive windows; input↔target still overlap for H=2, W=8.
+        wide_stride = build_future_forecasting_task(dataset, window_length=8, forecast_horizon=2, stride=8)
         audit = audit_eeg_v1_split(dataset, split_type="subject_held_out")
 
         self.assertEqual(task.task_id, "future_state_forecasting")
@@ -52,8 +53,12 @@ class EEGV1SprintATests(unittest.TestCase):
         self.assertEqual(task.x_train.shape[1:], task.y_train.shape[1:])
         self.assertEqual(task.metadata["forecast_horizon"], 2)
         self.assertEqual(task.metadata["window_stride"], 1)
-        self.assertEqual(non_overlap.metadata["window_stride"], 8)
-        self.assertLess(non_overlap.x_train.shape[0], task.x_train.shape[0])
+        self.assertEqual(wide_stride.metadata["window_stride"], 8)
+        self.assertLess(wide_stride.x_train.shape[0], task.x_train.shape[0])
+        self.assertIsNotNone(task.metric_mask)
+        # Strictly-future positions for H=2, W=8 are the last two target indices.
+        self.assertTrue(np.all(task.metric_mask[:, -2:, :]))
+        self.assertFalse(np.any(task.metric_mask[:, :-2, :]))
         self.assertTrue(audit["leakage_passed"], audit["failure_reasons"])
         self.assertFalse(audit["subject_overlap"])
         self.assertFalse(audit["window_overlap"])
