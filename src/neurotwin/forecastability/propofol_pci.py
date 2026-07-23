@@ -7,11 +7,11 @@ from typing import Any
 
 import numpy as np
 
+from neurotwin.forecastability._rfs_eval import write_json
 from neurotwin.forecastability.passive_pci import (
     PassivePciFixture,
     _real_passes,
     _synthetic_passes,
-    _write_json,
     evaluate_pci_fixture,
 )
 
@@ -109,7 +109,7 @@ def run_propofol_pci_gate(
         "ds005620_real": real_payload,
         "ds005620_failures": real_failures,
     }
-    _write_json(out / "propofol_pci_report.json", gate)
+    write_json(out / "propofol_pci_report.json", gate)
     _write_propofol_report(out / "PROPOFOL_PCI_EVIDENCE_REPORT.md", gate)
     return gate
 

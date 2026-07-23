@@ -99,22 +99,16 @@ def epoch_arousal_mask(
     return mask
 
 
-def future_arousal_labels(arousal_mask: np.ndarray, horizon: int) -> np.ndarray:
-    """Y=1 if any arousal in next `horizon` epochs (excluding current)."""
-    n = len(arousal_mask)
-    y = np.zeros(n, dtype=np.int64)
-    for epoch in range(n - horizon):
-        y[epoch] = int(np.any(arousal_mask[epoch + 1 : epoch + horizon + 1]))
-    return y
-
-
 def load_nsrr_epoch_matrix(
     edf_path: str | Path,
     *,
     epoch_seconds: float = 30.0,
     channel_groups: dict[str, tuple[str, ...]] | None = None,
 ) -> dict[str, Any]:
-    """Load NSRR EDF as per-epoch channel matrices using mne."""
+    """Load NSRR EDF as per-epoch matrices shaped ``(n_epochs, samples, n_channels)``.
+
+    Retains all matched candidate channels per modality group (not just the first).
+    """
     import mne
 
     groups = channel_groups or {
@@ -131,35 +125,37 @@ def load_nsrr_epoch_matrix(
     if n_epochs < 4:
         raise ValueError(f"too few epochs in {edf_path}")
 
-    picked: dict[str, str] = {}
+    picked: dict[str, list[str]] = {}
     for group, candidates in groups.items():
-        for label in candidates:
-            if label in raw.ch_names:
-                picked[group] = label
-                break
+        matched = [label for label in candidates if label in raw.ch_names]
+        if matched:
+            picked[group] = matched
 
     if "eeg" not in picked:
         eeg_fallback = next((c for c in raw.ch_names if "EEG" in c.upper()), None)
         if eeg_fallback is None:
             raise ValueError(f"no EEG channel in {edf_path}")
-        picked["eeg"] = eeg_fallback
+        picked["eeg"] = [eeg_fallback]
 
-    epoch_data: dict[str, list[np.ndarray]] = {key: [] for key in picked}
     data = raw.get_data()
     ch_index = {name: idx for idx, name in enumerate(raw.ch_names)}
-    for epoch in range(n_epochs):
-        start = epoch * samples_per_epoch
-        stop = start + samples_per_epoch
-        for group, label in picked.items():
-            signal = data[ch_index[label], start:stop].astype(np.float32)
-            epoch_data[group].append(signal)
+    epochs: dict[str, np.ndarray] = {}
+    for group, labels in picked.items():
+        # (n_epochs, samples, n_channels_in_group)
+        stacked = np.zeros((n_epochs, samples_per_epoch, len(labels)), dtype=np.float32)
+        for ch_i, label in enumerate(labels):
+            signal = data[ch_index[label]].astype(np.float32)
+            for epoch in range(n_epochs):
+                start = epoch * samples_per_epoch
+                stacked[epoch, :, ch_i] = signal[start : start + samples_per_epoch]
+        epochs[group] = stacked
 
     return {
         "epoch_seconds": epoch_seconds,
         "sfreq": sfreq,
         "n_epochs": n_epochs,
         "channels": picked,
-        "epochs": {key: np.stack(values, axis=0) for key, values in epoch_data.items()},
+        "epochs": epochs,
     }
 
 

@@ -2,24 +2,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import json
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from sklearn.model_selection import GroupKFold
 
+from neurotwin.forecastability._rfs_eval import (
+    circular_shift_within_subject,
+    nested_cv_delta_bits,
+    probe_failures,
+    write_json,
+)
 from neurotwin.forecastability.complexity_features import complexity_block, spectral_slope_block
 from neurotwin.forecastability.m1 import (
     _best_baseline,
     _crossfit_proba,
     _crossfit_residual_proba,
-    _fit_predict,
-    _fit_residual_offset_predict,
     _logistic_factory,
     _moving_average_proba,
     _probe_accuracy,
-    _rfs_bits,
     _rfs_payload,
     _within_patient_roll,
     handcrafted_eeg_features,
@@ -119,7 +121,7 @@ def run_passive_pci_gate(
         "sleep_edf_real": real_payload,
         "sleep_edf_failures": real_failures,
     }
-    _write_json(out / "passive_pci_report.json", gate)
+    write_json(out / "passive_pci_report.json", gate)
     _write_report(out / "PASSIVE_PCI_EVIDENCE_REPORT.md", gate)
     return gate
 
@@ -301,7 +303,7 @@ def _evaluate_state(
     shifted = _crossfit_residual_proba(nuisance_b, z, y, subject, seed=seed + 2, control="time_shift")
     surrogate = _crossfit_residual_proba(
         nuisance_b,
-        _circular_shift_within_subject(z, subject, seed=seed + 33),
+        circular_shift_within_subject(z, subject, seed=seed + 33),
         y,
         subject,
         seed=seed + 3,
@@ -326,7 +328,7 @@ def _evaluate_state(
         "n_held_out_subjects": held_out_subjects,
         "best_baseline": best_name,
         "residual_model": residual_payload,
-        "nested_cv": _nested_cv_delta_bits(y, nuisance_b, z, subject),
+        "nested_cv": nested_cv_delta_bits(y, nuisance_b, z, subject),
         "cluster_permutation": perm,
         "controls": {
             "label_shuffle": _rfs_payload(y, best_baseline, shuffled, subject, seed=seed + 8, bootstrap_mode="smoke"),
@@ -336,7 +338,7 @@ def _evaluate_state(
             ),
         },
         "subject_probe": probe,
-        "nuisance_probe_failures": _probe_failures(probe),
+        "nuisance_probe_failures": probe_failures(probe),
     }
 
 
@@ -350,55 +352,6 @@ def _held_out_subject_count(subject: np.ndarray) -> int:
     for _train, test in folds.split(dummy, dummy, subject):
         counts.append(len(set(subject[test].tolist())))
     return int(max(counts))
-
-
-def _circular_shift_within_subject(z: np.ndarray, subject: np.ndarray, *, seed: int) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    out = z.copy()
-    for group in np.unique(subject):
-        idx = np.flatnonzero(subject == group)
-        if len(idx) <= 1:
-            continue
-        shift = int(rng.integers(1, len(idx)))
-        out[idx] = np.roll(z[idx], shift, axis=0)
-    return out
-
-
-def _nested_cv_delta_bits(
-    y: np.ndarray,
-    b: np.ndarray,
-    z: np.ndarray,
-    groups: np.ndarray,
-) -> dict[str, float]:
-    n_splits = min(4, len(set(groups.tolist())))
-    if n_splits < 2:
-        return {"delta_rfs_bits": 0.0, "delta_rfs_bits_std": 0.0, "n_folds": 0}
-    folds = GroupKFold(n_splits=n_splits)
-    deltas = []
-    for train_idx, test_idx in folds.split(b, y, groups):
-        b_train, b_test = b[train_idx], b[test_idx]
-        z_train, z_test = z[train_idx], z[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-        q0_train = np.clip(_fit_predict(_logistic_factory(), b_train, y_train, b_train), 1e-5, 1.0 - 1e-5)
-        q0_test = np.clip(_fit_predict(_logistic_factory(), b_train, y_train, b_test), 1e-5, 1.0 - 1e-5)
-        b_pred = q0_test
-        bz_pred = np.clip(
-            _fit_residual_offset_predict(z_train, y_train, q0_train, z_test, q0_test),
-            1e-5,
-            1.0 - 1e-5,
-        )
-        deltas.append(_rfs_bits(y_test, b_pred, bz_pred))
-    return {
-        "delta_rfs_bits": float(np.mean(deltas)),
-        "delta_rfs_bits_std": float(np.std(deltas)),
-        "n_folds": len(deltas),
-    }
-
-
-def _probe_failures(probe: dict[str, float]) -> list[str]:
-    if probe["accuracy"] > probe["chance"] + 0.2:
-        return ["subject_probe_above_chance"]
-    return []
 
 
 def _synthetic_passes(known: dict[str, Any], null: dict[str, Any]) -> bool:
@@ -453,18 +406,6 @@ def _real_passes(payload: dict[str, Any] | None) -> bool:
         ):
             return False
     return True
-
-
-def _write_json(path: Path, payload: Any) -> None:
-    def _default(obj: Any) -> Any:
-        if isinstance(obj, float) and not np.isfinite(obj):
-            return None
-        raise TypeError
-
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=_default) + "\n",
-        encoding="utf-8",
-    )
 
 
 def _write_report(path: Path, gate: dict[str, Any]) -> None:

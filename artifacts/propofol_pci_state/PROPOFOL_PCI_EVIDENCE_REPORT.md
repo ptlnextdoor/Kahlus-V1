@@ -1,7 +1,7 @@
 # Propofol PCI state-discrimination gate
 
 - claim_scope: `propofol_sedation_state_discrimination_complexity_beyond_spectral_baseline_subject_held_out_openneuro_ds005620_not_tms_pci_not_clinical`
-- stop_reason: ds005620 cohort underpowered (7 subjects < 8); do not claim powered propofol PCI result.
+- stop_reason: Propofol PCI gate failed on ds005620; do not claim passive complexity beats spectral baseline under propofol sedation.
 - gate_passed: **False**
 - ds005620_status: `evaluated`
 - bootstrap_mode: `claim`
@@ -14,6 +14,6 @@
 
 ## ds005620 real cohort
 
-- windows: 854 subjects: 7
-- awake: positive_windows=210 residual_rfs_bits=-0.2682 ci=[-0.4349, -0.1211]
-- sedated: positive_windows=644 residual_rfs_bits=-0.2682 ci=[-0.4329, -0.1216]
+- windows: 1298 subjects: 12
+- awake: positive_windows=352 residual_rfs_bits=-0.1744 ci=[-0.3136, -0.0496]
+- sedated: positive_windows=946 residual_rfs_bits=-0.1744 ci=[-0.3061, -0.0470]

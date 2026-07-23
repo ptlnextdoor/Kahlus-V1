@@ -3,11 +3,11 @@
   "claim_scope": "propofol_sedation_state_discrimination_complexity_beyond_spectral_baseline_subject_held_out_openneuro_ds005620_not_tms_pci_not_clinical",
   "ds005620_failures": [],
   "ds005620_real": {
-    "n_subjects": 7,
-    "n_windows": 854,
+    "n_subjects": 12,
+    "n_windows": 1298,
     "positive_windows_by_state": {
-      "awake": 210,
-      "sedated": 644
+      "awake": 352,
+      "sedated": 946
     },
     "states": [
       {
@@ -17,14 +17,14 @@
           "alternative": "greater",
           "method": "patient_cluster_sign_flip_rfs",
           "mode": "exact",
-          "n_clusters": 7,
-          "n_permutations": 128,
-          "null_ci_high": 0.22258761051892706,
-          "null_ci_low": -0.22258761051892706,
-          "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": -0.26821251375968297,
-          "p_resolution": 0.007751937984496124,
-          "p_value": 0.9922480620155039,
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.15894334241047778,
+          "null_ci_low": -0.15894334241047778,
+          "null_mean_rfs_bits": -2.168404344971009e-19,
+          "observed_rfs_bits": -0.17440708394572926,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.9873077861850135,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 206,
@@ -35,49 +35,49 @@
           "circular_shift_surrogate": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.49956239364715005,
-            "rfs_bits": -0.44841280930981053,
-            "rfs_ci_high": -0.30541299537571687,
-            "rfs_ci_low": -0.6251434829286974
+            "nll": 0.43662508695858904,
+            "rfs_bits": -0.3483833351108747,
+            "rfs_ci_high": -0.2255337152670877,
+            "rfs_ci_low": -0.48874865083648855
           },
           "label_shuffle": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.5693836595135979,
-            "rfs_bits": -0.5491436033239248,
-            "rfs_ci_high": -0.5205962539298653,
-            "rfs_ci_low": -0.5793440425731538
+            "nll": 0.5973329776778101,
+            "rfs_bits": -0.5802358120832205,
+            "rfs_ci_high": -0.528597621170373,
+            "rfs_ci_low": -0.6914527892535268
           },
           "time_shift": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.4516707495878522,
-            "rfs_bits": -0.37931977192544203,
-            "rfs_ci_high": -0.26332256682810357,
-            "rfs_ci_low": -0.5079277316815044
+            "nll": 0.4059960593809045,
+            "rfs_bits": -0.30419498891729796,
+            "rfs_ci_high": -0.216957947174243,
+            "rfs_ci_low": -0.3988799300639521
           }
         },
-        "n_held_out_subjects": 2,
+        "n_held_out_subjects": 3,
         "nested_cv": {
-          "delta_rfs_bits": 0.14956811638128126,
-          "delta_rfs_bits_std": 0.05529607007529592,
+          "delta_rfs_bits": 0.16411837737688958,
+          "delta_rfs_bits_std": 0.028630614538109764,
           "n_folds": 4
         },
         "nuisance_probe_failures": [],
-        "positive_windows": 210,
+        "positive_windows": 352,
         "residual_model": {
           "bootstrap_mode": "claim",
           "bootstrap_samples": 2000,
-          "nll": 0.37465706685051026,
-          "rfs_bits": -0.2682125137596829,
-          "rfs_ci_high": -0.12112945681425787,
-          "rfs_ci_low": -0.43489112502571153,
-          "rfs_p_value_two_sided": 0.9922480620155039
+          "nll": 0.31603393897907955,
+          "rfs_bits": -0.17440708394572926,
+          "rfs_ci_high": -0.0495617814247141,
+          "rfs_ci_low": -0.3135531833092621,
+          "rfs_p_value_two_sided": 0.9873077861850135
         },
         "state": "awake",
         "subject_probe": {
-          "accuracy": 0.312280701754386,
-          "chance": 0.14285714285714285
+          "accuracy": 0.21939953810623555,
+          "chance": 0.08333333333333333
         }
       },
       {
@@ -87,14 +87,14 @@
           "alternative": "greater",
           "method": "patient_cluster_sign_flip_rfs",
           "mode": "exact",
-          "n_clusters": 7,
-          "n_permutations": 128,
-          "null_ci_high": 0.2225876111301275,
-          "null_ci_low": -0.2225876111301275,
-          "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": -0.26821251437088345,
-          "p_resolution": 0.007751937984496124,
-          "p_value": 0.9922480620155039,
+          "n_clusters": 12,
+          "n_permutations": 4096,
+          "null_ci_high": 0.15894334237443813,
+          "null_ci_low": -0.15894334237443813,
+          "null_mean_rfs_bits": 2.168404344971009e-19,
+          "observed_rfs_bits": -0.1744070839127155,
+          "p_resolution": 0.000244081034903588,
+          "p_value": 0.9873077861850135,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 223,
@@ -105,49 +105,49 @@
           "circular_shift_surrogate": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.45234166033408557,
-            "rfs_bits": -0.38028769153191205,
-            "rfs_ci_high": -0.2110045716509322,
-            "rfs_ci_low": -0.5298626609423622
+            "nll": 0.43051783771565894,
+            "rfs_bits": -0.33957243691462663,
+            "rfs_ci_high": -0.2017153773308333,
+            "rfs_ci_low": -0.4985639315798628
           },
           "label_shuffle": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.5668881560869565,
-            "rfs_bits": -0.5455433529057878,
-            "rfs_ci_high": -0.5105682778118679,
-            "rfs_ci_low": -0.5773066058905163
+            "nll": 0.5906374952690948,
+            "rfs_bits": -0.5705762728158076,
+            "rfs_ci_high": -0.5261049605374534,
+            "rfs_ci_low": -0.6537914568703629
           },
           "time_shift": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.45167074958785225,
-            "rfs_bits": -0.3793197719254422,
-            "rfs_ci_high": -0.2572350725941387,
-            "rfs_ci_low": -0.494543764406904
+            "nll": 0.4059960593809045,
+            "rfs_bits": -0.30419498891729796,
+            "rfs_ci_high": -0.19851871497266585,
+            "rfs_ci_low": -0.4081189601924672
           }
         },
-        "n_held_out_subjects": 2,
+        "n_held_out_subjects": 3,
         "nested_cv": {
-          "delta_rfs_bits": 0.14956811589798016,
-          "delta_rfs_bits_std": 0.05529606930368177,
+          "delta_rfs_bits": 0.16411837740858476,
+          "delta_rfs_bits_std": 0.028630614573601408,
           "n_folds": 4
         },
         "nuisance_probe_failures": [],
-        "positive_windows": 644,
+        "positive_windows": 946,
         "residual_model": {
           "bootstrap_mode": "claim",
           "bootstrap_samples": 2000,
-          "nll": 0.37465706727416215,
-          "rfs_bits": -0.2682125143708834,
-          "rfs_ci_high": -0.12161500654426519,
-          "rfs_ci_low": -0.43292486623313203,
-          "rfs_p_value_two_sided": 0.9922480620155039
+          "nll": 0.3160339389561962,
+          "rfs_bits": -0.17440708391271556,
+          "rfs_ci_high": -0.0469788639521093,
+          "rfs_ci_low": -0.3061116043712823,
+          "rfs_p_value_two_sided": 0.9873077861850135
         },
         "state": "sedated",
         "subject_probe": {
-          "accuracy": 0.312280701754386,
-          "chance": 0.14285714285714285
+          "accuracy": 0.21939953810623555,
+          "chance": 0.08333333333333333
         }
       }
     ]
@@ -160,10 +160,10 @@
     "sedated"
   ],
   "milestone": "propofol_pci_state",
-  "min_subjects_loaded": 7,
+  "min_subjects_loaded": 8,
   "min_subjects_required": 8,
   "schema": "kahlus.forecastability.propofol_pci.v1",
-  "stop_reason": "ds005620 cohort underpowered (7 subjects < 8); do not claim powered propofol PCI result.",
+  "stop_reason": "Propofol PCI gate failed on ds005620; do not claim passive complexity beats spectral baseline under propofol sedation.",
   "synthetic_known": {
     "n_subjects": 12,
     "n_windows": 1440,

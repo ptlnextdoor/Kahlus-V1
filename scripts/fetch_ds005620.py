@@ -42,38 +42,67 @@ def _ensure_openneuro_py() -> None:
             subprocess.run([sys.executable, "-m", "pip", "install", "openneuro-py", "-q"], check=True)
 
 
-def _discover_subject_dirs() -> list[str]:
+def _globs_for_json_name(name: str) -> list[str]:
+    """Map a BIDS sidecar filename to the REST_TASK_GLOBS patterns it satisfies."""
+    matched: list[str] = []
+    for pattern in REST_TASK_GLOBS:
+        token = pattern.strip("*")
+        if token in name:
+            matched.append(pattern)
+    return matched
+
+
+def _discover_subject_tasks() -> dict[str, list[str]]:
+    """Probe OpenNeuro for subjects and which rest-task globs exist per subject."""
     _ensure_openneuro_py()
     from openneuro import download
 
     with tempfile.TemporaryDirectory() as tmp:
         probe = Path(tmp)
         download(dataset=DATASET_ID, target_dir=str(probe), include=["sub-*/eeg/*.json"])
-        subjects = sorted(
-            {
-                path.parts[-3]
-                for path in probe.rglob("*.json")
-                if len(path.parts) >= 3 and path.parts[-3].startswith("sub-")
-            }
-        )
-    return subjects
+        subject_tasks: dict[str, set[str]] = {}
+        for path in probe.rglob("*.json"):
+            if len(path.parts) < 3 or not path.parts[-3].startswith("sub-"):
+                continue
+            subject = path.parts[-3]
+            for pattern in _globs_for_json_name(path.name):
+                subject_tasks.setdefault(subject, set()).add(pattern)
+    return {subj: sorted(globs) for subj, globs in sorted(subject_tasks.items())}
 
 
-def _rest_include_for_subject(subject: str) -> list[str]:
-    return [f"{subject}/eeg/{pattern}" for pattern in REST_TASK_GLOBS]
+def _rest_include_for_subject(subject: str, globs: list[str]) -> list[str]:
+    return [f"{subject}/eeg/{pattern}" for pattern in globs]
 
 
-def _download_via_openneuro(target: Path, *, max_subjects: int) -> None:
+def _download_via_openneuro(target: Path, *, max_subjects: int) -> dict[str, object]:
     _ensure_openneuro_py()
     from openneuro import download
 
     target.mkdir(parents=True, exist_ok=True)
-    subjects = _discover_subject_dirs()[:max_subjects]
+    subject_tasks = _discover_subject_tasks()
+    subjects = list(subject_tasks)[:max_subjects]
     if len(subjects) < 1:
         raise RuntimeError("could not discover ds005620 subject directories")
     download(dataset=DATASET_ID, target_dir=str(target), include=["participants.tsv", "dataset_description.json"])
+    skipped: list[dict[str, str]] = []
     for subject in subjects:
-        download(dataset=DATASET_ID, target_dir=str(target), include=_rest_include_for_subject(subject))
+        globs = subject_tasks.get(subject, [])
+        if not globs:
+            skipped.append({"subject": subject, "reason": "no rest-task files discovered"})
+            continue
+        try:
+            download(
+                dataset=DATASET_ID,
+                target_dir=str(target),
+                include=_rest_include_for_subject(subject, globs),
+            )
+        except Exception as exc:  # noqa: BLE001 - per-subject fault tolerance
+            msg = str(exc)
+            if "Could not find path" in msg or "could not find" in msg.lower():
+                skipped.append({"subject": subject, "reason": msg})
+                continue
+            raise
+    return {"n_subjects_requested": len(subjects), "skipped_subjects": skipped}
 
 
 def _download_via_aws(target: Path) -> None:
@@ -86,15 +115,15 @@ def _download_via_aws(target: Path) -> None:
     )
 
 
-def download_dataset(target: Path, *, max_subjects: int) -> None:
+def download_dataset(target: Path, *, max_subjects: int) -> dict[str, object]:
     errors: list[str] = []
     try:
-        _download_via_openneuro(target, max_subjects=max_subjects)
-        return
+        return _download_via_openneuro(target, max_subjects=max_subjects)
     except Exception as exc:  # noqa: BLE001 - try aws fallback
         errors.append(f"_download_via_openneuro: {exc}")
     try:
         _download_via_aws(target)
+        return {"method": "aws_sync", "skipped_subjects": []}
     except Exception as exc:  # noqa: BLE001
         errors.append(f"_download_via_aws: {exc}")
         raise RuntimeError("all download methods failed: " + "; ".join(errors)) from exc
@@ -140,16 +169,22 @@ def main() -> int:
     parser.add_argument("--skip-download", action="store_true", help="Only verify + write fingerprint.")
     args = parser.parse_args()
     target = args.target
+    download_meta: dict[str, object] = {}
     if not args.skip_download:
         print(
             f"downloading {DATASET_ID} to {target} "
             f"(max_subjects={args.max_subjects}, rest-only, no TMS) ..."
         )
-        download_dataset(target, max_subjects=args.max_subjects)
+        download_meta = download_dataset(target, max_subjects=args.max_subjects)
+        skipped = download_meta.get("skipped_subjects", [])
+        if skipped:
+            print(f"skipped {len(skipped)} subject(s) with missing task files")
     if not (target / "participants.tsv").is_file() and not list(target.rglob("*.vhdr")):
         print(f"error: {target} does not look like ds005620", file=sys.stderr)
         return 1
     fingerprint = write_fingerprint(target)
+    if download_meta:
+        fingerprint["download"] = download_meta
     print(json.dumps(fingerprint, indent=2))
     print(f"fingerprint: {target / 'dataset_fingerprint.json'}")
     return 0

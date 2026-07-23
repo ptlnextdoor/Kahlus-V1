@@ -17,6 +17,7 @@ SCRIPTS = [
     "Figure2_nfc_schematic.py",
     "Figure3_gate_protocol.py",
     "Figure4_mse_bar.py",
+    "Figure5_amrith_overlap.py",
 ]
 
 
