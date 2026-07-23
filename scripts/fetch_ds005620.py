@@ -10,7 +10,6 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from urllib.request import urlopen
 
 DEFAULT_ROOT = Path("/Users/aayu/datasets/kahlus_multidataset_public/ds005620")
 DATASET_ID = "ds005620"
