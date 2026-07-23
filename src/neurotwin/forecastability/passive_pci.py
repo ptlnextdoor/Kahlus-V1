@@ -238,10 +238,25 @@ def _evaluate_fixture(
     seed: int,
     bootstrap_mode: str,
 ) -> dict[str, Any]:
+    return evaluate_pci_fixture(
+        fixture,
+        state_names=MACROSTATES,
+        seed=seed,
+        bootstrap_mode=bootstrap_mode,
+    )
+
+
+def evaluate_pci_fixture(
+    fixture: PassivePciFixture,
+    *,
+    state_names: tuple[str, ...],
+    seed: int,
+    bootstrap_mode: str,
+) -> dict[str, Any]:
     spectral = np.concatenate([handcrafted_eeg_features(fixture.eeg_windows), spectral_slope_block(fixture.eeg_windows)], axis=1)
     complexity = complexity_block(fixture.eeg_windows)
     states = []
-    for state_idx, state_name in enumerate(MACROSTATES):
+    for state_idx, state_name in enumerate(state_names):
         y = (fixture.macrostate == state_idx).astype(np.int64)
         base_rate = np.full(len(y), float(np.mean(y)), dtype=np.float32)
         nuisance_b = np.concatenate([fixture.nuisance, base_rate[:, None], spectral], axis=1)
@@ -261,7 +276,7 @@ def _evaluate_fixture(
         "n_subjects": int(len(set(fixture.subject.tolist()))),
         "positive_windows_by_state": {
             state_name: int(np.sum(fixture.macrostate == state_idx))
-            for state_idx, state_name in enumerate(MACROSTATES)
+            for state_idx, state_name in enumerate(state_names)
         },
         "states": states,
     }
