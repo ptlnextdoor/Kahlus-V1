@@ -22,12 +22,14 @@ def main() -> int:
         help="OpenNeuro ds005620 root (omit for synthetic-only).",
     )
     parser.add_argument("--bootstrap-mode", choices=["smoke", "claim"], default="smoke")
+    parser.add_argument("--min-subjects", type=int, default=8, help="Minimum subjects required to load ds005620.")
     args = parser.parse_args()
     gate = run_propofol_pci_gate(
         args.out_dir,
         seed=args.seed,
         ds_root=args.ds_root,
         bootstrap_mode=args.bootstrap_mode,
+        min_subjects=args.min_subjects,
     )
     print(f"propofol pci gate passed: {gate['gate_passed']}")
     print(f"report: {args.out_dir}/PROPOFOL_PCI_EVIDENCE_REPORT.md")

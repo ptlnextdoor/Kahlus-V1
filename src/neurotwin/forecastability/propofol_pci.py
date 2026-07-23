@@ -33,6 +33,7 @@ def run_propofol_pci_gate(
     seed: int = 0,
     ds_root: str | Path | None = None,
     bootstrap_mode: str = "smoke",
+    min_subjects: int = 8,
 ) -> dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -52,7 +53,7 @@ def run_propofol_pci_gate(
         real_failures.append("ds005620_root_missing")
     else:
         try:
-            fixture = load_ds005620_fixture(root)
+            fixture = load_ds005620_fixture(root, min_subjects=min_subjects)
             real_payload = evaluate_pci_fixture(
                 fixture, state_names=MACROSTATES, seed=seed + 200, bootstrap_mode=bootstrap_mode
             )
@@ -64,11 +65,19 @@ def run_propofol_pci_gate(
     synthetic_ok = _synthetic_passes(synthetic_known, synthetic_null)
     if real_status == "evaluated":
         gate_passed = synthetic_ok and _real_passes(real_payload)
-        stop_reason = (
-            "Propofol PCI gate passed on synthetic known/null and powered ds005620 cohort"
-            if gate_passed
-            else "Propofol PCI gate failed on ds005620; do not claim passive complexity beats spectral baseline under propofol sedation."
-        )
+        if real_payload is not None and real_payload.get("n_subjects", 0) < 8:
+            gate_passed = False
+            stop_reason = (
+                f"ds005620 cohort underpowered ({real_payload.get('n_subjects', 0)} subjects < 8); "
+                "do not claim powered propofol PCI result."
+            )
+        elif gate_passed:
+            stop_reason = "Propofol PCI gate passed on synthetic known/null and powered ds005620 cohort"
+        else:
+            stop_reason = (
+                "Propofol PCI gate failed on ds005620; do not claim passive complexity beats "
+                "spectral baseline under propofol sedation."
+            )
     elif real_status in {"failed", "missing"}:
         gate_passed = False
         stop_reason = (
@@ -92,7 +101,8 @@ def run_propofol_pci_gate(
         "macrostates": list(MACROSTATES),
         "bootstrap_mode": bootstrap_mode,
         "epoch_seconds": EPOCH_SECONDS,
-        "target_sfreq": TARGET_SFREQ,
+        "min_subjects_required": 8,
+        "min_subjects_loaded": min_subjects,
         "synthetic_known": synthetic_known,
         "synthetic_null": synthetic_null,
         "ds005620_status": real_status,
@@ -143,7 +153,7 @@ def make_propofol_pci_fixture(
     )
 
 
-def load_ds005620_fixture(root: str | Path) -> PassivePciFixture:
+def load_ds005620_fixture(root: str | Path, *, min_subjects: int = 8) -> PassivePciFixture:
     try:
         import mne
     except ImportError as exc:
@@ -153,22 +163,24 @@ def load_ds005620_fixture(root: str | Path) -> PassivePciFixture:
     participants = root_path / "participants.tsv"
     if not participants.is_file():
         raise FileNotFoundError(f"missing participants.tsv in {root_path}")
-    subject_ids = _read_participant_ids(participants)
-    subject_codes = {subject_id: idx for idx, subject_id in enumerate(subject_ids)}
+
+    vhdr_files = sorted(
+        path
+        for path in root_path.rglob("*_eeg.vhdr")
+        if "tms" not in path.as_posix().lower()
+    )
+    if len(vhdr_files) < 8:
+        raise ValueError("need at least 8 BrainVision EEG files in ds005620")
 
     eeg_windows: list[np.ndarray] = []
     macrostates: list[int] = []
     subjects: list[int] = []
     nuisance: list[list[float]] = []
-
-    vhdr_files = sorted(root_path.rglob("*_eeg.vhdr"))
-    if len(vhdr_files) < 8:
-        raise ValueError("need at least 8 BrainVision EEG files in ds005620")
+    subject_ids = sorted({_subject_from_path(path) for path in vhdr_files})
+    subject_codes = {subject_id: idx for idx, subject_id in enumerate(subject_ids)}
 
     for vhdr in vhdr_files:
         subject_id = _subject_from_path(vhdr)
-        if subject_id not in subject_codes:
-            continue
         task = _task_from_path(vhdr)
         macro = _macrostate_from_task(task)
         if macro is None:
@@ -199,8 +211,8 @@ def load_ds005620_fixture(root: str | Path) -> PassivePciFixture:
 
     if not eeg_windows:
         raise ValueError("no usable ds005620 propofol PCI windows parsed")
-    if len(set(subjects)) < 8:
-        raise ValueError(f"need at least 8 subjects, found {len(set(subjects))}")
+    if len(set(subjects)) < min_subjects:
+        raise ValueError(f"need at least {min_subjects} subjects, found {len(set(subjects))}")
     return PassivePciFixture(
         eeg_windows=np.asarray(eeg_windows, dtype=np.float32),
         macrostate=np.asarray(macrostates, dtype=np.int64),
@@ -208,14 +220,6 @@ def load_ds005620_fixture(root: str | Path) -> PassivePciFixture:
         nuisance=np.asarray(nuisance, dtype=np.float32),
     )
 
-
-def _read_participant_ids(path: Path) -> list[str]:
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if not lines:
-        return []
-    header = lines[0].split("\t")
-    pid_idx = header.index("participant_id") if "participant_id" in header else 0
-    return [line.split("\t")[pid_idx] for line in lines[1:] if line.strip()]
 
 
 def _subject_from_path(path: Path) -> str:
