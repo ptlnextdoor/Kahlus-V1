@@ -13,9 +13,11 @@ artifact contracts (`claim_scope`, `stop_reason`).
 
 | File | Purpose |
 | --- | --- |
-| [findings.md](findings.md) | F0–F5 findings table with tags, numbers, claim scopes |
+| [findings.md](findings.md) | F0–F6 findings table with tags, numbers, claim scopes |
 | [methods_gate.md](methods_gate.md) | Gate predicate, baseline ladder, control contract |
+| [benchmark_contribution.md](benchmark_contribution.md) | Named benchmark artifact for citation |
 | [../ieee_figure_source/](../ieee_figure_source/) | Figure source packet (regenerate from committed CSVs) |
+| [../neurips_2026/](../neurips_2026/) | NeurIPS submission packet + Coleman rigor rubric |
 
 Machine-readable ledger: [`docs/results/findings-ledger.md`](../../results/findings-ledger.md).
 
@@ -28,7 +30,8 @@ Machine-readable ledger: [`docs/results/findings-ledger.md`](../../results/findi
 | F2 Isolated forecast | Negative | GRU loses to persistence/ridge (Sleep-EDF + BNCI) |
 | F3 Interoception scout | Negative | Peripheral channels add no residual on Sleep-EDF |
 | F4 Passive PCI (sleep) | Powered negative | Complexity hurts vs spectral (78 subj, n_boot=2000) |
-| F5 Propofol PCI | TBD | OpenNeuro ds005620 awake vs sedated |
+| F5 Propofol PCI | Partial negative | 7/21 subjects; complexity hurts vs spectral |
+| F6 Autonomic RFS | Synthetic OK | MESA/SHHS pending NSRR credentialed access |
 
 ## Figures
 
@@ -44,6 +47,7 @@ python3 docs/paper/ieee_figure_source/render_all.py
 | `fig2_nfc_schematic` | Neural-CASP gate ladder |
 | `fig3_gate_protocol` | Passive PIC instrument worlds |
 | `fig4_mse_bar` | Product thesis + claim scope |
+| `fig5_amrith_overlap` | OLD overlapping vs NEW isolated forecast (`scripts/amrith_isolated_forecast_check.py`) |
 
 ## Supported claim
 
@@ -59,5 +63,4 @@ Clinical seizure prediction · consciousness solved · PCI/TMS replacement ·
 ## Git tags
 
 Each finding is pinned: `finding/neural-casp-gate-suite-v1` through
-`finding/passive-pci-negative-v1` (and `finding/propofol-pci-*-v1` when F5 lands).
-See findings.md for commit SHAs.
+`finding/autonomic-rfs-pending-nsrr-v1`. See findings.md for commit SHAs.

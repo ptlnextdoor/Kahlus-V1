@@ -3,11 +3,11 @@
   "claim_scope": "propofol_sedation_state_discrimination_complexity_beyond_spectral_baseline_subject_held_out_openneuro_ds005620_not_tms_pci_not_clinical",
   "ds005620_failures": [],
   "ds005620_real": {
-    "n_subjects": 2,
-    "n_windows": 178,
+    "n_subjects": 7,
+    "n_windows": 854,
     "positive_windows_by_state": {
-      "awake": 33,
-      "sedated": 145
+      "awake": 210,
+      "sedated": 644
     },
     "states": [
       {
@@ -17,14 +17,14 @@
           "alternative": "greater",
           "method": "patient_cluster_sign_flip_rfs",
           "mode": "exact",
-          "n_clusters": 2,
-          "n_permutations": 4,
-          "null_ci_high": 0.41679608867852525,
-          "null_ci_low": -0.41679608867852525,
+          "n_clusters": 7,
+          "n_permutations": 128,
+          "null_ci_high": 0.22258761051892706,
+          "null_ci_low": -0.22258761051892706,
           "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": -0.20616143137365295,
-          "p_resolution": 0.2,
-          "p_value": 0.8,
+          "observed_rfs_bits": -0.26821251375968297,
+          "p_resolution": 0.007751937984496124,
+          "p_value": 0.9922480620155039,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 206,
@@ -35,49 +35,49 @@
           "circular_shift_surrogate": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.8032324437358792,
-            "rfs_bits": -0.7855550126988592,
-            "rfs_ci_high": 0.408999552787826,
-            "rfs_ci_low": -1.1318027128399273
+            "nll": 0.49956239364715005,
+            "rfs_bits": -0.44841280930981053,
+            "rfs_ci_high": -0.30541299537571687,
+            "rfs_ci_low": -0.6251434829286974
           },
           "label_shuffle": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.4423472060616015,
-            "rfs_bits": -0.2649076699761438,
-            "rfs_ci_high": 0.41728774541482955,
-            "rfs_ci_low": -0.46264547153874475
+            "nll": 0.5693836595135979,
+            "rfs_bits": -0.5491436033239248,
+            "rfs_ci_high": -0.5205962539298653,
+            "rfs_ci_low": -0.5793440425731538
           },
           "time_shift": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.8841679346994095,
-            "rfs_bits": -0.9023202441438578,
-            "rfs_ci_high": 0.36162736400434453,
-            "rfs_ci_low": -1.268681869694061
+            "nll": 0.4516707495878522,
+            "rfs_bits": -0.37931977192544203,
+            "rfs_ci_high": -0.26332256682810357,
+            "rfs_ci_low": -0.5079277316815044
           }
         },
-        "n_held_out_subjects": 1,
+        "n_held_out_subjects": 2,
         "nested_cv": {
-          "delta_rfs_bits": 0.2987407177749647,
-          "delta_rfs_bits_std": 0.15971314817203194,
-          "n_folds": 2
+          "delta_rfs_bits": 0.14956811638128126,
+          "delta_rfs_bits_std": 0.05529607007529592,
+          "n_folds": 4
         },
         "nuisance_probe_failures": [],
-        "positive_windows": 33,
+        "positive_windows": 210,
         "residual_model": {
           "bootstrap_mode": "claim",
           "bootstrap_samples": 2000,
-          "nll": 0.4016274164057831,
-          "rfs_bits": -0.20616143137365284,
-          "rfs_ci_high": 0.506661743246855,
-          "rfs_ci_low": -0.4127768443071336,
-          "rfs_p_value_two_sided": 0.8
+          "nll": 0.37465706685051026,
+          "rfs_bits": -0.2682125137596829,
+          "rfs_ci_high": -0.12112945681425787,
+          "rfs_ci_low": -0.43489112502571153,
+          "rfs_p_value_two_sided": 0.9922480620155039
         },
         "state": "awake",
         "subject_probe": {
-          "accuracy": 0.6333333333333333,
-          "chance": 0.5
+          "accuracy": 0.312280701754386,
+          "chance": 0.14285714285714285
         }
       },
       {
@@ -87,14 +87,14 @@
           "alternative": "greater",
           "method": "patient_cluster_sign_flip_rfs",
           "mode": "exact",
-          "n_clusters": 2,
-          "n_permutations": 4,
-          "null_ci_high": 0.41679608867852525,
-          "null_ci_low": -0.41679608867852525,
+          "n_clusters": 7,
+          "n_permutations": 128,
+          "null_ci_high": 0.2225876111301275,
+          "null_ci_low": -0.2225876111301275,
           "null_mean_rfs_bits": 0.0,
-          "observed_rfs_bits": -0.20616143137365303,
-          "p_resolution": 0.2,
-          "p_value": 0.8,
+          "observed_rfs_bits": -0.26821251437088345,
+          "p_resolution": 0.007751937984496124,
+          "p_value": 0.9922480620155039,
           "permutation_unit": "patient_cluster_sign_flip",
           "scope": "primary_horizon_control_only_not_claim_enabling",
           "seed": 223,
@@ -105,49 +105,49 @@
           "circular_shift_surrogate": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.7616857949459578,
-            "rfs_bits": -0.7256158685240841,
-            "rfs_ci_high": 0.40715307052044064,
-            "rfs_ci_low": -1.0539546914355404
+            "nll": 0.45234166033408557,
+            "rfs_bits": -0.38028769153191205,
+            "rfs_ci_high": -0.2110045716509322,
+            "rfs_ci_low": -0.5298626609423622
           },
           "label_shuffle": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.5066841138060882,
-            "rfs_bits": -0.35772620772524555,
-            "rfs_ci_high": 0.4778742731913565,
-            "rfs_ci_low": -0.5999292456720867
+            "nll": 0.5668881560869565,
+            "rfs_bits": -0.5455433529057878,
+            "rfs_ci_high": -0.5105682778118679,
+            "rfs_ci_low": -0.5773066058905163
           },
           "time_shift": {
             "bootstrap_mode": "smoke",
             "bootstrap_samples": 300,
-            "nll": 0.8841679346681817,
-            "rfs_bits": -0.9023202440988055,
-            "rfs_ci_high": 0.3616273642004051,
-            "rfs_ci_low": -1.2686818696927795
+            "nll": 0.45167074958785225,
+            "rfs_bits": -0.3793197719254422,
+            "rfs_ci_high": -0.2572350725941387,
+            "rfs_ci_low": -0.494543764406904
           }
         },
-        "n_held_out_subjects": 1,
+        "n_held_out_subjects": 2,
         "nested_cv": {
-          "delta_rfs_bits": 0.2987407177749647,
-          "delta_rfs_bits_std": 0.15971314817203197,
-          "n_folds": 2
+          "delta_rfs_bits": 0.14956811589798016,
+          "delta_rfs_bits_std": 0.05529606930368177,
+          "n_folds": 4
         },
         "nuisance_probe_failures": [],
-        "positive_windows": 145,
+        "positive_windows": 644,
         "residual_model": {
           "bootstrap_mode": "claim",
           "bootstrap_samples": 2000,
-          "nll": 0.4016274164057832,
-          "rfs_bits": -0.206161431373653,
-          "rfs_ci_high": 0.506661743246855,
-          "rfs_ci_low": -0.4127768443071336,
-          "rfs_p_value_two_sided": 0.8
+          "nll": 0.37465706727416215,
+          "rfs_bits": -0.2682125143708834,
+          "rfs_ci_high": -0.12161500654426519,
+          "rfs_ci_low": -0.43292486623313203,
+          "rfs_p_value_two_sided": 0.9922480620155039
         },
         "state": "sedated",
         "subject_probe": {
-          "accuracy": 0.6333333333333333,
-          "chance": 0.5
+          "accuracy": 0.312280701754386,
+          "chance": 0.14285714285714285
         }
       }
     ]
@@ -160,10 +160,10 @@
     "sedated"
   ],
   "milestone": "propofol_pci_state",
-  "min_subjects_loaded": 2,
+  "min_subjects_loaded": 7,
   "min_subjects_required": 8,
   "schema": "kahlus.forecastability.propofol_pci.v1",
-  "stop_reason": "ds005620 cohort underpowered (2 subjects < 8); do not claim powered propofol PCI result.",
+  "stop_reason": "ds005620 cohort underpowered (7 subjects < 8); do not claim powered propofol PCI result.",
   "synthetic_known": {
     "n_subjects": 12,
     "n_windows": 1440,

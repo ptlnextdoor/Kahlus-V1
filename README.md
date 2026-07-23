@@ -45,7 +45,8 @@ Publishing the reconstruction loss and the isolated-forecast loss is the point.
 Neural-CASP (gates, copy-trap, overlap audit, residual forecastability) is the
 real product surface — not a forecasting-skill claim.
 
-**Findings ledger (F0–F5):** [`docs/results/findings-ledger.md`](docs/results/findings-ledger.md)  
+**Findings ledger (F0–F6):** [`docs/results/findings-ledger.md`](docs/results/findings-ledger.md)  
+**NeurIPS submission packet:** [`docs/paper/neurips_2026/`](docs/paper/neurips_2026/)  
 **Arena paper packet:** [`docs/paper/neural_casp_arena/`](docs/paper/neural_casp_arena/)
 
 Powered Passive PCI on full Sleep-EDF cassette (F4): complexity block **hurts**

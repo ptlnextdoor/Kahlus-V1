@@ -60,10 +60,27 @@ Propofol substrate: [`propofol_pci.py`](../../../src/neurotwin/forecastability/p
 runner → gate → JSON + Markdown
 ```
 
-Example:
-
 ```bash
 PYTHONPATH=src python scripts/run_passive_pci_gate.py \
   --sleep-edf-root /path/to/sleep-cassette \
   --bootstrap-mode claim
+
+PYTHONPATH=src python scripts/run_autonomic_rfs_gate.py \
+  --mesa-root /path/to/nsrr/mesa \
+  --bootstrap-mode claim
 ```
+
+## M0 overlap-trap acceptance
+
+Amrith 127→128 mean/random/persistence/copy-trap checks are constitutionalized in
+[`amrith_acceptance.py`](../../../src/neurotwin/forecastability/amrith_acceptance.py)
+and wired into `run_m0_gate()` as `amrith_overlap_trap_acceptance`.
+
+## Autonomic RFS (F6 flagship)
+
+Reformulated estimand: micro-arousal within horizon h, autonomic block Z beyond
+cortical spectral B. NSRR MESA primary, SHHS dataset-held-out secondary.
+
+Module: [`autonomic_rfs.py`](../../../src/neurotwin/forecastability/autonomic_rfs.py)  
+NSRR adapter: [`adapters/nsrr.py`](../../../src/neurotwin/adapters/nsrr.py)
+

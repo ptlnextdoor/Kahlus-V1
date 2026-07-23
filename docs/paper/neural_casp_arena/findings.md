@@ -1,4 +1,4 @@
-# Neural-CASP findings (F0–F5)
+# Neural-CASP findings (F0–F6)
 
 Mirrors [`docs/results/findings-ledger.md`](../../results/findings-ledger.md).
 Each row is publishable — positives and negatives count equally when the
@@ -19,7 +19,8 @@ GatePass = split_disjoint ∧ finite ∧ beat_best_baseline ∧ controls_pass �
 | F2 | GRU does not beat trivial baselines under isolated forecasting | Negative | Sleep-EDF + BNCI, subject-held-out | GRU loses to persistence/ridge at h=1 | `artifacts/ridge_bnci_real/` | `scripts/bnci_isolated_forecast_check.py` | `finding/isolated-forecast-negative-v1` |
 | F3 | Peripheral channels add no residual forecastability for transitions | Negative (scout) | Sleep-EDF smoke; synthetic OK | Real RFS indistinguishable from null | `artifacts/interoception_rfs_scout/` | `interoception_scout.py` | `finding/interoception-rfs-scout-v1` |
 | F4 | Passive complexity does not beat spectral for wake/NREM/REM | Powered negative | 78 subj, 413,828 windows, n_boot=2000 | Wake -0.330; NREM -0.284; REM -0.161 bits | `artifacts/passive_pci_state/` | `passive_pci.py`, `complexity_features.py` | `finding/passive-pci-negative-v1` |
-| F5 | Propofol sedation: complexity beyond spectral for awake vs sedated | Underpowered partial | 2/21 subjects (disk-limited download) | Awake RFS −0.206, CI spans 0; not claim-grade | `artifacts/propofol_pci_state/` | `propofol_pci.py` | `finding/propofol-pci-underpowered-v1` |
+| F5 | Propofol sedation: complexity beyond spectral for awake vs sedated | Partial powered negative | 7/21 subjects, 854 windows | Awake RFS −0.268, CI excludes 0 (negative); <8 subjects for constitution | `artifacts/propofol_pci_state/` | `propofol_pci.py` | `finding/propofol-pci-partial-negative-v1` |
+| F6 | Autonomic block beyond cortical spectral for micro-arousal | Synthetic OK; NSRR pending | Claim bootstrap synthetic; MESA/SHHS when credentialed | Known RFS 0.021; real cohort pending NSRR | `artifacts/autonomic_rfs_arousal/` | `autonomic_rfs.py` | `finding/autonomic-rfs-pending-nsrr-v1` |
 
 ## Joint interpretation
 
