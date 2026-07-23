@@ -45,6 +45,13 @@ Publishing the reconstruction loss and the isolated-forecast loss is the point.
 Neural-CASP (gates, copy-trap, overlap audit, residual forecastability) is the
 real product surface — not a forecasting-skill claim.
 
+**Findings ledger (F0–F5):** [`docs/results/findings-ledger.md`](docs/results/findings-ledger.md)  
+**Arena paper packet:** [`docs/paper/neural_casp_arena/`](docs/paper/neural_casp_arena/)
+
+Powered Passive PCI on full Sleep-EDF cassette (F4): complexity block **hurts**
+prediction vs spectral baseline — wake RFS **−0.330** bits (CI excludes 0).
+Tag: `finding/passive-pci-negative-v1`.
+
 Every figure is rendered only from cached CSV/JSON evidence artifacts (no raw
 tensors, no waveform overlays without provenance); the figure-source packet and
 its provenance rule are in

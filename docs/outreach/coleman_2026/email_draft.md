@@ -21,7 +21,7 @@ We score that increment as **RFS bits** = (NLL_B − NLL_{B+Z}) / ln 2 — a cro
 
 2. **Proof of competence (public proxy, not your data).** We ran an **interoception RFS scout** on public Sleep-EDF cassette PSG (EOG + EMG + respiration as **Z**, EEG + history as **B**, future sleep-stage transition as **Y**). This is explicitly **not** gastric EGG and **not** a claim about your cohort. The scout machinery passes synthetic known-signal / known-null fixtures; on real Sleep-EDF smoke the gate **failed honestly** (residual RFS did not survive controls at scout thresholds). That negative is exactly the kind of result the harness is designed to emit without over-claiming.
 
-3. **Parallel honesty on EEG forecasting.** Separately, we audited isolated (non-overlapping) EEG forecasting on Sleep-EDF and BNCI2014_001. After removing the 126/127 input–target overlap illusion, **GRU does not beat the best trivial baseline at h=1** (BNCI: persistence 0.614 vs GRU 0.568; bootstrap gap CI excludes zero in the wrong direction). We are **not** leading with forecasting-skill claims.
+3. **Parallel honesty (F2–F4).** Isolated forecasting audit: GRU does not beat trivial baselines (F2). Interoception scout on Sleep-EDF peripheral channels: honest negative (F3). Powered Passive PCI on full Sleep-EDF cassette (78 subjects, n_boot=2000): complexity block **hurts** vs spectral baseline — wake RFS −0.330 bits, CI excludes zero on the negative side (F4). We are **not** leading with forecasting-skill or consciousness claims; these are proof the courtroom bites.
 
 **Ask**
 

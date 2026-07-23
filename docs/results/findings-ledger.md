@@ -21,6 +21,7 @@ its own model is worthless.
 | F2 | Kahlus GRU does not beat trivial baselines under isolated (non-overlapping) forecasting | Negative | Sleep-EDF + BNCI2014_001, subject-held-out | GRU loses to persistence / ridge at h=1 | `artifacts/ridge_bnci_real/` | `scripts/bnci_isolated_forecast_check.py` | `finding/isolated-forecast-negative-v1` |
 | F3 | Peripheral/autonomic channels add no residual forecastability for sleep-state transitions | Negative (scout) | Public Sleep-EDF smoke; synthetic known/null validated | Real-data RFS not distinguishable from null; synthetic known passes, null fails | `artifacts/interoception_rfs_scout/` | `src/neurotwin/forecastability/interoception_scout.py` | `finding/interoception-rfs-scout-v1` |
 | F4 | Passive complexity (LZ / permutation / multiscale entropy) does not beat a spectral baseline for wake/NREM/REM discrimination | Powered negative | Full Sleep-EDF cassette: 78 subjects, 413,828 windows, claim bootstrap (n_boot=2000) | Wake RFS -0.330 [CI -0.349, -0.313]; NREM -0.284 [-0.297, -0.271]; REM -0.161 [-0.177, -0.146]; all CIs exclude 0 on the negative side | `artifacts/passive_pci_state/` | `src/neurotwin/forecastability/passive_pci.py`, `complexity_features.py` | `finding/passive-pci-negative-v1` |
+| F5 | Propofol sedation: complexity beyond spectral for awake vs sedated | TBD | OpenNeuro ds005620 (21 subjects), claim bootstrap | Pending | `artifacts/propofol_pci_state/` | `src/neurotwin/forecastability/propofol_pci.py` | `finding/propofol-pci-*-v1` |
 
 ## What the findings jointly say
 
@@ -38,5 +39,5 @@ The arena (F0) is the asset. The negatives (F1-F4) are the evidence that the are
 
 - No clinical seizure/diagnosis claim; no consciousness claim; no "beat PCI" claim (F4 is a negative).
 - The 3.116 MSE / 0.972 r number is retired as a forecasting result (F1).
-- Passive PCI (F4) is a negative on Sleep-EDF cassette only; it does not generalize to
-  anesthesia/propofol substrates that were not tested.
+- Passive PCI (F4) is a negative on Sleep-EDF cassette only; F5 tests propofol (ds005620).
+- F5 claim scope must not imply TMS-PCI replacement or clinical anesthesia monitoring.

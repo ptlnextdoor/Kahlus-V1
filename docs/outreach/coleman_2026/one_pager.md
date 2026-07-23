@@ -50,16 +50,17 @@ Artifacts: `artifacts/interoception_rfs_scout/`
 
 This is **scout-grade** evidence that the engine runs end-to-end; the decisive test is your simultaneous EEG+EGG cohort.
 
-## Parallel result: EEG forecasting claim is dead
+## Parallel results: courtroom bites (F2–F4)
 
-Isolated (strictly future-sample) forecasting audit:
+| ID | Test | Verdict | Headline |
+| --- | --- | --- | --- |
+| F2 | Isolated EEG forecast (Sleep-EDF + BNCI) | Negative | GRU loses to persistence/ridge at h=1 |
+| F3 | Interoception RFS scout (Sleep-EDF peripheral) | Negative | No residual beyond EEG nuisance at scout thresholds |
+| F4 | Passive PCI (78 subj, full cassette, n_boot=2000) | Powered negative | Complexity **hurts** vs spectral: wake RFS −0.330 bits |
 
-| Dataset | h=1 best trivial | GRU | Verdict |
-| --- | ---: | ---: | --- |
-| Sleep-EDF (Amrith) | persistence 0.063 | 0.070 | GRU loses |
-| BNCI2014_001 (C3, subj-held-out) | ridge 0.517 | 0.568 | GRU loses; gap CI [−0.086, −0.016] |
+Tags: `finding/isolated-forecast-negative-v1`, `finding/interoception-rfs-scout-v1`, `finding/passive-pci-negative-v1`.
 
-**We will not headline forecasting skill.** Kahlus contribution = courtroom + incremental-value rigor.
+**We will not headline forecasting skill.** Kahlus contribution = courtroom + incremental-value rigor. F4 shows the arena produces powered honest negatives — the same machinery we would run on your EEG+EGG cohort.
 
 ## Hard claim boundaries
 
