@@ -23,14 +23,43 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _ensure_openneuro_py() -> None:
+    try:
+        import openneuro  # noqa: F401
+    except ImportError:
+        if shutil.which("uv") is not None:
+            subprocess.run(["uv", "pip", "install", "--python", sys.executable, "openneuro-py", "-q"], check=True)
+        else:
+            subprocess.run([sys.executable, "-m", "pip", "install", "openneuro-py", "-q"], check=True)
+
+
+def _download_via_openneuro(target: Path) -> None:
+    _ensure_openneuro_py()
+    from openneuro import download
+
+    target.mkdir(parents=True, exist_ok=True)
+    download(dataset=DATASET_ID, target_dir=str(target), include=["*"])
+
+
 def _download_via_aws(target: Path) -> None:
     if shutil.which("aws") is None:
-        raise RuntimeError("aws CLI not found; install AWS CLI or download ds005620 manually")
+        raise RuntimeError("aws CLI not found")
     target.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         ["aws", "s3", "sync", "--no-sign-request", S3_URI, str(target)],
         check=True,
     )
+
+
+def download_dataset(target: Path) -> None:
+    errors: list[str] = []
+    for method in (_download_via_aws, _download_via_openneuro):
+        try:
+            method(target)
+            return
+        except Exception as exc:  # noqa: BLE001 - try next downloader
+            errors.append(f"{method.__name__}: {exc}")
+    raise RuntimeError("all download methods failed: " + "; ".join(errors))
 
 
 def _subject_count(root: Path) -> int:
@@ -65,7 +94,7 @@ def main() -> int:
     target = args.target
     if not args.skip_download:
         print(f"downloading {DATASET_ID} to {target} ...")
-        _download_via_aws(target)
+        download_dataset(target)
     if not (target / "participants.tsv").is_file():
         print(f"error: {target} does not look like ds005620 (missing participants.tsv)", file=sys.stderr)
         return 1

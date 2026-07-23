@@ -1,8 +1,6 @@
 """Propofol Passive PCI: awake vs sedated state discrimination on OpenNeuro ds005620."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-import json
 from pathlib import Path
 import re
 from typing import Any
@@ -15,7 +13,6 @@ from neurotwin.forecastability.passive_pci import (
     _synthetic_passes,
     _write_json,
     evaluate_pci_fixture,
-    make_passive_pci_fixture,
 )
 
 PROPOFOL_PCI_SCHEMA = "kahlus.forecastability.propofol_pci.v1"
