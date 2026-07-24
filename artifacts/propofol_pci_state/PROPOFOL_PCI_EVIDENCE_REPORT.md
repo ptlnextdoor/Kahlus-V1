@@ -14,6 +14,6 @@
 
 ## ds005620 real cohort
 
-- windows: 1298 subjects: 12
-- awake: positive_windows=352 residual_rfs_bits=-0.1744 ci=[-0.3136, -0.0496]
-- sedated: positive_windows=946 residual_rfs_bits=-0.1744 ci=[-0.3061, -0.0470]
+- windows: 2527 subjects: 21
+- awake: positive_windows=630 residual_rfs_bits=-0.2072 ci=[-0.3084, -0.1208]
+- sedated: positive_windows=1897 residual_rfs_bits=-0.2072 ci=[-0.3077, -0.1198]

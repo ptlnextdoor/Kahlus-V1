@@ -50,17 +50,20 @@ Artifacts: `artifacts/interoception_rfs_scout/`
 
 This is **scout-grade** evidence that the engine runs end-to-end; the decisive test is your simultaneous EEG+EGG cohort.
 
-## Parallel results: courtroom bites (F2–F4)
+## Parallel results: courtroom bites (F2–F5)
 
 | ID | Test | Verdict | Headline |
 | --- | --- | --- | --- |
 | F2 | Isolated EEG forecast (Sleep-EDF + BNCI) | Negative | GRU loses to persistence/ridge at h=1 |
 | F3 | Interoception RFS scout (Sleep-EDF peripheral) | Negative | No residual beyond EEG nuisance at scout thresholds |
 | F4 | Passive PCI (78 subj, full cassette, n_boot=2000) | Powered negative | Complexity **hurts** vs spectral: wake RFS −0.330 bits |
+| F5 | Propofol PCI (21/21 subj, full OpenNeuro ds005620 cohort, n_boot=2000) | Powered negative | Complexity **hurts** vs spectral under sedation: RFS −0.2072 bits, CIs exclude 0 |
 
-Tags: `finding/isolated-forecast-negative-v1`, `finding/interoception-rfs-scout-v1`, `finding/passive-pci-negative-v1`.
+Tags: `finding/isolated-forecast-negative-v1`, `finding/interoception-rfs-scout-v1`, `finding/passive-pci-negative-v1`, `finding/propofol-pci-powered-negative-v1`.
 
-**We will not headline forecasting skill.** Kahlus contribution = courtroom + incremental-value rigor. F4 shows the arena produces powered honest negatives — the same machinery we would run on your EEG+EGG cohort.
+**We will not headline forecasting skill.** Kahlus contribution = courtroom + incremental-value rigor. F4–F5 show the arena produces powered honest negatives across two independent cohorts and etiologies (sleep, propofol) — the same machinery we would run on your EEG+EGG cohort.
+
+**In flight:** NSRR MESA/SHHS credentialed access has been applied for — a reformulated micro-arousal defendant (autonomic block beyond cortical spectral baseline, F6) is built and synthetic-validated, waiting on that dataset to run for real.
 
 ## Hard claim boundaries
 
