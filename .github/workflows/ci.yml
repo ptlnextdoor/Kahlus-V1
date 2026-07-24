@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[figures]' pytest ruff edfio
+      - run: python -m pip install -e '.[figures]' pytest ruff==0.16.0 edfio
       - run: python -m ruff check .
       - run: PYTHONPATH=src python -m pytest -q
       - run: git diff --check

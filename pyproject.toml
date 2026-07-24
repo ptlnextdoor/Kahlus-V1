@@ -55,3 +55,10 @@ nt = "neurotwin.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff.lint]
+# Explicit lint contract (Ruff's own default rule set has changed across
+# versions — e.g. 0.16 added import-sort checks that 0.15 didn't run).
+# Pin the contract here instead of inheriting whatever a given Ruff version
+# defaults to, so CI (unpinned pip install) and local dev agree.
+select = ["E4", "E7", "E9", "F"]
