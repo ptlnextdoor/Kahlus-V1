@@ -1,0 +1,7 @@
+milestone,gate_passed,note,stop_reason
+M0,1,harness determinism,M0 gate reached; do not proceed to M1 until this report is reviewed.
+M1,1,synthetic RFS known+null,M1 gate reached; do not proceed to M2 until this report is reviewed.
+M2,1,Sleep-EDF machinery smoke,M2 gate reached; real Sleep-EDF validation must pass before M3.
+M3,0,CHB-MIT underpowered fail,M3 gate reached; do not proceed to M4 until this report is reviewed.
+M4,0,horizon RFS; public sleep not run,M4 gate reached; full claim requires powered public-data and external-dataset validation.
+M5,1,synthetic Passive PIC instrument,M5 is synthetic-only; public-data Passive PIC requires a later gate.

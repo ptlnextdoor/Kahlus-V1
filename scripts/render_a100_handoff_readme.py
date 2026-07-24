@@ -30,7 +30,7 @@ def render_handoff_readme(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render the NeuroTwin A100 handoff README.")
-    parser.add_argument("--template", type=Path, default=Path("README_HANDOFF.md.in"))
+    parser.add_argument("--template", type=Path, default=Path("deploy/a100/README_HANDOFF.md.in"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--full-sha", required=True)
     parser.add_argument("--short-sha", required=True)

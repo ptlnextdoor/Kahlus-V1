@@ -28,10 +28,10 @@ mkdir -p "$BUNDLE_ROOT"
 
 ARCHIVE_PATHS=(
   pyproject.toml
-  environment-ktm-a100.yml
-  AGENT_RUNBOOK.md
-  README_KTM_RUN.md
-  README_KTM_HANDOFF.md.in
+  deploy/a100/environment-ktm-a100.yml
+  deploy/a100/AGENT_RUNBOOK.md
+  deploy/a100/README_KTM_RUN.md
+  deploy/a100/README_KTM_HANDOFF.md.in
   configs/train/ktm_a100_micro.yaml
   configs/train/ktm_recovery_point_objective.yaml
   configs/train/ktm_recovery_capacity_smoke.yaml
@@ -59,8 +59,12 @@ tar -C "$REPO_ROOT" \
   --exclude='._*' \
   -cf - "${ARCHIVE_PATHS[@]}" | tar -xf - -C "$BUNDLE_ROOT"
 
-# README_RUN.md is the canonical run book name inside the runner.
-mv "$BUNDLE_ROOT/README_KTM_RUN.md" "$BUNDLE_ROOT/README_RUN.md"
+# Flatten deploy/a100 assets; README_RUN.md is the canonical run book name inside the runner.
+mv "$BUNDLE_ROOT/deploy/a100/environment-ktm-a100.yml" "$BUNDLE_ROOT/environment-ktm-a100.yml"
+mv "$BUNDLE_ROOT/deploy/a100/AGENT_RUNBOOK.md" "$BUNDLE_ROOT/AGENT_RUNBOOK.md"
+mv "$BUNDLE_ROOT/deploy/a100/README_KTM_HANDOFF.md.in" "$BUNDLE_ROOT/README_KTM_HANDOFF.md.in"
+mv "$BUNDLE_ROOT/deploy/a100/README_KTM_RUN.md" "$BUNDLE_ROOT/README_RUN.md"
+rm -rf "$BUNDLE_ROOT/deploy"
 
 printf '%s\n' "$FULL_SHA" > "$BUNDLE_ROOT/COMMIT_HASH.txt"
 {

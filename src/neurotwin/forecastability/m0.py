@@ -17,6 +17,7 @@ import torch
 from neurotwin.benchmarks.baseline_suite import _run_task_models
 from neurotwin.data.split_manifest import RecordingRecord, SplitManifest, build_split_manifest
 from neurotwin.eeg_v1.dataset import build_future_forecasting_task, make_synthetic_eeg_v1_dataset
+from neurotwin.forecastability.amrith_acceptance import run_amrith_acceptance
 
 
 RUNNER_IDS = ("persistence", "linear_ridge", "gbm", "mlp", "tcn", "transformer", "neurotwin")
@@ -52,6 +53,7 @@ def run_m0_gate(
         round_hashes.append(_sha256_file(table))
     shutil.copyfile(out / "round_1" / "baseline_table.csv", out / "baseline_table.csv")
 
+    amrith = run_amrith_acceptance(seed=seed)
     git_state = _read_json(out / "git_state.json")
     table_rows = _read_csv_rows(out / "baseline_table.csv")
     present = tuple(row["model_id"] for row in table_rows)
@@ -60,8 +62,9 @@ def run_m0_gate(
     clean_ok = bool(git_state["clean_worktree"]) or not enforce_clean_worktree
     gate = {
         "milestone": "M0",
-        "gate_passed": bool(bit_stable and not missing and clean_ok),
+        "gate_passed": bool(bit_stable and not missing and clean_ok and amrith["passed"]),
         "bit_stable_baseline_table": bit_stable,
+        "amrith_overlap_trap_acceptance": amrith,
         "baseline_table_sha256_round_1": round_hashes[0],
         "baseline_table_sha256_round_2": round_hashes[1],
         "required_rows": list(REQUIRED_ROWS),
@@ -170,6 +173,7 @@ def _write_report(path: Path, gate: dict[str, Any], rows: list[dict[str, str]]) 
         "",
         f"Gate passed: `{gate['gate_passed']}`",
         f"Bit-stable baseline table: `{gate['bit_stable_baseline_table']}`",
+        f"Amrith 127→128 overlap-trap acceptance: `{gate['amrith_overlap_trap_acceptance']['passed']}`",
         f"Clean worktree required: `{gate['clean_worktree_required']}`",
         f"Clean worktree observed: `{gate['clean_worktree']}`",
         f"Missing required rows: `{', '.join(gate['missing_rows']) if gate['missing_rows'] else 'none'}`",

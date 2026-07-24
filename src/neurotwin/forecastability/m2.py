@@ -346,7 +346,12 @@ def _remote_size(url: str) -> int | None:
         return None
 
 
-def _read_edf_signals(path: Path, *, preferred_labels: tuple[str, ...]) -> dict[str, Any]:
+def _read_edf_signals(
+    path: Path,
+    *,
+    preferred_labels: tuple[str, ...],
+    min_channels: int | None = None,
+) -> dict[str, Any]:
     with path.open("rb") as handle:
         fixed = handle.read(256)
         header_bytes = int(fixed[184:192].decode("ascii", errors="ignore").strip())
@@ -358,7 +363,8 @@ def _read_edf_signals(path: Path, *, preferred_labels: tuple[str, ...]) -> dict[
         data = np.frombuffer(handle.read(), dtype="<i2")
     samples = np.asarray([int(value) for value in header["samples"]], dtype=np.int64)
     wanted = [header["label"].index(label) for label in preferred_labels if label in header["label"]]
-    if len(wanted) < 3:
+    required = min_channels if min_channels is not None else min(3, len(preferred_labels))
+    if len(wanted) < required:
         raise ValueError(f"missing required Sleep-EDF channels in {path}")
     total_per_record = int(np.sum(samples))
     if data.size < n_records * total_per_record:

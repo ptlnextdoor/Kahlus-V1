@@ -1,0 +1,6 @@
+task,model,label,mse,pearson_r,status
+future_forecasting_INVALID,kahlus_gru,Kahlus v1 (GRU),3.116,0.972,invalid_overlap_dominated
+future_forecasting_INVALID,ridge,Ridge regression,7.745,0.925,invalid_overlap_dominated
+future_forecasting_INVALID,persistence,Persistence,8.204,0.924,invalid_overlap_dominated
+masked_reconstruction,kahlus_gru,Kahlus v1 (GRU),53.977,-0.013,failed_blocks_broad_claim
+masked_reconstruction,ridge,Ridge regression,7.787,0.952,failed_blocks_broad_claim

@@ -24,26 +24,34 @@ The full research constitution, claim boundaries, and gate discipline live in
 
 ## The headline result
 
-On the recovered EEG v1 benchmark, the honest finding is a **split verdict**, and
-we report it as one. Kahlus v1 wins future forecasting outright and **loses**
-masked reconstruction to a plain linear ridge. Publishing the loss is the point:
-a leakage-controlled benchmark that only ever flattered its own model would be
-worthless.
+On recovered EEG v1 sidecars the honest finding is a **split verdict** — and an
+overlap audit later showed the forecasting number was inflated by input–target
+overlap. Under isolated (strictly future-sample) evaluation on Sleep-EDF and
+BNCI2014_001, the Kahlus GRU does **not** beat the best trivial baseline. Report
+the loss: a leakage-controlled benchmark that only flattered its own model would
+be worthless.
 
-| task | winner | Kahlus v1 (MSE) | best baseline (MSE) | verdict |
-| --- | --- | --- | --- | --- |
-| **Future forecasting** | **Kahlus v1** | **3.12** | linear ridge 7.75 | Kahlus wins, 2.5x lower error |
-| **Masked reconstruction** | linear ridge | 53.98 | **linear ridge 7.81** | **Kahlus loses to a linear model** |
+| task / audit | honest status | note |
+| --- | --- | --- |
+| **Masked reconstruction** | **lose to ridge** | aggregate reconstruction failed (see A100 ledger) |
+| **Isolated future-sample forecast** | **lose to persistence / ridge** | Sleep-EDF + BNCI subject-held-out |
+| **Overlapping forecast sidecar (legacy)** | not a whole-model claim | 3.116 MSE / 0.972 r is a narrow, overlap-contaminated sidecar only |
 
-_MSE, lower is better; medians after de-duplicating repeated baseline-ranking
-artifacts. Full ranking across 10 baselines below._
+Do **not** headline 3.116 MSE / 0.972 Pearson as whole-model performance.
 
 ![Recovered Kahlus v1 versus standard EEG baselines](docs/research/eeg_v1_figure_source/figures/Figure3_eeg_v1_baseline_ranking.png)
 
-The forecasting win is real and the reconstruction loss is real. A method that
-forecasts the next state well but reconstructs a masked present worse than ridge
-regression is telling you something specific about what it learned, and hiding
-that would defeat the entire leakage-controlled premise.
+Publishing the reconstruction loss and the isolated-forecast loss is the point.
+Neural-CASP (gates, copy-trap, overlap audit, residual forecastability) is the
+real product surface — not a forecasting-skill claim.
+
+**Findings ledger (F0–F6):** [`docs/results/findings-ledger.md`](docs/results/findings-ledger.md)  
+**NeurIPS submission packet:** [`docs/paper/neurips_2026/`](docs/paper/neurips_2026/)  
+**Arena paper packet:** [`docs/paper/neural_casp_arena/`](docs/paper/neural_casp_arena/)
+
+Powered Passive PCI on full Sleep-EDF cassette (F4): complexity block **hurts**
+prediction vs spectral baseline — wake RFS **−0.330** bits (CI excludes 0).
+Tag: `finding/passive-pci-negative-v1`.
 
 Every figure is rendered only from cached CSV/JSON evidence artifacts (no raw
 tensors, no waveform overlays without provenance); the figure-source packet and
@@ -111,7 +119,7 @@ ground truth; the estimators never do, so the pass is an independent check.
 - Prepared-manifest NeuroTwin training path with single-task or `neural_translation_v1` multi-task training, DDP under `torchrun`, checkpoint save/resume, best checkpoints, objective-level JSONL metrics, gradient accumulation, bf16 autocast hooks, CSV/JSON metrics, config snapshots, environment info, split hashes, and synthetic/demo labels.
 - Prepared training uses train for optimization, val for periodic evaluation and best-checkpoint selection, and test for final held-out reporting.
 - Prepared-manifest benchmark suite covers the five v1 task families: forecasting, masked reconstruction, cross-modal translation, subject adaptation, and dataset/site generalization. Baseline failures are explicit and excluded from rankings.
-- A100 is the canonical cluster target through `configs/train/*_a100.yaml`, `scripts/slurm/*_a100.sh`, and `docs/A100_RUNBOOK.md`; H100 remains a compatible high-memory variant.
+- A100 is the canonical cluster target through `configs/train/*_a100.yaml`, `scripts/slurm/*_a100.sh`, and `docs/deploy/A100_RUNBOOK.md`; H100 remains a compatible high-memory variant. Docker/handoff assets live under `deploy/a100/`.
 - Chapman A100 first launch has a guarded one-command path in `scripts/cluster/chapman_a100_first_run.sh`, with explicit preflight against placeholder paths, zero-window data, missing CUDA, and non-persistent run roots.
 - Modular NeuroTwin model internals now expose modality encoders, `transformer`/`ssm_fallback` backbone selection, geometry/metadata encoders, projection heads, and leakage-safe subject-adapter controls. `mamba` remains an upstream baseline target, not a wired NeuroTwin backbone selector.
 - Experimental NFC internals expose `NeuralFieldCompiler`, `LatentNeuralField`, causal field updates, low-rank pair kernels, observation operators, stimulus conditioning, uncertainty maps, and a synthetic latent-field suite. Synthetic NFC outputs are plumbing checks, not science.

@@ -108,7 +108,7 @@ training-budget artifact, not an earned recovery. Fix locks the comparison:
   (unmatched budget / sub-margin) so `failure_reasons.json` is auditable.
 - `configs/train/ktm_a100_micro.yaml` (`baseline_train_steps: 400`, `recovery_margin: 0.05`) +
   smoke config (`recovery_margin: 0.05`).
-- `AGENT_RUNBOOK.md` — `python3` (host has no bare `python`), GPU-count honesty (label N×A100, never
+- `deploy/a100/AGENT_RUNBOOK.md` — `python3` (host has no bare `python`), GPU-count honesty (label N×A100, never
   claim 8 when you ran 7), matched-budget + margin claim rule.
 No A100 re-run from here (synthetic discipline); validated by CPU smoke + new `test_metrics_eval.py`
 (the unmatched-budget regression stays blocked even when `ktm_mse < baseline_mse`).

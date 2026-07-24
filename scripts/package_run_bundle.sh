@@ -25,9 +25,9 @@ fi
 mkdir -p "$OUT_DIR"
 BUNDLE_ROOT="$STAGING/$BUNDLE_NAME"
 ARCHIVE_PATHS=(
-  README_RUN.md
+  deploy/a100/README_RUN.md
+  deploy/a100/environment-a100.yml
   pyproject.toml
-  environment-a100.yml
   requirements
   configs
   scripts
@@ -58,6 +58,9 @@ TAR_EXCLUDES=(
 )
 
 git archive --format=tar --prefix="$BUNDLE_NAME/" HEAD "${ARCHIVE_PATHS[@]}" | tar -xf - -C "$STAGING"
+mv "$BUNDLE_ROOT/deploy/a100/README_RUN.md" "$BUNDLE_ROOT/README_RUN.md"
+mv "$BUNDLE_ROOT/deploy/a100/environment-a100.yml" "$BUNDLE_ROOT/environment-a100.yml"
+rm -rf "$BUNDLE_ROOT/deploy"
 printf '%s\n' "$FULL_SHA" > "$BUNDLE_ROOT/COMMIT_HASH.txt"
 {
   echo "commit=$FULL_SHA"

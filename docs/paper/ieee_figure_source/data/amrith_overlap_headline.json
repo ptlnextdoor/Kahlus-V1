@@ -1,0 +1,15 @@
+{
+  "old_overlapping_metric_full_127_target": {
+    "mean_of_trace_full_window": 0.8448431491851807,
+    "persistence_full_window": 0.32984477281570435,
+    "ridge_full_window": 0.0017963997296171377
+  },
+  "new_isolated_metric_h1": {
+    "mean_of_trace": 1.0368214845657349,
+    "random": 1.854857448202139,
+    "persistence": 0.28118282556533813,
+    "ridge_ar": 0.22693697953515787,
+    "kahlus_gru": 0.21121610701084137
+  },
+  "note": "OLD shares 126/127 samples between input and target; NEW predicts only the strictly-future 128th sample. Subject-held-out Sleep-EDF."
+}
